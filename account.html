@@ -57,7 +57,7 @@
       border-radius: 12px;
       padding: 25px;
       margin-bottom: 25px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     }
 
     h2 {
@@ -83,6 +83,11 @@
       font-size: 15px;
     }
 
+    input:focus {
+      outline: none;
+      border-color: #111;
+    }
+
     button {
       border: 0;
       border-radius: 7px;
@@ -97,10 +102,18 @@
       color: white;
     }
 
+    .primary:hover {
+      opacity: 0.9;
+    }
+
     .danger {
       background: #d32f2f;
       color: white;
       margin-left: 8px;
+    }
+
+    .danger:hover {
+      opacity: 0.9;
     }
 
     .message {
@@ -141,6 +154,22 @@
       color: #777;
     }
 
+    .profile-info {
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+
+    .profile-info div {
+      margin: 6px 0;
+    }
+
+    .profile-info strong {
+      display: inline-block;
+      min-width: 90px;
+    }
+
     @media (max-width: 600px) {
       header {
         flex-direction: column;
@@ -155,6 +184,10 @@
       .danger {
         margin-left: 0;
       }
+
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -162,230 +195,781 @@
 <body>
 
 <header>
+
   <h1>Fashion Fusion</h1>
 
   <nav>
     <a href="index.html">Home</a>
     <a href="account.html">My Account</a>
   </nav>
+
 </header>
+
 
 <div class="container">
 
+  <!-- ACCOUNT -->
+
   <div class="card">
+
     <h2>My Account</h2>
 
     <div id="userEmail" class="user-email">
       Loading account...
     </div>
 
-    <label for="fullName">Full Name</label>
+
+    <!-- Quick profile information -->
+
+    <div class="profile-info">
+
+      <div>
+        <strong>Name:</strong>
+        <span id="displayName">Loading...</span>
+      </div>
+
+      <div>
+        <strong>Phone:</strong>
+        <span id="displayPhone">Loading...</span>
+      </div>
+
+      <div>
+        <strong>Email:</strong>
+        <span id="displayEmail">Loading...</span>
+      </div>
+
+    </div>
+
+
+    <!-- Full Name -->
+
+    <label for="fullName">
+      Full Name
+    </label>
+
     <input
       type="text"
       id="fullName"
       placeholder="Enter your full name"
+      autocomplete="name"
     >
 
-    <label for="phone">Phone</label>
+
+    <!-- Phone -->
+
+    <label for="phone">
+      Phone
+    </label>
+
     <input
       type="tel"
       id="phone"
       placeholder="Enter your phone number"
+      autocomplete="tel"
     >
 
-    <button class="primary" onclick="saveProfile()">
+
+    <!-- Save -->
+
+    <button
+      class="primary"
+      id="saveButton"
+      onclick="saveProfile()"
+    >
       Save Profile
     </button>
 
-    <button class="danger" onclick="signOut()">
+
+    <!-- Sign out -->
+
+    <button
+      class="danger"
+      onclick="signOut()"
+    >
       Sign Out
     </button>
 
-    <div id="profileMessage" class="message"></div>
+
+    <div
+      id="profileMessage"
+      class="message"
+    ></div>
+
   </div>
 
+
+  <!-- ORDERS -->
+
   <div class="card">
+
     <h2>My Orders</h2>
 
     <div id="orders">
-      <div class="loading">Loading orders...</div>
+
+      <div class="loading">
+        Loading orders...
+      </div>
+
     </div>
+
   </div>
 
 </div>
 
+
 <script>
+
   let currentUser = null;
 
-  function showMessage(elementId, message, type) {
-    const element = document.getElementById(elementId);
+
+  /*
+   * Display messages
+   */
+
+  function showMessage(
+    elementId,
+    message,
+    type
+  ) {
+
+    const element =
+      document.getElementById(elementId);
 
     element.textContent = message;
-    element.className = "message " + type;
-    element.style.display = "block";
+
+    element.className =
+      "message " + type;
+
+    element.style.display =
+      "block";
   }
 
+
+  /*
+   * Load account
+   */
+
   async function loadAccount() {
+
     try {
+
       const {
         data: { user },
         error
-      } = await supabaseClient.auth.getUser();
+      } =
+        await supabaseClient.auth.getUser();
+
+
+      /*
+       * User is not logged in
+       */
 
       if (error || !user) {
-        window.location.href = "login.html";
+
+        window.location.href =
+          "login.html";
+
         return;
       }
 
+
       currentUser = user;
 
-      document.getElementById("userEmail").textContent =
-        "Signed in as: " + (user.email || "");
+
+      /*
+       * Display email
+       */
+
+      const email =
+        user.email || "";
+
+      document.getElementById(
+        "userEmail"
+      ).textContent =
+        "Signed in as: " + email;
+
+
+      document.getElementById(
+        "displayEmail"
+      ).textContent =
+        email;
+
+
+      /*
+       * Load profile
+       */
 
       await loadProfile();
+
+
+      /*
+       * Load orders
+       */
+
       await loadOrders();
 
-    } catch (error) {
-      console.error(error);
-
-      document.getElementById("userEmail").textContent =
-        "Unable to load account.";
     }
+
+    catch (error) {
+
+      console.error(
+        "Account loading error:",
+        error
+      );
+
+      document.getElementById(
+        "userEmail"
+      ).textContent =
+        "Unable to load account.";
+
+    }
+
   }
+
+
+  /*
+   * Load profile
+   */
 
   async function loadProfile() {
-    const { data, error } = await supabaseClient
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("id", currentUser.id)
-      .maybeSingle();
 
-    if (error) {
-      console.error("Profile error:", error);
+    if (!currentUser) {
       return;
     }
 
-    if (data) {
-      document.getElementById("fullName").value =
-        data.full_name || "";
 
-      document.getElementById("phone").value =
-        data.phone || "";
+    /*
+     * Get profile from database
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+
+    if (error) {
+
+      console.error(
+        "Profile database error:",
+        error
+      );
+
     }
+
+
+    /*
+     * Get metadata as fallback.
+     *
+     * During signup we saved:
+     * full_name
+     * phone
+     */
+
+    const metadata =
+      currentUser.user_metadata || {};
+
+
+    const profileName =
+      data && data.full_name
+        ? data.full_name
+        : "";
+
+
+    const profilePhone =
+      data && data.phone
+        ? data.phone
+        : "";
+
+
+    const metadataName =
+      metadata.full_name || "";
+
+
+    const metadataPhone =
+      metadata.phone || "";
+
+
+    /*
+     * Choose database value first.
+     * If database value is empty,
+     * use signup metadata.
+     */
+
+    const finalName =
+      profileName || metadataName;
+
+
+    const finalPhone =
+      profilePhone || metadataPhone;
+
+
+    /*
+     * Put values into form
+     */
+
+    document.getElementById(
+      "fullName"
+    ).value =
+      finalName;
+
+
+    document.getElementById(
+      "phone"
+    ).value =
+      finalPhone;
+
+
+    /*
+     * Put values into profile summary
+     */
+
+    document.getElementById(
+      "displayName"
+    ).textContent =
+      finalName || "Not provided";
+
+
+    document.getElementById(
+      "displayPhone"
+    ).textContent =
+      finalPhone || "Not provided";
+
+
+    /*
+     * If phone is missing from the profiles
+     * table but exists in metadata, save it
+     * into profiles automatically.
+     */
+
+    if (
+      !profilePhone &&
+      metadataPhone
+    ) {
+
+      const {
+        error: updateError
+      } =
+        await supabaseClient
+          .from("profiles")
+          .update({
+            phone: metadataPhone,
+            updated_at:
+              new Date().toISOString()
+          })
+          .eq("id", currentUser.id);
+
+
+      if (updateError) {
+
+        console.error(
+          "Could not sync phone:",
+          updateError
+        );
+
+      }
+
+    }
+
+
+    /*
+     * Same fallback for name
+     */
+
+    if (
+      !profileName &&
+      metadataName
+    ) {
+
+      const {
+        error: updateError
+      } =
+        await supabaseClient
+          .from("profiles")
+          .update({
+            full_name: metadataName,
+            updated_at:
+              new Date().toISOString()
+          })
+          .eq("id", currentUser.id);
+
+
+      if (updateError) {
+
+        console.error(
+          "Could not sync name:",
+          updateError
+        );
+
+      }
+
+    }
+
   }
 
+
+  /*
+   * Save profile
+   */
+
   async function saveProfile() {
+
     if (!currentUser) {
-      window.location.href = "login.html";
+
+      window.location.href =
+        "login.html";
+
       return;
     }
 
+
     const fullName =
-      document.getElementById("fullName").value.trim();
+      document
+        .getElementById("fullName")
+        .value
+        .trim();
+
 
     const phone =
-      document.getElementById("phone").value.trim();
+      document
+        .getElementById("phone")
+        .value
+        .trim();
 
-    const { error } = await supabaseClient
-      .from("profiles")
-      .upsert({
-        id: currentUser.id,
-        full_name: fullName,
-        phone: phone,
-        updated_at: new Date().toISOString()
-      });
 
-    if (error) {
+    const saveButton =
+      document.getElementById(
+        "saveButton"
+      );
+
+
+    saveButton.disabled = true;
+
+    saveButton.textContent =
+      "Saving...";
+
+
+    try {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("profiles")
+          .upsert({
+
+            id:
+              currentUser.id,
+
+            full_name:
+              fullName,
+
+            phone:
+              phone,
+
+            updated_at:
+              new Date().toISOString()
+
+          });
+
+
+      if (error) {
+
+        console.error(
+          "Save profile error:",
+          error
+        );
+
+        showMessage(
+          "profileMessage",
+          "Could not save your profile: " +
+            error.message,
+          "error"
+        );
+
+        return;
+      }
+
+
+      /*
+       * Update auth metadata too.
+       *
+       * This keeps the name and phone available
+       * in the Supabase user profile metadata.
+       */
+
+      const {
+        error: metadataError
+      } =
+        await supabaseClient.auth.updateUser({
+
+          data: {
+
+            full_name:
+              fullName,
+
+            phone:
+              phone
+
+          }
+
+        });
+
+
+      if (metadataError) {
+
+        console.warn(
+          "Metadata update warning:",
+          metadataError
+        );
+
+      }
+
+
+      /*
+       * Update display immediately
+       */
+
+      document.getElementById(
+        "displayName"
+      ).textContent =
+        fullName || "Not provided";
+
+
+      document.getElementById(
+        "displayPhone"
+      ).textContent =
+        phone || "Not provided";
+
+
+      showMessage(
+        "profileMessage",
+        "Profile saved successfully.",
+        "success"
+      );
+
+    }
+
+    catch (error) {
+
       console.error(error);
 
       showMessage(
         "profileMessage",
-        "Could not save your profile: " + error.message,
+        "An unexpected error occurred.",
         "error"
+      );
+
+    }
+
+    finally {
+
+      saveButton.disabled = false;
+
+      saveButton.textContent =
+        "Save Profile";
+
+    }
+
+  }
+
+
+  /*
+   * Load orders
+   */
+
+  async function loadOrders() {
+
+    const ordersContainer =
+      document.getElementById(
+        "orders"
+      );
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("orders")
+        .select("*")
+        .eq(
+          "user_id",
+          currentUser.id
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        );
+
+
+    if (error) {
+
+      console.error(
+        "Orders error:",
+        error
+      );
+
+      ordersContainer.innerHTML =
+        '<div class="empty">' +
+        "Unable to load orders." +
+        "</div>";
+
+      return;
+    }
+
+
+    if (
+      !data ||
+      data.length === 0
+    ) {
+
+      ordersContainer.innerHTML =
+        '<div class="empty">' +
+        "You have no orders yet." +
+        "</div>";
+
+      return;
+    }
+
+
+    ordersContainer.innerHTML =
+      data.map(order => {
+
+        const amount =
+          Number(
+            order.total_amount || 0
+          ).toFixed(2);
+
+
+        let itemsText =
+          "";
+
+
+        if (
+          Array.isArray(
+            order.items
+          )
+        ) {
+
+          itemsText =
+            order.items
+              .map(item => {
+
+                return (
+                  "Product " +
+                  item.id +
+                  " × " +
+                  item.qty
+                );
+
+              })
+              .join(", ");
+
+        }
+
+        else {
+
+          itemsText =
+            "Order items";
+
+        }
+
+
+        const date =
+          order.created_at
+            ? new Date(
+                order.created_at
+              ).toLocaleString()
+            : "";
+
+
+        return `
+
+          <div class="order">
+
+            <strong>
+              Order #${order.id}
+            </strong>
+
+            <br>
+
+            <span>
+              Status:
+              ${order.status || "paid"}
+            </span>
+
+            <br>
+
+            <span>
+              Amount:
+              ₹${amount}
+            </span>
+
+            <br>
+
+            <span>
+              Items:
+              ${itemsText}
+            </span>
+
+            <br>
+
+            <small>
+              ${date}
+            </small>
+
+          </div>
+
+        `;
+
+      }).join("");
+
+  }
+
+
+  /*
+   * Sign out
+   */
+
+  async function signOut() {
+
+    const {
+      error
+    } =
+      await supabaseClient.auth.signOut();
+
+
+    if (error) {
+
+      alert(
+        "Unable to sign out: " +
+        error.message
       );
 
       return;
     }
 
-    showMessage(
-      "profileMessage",
-      "Profile saved successfully.",
-      "success"
-    );
+
+    window.location.href =
+      "login.html";
+
   }
 
-  async function loadOrders() {
-    const ordersContainer =
-      document.getElementById("orders");
 
-    const { data, error } = await supabaseClient
-      .from("orders")
-      .select("*")
-      .eq("user_id", currentUser.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Orders error:", error);
-
-      ordersContainer.innerHTML =
-        '<div class="empty">Unable to load orders.</div>';
-
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      ordersContainer.innerHTML =
-        '<div class="empty">You have no orders yet.</div>';
-
-      return;
-    }
-
-    ordersContainer.innerHTML = data.map(order => {
-
-      const amount =
-        Number(order.total_amount || 0).toFixed(2);
-
-      let itemsText = "";
-
-      if (Array.isArray(order.items)) {
-        itemsText = order.items.map(item => {
-          return `Product ${item.id} × ${item.qty}`;
-        }).join(", ");
-      } else {
-        itemsText = "Order items";
-      }
-
-      const date =
-        order.created_at
-          ? new Date(order.created_at).toLocaleString()
-          : "";
-
-      return `
-        <div class="order">
-          <strong>Order #${order.id}</strong><br>
-          <span>Status: ${order.status || "paid"}</span><br>
-          <span>Amount: ₹${amount}</span><br>
-          <span>Items: ${itemsText}</span><br>
-          <small>${date}</small>
-        </div>
-      `;
-
-    }).join("");
-  }
-
-  async function signOut() {
-    const { error } =
-      await supabaseClient.auth.signOut();
-
-    if (error) {
-      alert("Unable to sign out: " + error.message);
-      return;
-    }
-
-    window.location.href = "login.html";
-  }
+  /*
+   * Start
+   */
 
   loadAccount();
+
 </script>
 
 </body>
