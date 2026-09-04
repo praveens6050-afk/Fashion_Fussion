@@ -38,7 +38,7 @@ button#payBtn:disabled{opacity:.6;cursor:not-allowed}#status{margin-top:14px;fon
 <script>
 (function(){
   // CHANGE THIS after deploying the backend, e.g. https://fashion-fusion-api.vercel.app
-  const API_BASE = "https://YOUR-BACKEND-DOMAIN";
+  const API_BASE = "https://fashion-fussion-olive.vercel.app";
   const cart = JSON.parse(sessionStorage.getItem("ff_checkout_cart") || "[]");
   const rows = document.getElementById("cartRows"), totalEl = document.getElementById("totalDisplay");
   const payBtn = document.getElementById("payBtn"), statusEl = document.getElementById("status");
