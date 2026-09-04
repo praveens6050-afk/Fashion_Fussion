@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security Policy — Fashion_Fussion</title>
+<meta name="description" content="How Fashion_Fussion protects customer data, payments, and site security.">
+<style>
+  :root{
+    --paper:#F4EEE1; --paper-dim:#EAE1CC; --ink:#1C2333; --ink-soft:#4B5266;
+    --indigo:#1B2A4A; --marigold:#E5972E; --marigold-deep:#C97D1B; --bottle:#2F5233;
+    --line:#D8CDAE; --white:#FFFDF8; --danger:#B23A2E;
+    --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; line-height:1.6;}
+  a{color:var(--indigo); font-weight:600;}
+  .wrap{max-width:820px; margin:0 auto; padding:0 24px;}
+
+  header.site{background:var(--paper); border-bottom:1px solid var(--line); padding:16px 0;}
+  .nav{display:flex; align-items:center; justify-content:space-between;}
+  .logo{font-family:var(--serif); font-weight:700; font-size:22px; color:var(--indigo);}
+  .logo small{font-family:var(--sans); font-weight:500; font-size:10px; color:var(--ink-soft); letter-spacing:.06em; margin-left:6px;}
+  .back-link{font-size:13.5px; color:var(--ink-soft); font-weight:600;}
+  .back-link:hover{color:var(--indigo);}
+
+  .page-head{padding:56px 0 32px; border-bottom:1px solid var(--line);}
+  .eyebrow{display:inline-flex; font-size:12.5px; font-weight:700; letter-spacing:.05em; color:var(--bottle); background:#E4E9DD; padding:5px 12px; border-radius:100px; margin-bottom:16px; text-transform:uppercase;}
+  h1{font-family:var(--serif); font-size:clamp(30px,4vw,42px); margin:0 0 12px; color:var(--indigo);}
+  .updated{font-size:13.5px; color:var(--ink-soft);}
+
+  main{padding:40px 0 72px;}
+  section.block{margin-bottom:38px;}
+  h2{font-family:var(--serif); font-size:22px; color:var(--indigo); margin:0 0 12px; padding-top:4px;}
+  p{margin:0 0 14px; font-size:15.5px; color:var(--ink);}
+  ul{margin:0 0 14px; padding-left:20px;}
+  li{font-size:15.5px; margin-bottom:8px;}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:6px; padding:22px 24px; margin-bottom:16px;}
+  .callout{background:#FBF3E3; border:1px solid var(--marigold); border-left-width:4px; border-radius:4px; padding:16px 18px; font-size:14.5px; color:var(--ink);}
+  .callout strong{color:var(--marigold-deep);}
+  .toc{display:flex; flex-wrap:wrap; gap:8px 18px; padding:18px 0 0;}
+  .toc a{font-size:13.5px; font-weight:600; color:var(--ink-soft);}
+  .toc a:hover{color:var(--indigo);}
+  table{width:100%; border-collapse:collapse; margin-bottom:14px; font-size:14.5px;}
+  th, td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line);}
+  th{color:var(--ink-soft); font-size:12.5px; text-transform:uppercase; letter-spacing:.04em;}
+
+  footer{background:#151B2C; color:#93A0B8; padding:32px 0; font-size:13px;}
+  footer a{color:#B9C0D1;}
+  footer .foot-row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+
+  @media (max-width:600px){
+    .page-head{padding:40px 0 24px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap nav">
+    <a href="index.html" class="logo">Fashion<small>_FUSSION</small></a>
+    <a href="index.html" class="back-link">← Back to store</a>
+  </div>
+</header>
+
+<div class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Legal &amp; Trust</span>
+    <h1>Security Policy</h1>
+    <p class="updated">Last updated: September 2026</p>
+    <nav class="toc">
+      <a href="#overview">Overview</a>
+      <a href="#data">Data we collect</a>
+      <a href="#payments">Payment security</a>
+      <a href="#account">Account &amp; browsing security</a>
+      <a href="#thirdparty">Third parties</a>
+      <a href="#retention">Data retention</a>
+      <a href="#reporting">Reporting an issue</a>
+      <a href="#changes">Changes to this policy</a>
+    </nav>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section class="block" id="overview">
+    <h2>Overview</h2>
+    <p>Fashion_Fussion ("we", "us", "our") operates this website to sell home, kitchen, beauty, and lifestyle products. This Security Policy explains how we handle the security of your data when you browse, place an order, or contact us — and what we do (and don't yet do) around payments and site security today.</p>
+    <div class="callout">
+      <strong>Where we are right now:</strong> Fashion_Fussion is an early-stage storefront. Checkout uses Razorpay-hosted payment UI. The site never receives full card/UPI credentials. A server-side order is created and the payment response is verified before an order is treated as paid. We're documenting our practices honestly rather than claiming certifications we don't yet hold.
+    </div>
+  </section>
+
+  <section class="block" id="data">
+    <h2>Data we collect</h2>
+    <p>When you use this site or place an order, we may collect:</p>
+    <table>
+      <tr><th>Information</th><th>Why we collect it</th></tr>
+      <tr><td>Name, phone number, email</td><td>To confirm and deliver your order, and respond to enquiries</td></tr>
+      <tr><td>Delivery address</td><td>To ship your order</td></tr>
+      <tr><td>Order contents &amp; cart activity</td><td>To process orders and improve our catalog</td></tr>
+      <tr><td>Messages you send us (email/phone)</td><td>To handle support, returns, and bulk order requests</td></tr>
+    </table>
+    <p>We do <strong>not</strong> ask for or store card numbers, UPI PINs, CVV, or net-banking passwords on this site. We never sell your personal information to third parties.</p>
+  </section>
+
+  <section class="block" id="payments">
+    <h2>Payment security</h2>
+    <ul>
+      <li>Payment processing is handled by Razorpay — we will never see or store your full card number.</li>
+      <li>Payments, once enabled, will be transmitted over encrypted (HTTPS/TLS) connections.</li>
+      <li>Cash-on-delivery, if offered, is settled directly with our delivery partner and does not involve any card data.</li>
+      <li>If a payment attempt fails or looks suspicious, we may contact you by phone or email to verify the order before dispatch.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="account">
+    <h2>Account &amp; browsing security</h2>
+    <ul>
+      <li>This site is served over HTTPS wherever deployed, encrypting data between your browser and our server.</li>
+      <li>We do not currently require account creation to browse or order — cart contents are held only in your browser's active session and are not stored on our servers.</li>
+      <li>We recommend keeping your own device and browser updated, and avoiding shared/public devices when sharing personal delivery details.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="thirdparty">
+    <h2>Third parties</h2>
+    <p>We may share the minimum necessary order information (name, phone, address) with:</p>
+    <ul>
+      <li>Delivery/courier partners, to fulfil your order</li>
+      <li>Our payment gateway provider, for payment processing</li>
+      <li>Our wholesale supplier, only where needed to fulfil a specific product order</li>
+    </ul>
+    <p>We do not share your data with advertisers or data brokers.</p>
+  </section>
+
+  <section class="block" id="retention">
+    <h2>Data retention</h2>
+    <p>We keep order and contact records for as long as needed to handle deliveries, returns, warranty or legal obligations, and basic bookkeeping — typically no longer than necessary for these purposes. You can ask us to delete your personal data at any time (see below), subject to any records we're legally required to keep.</p>
+  </section>
+
+  <section class="block" id="reporting">
+    <h2>Reporting a security issue or data request</h2>
+    <div class="card">
+      <p style="margin-bottom:8px;">If you believe you've found a security vulnerability on this site, or want to request access to or deletion of your personal data, please contact us directly rather than posting it publicly:</p>
+      <p style="margin-bottom:4px;"><strong>Email:</strong> <a href="mailto:FashionFussion08@outlook.com?subject=Security%20Report">FashionFussion08@outlook.com</a></p>
+      <p style="margin-bottom:4px;"><strong>Phone:</strong> <a href="tel:+917372976856">+91 73729 76856</a></p>
+      <p style="margin-bottom:0;"><strong>Address:</strong> Flat No S2, 3rd Floor, Kalpataru Homes – 69, Mansarovar, Jaipur 302020</p>
+    </div>
+    <p>We aim to acknowledge security reports within 48 hours and will let you know once an issue is resolved.</p>
+  </section>
+
+  <section class="block" id="changes">
+    <h2>Changes to this policy</h2>
+    <p>We may update this Security Policy as our systems and payment integrations evolve — for example, once a live payment gateway is connected. The "Last updated" date at the top of this page will reflect the latest revision. Significant changes will be noted here.</p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-row">
+    <span>© 2026 Fashion_Fussion. All rights reserved.</span>
+    <span><a href="index.html">Back to store</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

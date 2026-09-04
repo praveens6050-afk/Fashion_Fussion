@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>Sign In — Fashion_Fussion</title>
+<meta name="description" content="Sign in to your Fashion_Fussion account.">
+<style>
+:root{
+  --paper:#F4EEE1;
+  --paper-dim:#EAE1CC;
+  --ink:#1C2333;
+  --ink-soft:#4B5266;
+  --indigo:#1B2A4A;
+  --marigold:#E5972E;
+  --marigold-deep:#C97D1B;
+  --bottle:#2F5233;
+  --line:#D8CDAE;
+  --white:#FFFDF8;
+  --danger:#B23A2E;
+  --radius-stamp: 3px;
+  --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+img{max-width:100%;display:block;}
+
+header.site{padding:18px 0;border-bottom:1px solid var(--line);}
+.wrap-header{max-width:1180px;margin:0 auto;padding:0 24px;}
+.logo{font-family:var(--serif);font-weight:700;font-size:24px;color:var(--indigo);display:flex;align-items:baseline;gap:8px;}
+.logo small{font-family:var(--sans);font-weight:500;font-size:11px;color:var(--ink-soft);letter-spacing:.06em;}
+
+.shell{
+  min-height:calc(100vh - 76px);
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+.brand-side{
+  background:var(--indigo);
+  color:var(--paper);
+  padding:64px 56px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  position:relative;
+  overflow:hidden;
+}
+.brand-side::after{
+  content:"";
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at 20% 110%, rgba(229,151,46,.18), transparent 60%);
+  pointer-events:none;
+}
+.brand-copy{position:relative;z-index:1;}
+.stamp{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:600;color:var(--indigo);
+  background:var(--marigold); padding:6px 12px; border-radius:100px; margin-bottom:26px;
+}
+.brand-side h1{
+  font-family:var(--serif); font-weight:600; font-size:clamp(30px,3.4vw,42px);
+  line-height:1.12; margin:0 0 18px; max-width:11ch;
+}
+.brand-side p{font-size:15.5px; line-height:1.6; color:#C7CEDD; max-width:38ch; margin:0;}
+.brand-stats{position:relative;z-index:1; display:flex; gap:32px;}
+.brand-stats .stat b{font-family:var(--serif); font-size:24px; display:block; color:var(--marigold);}
+.brand-stats .stat span{font-size:12.5px; color:#9FA9C0;}
+
+.form-side{
+  display:flex; align-items:center; justify-content:center;
+  padding:56px 24px;
+}
+.form-card{width:100%; max-width:400px;}
+.form-card h2{font-family:var(--serif); font-size:30px; color:var(--indigo); margin:0 0 8px;}
+.form-card .sub{font-size:14.5px; color:var(--ink-soft); margin:0 0 32px;}
+
+.field{margin-bottom:18px;}
+.field label{display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:7px;}
+.field input{
+  width:100%; padding:12px 14px; border-radius:4px;
+  border:1.5px solid var(--line); background:var(--white);
+  font-size:14.5px; font-family:var(--sans); color:var(--ink);
+  transition:border-color .15s;
+}
+.field input:focus{outline:none; border-color:var(--indigo);}
+.field-error{font-size:12.5px; color:var(--danger); margin-top:6px; display:none;}
+.field.invalid input{border-color:var(--danger);}
+.field.invalid .field-error{display:block;}
+
+.row-between{display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; font-size:13.5px;}
+.remember{display:flex; align-items:center; gap:8px; color:var(--ink-soft);}
+.remember input{accent-color:var(--indigo);}
+.link-btn{background:none; border:none; color:var(--indigo); font-weight:600; font-size:13.5px; padding:0;}
+.link-btn:hover{color:var(--marigold-deep);}
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:14px 26px; border-radius:var(--radius-stamp);
+  font-weight:600; font-size:15px; border:1.5px solid transparent;
+  transition:transform .12s ease, box-shadow .12s ease; width:100%;
+}
+.btn-primary{background:var(--indigo); color:var(--paper);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 6px 0 0 #0f1830;}
+.btn-primary:disabled{opacity:.6; cursor:default; transform:none; box-shadow:none;}
+
+.divider{display:flex; align-items:center; gap:12px; margin:26px 0; color:var(--ink-soft); font-size:12.5px;}
+.divider::before, .divider::after{content:""; flex:1; height:1px; background:var(--line);}
+
+.form-foot{text-align:center; font-size:14px; color:var(--ink-soft); margin-top:24px;}
+.form-foot a{color:var(--indigo); font-weight:600;}
+.form-foot a:hover{color:var(--marigold-deep);}
+
+.banner{
+  display:none; padding:12px 14px; border-radius:4px; font-size:13.5px; font-weight:600;
+  margin-bottom:20px;
+}
+.banner.show{display:block;}
+.banner.success{background:#E4E9DD; color:var(--bottle);}
+.banner.error{background:#F4E1DD; color:var(--danger);}
+
+@media (max-width: 880px){
+  .shell{grid-template-columns:1fr;}
+  .brand-side{padding:44px 28px; min-height:260px;}
+  .brand-stats{flex-wrap:wrap;}
+}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap-header">
+    <a href="index.html" class="logo">Fashion<small>_FUSSION</small></a>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="brand-side">
+    <div class="brand-copy">
+      <span class="stamp">● Welcome back</span>
+      <h1>Good to see you again.</h1>
+      <p>Sign in to track your orders, save items for later, and check out faster next time.</p>
+    </div>
+    <div class="brand-stats">
+      <div class="stat"><b>57</b><span>SKUs live right now</span></div>
+      <div class="stat"><b>₹599</b><span>free delivery above this</span></div>
+    </div>
+  </div>
+
+  <div class="form-side">
+    <div class="form-card">
+      <h2>Sign in</h2>
+      <p class="sub">Enter your details to access your account.</p>
+
+      <div class="banner" id="formBanner"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field" id="emailField">
+          <label for="email">Email address</label>
+          <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com">
+          <div class="field-error">Enter a valid email address.</div>
+        </div>
+
+        <div class="field" id="passwordField">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Your password">
+          <div class="field-error">Enter your password.</div>
+        </div>
+
+        <div class="row-between">
+          <label class="remember"><input type="checkbox" id="remember"> Remember me</label>
+          <button type="button" class="link-btn" id="forgotBtn">Forgot password?</button>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn">Sign in</button>
+      </form>
+
+      <div class="divider">or</div>
+
+      <p class="form-foot">Don't have an account? <a href="signup.html">Create one</a></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  Demo-only client-side auth for a static site.
+  Accounts are stored in this browser's localStorage under "ff_users" — there is
+  no server, so nothing here is secure and it will not sync across devices/browsers.
+  Swap this out for real authentication (e.g. your own backend + hashed passwords,
+  or a provider like Firebase Auth / Supabase / Auth0) before handling real users.
+*/
+const USERS_KEY = "ff_users";
+const SESSION_KEY = "ff_session";
+
+function getUsers(){
+  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
+  catch(e){ return []; }
+}
+
+function showBanner(msg, type){
+  const el = document.getElementById('formBanner');
+  el.textContent = msg;
+  el.className = 'banner show ' + type;
+}
+
+function setFieldError(fieldId, hasError){
+  document.getElementById(fieldId).classList.toggle('invalid', hasError);
+}
+
+document.getElementById('forgotBtn').addEventListener('click', () => {
+  alert('Password reset isn\'t wired up in this demo yet.\n\nIn production, this would email a reset link via your backend.');
+});
+
+document.getElementById('loginForm').addEventListener('submit', function(e){
+  e.preventDefault();
+
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  setFieldError('emailField', !emailValid);
+  setFieldError('passwordField', password.length === 0);
+
+  if(!emailValid || password.length === 0){
+    showBanner('Please fix the highlighted fields.', 'error');
+    return;
+  }
+
+  const users = getUsers();
+  const match = users.find(u => u.email === email);
+
+  if(!match || match.password !== password){
+    showBanner('Email or password is incorrect.', 'error');
+    return;
+  }
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Signing in…';
+
+  const remember = document.getElementById('remember').checked;
+  const session = { email: match.email, name: match.name, ts: Date.now() };
+  (remember ? localStorage : sessionStorage).setItem(SESSION_KEY, JSON.stringify(session));
+
+  showBanner('Signed in — redirecting…', 'success');
+  setTimeout(() => { window.location.href = 'index.html'; }, 700);
+});
+</script>
+
+</body>
+</html>

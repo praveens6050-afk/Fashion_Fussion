@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>Fashion_Fussion — Checkout</title>
+<style>
+:root{--bg:#faf7f2;--ink:#1c1a17;--muted:#6b665f;--line:#e7e1d6;--accent:#b5651d;--accent-ink:#fff;--card:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+header .brand{font-weight:700;letter-spacing:.02em}a{color:inherit;text-decoration:none}
+main{max-width:560px;margin:40px auto;padding:0 20px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:15px}.row:last-of-type{border-bottom:none}.row.total{font-weight:700;font-size:17px;padding-top:16px}.muted{color:var(--muted);font-size:13px}
+label{display:block;font-size:13px;color:var(--muted);margin:14px 0 4px}input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff}
+button#payBtn{width:100%;margin-top:22px;padding:14px;border:none;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-size:16px;font-weight:600;cursor:pointer}
+button#payBtn:disabled{opacity:.6;cursor:not-allowed}#status{margin-top:14px;font-size:14px;text-align:center;min-height:20px}.ok{color:#1a7f37}.err{color:#c0362c}
+.note{margin-top:20px;font-size:12.5px;color:var(--muted);line-height:1.6;background:#fff8ec;border:1px solid #eee0c2;padding:14px;border-radius:10px}
+.actions{display:flex;justify-content:space-between;gap:12px;margin-top:18px}.actions a{font-size:13px;font-weight:600;color:var(--accent)}
+</style>
+</head>
+<body>
+<header><a class="brand" href="index.html">Fashion_FUSSION</a><div class="muted">Secure checkout</div></header>
+<main>
+<div class="card">
+<h2 style="margin-top:0">Order Summary</h2>
+<div id="cartRows"><div class="muted">Loading cart…</div></div>
+<div class="row total"><span>Total</span><span id="totalDisplay">₹0</span></div>
+<label for="custName">Full name</label><input id="custName" type="text" autocomplete="name" placeholder="Your name" required>
+<label for="custEmail">Email</label><input id="custEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+<label for="custPhone">Phone</label><input id="custPhone" type="tel" autocomplete="tel" placeholder="10-digit mobile number" required>
+<button id="payBtn" disabled>Loading…</button>
+<div id="status"></div>
+<div class="actions"><a href="index.html">← Back to store</a><a href="security-policy.html">Security policy</a></div>
+</div>
+<div class="note"><strong>Payment:</strong> Razorpay opens its hosted checkout. Your card/UPI credentials are entered on Razorpay, not on this page. Your payment is accepted only after the server verifies the Razorpay response.</div>
+</main>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+(function(){
+  // CHANGE THIS after deploying the backend, e.g. https://fashion-fusion-api.vercel.app
+  const API_BASE = "https://YOUR-BACKEND-DOMAIN";
+  const cart = JSON.parse(sessionStorage.getItem("ff_checkout_cart") || "[]");
+  const rows = document.getElementById("cartRows"), totalEl = document.getElementById("totalDisplay");
+  const payBtn = document.getElementById("payBtn"), statusEl = document.getElementById("status");
+  let order = null, publicKey = null;
+
+  function money(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
+  function show(msg, cls){ statusEl.textContent=msg; statusEl.className=cls||"muted"; }
+
+  async function init(){
+    if(!cart.length){ rows.innerHTML='<div class="muted">Your cart is empty.</div>'; show("Add a product before checkout.","err"); return; }
+    try{
+      const res=await fetch(API_BASE+"/api/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:cart})});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.error||"Could not create order");
+      publicKey=data.key_id; order=data.order;
+      rows.innerHTML=data.items.map(i=>`<div class="row"><span>${i.name} × ${i.qty}</span><span>${money(i.line_total)}</span></div>`).join("");
+      totalEl.textContent=money(order.amount/100);
+      payBtn.textContent="Pay "+money(order.amount/100); payBtn.disabled=false;
+    }catch(e){ show(e.message||"Unable to prepare checkout.","err"); }
+  }
+
+  payBtn.addEventListener("click",function(){
+    const name=document.getElementById("custName").value.trim();
+    const email=document.getElementById("custEmail").value.trim();
+    const phone=document.getElementById("custPhone").value.trim();
+    if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!/^\d{10}$/.test(phone)){show("Enter a valid name, email and 10-digit phone number.","err");return;}
+    payBtn.disabled=true; show("Opening secure payment…");
+    const rzp=new Razorpay({
+      key:publicKey, order_id:order.id, amount:order.amount, currency:order.currency,
+      name:"Fashion_Fussion", description:"Fashion_Fussion order",
+      prefill:{name,email,contact:phone},
+      notes:{customer_email:email,customer_phone:phone},
+      theme:{color:"#b5651d"},
+      handler:async function(response){
+        show("Verifying payment…");
+        try{
+          const res=await fetch(API_BASE+"/api/verify-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+            order_id:order.id, razorpay_payment_id:response.razorpay_payment_id,
+            razorpay_order_id:response.razorpay_order_id, razorpay_signature:response.razorpay_signature,
+            customer:{name,email,phone}, items:cart
+          })});
+          const data=await res.json();
+          if(!res.ok||!data.verified) throw new Error(data.error||"Payment verification failed");
+          sessionStorage.removeItem("ff_checkout_cart");
+          show("Payment verified. Your order is confirmed.","ok");
+          setTimeout(()=>window.location.href="index.html",1200);
+        }catch(e){show(e.message||"Payment could not be verified. Please contact support.","err");payBtn.disabled=false;}
+      },
+      modal:{ondismiss:function(){show("Payment cancelled.");payBtn.disabled=false;}}
+    });
+    rzp.on("payment.failed",function(r){show("Payment failed: "+(r.error?.description||"Please try again."),"err");payBtn.disabled=false;});
+    rzp.open();
+  });
+  init();
+})();
+</script>
+</body>
+</html>

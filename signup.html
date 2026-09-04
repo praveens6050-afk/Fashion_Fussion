@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>Create Account — Fashion_Fussion</title>
+<meta name="description" content="Create your Fashion_Fussion account.">
+<style>
+:root{
+  --paper:#F4EEE1;
+  --paper-dim:#EAE1CC;
+  --ink:#1C2333;
+  --ink-soft:#4B5266;
+  --indigo:#1B2A4A;
+  --marigold:#E5972E;
+  --marigold-deep:#C97D1B;
+  --bottle:#2F5233;
+  --line:#D8CDAE;
+  --white:#FFFDF8;
+  --danger:#B23A2E;
+  --radius-stamp: 3px;
+  --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+img{max-width:100%;display:block;}
+
+header.site{padding:18px 0;border-bottom:1px solid var(--line);}
+.wrap-header{max-width:1180px;margin:0 auto;padding:0 24px;}
+.logo{font-family:var(--serif);font-weight:700;font-size:24px;color:var(--indigo);display:flex;align-items:baseline;gap:8px;}
+.logo small{font-family:var(--sans);font-weight:500;font-size:11px;color:var(--ink-soft);letter-spacing:.06em;}
+
+.shell{
+  min-height:calc(100vh - 76px);
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+.brand-side{
+  background:var(--indigo);
+  color:var(--paper);
+  padding:64px 56px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  position:relative;
+  overflow:hidden;
+  order:2;
+}
+.brand-side::after{
+  content:"";
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at 80% 110%, rgba(229,151,46,.18), transparent 60%);
+  pointer-events:none;
+}
+.brand-copy{position:relative;z-index:1;}
+.stamp{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:600;color:var(--indigo);
+  background:var(--marigold); padding:6px 12px; border-radius:100px; margin-bottom:26px;
+}
+.brand-side h1{
+  font-family:var(--serif); font-weight:600; font-size:clamp(30px,3.4vw,42px);
+  line-height:1.12; margin:0 0 18px; max-width:12ch;
+}
+.brand-side p{font-size:15.5px; line-height:1.6; color:#C7CEDD; max-width:38ch; margin:0;}
+.brand-perks{position:relative;z-index:1; display:flex; flex-direction:column; gap:14px;}
+.perk{display:flex; align-items:center; gap:10px; font-size:14px; color:#D9DEE8;}
+.perk-ico{
+  width:26px; height:26px; border-radius:50%; background:rgba(229,151,46,.2);
+  display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0;
+}
+
+.form-side{
+  display:flex; align-items:center; justify-content:center;
+  padding:56px 24px;
+  order:1;
+}
+.form-card{width:100%; max-width:400px;}
+.form-card h2{font-family:var(--serif); font-size:30px; color:var(--indigo); margin:0 0 8px;}
+.form-card .sub{font-size:14.5px; color:var(--ink-soft); margin:0 0 32px;}
+
+.name-row{display:grid; grid-template-columns:1fr; gap:0;}
+.field{margin-bottom:18px;}
+.field label{display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:7px;}
+.field input{
+  width:100%; padding:12px 14px; border-radius:4px;
+  border:1.5px solid var(--line); background:var(--white);
+  font-size:14.5px; font-family:var(--sans); color:var(--ink);
+  transition:border-color .15s;
+}
+.field input:focus{outline:none; border-color:var(--indigo);}
+.field-error{font-size:12.5px; color:var(--danger); margin-top:6px; display:none;}
+.field-hint{font-size:12px; color:var(--ink-soft); margin-top:6px;}
+.field.invalid input{border-color:var(--danger);}
+.field.invalid .field-error{display:block;}
+.field.invalid .field-hint{display:none;}
+
+.pw-strength{display:flex; gap:4px; margin-top:8px;}
+.pw-strength span{height:4px; flex:1; background:var(--line); border-radius:2px; transition:background .15s;}
+.pw-strength span.on-weak{background:var(--danger);}
+.pw-strength span.on-ok{background:var(--marigold-deep);}
+.pw-strength span.on-strong{background:var(--bottle);}
+
+.terms-row{display:flex; align-items:flex-start; gap:9px; margin-bottom:24px; font-size:13px; color:var(--ink-soft);}
+.terms-row input{margin-top:3px; accent-color:var(--indigo);}
+.terms-row a{color:var(--indigo); font-weight:600;}
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:14px 26px; border-radius:var(--radius-stamp);
+  font-weight:600; font-size:15px; border:1.5px solid transparent;
+  transition:transform .12s ease, box-shadow .12s ease; width:100%;
+}
+.btn-primary{background:var(--indigo); color:var(--paper);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 6px 0 0 #0f1830;}
+.btn-primary:disabled{opacity:.6; cursor:default; transform:none; box-shadow:none;}
+
+.form-foot{text-align:center; font-size:14px; color:var(--ink-soft); margin-top:24px;}
+.form-foot a{color:var(--indigo); font-weight:600;}
+.form-foot a:hover{color:var(--marigold-deep);}
+
+.banner{
+  display:none; padding:12px 14px; border-radius:4px; font-size:13.5px; font-weight:600;
+  margin-bottom:20px;
+}
+.banner.show{display:block;}
+.banner.success{background:#E4E9DD; color:var(--bottle);}
+.banner.error{background:#F4E1DD; color:var(--danger);}
+
+@media (max-width: 880px){
+  .shell{grid-template-columns:1fr;}
+  .brand-side{padding:44px 28px; min-height:220px; order:2;}
+  .form-side{order:1;}
+}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap-header">
+    <a href="index.html" class="logo">Fashion<small>_FUSSION</small></a>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="form-side">
+    <div class="form-card">
+      <h2>Create your account</h2>
+      <p class="sub">Join to track orders, save favourites, and check out faster.</p>
+
+      <div class="banner" id="formBanner"></div>
+
+      <form id="signupForm" novalidate>
+        <div class="field" id="nameField">
+          <label for="fullName">Full name</label>
+          <input type="text" id="fullName" name="fullName" autocomplete="name" placeholder="Your name">
+          <div class="field-error">Enter your full name.</div>
+        </div>
+
+        <div class="field" id="emailField">
+          <label for="email">Email address</label>
+          <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com">
+          <div class="field-error">Enter a valid email address.</div>
+        </div>
+
+        <div class="field" id="passwordField">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="new-password" placeholder="Create a password">
+          <div class="pw-strength" id="pwStrength"><span></span><span></span><span></span></div>
+          <div class="field-hint">At least 8 characters, with a number.</div>
+          <div class="field-error">Password must be at least 8 characters and include a number.</div>
+        </div>
+
+        <div class="field" id="confirmField">
+          <label for="confirmPassword">Confirm password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" placeholder="Re-enter your password">
+          <div class="field-error">Passwords don't match.</div>
+        </div>
+
+        <label class="terms-row">
+          <input type="checkbox" id="terms">
+          <span>I agree to the <a href="#" onclick="alert('Terms & Privacy Policy pages aren\'t published yet in this demo.'); return false;">Terms of Service</a> and Privacy Policy.</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn">Create account</button>
+      </form>
+
+      <p class="form-foot">Already have an account? <a href="login.html">Sign in</a></p>
+    </div>
+  </div>
+
+  <div class="brand-side">
+    <div class="brand-copy">
+      <span class="stamp">● Join Fashion_Fussion</span>
+      <h1>Everyday things, honestly priced.</h1>
+      <p>Create an account to unlock faster checkout, order tracking, and a saved wishlist.</p>
+    </div>
+    <div class="brand-perks">
+      <div class="perk"><span class="perk-ico">🚚</span> Free delivery above ₹599</div>
+      <div class="perk"><span class="perk-ico">✅</span> Quality-checked before dispatch</div>
+      <div class="perk"><span class="perk-ico">💬</span> Real support, 9am–7pm</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  Demo-only client-side auth for a static site.
+  Accounts are stored in this browser's localStorage under "ff_users" — there is
+  no server, so passwords here are NOT hashed or secured and nothing syncs across
+  devices/browsers. Replace with real authentication (your own backend with hashed
+  passwords, or a provider like Firebase Auth / Supabase / Auth0) before launch.
+*/
+const USERS_KEY = "ff_users";
+const SESSION_KEY = "ff_session";
+
+function getUsers(){
+  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveUsers(users){
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+function showBanner(msg, type){
+  const el = document.getElementById('formBanner');
+  el.textContent = msg;
+  el.className = 'banner show ' + type;
+}
+function setFieldError(fieldId, hasError){
+  document.getElementById(fieldId).classList.toggle('invalid', hasError);
+}
+
+function passwordScore(pw){
+  let score = 0;
+  if(pw.length >= 8) score++;
+  if(/[0-9]/.test(pw) && /[a-zA-Z]/.test(pw)) score++;
+  if(pw.length >= 12 && /[^a-zA-Z0-9]/.test(pw)) score++;
+  return score; // 0-3
+}
+
+const pwInput = document.getElementById('password');
+const bars = document.querySelectorAll('#pwStrength span');
+pwInput.addEventListener('input', () => {
+  const score = passwordScore(pwInput.value);
+  bars.forEach((b, i) => {
+    b.className = '';
+    if(i < score){
+      b.className = score === 1 ? 'on-weak' : score === 2 ? 'on-ok' : 'on-strong';
+    }
+  });
+});
+
+document.getElementById('signupForm').addEventListener('submit', function(e){
+  e.preventDefault();
+
+  const fullName = document.getElementById('fullName').value.trim();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  const termsChecked = document.getElementById('terms').checked;
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const passwordValid = password.length >= 8 && /[0-9]/.test(password);
+  const nameValid = fullName.length > 0;
+  const confirmValid = password === confirmPassword && confirmPassword.length > 0;
+
+  setFieldError('nameField', !nameValid);
+  setFieldError('emailField', !emailValid);
+  setFieldError('passwordField', !passwordValid);
+  setFieldError('confirmField', !confirmValid);
+
+  if(!nameValid || !emailValid || !passwordValid || !confirmValid){
+    showBanner('Please fix the highlighted fields.', 'error');
+    return;
+  }
+
+  if(!termsChecked){
+    showBanner('Please agree to the Terms of Service to continue.', 'error');
+    return;
+  }
+
+  const users = getUsers();
+  if(users.some(u => u.email === email)){
+    showBanner('An account with this email already exists.', 'error');
+    setFieldError('emailField', true);
+    return;
+  }
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating account…';
+
+  users.push({ name: fullName, email, password });
+  saveUsers(users);
+
+  const session = { email, name: fullName, ts: Date.now() };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+  showBanner('Account created — redirecting…', 'success');
+  setTimeout(() => { window.location.href = 'index.html'; }, 700);
+});
+</script>
+
+</body>
+</html>
