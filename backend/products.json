@@ -1,0 +1,344 @@
+[
+  {
+    "id": 1,
+    "name": "Waterproof Silicone Sealant (590ml) for Roof, Window & Tile Repair",
+    "category": "Home Improvement",
+    "price": 323
+  },
+  {
+    "id": 2,
+    "name": "Hair Wrap Towel for Girls — Lightweight Microfiber Turban",
+    "category": "Beauty & Personal Care",
+    "price": 194
+  },
+  {
+    "id": 3,
+    "name": "8-in-1 Geometry Box Set with Compass and Rulers",
+    "category": "Toys & Stationery",
+    "price": 133
+  },
+  {
+    "id": 4,
+    "name": "9-in-1 Serving Plate Set for Dining Table with Compartments",
+    "category": "Home & Kitchen",
+    "price": 194
+  },
+  {
+    "id": 5,
+    "name": "Pet Nail Clipper and Filer Set — Home Grooming Kit",
+    "category": "Pet Care",
+    "price": 133
+  },
+  {
+    "id": 6,
+    "name": "LED Penguin Decorative Light — Infinity Mirror",
+    "category": "Home Decor & Pooja",
+    "price": 286
+  },
+  {
+    "id": 7,
+    "name": "4-Inch Metal Spring Clamp Set — Strong Grip Clips",
+    "category": "Home Improvement",
+    "price": 109
+  },
+  {
+    "id": 8,
+    "name": "Self-Adhesive Push Grip Towel Holders (4 Pc Set)",
+    "category": "Home & Kitchen",
+    "price": 80
+  },
+  {
+    "id": 9,
+    "name": "Travel Water Bottle Set of 3 — Leak-Proof & Lightweight",
+    "category": "Auto & Travel",
+    "price": 401
+  },
+  {
+    "id": 10,
+    "name": "Hair Wrap Towel for Women — Microfiber Turban for Long Hair",
+    "category": "Beauty & Personal Care",
+    "price": 179
+  },
+  {
+    "id": 11,
+    "name": "Laddu Gopal Makhan Matki with Spoon Set — Decorative Pooja Pot",
+    "category": "Home Decor & Pooja",
+    "price": 95
+  },
+  {
+    "id": 12,
+    "name": "Small Decorative Singhasan — Plastic Throne for Pooja Idols",
+    "category": "Home Decor & Pooja",
+    "price": 156
+  },
+  {
+    "id": 13,
+    "name": "Remote Control Helicopter for Kids — USB Chargeable",
+    "category": "Toys & Stationery",
+    "price": 470
+  },
+  {
+    "id": 14,
+    "name": "Radha Krishna Wall Frame — Spiritual Home Decor (89x58cm)",
+    "category": "Home Decor & Pooja",
+    "price": 1382
+  },
+  {
+    "id": 15,
+    "name": "Chores Note Board — Daily Task Planner & Reminder",
+    "category": "Toys & Stationery",
+    "price": 123
+  },
+  {
+    "id": 16,
+    "name": "Silicone Back Scrubber Belt — Dual-Handle Exfoliation",
+    "category": "Beauty & Personal Care",
+    "price": 81
+  },
+  {
+    "id": 17,
+    "name": "Decorative Silver Serving Tray — Round Floral Design",
+    "category": "Home & Kitchen",
+    "price": 49
+  },
+  {
+    "id": 18,
+    "name": "Bath Loofah — Gentle Body Scrubber for Men & Women",
+    "category": "Beauty & Personal Care",
+    "price": 46
+  },
+  {
+    "id": 19,
+    "name": "Cute Cartoon Pencil Case — Durable Hard Shell with Zipper",
+    "category": "Toys & Stationery",
+    "price": 123
+  },
+  {
+    "id": 20,
+    "name": "Microfiber Wash Mitt — Super Absorbent Cleaning Glove",
+    "category": "Home Improvement",
+    "price": 81
+  },
+  {
+    "id": 21,
+    "name": "Toilet Cleaning Balls — Automatic Dual Action Freshness",
+    "category": "Home Improvement",
+    "price": 133
+  },
+  {
+    "id": 22,
+    "name": "Jewellery Organizer Box — 15-Grid Clear Plastic with Dividers",
+    "category": "Home Decor & Pooja",
+    "price": 103
+  },
+  {
+    "id": 23,
+    "name": "Car Backrest Hanger — Driver Support & Comfort",
+    "category": "Auto & Travel",
+    "price": 75
+  },
+  {
+    "id": 24,
+    "name": "Geometry Box with Calculator — Magnetic Double-Sided | ScribbleJoy",
+    "category": "Toys & Stationery",
+    "price": 158
+  },
+  {
+    "id": 25,
+    "name": "3-Digit Combination Travel Lock — Secure Keyless Luggage Lock",
+    "category": "Auto & Travel",
+    "price": 78
+  },
+  {
+    "id": 26,
+    "name": "Precision Craft Knife — 5 SK5 Blades | CutNova",
+    "category": "Toys & Stationery",
+    "price": 81
+  },
+  {
+    "id": 27,
+    "name": "Ice Roller for Face & Eye Massage | GlowForm",
+    "category": "Beauty & Personal Care",
+    "price": 72
+  },
+  {
+    "id": 28,
+    "name": "Blind Spot Mirror — Wide Angle Adjustable Convex (2 Pcs) | RaceVault",
+    "category": "Auto & Travel",
+    "price": 72
+  },
+  {
+    "id": 29,
+    "name": "Multipurpose Cleaning Brush — Car & Keyboard Duster | Velvet Wheels",
+    "category": "Home Improvement",
+    "price": 69
+  },
+  {
+    "id": 30,
+    "name": "Multi-Purpose Hanging Organizer — 6 Durable Pink Hooks",
+    "category": "Home & Kitchen",
+    "price": 58
+  },
+  {
+    "id": 31,
+    "name": "Magic Water Colouring Book — Reusable Mess-Free Fun | Inventive Play",
+    "category": "Toys & Stationery",
+    "price": 57
+  },
+  {
+    "id": 32,
+    "name": "Beeswax Wood Polish Spray — Natural Shine & Protection (120ml)",
+    "category": "Home Improvement",
+    "price": 104
+  },
+  {
+    "id": 33,
+    "name": "No-Drill Adhesive Towel Rod Holder — Multipurpose Wall Mount",
+    "category": "Home & Kitchen",
+    "price": 41
+  },
+  {
+    "id": 34,
+    "name": "Travel Jewellery Box — Portable PU Leather Organiser | LilyGleam",
+    "category": "Auto & Travel",
+    "price": 139
+  },
+  {
+    "id": 35,
+    "name": "Snack Bag Clips — 18 Pc Multicolour Set | Tidy Table",
+    "category": "Home & Kitchen",
+    "price": 72
+  },
+  {
+    "id": 36,
+    "name": "Kids Faucet Extender — Easy Hand Wash & Splash-Free Design",
+    "category": "Home & Kitchen",
+    "price": 63
+  },
+  {
+    "id": 37,
+    "name": "Reusable Waterproof Silicone Shoe Cover — Keeps Shoes Dry in Monsoon",
+    "category": "Auto & Travel",
+    "price": 72
+  },
+  {
+    "id": 38,
+    "name": "Elastic Hair Bands — Gentle, Strong Grip (40 Pc Mix Colour)",
+    "category": "Beauty & Personal Care",
+    "price": 49
+  },
+  {
+    "id": 39,
+    "name": "Adjustable Jump Rope — High-Speed Fitness & CrossFit | FitFuzion",
+    "category": "Sports & Fitness",
+    "price": 46
+  },
+  {
+    "id": 40,
+    "name": "Silicone Bath Brush — Massage & Shampoo Dispenser | VelvaBloom",
+    "category": "Beauty & Personal Care",
+    "price": 87
+  },
+  {
+    "id": 41,
+    "name": "Multipurpose Carry Hand Bag — Secure Lock & Eco-Friendly Design",
+    "category": "Auto & Travel",
+    "price": 67
+  },
+  {
+    "id": 42,
+    "name": "Self-Adhesive Heavy Duty Wall Hook — No Drilling Needed",
+    "category": "Home Improvement",
+    "price": 35
+  },
+  {
+    "id": 43,
+    "name": "Shinchan Figurine — Cute Sitting Cartoon Collectible",
+    "category": "Toys & Stationery",
+    "price": 161
+  },
+  {
+    "id": 44,
+    "name": "Fruit Carving Tool Kit — Stainless Steel Peeler & Scooper | Quickslice",
+    "category": "Home & Kitchen",
+    "price": 40
+  },
+  {
+    "id": 45,
+    "name": "Silicone Bath Brush — Built-in Shampoo Dispenser | VelvaBloom",
+    "category": "Beauty & Personal Care",
+    "price": 86
+  },
+  {
+    "id": 46,
+    "name": "360° Adjustable Blind Spot Mirror — Wide-Angle Rear View",
+    "category": "Auto & Travel",
+    "price": 41
+  },
+  {
+    "id": 47,
+    "name": "Handheld Scalp Massager — Stress Relief & Relaxation | Calm & Curl",
+    "category": "Beauty & Personal Care",
+    "price": 54
+  },
+  {
+    "id": 48,
+    "name": "Derma Roller — Anti-Ageing, Scar Removal & Hair Regrowth | Calm & Curl",
+    "category": "Beauty & Personal Care",
+    "price": 118
+  },
+  {
+    "id": 49,
+    "name": "Suitcase Wheel Covers — Noise Reduction & Protection | Packory",
+    "category": "Auto & Travel",
+    "price": 49
+  },
+  {
+    "id": 50,
+    "name": "Heavy Duty Transparent Nano Adhesive Tape — Reusable & Strong Grip",
+    "category": "Home Improvement",
+    "price": 81
+  },
+  {
+    "id": 51,
+    "name": "Disposable Rain Coat — Hooded Full Sleeve Poncho for Bike Riders",
+    "category": "Auto & Travel",
+    "price": 41
+  },
+  {
+    "id": 52,
+    "name": "Glass Water Bottle 400ml — Leak-Proof, BPA-Free for Gym & Travel",
+    "category": "Home & Kitchen",
+    "price": 92
+  },
+  {
+    "id": 53,
+    "name": "Microfiber Duster — 100-Inch Extendable Handle | Velvet Wipe",
+    "category": "Home Improvement",
+    "price": 170
+  },
+  {
+    "id": 54,
+    "name": "Vegetable Cleaver Knife — Ultra-Sharp Stainless Steel Precision",
+    "category": "Home & Kitchen",
+    "price": 145
+  },
+  {
+    "id": 55,
+    "name": "Wireless Handheld Vacuum Cleaner — 120W USB Rechargeable | storenzo",
+    "category": "Home Improvement",
+    "price": 370
+  },
+  {
+    "id": 56,
+    "name": "Insulated Stainless Steel Lunch Box — 2-Layer Tiffin | Lunchie Bunchie",
+    "category": "Home & Kitchen",
+    "price": 298
+  },
+  {
+    "id": 57,
+    "name": "Kitchen Faucet Sprayer — 3-Function Pull Down",
+    "category": "Home & Kitchen",
+    "price": 306
+  }
+]
