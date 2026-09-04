@@ -2,7 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const PRODUCTS = JSON.parse(fs.readFileSync(path.join(process.cwd(),"products.json"),"utf8"));
+const PRODUCTS = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'products.json'), 'utf8')
+);
 const BY_ID = new Map(PRODUCTS.map(p=>[p.id,p]));
 const KEY_ID = process.env.RAZORPAY_KEY_ID;
 const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
