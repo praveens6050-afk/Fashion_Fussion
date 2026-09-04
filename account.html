@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>My Account | Fashion Fusion</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    header {
+      background: #111;
+      color: white;
+      padding: 18px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin-left: 18px;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .user-email {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+      font-size: 15px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 7px;
+      padding: 11px 18px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-top: 18px;
+    }
+
+    .primary {
+      background: #111;
+      color: white;
+    }
+
+    .danger {
+      background: #d32f2f;
+      color: white;
+      margin-left: 8px;
+    }
+
+    .message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .order {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 15px;
+    }
+
+    .order strong {
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+
+    .empty {
+      color: #777;
+      padding: 10px 0;
+    }
+
+    .loading {
+      color: #777;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      nav a {
+        margin-left: 0;
+        margin-right: 15px;
+      }
+
+      .danger {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Fashion Fusion</h1>
+
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="account.html">My Account</a>
+  </nav>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>My Account</h2>
+
+    <div id="userEmail" class="user-email">
+      Loading account...
+    </div>
+
+    <label for="fullName">Full Name</label>
+    <input
+      type="text"
+      id="fullName"
+      placeholder="Enter your full name"
+    >
+
+    <label for="phone">Phone</label>
+    <input
+      type="tel"
+      id="phone"
+      placeholder="Enter your phone number"
+    >
+
+    <button class="primary" onclick="saveProfile()">
+      Save Profile
+    </button>
+
+    <button class="danger" onclick="signOut()">
+      Sign Out
+    </button>
+
+    <div id="profileMessage" class="message"></div>
+  </div>
+
+  <div class="card">
+    <h2>My Orders</h2>
+
+    <div id="orders">
+      <div class="loading">Loading orders...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let currentUser = null;
+
+  function showMessage(elementId, message, type) {
+    const element = document.getElementById(elementId);
+
+    element.textContent = message;
+    element.className = "message " + type;
+    element.style.display = "block";
+  }
+
+  async function loadAccount() {
+    try {
+      const {
+        data: { user },
+        error
+      } = await supabaseClient.auth.getUser();
+
+      if (error || !user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      currentUser = user;
+
+      document.getElementById("userEmail").textContent =
+        "Signed in as: " + (user.email || "");
+
+      await loadProfile();
+      await loadOrders();
+
+    } catch (error) {
+      console.error(error);
+
+      document.getElementById("userEmail").textContent =
+        "Unable to load account.";
+    }
+  }
+
+  async function loadProfile() {
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("id", currentUser.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Profile error:", error);
+      return;
+    }
+
+    if (data) {
+      document.getElementById("fullName").value =
+        data.full_name || "";
+
+      document.getElementById("phone").value =
+        data.phone || "";
+    }
+  }
+
+  async function saveProfile() {
+    if (!currentUser) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    const fullName =
+      document.getElementById("fullName").value.trim();
+
+    const phone =
+      document.getElementById("phone").value.trim();
+
+    const { error } = await supabaseClient
+      .from("profiles")
+      .upsert({
+        id: currentUser.id,
+        full_name: fullName,
+        phone: phone,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error(error);
+
+      showMessage(
+        "profileMessage",
+        "Could not save your profile: " + error.message,
+        "error"
+      );
+
+      return;
+    }
+
+    showMessage(
+      "profileMessage",
+      "Profile saved successfully.",
+      "success"
+    );
+  }
+
+  async function loadOrders() {
+    const ordersContainer =
+      document.getElementById("orders");
+
+    const { data, error } = await supabaseClient
+      .from("orders")
+      .select("*")
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Orders error:", error);
+
+      ordersContainer.innerHTML =
+        '<div class="empty">Unable to load orders.</div>';
+
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      ordersContainer.innerHTML =
+        '<div class="empty">You have no orders yet.</div>';
+
+      return;
+    }
+
+    ordersContainer.innerHTML = data.map(order => {
+
+      const amount =
+        Number(order.total_amount || 0).toFixed(2);
+
+      let itemsText = "";
+
+      if (Array.isArray(order.items)) {
+        itemsText = order.items.map(item => {
+          return `Product ${item.id} × ${item.qty}`;
+        }).join(", ");
+      } else {
+        itemsText = "Order items";
+      }
+
+      const date =
+        order.created_at
+          ? new Date(order.created_at).toLocaleString()
+          : "";
+
+      return `
+        <div class="order">
+          <strong>Order #${order.id}</strong><br>
+          <span>Status: ${order.status || "paid"}</span><br>
+          <span>Amount: ₹${amount}</span><br>
+          <span>Items: ${itemsText}</span><br>
+          <small>${date}</small>
+        </div>
+      `;
+
+    }).join("");
+  }
+
+  async function signOut() {
+    const { error } =
+      await supabaseClient.auth.signOut();
+
+    if (error) {
+      alert("Unable to sign out: " + error.message);
+      return;
+    }
+
+    window.location.href = "login.html";
+  }
+
+  loadAccount();
+</script>
+
+</body>
+</html>
