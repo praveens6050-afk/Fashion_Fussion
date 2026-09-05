@@ -62,78 +62,19 @@
       margin-top: 0;
     }
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .field.full {
-      grid-column: 1 / -1;
-    }
-
-    label {
+    .success {
+      color: #16803c;
       font-weight: 600;
     }
 
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 11px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
-    }
-
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    .add-btn {
-      margin-top: 20px;
-      background: #111;
-      color: white;
-      border: 0;
-      padding: 13px 22px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 15px;
-    }
-
-    .add-btn:hover {
-      opacity: 0.85;
-    }
-
-    #message {
-      margin-top: 15px;
+    .error {
+      color: #d32f2f;
       font-weight: 600;
     }
 
     .loading {
       text-align: center;
       padding: 30px;
-    }
-
-    @media (max-width: 700px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .field.full {
-        grid-column: auto;
-      }
-
-      header {
-        gap: 15px;
-      }
     }
   </style>
 </head>
@@ -142,165 +83,107 @@
 
 <header>
   <h1>Fashion Fusion — Admin</h1>
-  <button class="logout-btn" onclick="logout()">Logout</button>
+  <button class="logout-btn" id="logoutBtn">Logout</button>
 </header>
 
 <div class="container">
 
   <div class="card">
     <h2>Admin Dashboard</h2>
-    <p id="adminInfo">Checking administrator access...</p>
-  </div>
-
-  <div class="card">
-    <h2>Add Product</h2>
-
-    <form id="productForm">
-
-      <div class="form-grid">
-
-        <div class="field">
-          <label for="name">Product Name</label>
-          <input
-            id="name"
-            type="text"
-            placeholder="Example: Premium Cotton Shirt"
-            required
-          >
-        </div>
-
-        <div class="field">
-          <label for="price">Price (₹)</label>
-          <input
-            id="price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="999"
-            required
-          >
-        </div>
-
-        <div class="field">
-          <label for="category">Category</label>
-          <select id="category" required>
-            <option value="">Select category</option>
-            <option value="Men">Men</option>
-            <option value="Women">Women</option>
-            <option value="Kids">Kids</option>
-            <option value="Accessories">Accessories</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="stock">Stock</label>
-          <input
-            id="stock"
-            type="number"
-            min="0"
-            placeholder="10"
-            required
-          >
-        </div>
-
-        <div class="field">
-          <label for="sizes">Sizes</label>
-          <input
-            id="sizes"
-            type="text"
-            placeholder="S, M, L, XL"
-          >
-        </div>
-
-        <div class="field">
-          <label for="image">Image URL</label>
-          <input
-            id="image"
-            type="url"
-            placeholder="https://..."
-          >
-        </div>
-
-        <div class="field full">
-          <label for="description">Description</label>
-          <textarea
-            id="description"
-            placeholder="Product description..."
-          ></textarea>
-        </div>
-
-      </div>
-
-      <button class="add-btn" type="submit">
-        Add Product
-      </button>
-
-      <div id="message"></div>
-
-    </form>
+    <p id="adminInfo" class="loading">Checking administrator access...</p>
   </div>
 
   <div class="card">
     <h2>Product Catalog</h2>
-    <div id="products">
-      <div class="loading">Loading products...</div>
-    </div>
+    <p>
+      Product management will be connected here after the admin
+      authorization has been verified.
+    </p>
   </div>
 
 </div>
 
 <script>
 
-  const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
 
-  async function checkAdmin() {
+async function checkAdmin() {
+
+  const adminInfo = document.getElementById("adminInfo");
+
+  try {
 
     const {
       data: { user },
-      error
+      error: userError
     } = await supabaseClient.auth.getUser();
 
-    if (error || !user) {
+    if (userError || !user) {
       window.location.href = "login.html";
       return;
     }
 
-    document.getElementById("adminInfo").textContent =
-      "Logged in as: " + user.email;
+    const { data: profile, error: profileError } =
+      await supabaseClient
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .single();
 
-    /*
-      IMPORTANT:
+    if (profileError) {
+      console.error(profileError);
 
-      We will add the real admin authorization
-      after creating the admin role in Supabase.
+      adminInfo.textContent =
+        "Unable to verify administrator access.";
 
-      Do NOT rely on this page alone for security.
-    */
+      adminInfo.className = "error";
+
+      return;
+    }
+
+    if (!profile || profile.is_admin !== true) {
+
+      adminInfo.textContent =
+        "Access denied. Administrator privileges are required.";
+
+      adminInfo.className = "error";
+
+      setTimeout(() => {
+        window.location.href = "account.html";
+      }, 2000);
+
+      return;
+    }
+
+    adminInfo.textContent =
+      "Administrator access granted: " + user.email;
+
+    adminInfo.className = "success";
+
+  } catch (error) {
+
+    console.error(error);
+
+    adminInfo.textContent =
+      "An unexpected error occurred.";
+
+    adminInfo.className = "error";
   }
+}
 
-  async function logout() {
+document
+  .getElementById("logoutBtn")
+  .addEventListener("click", async () => {
 
     await supabaseClient.auth.signOut();
 
     window.location.href = "login.html";
-  }
+  });
 
-  document
-    .getElementById("productForm")
-    .addEventListener("submit", async function(event) {
-
-      event.preventDefault();
-
-      const message = document.getElementById("message");
-
-      message.textContent = "Product system will be connected next.";
-
-    });
-
-  checkAdmin();
+checkAdmin();
 
 </script>
 
