@@ -1,11 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Login | Fashion Fusion</title>
+  <title>Fashion Fusion — Login</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
@@ -23,56 +21,46 @@
       justify-content: center;
       font-family: Arial, sans-serif;
       background: #f5f5f5;
-      color: #222;
     }
 
-    .login-container {
+    .login-box {
       width: 100%;
       max-width: 420px;
-      padding: 20px;
-    }
-
-    .login-card {
-      background: white;
-      padding: 35px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      background: #fff;
+      padding: 32px;
+      border-radius: 14px;
+      box-shadow: 0 5px 25px rgba(0,0,0,.1);
     }
 
     h1 {
+      margin-top: 0;
       text-align: center;
-      margin: 0 0 8px;
     }
 
     .subtitle {
       text-align: center;
       color: #666;
-      margin-bottom: 28px;
+      margin-bottom: 25px;
     }
 
     label {
       display: block;
-      font-weight: bold;
-      margin: 15px 0 7px;
+      margin-bottom: 7px;
+      font-weight: 600;
     }
 
     input {
       width: 100%;
-      padding: 13px;
+      padding: 12px;
+      margin-bottom: 18px;
       border: 1px solid #ccc;
       border-radius: 7px;
       font-size: 15px;
     }
 
-    input:focus {
-      outline: none;
-      border-color: #111;
-    }
-
     button {
       width: 100%;
       padding: 13px;
-      margin-top: 22px;
       border: 0;
       border-radius: 7px;
       background: #111;
@@ -81,85 +69,64 @@
       cursor: pointer;
     }
 
-    button:hover {
-      opacity: 0.9;
-    }
-
     button:disabled {
-      opacity: 0.6;
+      opacity: .6;
       cursor: not-allowed;
     }
 
-    .links {
+    .message {
+      margin-top: 15px;
       text-align: center;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #d32f2f;
+    }
+
+    .success {
+      color: #16803c;
+    }
+
+    .links {
       margin-top: 20px;
-      line-height: 1.8;
+      text-align: center;
     }
 
     .links a {
       color: #111;
       text-decoration: none;
-    }
-
-    .links a:hover {
-      text-decoration: underline;
-    }
-
-    .message {
-      display: none;
-      margin-top: 18px;
-      padding: 12px;
-      border-radius: 7px;
-      font-size: 14px;
-    }
-
-    .error {
-      background: #ffebee;
-      color: #c62828;
-    }
-
-    .success {
-      background: #e8f5e9;
-      color: #2e7d32;
+      display: block;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
 
-<div class="login-container">
-
-  <div class="login-card">
-
+  <div class="login-box">
     <h1>Fashion Fusion</h1>
-
-    <div class="subtitle">
-      Sign in to your account
-    </div>
+    <p class="subtitle">Sign in to your account</p>
 
     <form id="loginForm">
 
       <label for="email">Email</label>
-
       <input
         type="email"
         id="email"
-        placeholder="Enter your email"
         required
         autocomplete="email"
       >
 
       <label for="password">Password</label>
-
       <input
         type="password"
         id="password"
-        placeholder="Enter your password"
         required
         autocomplete="current-password"
       >
 
-      <button type="submit" id="loginButton">
+      <button type="submit" id="loginBtn">
         Login
       </button>
 
@@ -169,238 +136,143 @@
 
     <div class="links">
       <a href="#" id="forgotPassword">Forgot password?</a>
-      <br>
       <a href="signup.html">Create a new account</a>
-      <br>
       <a href="index.html">Continue shopping</a>
     </div>
-
   </div>
 
-</div>
+  <script>
+    const loginForm = document.getElementById("loginForm");
+    const loginBtn = document.getElementById("loginBtn");
+    const message = document.getElementById("message");
+    const forgotPassword = document.getElementById("forgotPassword");
 
-<script>
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = "message " + type;
+    }
 
-  /*
-    IMPORTANT:
-    supabaseClient is already created by supabase-config.js.
-    Do NOT create another Supabase client here.
-  */
+    // If already logged in, go directly to Home.
+    async function checkExistingSession() {
+      const { data, error } =
+        await supabaseClient.auth.getSession();
 
-  const loginForm =
-    document.getElementById("loginForm");
+      if (error) {
+        console.error("Session check error:", error);
+        return;
+      }
 
-  const loginButton =
-    document.getElementById("loginButton");
+      if (data.session) {
+        window.location.href =
+          new URL("index.html", window.location.href).href;
+      }
+    }
 
-  const message =
-    document.getElementById("message");
-
-
-  function showMessage(text, type) {
-
-    message.textContent = text;
-    message.className = "message " + type;
-    message.style.display = "block";
-
-  }
-
-
-  /*
-    LOGIN
-  */
-
-  loginForm.addEventListener(
-    "submit",
-    async function(event) {
-
+    loginForm.addEventListener("submit", async function (event) {
       event.preventDefault();
 
-      const email =
-        document
-          .getElementById("email")
-          .value
-          .trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
 
-      const password =
-        document
-          .getElementById("password")
-          .value;
-
-      loginButton.disabled = true;
-      loginButton.textContent = "Signing in...";
-
-      message.style.display = "none";
+      loginBtn.disabled = true;
+      loginBtn.textContent = "Logging in...";
+      showMessage("", "");
 
       try {
-
-        const {
-          data,
-          error
-        } =
+        const { data, error } =
           await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password
           });
 
-
         if (error) {
-
-          showMessage(
-            error.message,
-            "error"
-          );
-
+          console.error("Login error:", error);
+          showMessage(error.message, "error");
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Login";
           return;
         }
 
-
-        if (!data || !data.user) {
-
+        if (!data.session) {
           showMessage(
-            "Login was not completed. Please try again.",
+            "Login succeeded, but no session was created.",
             "error"
           );
-
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Login";
           return;
         }
 
+        showMessage("Login successful. Opening Home...", "success");
 
-        showMessage(
-          "Login successful. Redirecting...",
-          "success"
-        );
-
-
-        /*
-          Use a relative URL so GitHub Pages
-          keeps the /Fashion_Fussion/ path.
-        */
-
-        setTimeout(function() {
-
+        setTimeout(function () {
           window.location.href =
-            new URL(
-              "account.html",
-              window.location.href
-            ).href;
-
-        }, 700);
-
+            new URL("index.html", window.location.href).href;
+        }, 500);
 
       } catch (error) {
-
-        console.error(
-          "Login error:",
-          error
-        );
-
+        console.error("Unexpected login error:", error);
         showMessage(
-          "An unexpected error occurred. Please try again.",
+          "Something went wrong. Please try again.",
           "error"
         );
 
-      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
+      }
+    });
 
-        loginButton.disabled = false;
-        loginButton.textContent = "Login";
+    forgotPassword.addEventListener("click", async function (event) {
+      event.preventDefault();
 
+      const email =
+        document.getElementById("email").value.trim();
+
+      if (!email) {
+        showMessage(
+          "Please enter your email first.",
+          "error"
+        );
+        return;
       }
 
-    }
-  );
+      try {
+        const resetUrl =
+          new URL(
+            "reset-password.html",
+            window.location.href
+          ).href;
 
-
-  /*
-    FORGOT PASSWORD
-  */
-
-  document
-    .getElementById("forgotPassword")
-    .addEventListener(
-      "click",
-      async function(event) {
-
-        event.preventDefault();
-
-        const email =
-          document
-            .getElementById("email")
-            .value
-            .trim();
-
-
-        if (!email) {
-
-          showMessage(
-            "Enter your email address first.",
-            "error"
+        const { error } =
+          await supabaseClient.auth.resetPasswordForEmail(
+            email,
+            {
+              redirectTo: resetUrl
+            }
           );
 
+        if (error) {
+          console.error("Password reset error:", error);
+          showMessage(error.message, "error");
           return;
         }
 
+        showMessage(
+          "Password reset email sent. Check your inbox.",
+          "success"
+        );
 
-        try {
-
-          /*
-            Correct GitHub Pages reset URL.
-          */
-
-          const resetUrl =
-            new URL(
-              "reset-password.html",
-              window.location.href
-            ).href;
-
-
-          const {
-            error
-          } =
-            await supabaseClient.auth.resetPasswordForEmail(
-              email,
-              {
-                redirectTo: resetUrl
-              }
-            );
-
-
-          if (error) {
-
-            showMessage(
-              error.message,
-              "error"
-            );
-
-            return;
-          }
-
-
-          showMessage(
-            "Password reset instructions have been sent to your email.",
-            "success"
-          );
-
-
-        } catch (error) {
-
-          console.error(
-            "Password reset error:",
-            error
-          );
-
-          showMessage(
-            "Unable to send the password reset email.",
-            "error"
-          );
-
-        }
-
+      } catch (error) {
+        console.error(error);
+        showMessage(
+          "Unable to send password reset email.",
+          "error"
+        );
       }
-    );
+    });
 
-</script>
+    checkExistingSession();
+  </script>
 
 </body>
 </html>
-```
