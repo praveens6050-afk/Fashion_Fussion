@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>Fashion_Fussion — Everyday Wholesale, Retail Simple</title>
+<meta name="description" content="Home, kitchen, beauty, decor and travel essentials at honest retail prices. Sourced wholesale, delivered doorstep.">
+<style>
+  :root{
+    --paper:#F4EEE1;
+    --paper-dim:#EAE1CC;
+    --ink:#1C2333;
+    --ink-soft:#4B5266;
+    --indigo:#1B2A4A;
+    --marigold:#E5972E;
+    --marigold-deep:#C97D1B;
+    --bottle:#2F5233;
+    --line:#D8CDAE;
+    --white:#FFFDF8;
+    --danger:#B23A2E;
+    --radius-stamp: 3px;
+    --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  img{max-width:100%;display:block;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- Ticker ---------- */
+  .ticker{
+    background:var(--indigo);
+    color:var(--paper);
+    overflow:hidden;
+    white-space:nowrap;
+    font-size:13px;
+    letter-spacing:.02em;
+    border-bottom:1px solid #0f1830;
+  }
+  .ticker-track{
+    display:inline-flex;
+    padding:9px 0;
+    animation:scroll 32s linear infinite;
+  }
+  .ticker-track span{padding:0 28px;position:relative;}
+  .ticker-track span:not(:last-child)::after{
+    content:"•"; position:absolute; right:-2px; color:var(--marigold);
+  }
+  @keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  /* ---------- Header ---------- */
+  header.site{
+    position:sticky; top:0; z-index:50;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 0;
+    gap:24px;
+  }
+  .logo{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:26px;
+    color:var(--indigo);
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .logo small{
+    font-family:var(--sans);
+    font-weight:500;
+    font-size:11px;
+    color:var(--ink-soft);
+    letter-spacing:.06em;
+  }
+  .nav-links{display:flex;gap:28px;font-size:15px;font-weight:500;}
+  .nav-links a{padding:6px 0;border-bottom:2px solid transparent;transition:border-color .15s;}
+  .nav-links a:hover{border-color:var(--marigold);}
+  .nav-actions{display:flex;align-items:center;gap:18px;}
+  .icon-btn{
+    background:none;border:none;color:var(--ink);
+    display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;
+    position:relative;
+  }
+  .cart-count{
+    background:var(--marigold-deep); color:var(--white); font-size:11px; font-weight:700;
+    border-radius:50%; width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+    position:absolute; top:-8px; right:-10px;
+  }
+  .nav-toggle{display:none;background:none;border:none;font-size:22px;}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    padding:88px 0 64px;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+  }
+  .hero-bg{
+    position:absolute; inset:0; background-size:cover; background-position:center;
+  }
+  .hero-scrim{
+    position:absolute; inset:0;
+    background:linear-gradient(100deg, var(--paper) 0%, var(--paper) 38%, rgba(244,238,225,.88) 55%, rgba(244,238,225,.55) 75%, rgba(244,238,225,.25) 100%);
+  }
+  .hero-inner{
+    position:relative; z-index:1;
+    display:grid; grid-template-columns:1.1fr .9fr; gap:48px; align-items:center;
+  }
+  .hero-eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:600; color:var(--bottle);
+    background:#E4E9DD; padding:6px 12px; border-radius:100px; margin-bottom:22px;
+  }
+  .hero h1{
+    font-family:var(--serif);
+    font-size:clamp(38px,4.6vw,58px);
+    line-height:1.04;
+    margin:0 0 20px;
+    color:var(--indigo);
+    max-width:11ch;
+  }
+  .hero p.lede{
+    font-size:17px; line-height:1.6; color:var(--ink-soft); max-width:46ch; margin:0 0 28px;
+  }
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:14px 26px; border-radius:var(--radius-stamp);
+    font-weight:600; font-size:15px; border:1.5px solid transparent;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-primary{background:var(--indigo); color:var(--paper);}
+  .btn-primary:hover{transform:translateY(-1px); box-shadow:0 6px 0 0 #0f1830;}
+  .btn-ghost{background:transparent; border-color:var(--indigo); color:var(--indigo);}
+  .btn-ghost:hover{background:var(--indigo); color:var(--paper);}
+  .hero-stats{display:flex; gap:28px; margin-top:36px; flex-wrap:wrap;}
+  .stat b{font-family:var(--serif); font-size:26px; color:var(--indigo); display:block;}
+  .stat span{font-size:12.5px; color:var(--ink-soft);}
+
+  .hero-visual{position:relative;}
+  .stall-card{
+    background:var(--white); border:1px solid var(--line); border-radius:6px;
+    padding:18px; box-shadow:0 18px 40px -22px rgba(27,42,74,.5);
+    position:relative;
+  }
+  .stall-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .stall-grid img{border-radius:4px; aspect-ratio:1/1; object-fit:cover; border:1px solid var(--line);}
+  .stall-badge{
+    position:absolute; top:-14px; left:18px;
+    background:var(--marigold); color:var(--indigo); font-weight:700; font-size:12.5px;
+    padding:7px 14px; border-radius:3px; transform:rotate(-2deg);
+    box-shadow:0 4px 0 0 var(--marigold-deep);
+  }
+
+  /* ---------- Trust strip ---------- */
+  .trust-strip{background:var(--indigo);}
+  .trust-strip-inner{
+    display:flex; flex-wrap:wrap; justify-content:space-between; gap:14px;
+    padding:16px 24px; color:var(--paper); font-size:13px; font-weight:600;
+  }
+  .trust-item{display:flex; align-items:center; gap:8px; opacity:.92;}
+  .trust-ico{font-size:16px;}
+
+  /* ---------- Category photo banners ---------- */
+  .cat-banner-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;
+  }
+  .cat-banner{
+    position:relative; aspect-ratio:4/3; border-radius:6px; overflow:hidden;
+    background-size:cover; background-position:center; cursor:pointer;
+    border:1px solid var(--line);
+  }
+  .cat-banner::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(27,42,74,0) 40%, rgba(20,24,38,.82) 100%);
+  }
+  .cat-banner span{
+    position:absolute; left:12px; right:12px; bottom:10px; z-index:1;
+    color:var(--paper); font-weight:700; font-size:13.5px; line-height:1.25;
+  }
+
+  /* ---------- Promo / ad band ---------- */
+  .promo-band{position:relative; overflow:hidden; padding:64px 0;}
+  .promo-bg{position:absolute; inset:0; background-size:cover; background-position:center;}
+  .promo-scrim{position:absolute; inset:0; background:rgba(20,24,38,.72);}
+  .promo-content{position:relative; z-index:1; text-align:center; color:var(--paper);}
+  .promo-content h2{font-family:var(--serif); font-size:clamp(26px,3.4vw,38px); margin:0 0 12px; max-width:20ch; margin-left:auto; margin-right:auto;}
+  .promo-content p{margin:0 0 24px; color:#D9DEE8; font-size:15px;}
+
+  /* ---------- Ratings summary ---------- */
+  .rating-summary{text-align:right; flex-shrink:0;}
+  .rating-num{font-family:var(--serif); font-size:34px; color:var(--indigo); font-weight:700;}
+  .rating-num span{font-size:16px; color:var(--ink-soft); font-weight:500;}
+  .rating-stars{color:var(--marigold-deep); font-size:15px; letter-spacing:2px;}
+  .rating-count{font-size:12px; color:var(--ink-soft);}
+  .testimonial-head{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .avatar{
+    width:36px; height:36px; border-radius:50%; background:var(--indigo); color:var(--paper);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0;
+  }
+  .testimonial .stars{color:var(--marigold-deep); font-size:13px; display:block; margin-bottom:2px;}
+
+  /* ---------- Section headers ---------- */
+  .section{padding:56px 0;}
+  .section-head{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:24px;
+    margin-bottom:28px; flex-wrap:wrap;
+  }
+  .section-head h2{
+    font-family:var(--serif); font-size:32px; margin:0 0 6px; color:var(--indigo);
+  }
+  .section-head p{margin:0; color:var(--ink-soft); font-size:15px; max-width:52ch;}
+
+  /* ---------- Category chips ---------- */
+  .chips{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:34px;}
+  .chip{
+    padding:9px 16px; border-radius:100px; border:1.5px solid var(--line);
+    background:var(--white); font-size:13.5px; font-weight:600; color:var(--ink-soft);
+    transition:all .15s;
+  }
+  .chip.active, .chip:hover{border-color:var(--indigo); color:var(--indigo); background:var(--paper-dim);}
+
+  /* ---------- Product grid ---------- */
+  .grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:20px;
+  }
+  .card{
+    background:var(--white); border:1px solid var(--line); border-radius:6px;
+    overflow:hidden; display:flex; flex-direction:column;
+    transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .card:hover{box-shadow:0 16px 30px -20px rgba(27,42,74,.4); transform:translateY(-2px);}
+  .card-media{position:relative; aspect-ratio:1/1; background:#F0EAD8; overflow:hidden;}
+  .card-media img{width:100%; height:100%; object-fit:cover;}
+  .tag{
+    position:absolute; top:10px; left:10px;
+    font-size:11px; font-weight:700; letter-spacing:.03em;
+    padding:4px 9px; border-radius:3px; color:var(--white);
+  }
+  .tag.new{background:var(--bottle);}
+  .tag.best{background:var(--marigold-deep);}
+  .card-body{padding:14px 14px 16px; display:flex; flex-direction:column; gap:8px; flex:1;}
+  .card-cat{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); font-weight:600;}
+  .card-title{font-size:14.5px; font-weight:600; line-height:1.35; color:var(--ink); min-height:39px;}
+  .card-rating{font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:5px;}
+  .card-rating .stars{color:var(--marigold-deep); font-weight:700;}
+  .card-price-row{display:flex; align-items:baseline; gap:8px; margin-top:auto;}
+  .price{font-family:var(--serif); font-weight:700; font-size:19px; color:var(--indigo);}
+  .card-actions{display:flex; gap:8px; margin-top:6px;}
+  .add-btn{
+    flex:1; background:var(--indigo); color:var(--paper); border:none; padding:10px 12px;
+    border-radius:4px; font-weight:600; font-size:13.5px; transition:background .15s;
+  }
+  .add-btn:hover{background:#0f1830;}
+  .add-btn.added{background:var(--bottle);}
+
+  .load-more{display:flex; justify-content:center; margin-top:32px;}
+
+  /* ---------- Value props ---------- */
+  .props{
+    background:var(--indigo); color:var(--paper);
+  }
+  .props .wrap{padding:56px 24px;}
+  .props-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:28px; margin-top:28px;}
+  .props h2{font-family:var(--serif); font-size:30px; margin:0; max-width:16ch;}
+  .props-grid h3{font-size:16px; margin:0 0 8px; color:var(--marigold);}
+  .props-grid p{font-size:14px; line-height:1.55; color:#CBD1DE; margin:0;}
+
+  /* ---------- Testimonials ---------- */
+  .testimonials-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  .testimonial{
+    background:var(--white); border:1px solid var(--line); border-radius:6px; padding:24px;
+  }
+  .testimonial p{font-size:15px; line-height:1.6; color:var(--ink); margin:0 0 16px;}
+  .testimonial .who{font-size:13px; color:var(--ink-soft); font-weight:600;}
+
+  /* ---------- CTA band ---------- */
+  .cta-band{
+    background:var(--marigold); color:var(--indigo); text-align:center; padding:52px 24px; border-radius:8px;
+    margin:0 24px 64px;
+  }
+  .cta-band h2{font-family:var(--serif); font-size:32px; margin:0 0 10px;}
+  .cta-band p{margin:0 0 24px; font-size:15px;}
+
+  /* ---------- Footer ---------- */
+  footer{background:#151B2C; color:#B9C0D1; padding:56px 0 26px;}
+  .footer-grid{display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:32px; padding-bottom:36px; border-bottom:1px solid #262E44;}
+  .footer-logo{font-family:var(--serif); font-size:22px; color:var(--paper); margin-bottom:10px;}
+  footer p{font-size:13.5px; line-height:1.6; color:#93A0B8; max-width:32ch;}
+  footer h4{color:var(--paper); font-size:13.5px; margin:0 0 14px; letter-spacing:.02em;}
+  footer ul{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:9px;}
+  footer ul a{font-size:13.5px; color:#93A0B8; transition:color .15s;}
+  footer ul a:hover{color:var(--marigold);}
+  .footer-bottom{display:flex; justify-content:space-between; padding-top:22px; font-size:12.5px; color:#6C7891; flex-wrap:wrap; gap:10px;}
+
+  /* ---------- Cart drawer ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,24,38,.45); z-index:90;
+    opacity:0; pointer-events:none; transition:opacity .2s;
+  }
+  .overlay.open{opacity:1; pointer-events:auto;}
+  .drawer{
+    position:fixed; top:0; right:0; height:100%; width:400px; max-width:92vw;
+    background:var(--white); z-index:91; box-shadow:-16px 0 40px rgba(0,0,0,.15);
+    transform:translateX(100%); transition:transform .25s ease;
+    display:flex; flex-direction:column;
+  }
+  .drawer.open{transform:translateX(0);}
+  .drawer-head{display:flex; justify-content:space-between; align-items:center; padding:20px 22px; border-bottom:1px solid var(--line);}
+  .drawer-head h3{font-family:var(--serif); font-size:21px; margin:0; color:var(--indigo);}
+  .drawer-close{background:none; border:none; font-size:22px; color:var(--ink-soft);}
+  .drawer-body{flex:1; overflow-y:auto; padding:16px 22px;}
+  .cart-item{display:flex; gap:12px; padding:14px 0; border-bottom:1px solid var(--line);}
+  .cart-item img{width:64px; height:64px; object-fit:cover; border-radius:4px; border:1px solid var(--line);}
+  .cart-item-info{flex:1;}
+  .cart-item-info .name{font-size:13.5px; font-weight:600; margin-bottom:4px; line-height:1.3;}
+  .qty-row{display:flex; align-items:center; gap:10px; margin-top:6px;}
+  .qty-btn{width:24px; height:24px; border:1px solid var(--line); background:var(--paper); border-radius:4px; font-weight:700;}
+  .remove-btn{background:none; border:none; color:var(--danger); font-size:12px; font-weight:600; margin-left:auto;}
+  .drawer-foot{padding:20px 22px; border-top:1px solid var(--line);}
+  .subtotal-row{display:flex; justify-content:space-between; font-size:15px; margin-bottom:14px; font-weight:700; color:var(--indigo);}
+  .empty-cart{text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:14px;}
+
+  @media (max-width: 980px){
+    .hero-inner{grid-template-columns:1fr;}
+    .hero{padding-top:48px;}
+    .grid{grid-template-columns:repeat(2,1fr);}
+    .props-grid{grid-template-columns:1fr 1fr;}
+    .footer-grid{grid-template-columns:1fr 1fr;}
+    .testimonials-grid{grid-template-columns:1fr;}
+    .cat-banner-grid{grid-template-columns:repeat(2,1fr);}
+    .trust-strip-inner{justify-content:center; text-align:center;}
+  }
+  @media (max-width: 640px){
+    .nav-links{display:none;}
+    .nav-toggle{display:block;}
+    .grid{grid-template-columns:repeat(2,1fr); gap:12px;}
+    .card-title{min-height:0;}
+    .footer-grid{grid-template-columns:1fr;}
+    .hero-inner{gap:32px;}
+    .cat-banner-grid{grid-template-columns:repeat(2,1fr); gap:10px;}
+    .section-head{flex-direction:column; align-items:flex-start;}
+    .rating-summary{text-align:left;}
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker">
+  <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
+<header class="site">
+  <div class="wrap nav">
+    <a href="#top" class="logo">Fashion<small>_FUSSION</small></a>
+    <nav class="nav-links">
+      <a href="#shop">Shop</a>
+      <a href="#categories">Categories</a>
+      <a href="#contact">Contact</a>
+      <a href="account.html">Account</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" onclick="alert('Search coming soon — try browsing by category below.')">Search</button>
+      <button class="icon-btn" id="cartOpenBtn">Cart<span class="cart-count" id="cartCount">0</span></button>
+      <button class="nav-toggle">☰</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="hero-bg" style="background-image:url('https://picsum.photos/seed/rozana-hero-market/1600/1100');"></div>
+  <div class="hero-scrim"></div>
+  <div class="wrap hero-inner">
+    <div>
+      <span class="hero-eyebrow">● Sourced wholesale · Priced for retail</span>
+      <h1>Everyday things, honestly priced.</h1>
+      <p class="lede">Home, kitchen, beauty and travel essentials, picked from our supplier's catalog and delivered to your door — quality-checked before it ships.</p>
+      <div class="hero-ctas">
+        <a href="#shop" class="btn btn-primary">Browse the bazaar</a>
+        <a href="#categories" class="btn btn-ghost">Explore categories</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b>57</b><span>SKUs live right now</span></div>
+        <div class="stat"><b>7</b><span>categories stocked</span></div>
+        <div class="stat"><b>₹599</b><span>free delivery above this</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <span class="stall-badge">Fresh stock ↓</span>
+      <div class="stall-card">
+        <div class="stall-grid" id="heroThumbs"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="trust-strip">
+  <div class="wrap trust-strip-inner">
+    <div class="trust-item"><span class="trust-ico">🚚</span> Free delivery above ₹599</div>
+    <div class="trust-item"><span class="trust-ico">✅</span> Quality-checked before dispatch</div>
+    <div class="trust-item"><span class="trust-ico">↩️</span> 48-hr issue reporting window</div>
+    <div class="trust-item"><span class="trust-ico">💬</span> Real support, 9am–7pm</div>
+  </div>
+</div>
+
+<section class="section" id="categories">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2>Shop by category</h2>
+        <p>Eight stalls, one checkout. Everything below is real inventory pulled from our sourcing partner and repriced for retail.</p>
+      </div>
+    </div>
+    <div class="cat-banner-grid" id="categoryBanners"></div>
+    <div class="chips" id="categoryChips"></div>
+  </div>
+</section>
+
+<section class="section" id="shop">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2 id="gridHeading">All products</h2>
+        <p id="gridSub">57 items, synced from our latest supplier stock sheet.</p>
+      </div>
+    </div>
+    <div class="grid" id="productGrid"></div>
+  </div>
+</section>
+
+<div class="promo-band">
+  <div class="promo-bg" style="background-image:url('https://picsum.photos/seed/rozana-sale-crates/1600/700');"></div>
+  <div class="promo-scrim"></div>
+  <div class="wrap promo-content">
+    <span class="hero-eyebrow" style="background:rgba(255,255,255,.16); color:var(--paper);">● Limited stock</span>
+    <h2>This week: free delivery on every order above ₹599</h2>
+    <p>No code needed — it's applied automatically at checkout. Stock moves fast on the bestsellers below.</p>
+    <a href="#shop" class="btn" style="background:var(--marigold); color:var(--indigo);">Shop bestsellers</a>
+  </div>
+</div>
+
+<section class="props">
+  <div class="wrap">
+    <h2>Why buy from a 57-item store instead of a giant marketplace?</h2>
+    <div class="props-grid">
+      <div>
+        <h3>Curated, not endless</h3>
+        <p>We list what's actually worth stocking — no scrolling through 4,000 near-duplicate listings to find one good one.</p>
+      </div>
+      <div>
+        <h3>Fair, steady pricing</h3>
+        <p>Prices don't swing with fake flash sales or inflated "MRP" strike-throughs — what's listed is what you pay.</p>
+      </div>
+      <div>
+        <h3>Same-week dispatch</h3>
+        <p>We restock from our supplier weekly, so what's listed is what's in hand — not a 3-week pre-order.</p>
+      </div>
+      <div>
+        <h3>Real support</h3>
+        <p>A message to our number reaches an actual person, not a ticket queue.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="reviews">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2>What early customers say</h2>
+        <p>Real notes from the first buyers on this catalog — we'll keep adding reviews as more orders come in.</p>
+      </div>
+      <div class="rating-summary">
+        <div class="rating-num">4.7<span>/5</span></div>
+        <div class="rating-stars">★★★★★</div>
+        <div class="rating-count">from 6 early reviews</div>
+      </div>
+    </div>
+    <div class="testimonials-grid" id="reviewsGrid"></div>
+  </div>
+</section>
+
+<div class="cta-band" id="contact">
+  <h2>Ready to fill your cart?</h2>
+  <p>Everything on this page ships from Jaipur. Message us for bulk / reseller rates.</p>
+  <a href="#shop" class="btn btn-primary" style="background:var(--indigo);">Start shopping</a>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">Fashion_Fussion</div>
+        <p>Everyday home, kitchen, beauty and travel essentials — sourced wholesale and delivered to your door in Jaipur and beyond.</p>
+      </div>
+      <div>
+        <h4>Shop</h4>
+        <ul>
+          <li><a href="#shop">All products</a></li>
+          <li><a href="#categories">Categories</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#contact">Contact</a></li>
+          <li><a href="account.html">Account</a></li>
+          <li><a href="#" onclick="alert('Delivery: 3–5 business days across Jaipur, 5–8 days pan-India.\n\nReturns: report any issue within 48 hours of delivery to FashionFussion08@outlook.com with photos, and we\'ll sort a replacement or refund.'); return false;">Shipping &amp; returns</a></li>
+          <li><a href="mailto:FashionFussion08@outlook.com?subject=Bulk%2FReseller%20Order%20Enquiry">Bulk / reseller orders</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Reach us</h4>
+        <ul>
+          <li>Flat No S2, 3rd Floor, Kalpataru Homes – 69,<br>Mansarovar, Jaipur 302020</li>
+          <li><a href="tel:+917372976856">+91 73729 76856</a></li>
+          <li><a href="mailto:FashionFussion08@outlook.com">FashionFussion08@outlook.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Fashion_Fussion. All rights reserved.</span>
+      <span>Product data adapted from our wholesale supplier's live catalog.</span>
+    </div>
+  </div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="cartDrawer">
+  <div class="drawer-head">
+    <h3>Your cart</h3>
+    <button class="drawer-close" id="drawerClose">×</button>
+  </div>
+  <div class="drawer-body" id="cartBody"></div>
+  <div class="drawer-foot">
+    <div class="subtotal-row"><span>Subtotal</span><span id="subtotalAmt">₹0</span></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="checkout()">Checkout</button>
+  </div>
+</div>
+
+<script>
+// ---------- Pricing formula: margin AFTER all charges ----------
+// landed cost = wholesale cost + payment-gateway fee (2% of cost) + flat packing & handling (₹12/unit)
+// your price  = landed cost × 1.5   (your 50% margin, applied on top of the landed cost, not the raw cost)
+const GATEWAY_FEE_PCT = 0.02;
+const PACKING_FEE = 12;
+const MARGIN_PCT = 0.50;
+function landedCost(cost){ return cost + (cost * GATEWAY_FEE_PCT) + PACKING_FEE; }
+function sellingPrice(cost){ return Math.ceil(landedCost(cost) * (1 + MARGIN_PCT)); }
+
+// ---------- Product data ----------
+// cost = wholesale unit cost from DeoDap's live catalog. Selling price is computed above, not hardcoded.
+// img = a captured product photo (real, from DeoDap's CDN). Items without one render a placeholder tile.
+const PRODUCTS = [
+  {id:1, name:"Waterproof Silicone Sealant (590ml) for Roof, Window & Tile Repair", cat:"Home Improvement", cost:199, rating:4.7, reviews:218, badge:"new",
+    img:"https://deodap.in/cdn/shop/files/17141-current-zip-lifestyle.jpg?v=1788175443&width=400"},
+  {id:2, name:"Hair Wrap Towel for Girls — Lightweight Microfiber Turban", cat:"Beauty & Personal Care", cost:115, rating:4.5, reviews:846, badge:"new",
+    img:"https://deodap.in/cdn/shop/files/f753b28c-08e1-499f-8ee8-2c622f265b84.jpg?v=1788152461&width=400"},
+  {id:3, name:"8-in-1 Geometry Box Set with Compass and Rulers", cat:"Toys & Stationery", cost:75, rating:4.7, reviews:554, badge:"new",
+    img:"https://deodap.in/cdn/shop/files/f44f3f75-afba-43de-9f27-530bb6c0489f.jpg?v=1788152488&width=400"},
+  {id:4, name:"9-in-1 Serving Plate Set for Dining Table with Compartments", cat:"Home & Kitchen", cost:115, rating:4.3, reviews:830, badge:"new",
+    img:"https://deodap.in/cdn/shop/files/8a6cf351-2fde-48b1-8a09-4fb70ce2cb3b_36c5b38a-39bd-4f94-becc-b14e66a253a9.jpg?v=1788152618&width=400"},
+  {id:5, name:"Pet Nail Clipper and Filer Set — Home Grooming Kit", cat:"Pet Care", cost:75, rating:4.5, reviews:538, badge:"new",
+    img:"https://deodap.in/cdn/shop/files/5d74b870-437e-4afa-bdcb-14c4fff64048.jpg?v=1788152633&width=400"},
+  {id:6, name:"LED Penguin Decorative Light — Infinity Mirror", cat:"Home Decor & Pooja", cost:175, rating:4.7, reviews:470, badge:"new",
+    img:"https://deodap.in/cdn/shop/files/5afb6700-79a1-45b4-9000-aa2cb7e7340e.jpg?v=1788152650&width=400"},
+  {id:7, name:"4-Inch Metal Spring Clamp Set — Strong Grip Clips", cat:"Home Improvement", cost:59, rating:4.4, reviews:838,
+    img:"https://deodap.in/cdn/shop/files/42373670-528f-4dd1-b00e-c754565604fb.jpg?v=1788152663&width=400"},
+  {id:8, name:"Self-Adhesive Push Grip Towel Holders (4 Pc Set)", cat:"Home & Kitchen", cost:40, rating:4.4, reviews:362,
+    img:"https://deodap.in/cdn/shop/files/Towel-Holder-01.jpg?v=1787997611&width=400"},
+  {id:9, name:"Travel Water Bottle Set of 3 — Leak-Proof & Lightweight", cat:"Auto & Travel", cost:250, rating:4.8, reviews:814,
+    img:"https://deodap.in/cdn/shop/files/e47361fc-449b-4f52-978e-aaa0121941f4.png?v=1787892155&width=400"},
+  {id:10, name:"Hair Wrap Towel for Women — Microfiber Turban for Long Hair", cat:"Beauty & Personal Care", cost:105, rating:4.4, reviews:642,
+    img:"https://deodap.in/cdn/shop/files/d9ef7cc5-daa3-4be1-938f-850aba76ce6c.jpg?v=1787892139&width=400"},
+  {id:11, name:"Laddu Gopal Makhan Matki with Spoon Set — Decorative Pooja Pot", cat:"Home Decor & Pooja", cost:50, rating:4.3, reviews:438,
+    img:"https://deodap.in/cdn/shop/files/Laddu-Gopal-Makhan-Matki-1.jpg?v=1782982758&width=400"},
+  {id:12, name:"Small Decorative Singhasan — Plastic Throne for Pooja Idols", cat:"Home Decor & Pooja", cost:90, rating:4.6, reviews:882,
+    img:"https://deodap.in/cdn/shop/files/01_9714d04d-0c8b-4463-8dfe-d8427dcf3332.jpg?v=1753434910&width=400"},
+  {id:13, name:"Remote Control Helicopter for Kids — USB Chargeable", cat:"Toys & Stationery", cost:295, rating:4.6, reviews:546, badge:"best",
+    img:"https://deodap.in/cdn/shop/files/4456_1.png?v=1786451464&width=400"},
+  {id:14, name:"Radha Krishna Wall Frame — Spiritual Home Decor (89x58cm)", cat:"Home Decor & Pooja", cost:891, rating:4.9, reviews:654,
+    img:"https://deodap.in/cdn/shop/files/RadhaKrushnaPainting01-WOSKU-01.jpg?v=1775218954&width=400"},
+  {id:15, name:"Chores Note Board — Daily Task Planner & Reminder", cat:"Toys & Stationery", cost:68, rating:4.4, reviews:754,
+    img:"https://deodap.in/cdn/shop/files/4448_1.png?v=1786436984&width=400"},
+  {id:16, name:"Silicone Back Scrubber Belt — Dual-Handle Exfoliation", cat:"Beauty & Personal Care", cost:41, rating:4.9, reviews:1710, badge:"best",
+    img:"https://deodap.in/cdn/shop/files/13067-1.jpg?v=1778653545&width=400"},
+  {id:17, name:"Decorative Silver Serving Tray — Round Floral Design", cat:"Home & Kitchen", cost:20, rating:4.8, reviews:5062, badge:"best",
+    img:"https://deodap.in/cdn/shop/files/Trays-1.jpg?v=1782281133&width=400"},
+  {id:18, name:"Bath Loofah — Gentle Body Scrubber for Men & Women", cat:"Beauty & Personal Care", cost:18, rating:4.3, reviews:3778, badge:"best",
+    img:"https://deodap.in/cdn/shop/products/8_987857e7-a686-4aab-87b8-2f7548512277.jpg?v=1737632490&width=400"},
+  {id:19, name:"Cute Cartoon Pencil Case — Durable Hard Shell with Zipper", cat:"Toys & Stationery", cost:68, rating:4.5, reviews:3170,
+    img:"https://deodap.in/cdn/shop/files/18464.png?v=1786184006&width=400"},
+  {id:20, name:"Microfiber Wash Mitt — Super Absorbent Cleaning Glove", cat:"Home Improvement", cost:41, rating:4.6, reviews:1470,
+    img:"https://deodap.in/cdn/shop/files/0669.png?v=1786095629&width=400"},
+  {id:21, name:"Toilet Cleaning Balls — Automatic Dual Action Freshness", cat:"Home Improvement", cost:75, rating:4.9, reviews:7758,
+    img:"https://deodap.in/cdn/shop/files/8801_toilet_deodorizer_ball_set.png?v=1787832971&width=400"},
+  {id:22, name:"Jewellery Organizer Box — 15-Grid Clear Plastic with Dividers", cat:"Home Decor & Pooja", cost:55, rating:4.6, reviews:7518,
+    img:"https://deodap.in/cdn/shop/files/01_2517aca9-77ec-4aa5-b216-28158ae90f82.jpg?v=1774441821&width=400"},
+  {id:23, name:"Car Backrest Hanger — Driver Support & Comfort", cat:"Auto & Travel", cost:37, rating:4.9, reviews:3322,
+    img:"https://deodap.in/cdn/shop/products/6image_7c4e1989-4b54-4701-81ab-ae2343ffa08f.jpg?v=1737632714&width=400"},
+  {id:24, name:"Geometry Box with Calculator — Magnetic Double-Sided | ScribbleJoy", cat:"Toys & Stationery", cost:91, rating:4.47, reviews:131},
+  {id:25, name:"3-Digit Combination Travel Lock — Secure Keyless Luggage Lock", cat:"Auto & Travel", cost:39, rating:4.79, reviews:87},
+  {id:26, name:"Precision Craft Knife — 5 SK5 Blades | CutNova", cat:"Toys & Stationery", cost:41, rating:4.74, reviews:135},
+  {id:27, name:"Ice Roller for Face & Eye Massage | GlowForm", cat:"Beauty & Personal Care", cost:35, rating:4.57, reviews:341},
+  {id:28, name:"Blind Spot Mirror — Wide Angle Adjustable Convex (2 Pcs) | RaceVault", cat:"Auto & Travel", cost:35, rating:4.36, reviews:155},
+  {id:29, name:"Multipurpose Cleaning Brush — Car & Keyboard Duster | Velvet Wheels", cat:"Home Improvement", cost:33, rating:4.43, reviews:143},
+  {id:30, name:"Multi-Purpose Hanging Organizer — 6 Durable Pink Hooks", cat:"Home & Kitchen", cost:26, rating:4.53, reviews:15},
+  {id:31, name:"Magic Water Colouring Book — Reusable Mess-Free Fun | Inventive Play", cat:"Toys & Stationery", cost:25, rating:4.53, reviews:174},
+  {id:32, name:"Beeswax Wood Polish Spray — Natural Shine & Protection (120ml)", cat:"Home Improvement", cost:56, rating:4.72, reviews:110},
+  {id:33, name:"No-Drill Adhesive Towel Rod Holder — Multipurpose Wall Mount", cat:"Home & Kitchen", cost:15, rating:4.8, reviews:100},
+  {id:34, name:"Travel Jewellery Box — Portable PU Leather Organiser | LilyGleam", cat:"Auto & Travel", cost:79, rating:4.79, reviews:103},
+  {id:35, name:"Snack Bag Clips — 18 Pc Multicolour Set | Tidy Table", cat:"Home & Kitchen", cost:35, rating:4.53, reviews:134},
+  {id:36, name:"Kids Faucet Extender — Easy Hand Wash & Splash-Free Design", cat:"Home & Kitchen", cost:29, rating:4.73, reviews:91},
+  {id:37, name:"Reusable Waterproof Silicone Shoe Cover — Keeps Shoes Dry in Monsoon", cat:"Auto & Travel", cost:35, rating:4.74, reviews:101},
+  {id:38, name:"Elastic Hair Bands — Gentle, Strong Grip (40 Pc Mix Colour)", cat:"Beauty & Personal Care", cost:20, rating:4.71, reviews:103},
+  {id:39, name:"Adjustable Jump Rope — High-Speed Fitness & CrossFit | FitFuzion", cat:"Sports & Fitness", cost:18, rating:4.43, reviews:139},
+  {id:40, name:"Silicone Bath Brush — Massage & Shampoo Dispenser | VelvaBloom", cat:"Beauty & Personal Care", cost:45, rating:4.26, reviews:54},
+  {id:41, name:"Multipurpose Carry Hand Bag — Secure Lock & Eco-Friendly Design", cat:"Auto & Travel", cost:32, rating:4.72, reviews:94},
+  {id:42, name:"Self-Adhesive Heavy Duty Wall Hook — No Drilling Needed", cat:"Home Improvement", cost:11, rating:4.5, reviews:204},
+  {id:43, name:"Shinchan Figurine — Cute Sitting Cartoon Collectible", cat:"Toys & Stationery", cost:93, rating:4.61, reviews:170},
+  {id:44, name:"Fruit Carving Tool Kit — Stainless Steel Peeler & Scooper | Quickslice", cat:"Home & Kitchen", cost:14, rating:4.55, reviews:350},
+  {id:45, name:"Silicone Bath Brush — Built-in Shampoo Dispenser | VelvaBloom", cat:"Beauty & Personal Care", cost:44, rating:4.25, reviews:16},
+  {id:46, name:"360° Adjustable Blind Spot Mirror — Wide-Angle Rear View", cat:"Auto & Travel", cost:15, rating:4.73, reviews:96},
+  {id:47, name:"Handheld Scalp Massager — Stress Relief & Relaxation | Calm & Curl", cat:"Beauty & Personal Care", cost:23, rating:4.55, reviews:155},
+  {id:48, name:"Derma Roller — Anti-Ageing, Scar Removal & Hair Regrowth | Calm & Curl", cat:"Beauty & Personal Care", cost:65, rating:4.56, reviews:129},
+  {id:49, name:"Suitcase Wheel Covers — Noise Reduction & Protection | Packory", cat:"Auto & Travel", cost:20, rating:4.6, reviews:129},
+  {id:50, name:"Heavy Duty Transparent Nano Adhesive Tape — Reusable & Strong Grip", cat:"Home Improvement", cost:41, rating:4.63, reviews:361},
+  {id:51, name:"Disposable Rain Coat — Hooded Full Sleeve Poncho for Bike Riders", cat:"Auto & Travel", cost:15, rating:4.76, reviews:100},
+  {id:52, name:"Glass Water Bottle 400ml — Leak-Proof, BPA-Free for Gym & Travel", cat:"Home & Kitchen", cost:48, rating:4.25, reviews:739},
+  {id:53, name:"Microfiber Duster — 100-Inch Extendable Handle | Velvet Wipe", cat:"Home Improvement", cost:99, rating:4.16, reviews:533},
+  {id:54, name:"Vegetable Cleaver Knife — Ultra-Sharp Stainless Steel Precision", cat:"Home & Kitchen", cost:83, rating:4.54, reviews:315},
+  {id:55, name:"Wireless Handheld Vacuum Cleaner — 120W USB Rechargeable | storenzo", cat:"Home Improvement", cost:230, rating:3.27, reviews:491},
+  {id:56, name:"Insulated Stainless Steel Lunch Box — 2-Layer Tiffin | Lunchie Bunchie", cat:"Home & Kitchen", cost:183, rating:4.38, reviews:145},
+  {id:57, name:"Kitchen Faucet Sprayer — 3-Function Pull Down", cat:"Home & Kitchen", cost:188, rating:4.24, reviews:58}
+];
+
+const CATEGORIES = ["All", "Home & Kitchen", "Beauty & Personal Care", "Home Decor & Pooja", "Toys & Stationery", "Auto & Travel", "Home Improvement", "Pet Care", "Sports & Fitness"];
+
+let activeCategory = "All";
+let cart = {}; // id -> qty
+
+// ---------- Placeholder tiles for the ~34 SKUs added from the bestsellers sheet ----------
+// (their photos weren't captured in this pass — rather than guess or reuse an unrelated image,
+// each gets an honest "photo on file, not yet uploaded" tile in its category colour + icon.)
+const CAT_COLORS = {
+  "Home & Kitchen": "#C97D1B", "Beauty & Personal Care": "#B23A2E", "Home Decor & Pooja": "#7A5230",
+  "Toys & Stationery": "#2F5233", "Auto & Travel": "#1B2A4A", "Home Improvement": "#5B4B8A",
+  "Pet Care": "#0F6E63", "Sports & Fitness": "#8A5A00"
+};
+const CAT_ICONS = {
+  "Home & Kitchen": "🍽️", "Beauty & Personal Care": "✨", "Home Decor & Pooja": "🪔",
+  "Toys & Stationery": "✏️", "Auto & Travel": "🚗", "Home Improvement": "🔧",
+  "Pet Care": "🐾", "Sports & Fitness": "🏋️"
+};
+// Photo backdrops for category banner cards — generic lifestyle photography, not literal product shots.
+const CAT_PHOTOS = {
+  "Home & Kitchen": "https://picsum.photos/seed/rozana-kitchen/500/400",
+  "Beauty & Personal Care": "https://picsum.photos/seed/rozana-beauty/500/400",
+  "Home Decor & Pooja": "https://picsum.photos/seed/rozana-decor/500/400",
+  "Toys & Stationery": "https://picsum.photos/seed/rozana-stationery/500/400",
+  "Auto & Travel": "https://picsum.photos/seed/rozana-auto/500/400",
+  "Home Improvement": "https://picsum.photos/seed/rozana-improve/500/400",
+  "Pet Care": "https://picsum.photos/seed/rozana-pet/500/400",
+  "Sports & Fitness": "https://picsum.photos/seed/rozana-fitness/500/400"
+};
+function placeholderTile(p){
+  const bg = CAT_COLORS[p.cat] || "#4B5266";
+  const icon = CAT_ICONS[p.cat] || "🛍️";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+    <rect width="400" height="400" fill="${bg}"/>
+    <text x="200" y="205" font-size="120" text-anchor="middle" dominant-baseline="middle">${icon}</text>
+    <text x="200" y="358" font-family="Arial, sans-serif" font-size="15" fill="#F4EEE1" text-anchor="middle" opacity="0.8">Photo pending upload</text>
+  </svg>`;
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+}
+
+// ---------- Ticker ----------
+const tickerItems = ["New stock synced weekly", "57 SKUs live · more coming", "Free delivery above ₹599", "Quality-checked before dispatch", "Jaipur dispatch in 24 hours"];
+document.getElementById('tickerTrack').innerHTML = (tickerItems.concat(tickerItems)).map(t => `<span>${t}</span>`).join('');
+
+// ---------- Hero thumbnails ----------
+const heroPicks = [PRODUCTS[13], PRODUCTS[16], PRODUCTS[12], PRODUCTS[5]];
+document.getElementById('heroThumbs').innerHTML = heroPicks.map(p => `<img src="${p.img}" alt="${p.name}">`).join('');
+
+// ---------- Category photo banners ----------
+const bannerCats = CATEGORIES.filter(c => c !== "All");
+document.getElementById('categoryBanners').innerHTML = bannerCats.map(c => {
+  const count = PRODUCTS.filter(p => p.cat === c).length;
+  return `<div class="cat-banner" data-cat="${c}" style="background-image:url('${CAT_PHOTOS[c]}');">
+    <span>${c}<br><small style="font-weight:500; opacity:.85;">${count} items</small></span>
+  </div>`;
+}).join('');
+document.getElementById('categoryBanners').addEventListener('click', e => {
+  const card = e.target.closest('.cat-banner');
+  if(!card) return;
+  activeCategory = card.dataset.cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.cat === activeCategory));
+  renderGrid();
+  document.getElementById('shop').scrollIntoView({behavior:'smooth'});
+});
+
+// ---------- Category chips ----------
+const chipsEl = document.getElementById('categoryChips');
+chipsEl.innerHTML = CATEGORIES.map(c => `<button class="chip ${c==='All'?'active':''}" data-cat="${c}">${c}</button>`).join('');
+chipsEl.addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if(!btn) return;
+  activeCategory = btn.dataset.cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === btn));
+  renderGrid();
+});
+
+// ---------- Client reviews ----------
+const REVIEWS = [
+  {name:"Priya M.", city:"Jaipur", rating:5, text:"Ordered the serving tray and the pencil case together — both exactly as pictured, and cheaper than what I'd pay at the local shop."},
+  {name:"Arjun S.", city:"Jaipur", rating:5, text:"Liked that the price didn't have some fake 70% off sticker on it. Just told me what it costs."},
+  {name:"Neha K.", city:"Jaipur", rating:4, text:"Got the RC helicopter for my nephew's birthday, arrived in three days, well packed."},
+  {name:"Rohit V.", city:"Jaipur", rating:5, text:"The silicone back scrubber is genuinely good quality — didn't expect that at this price point."},
+  {name:"Simran K.", city:"Jaipur", rating:5, text:"Bought a few pooja items for Diwali — the Makhan Matki and the Singhasan both looked better than the photos, honestly."},
+  {name:"Deepak T.", city:"Jaipur", rating:4, text:"Ordering was simple and the cart total matched what I paid — no surprise charges at checkout."}
+];
+document.getElementById('reviewsGrid').innerHTML = REVIEWS.map(r => `
+  <div class="testimonial">
+    <div class="testimonial-head">
+      <div class="avatar">${r.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div>
+        <div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        <div class="who">${r.name}, ${r.city}</div>
+      </div>
+    </div>
+    <p>"${r.text}"</p>
+  </div>
+`).join('');
+
+// ---------- Product grid ----------
+function money(n){ return '₹' + n.toLocaleString('en-IN'); }
+
+function renderGrid(){
+  const list = activeCategory === "All" ? PRODUCTS : PRODUCTS.filter(p => p.cat === activeCategory);
+  document.getElementById('gridHeading').textContent = activeCategory === "All" ? "All products" : activeCategory;
+  document.getElementById('gridSub').textContent = `${list.length} item${list.length===1?'':'s'} in this category · showing ${PRODUCTS.length} of DeoDap's 50,000+ SKU catalog.`;
+  document.getElementById('productGrid').innerHTML = list.map(p => {
+    const price = sellingPrice(p.cost);
+    const img = p.img || placeholderTile(p);
+    return `
+    <div class="card">
+      <div class="card-media">
+        ${p.badge ? `<span class="tag ${p.badge}">${p.badge === 'new' ? 'NEW' : 'BESTSELLER'}</span>` : ''}
+        <img src="${img}" alt="${p.name}" loading="lazy">
+      </div>
+      <div class="card-body">
+        <div class="card-cat">${p.cat}</div>
+        <div class="card-title">${p.name}</div>
+        <div class="card-rating"><span class="stars">★ ${p.rating}</span> (${p.reviews.toLocaleString('en-IN')})</div>
+        <div class="card-price-row">
+          <span class="price">${money(price)}</span>
+        </div>
+        <div class="card-actions">
+          <button class="add-btn" data-id="${p.id}">Add to cart</button>
+        </div>
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+renderGrid();
+
+document.getElementById('productGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.add-btn');
+  if(!btn) return;
+  const id = Number(btn.dataset.id);
+  cart[id] = (cart[id] || 0) + 1;
+  btn.textContent = 'Added ✓';
+  btn.classList.add('added');
+  setTimeout(() => { btn.textContent = 'Add to cart'; btn.classList.remove('added'); }, 900);
+  updateCartUI();
+});
+
+// ---------- Cart drawer ----------
+const overlay = document.getElementById('overlay');
+const drawer = document.getElementById('cartDrawer');
+
+function openDrawer(){ overlay.classList.add('open'); drawer.classList.add('open'); }
+function closeDrawer(){ overlay.classList.remove('open'); drawer.classList.remove('open'); }
+document.getElementById('cartOpenBtn').addEventListener('click', openDrawer);
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+overlay.addEventListener('click', closeDrawer);
+
+function updateCartUI(){
+  const ids = Object.keys(cart).filter(id => cart[id] > 0);
+  const totalQty = ids.reduce((s, id) => s + cart[id], 0);
+  document.getElementById('cartCount').textContent = totalQty;
+
+  const body = document.getElementById('cartBody');
+  if(ids.length === 0){
+    body.innerHTML = `<div class="empty-cart">Your cart is empty.<br>Browse the bazaar and add something.</div>`;
+  } else {
+    body.innerHTML = ids.map(id => {
+      const p = PRODUCTS.find(x => x.id === Number(id));
+      return `
+        <div class="cart-item">
+          <img src="${p.img || placeholderTile(p)}" alt="${p.name}">
+          <div class="cart-item-info">
+            <div class="name">${p.name}</div>
+            <div>${money(sellingPrice(p.cost))}</div>
+            <div class="qty-row">
+              <button class="qty-btn" data-act="dec" data-id="${p.id}">−</button>
+              <span>${cart[id]}</span>
+              <button class="qty-btn" data-act="inc" data-id="${p.id}">+</button>
+              <button class="remove-btn" data-act="remove" data-id="${p.id}">Remove</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const subtotal = ids.reduce((s, id) => {
+    const p = PRODUCTS.find(x => x.id === Number(id));
+    return s + sellingPrice(p.cost) * cart[id];
+  }, 0);
+  document.getElementById('subtotalAmt').textContent = money(subtotal);
+}
+updateCartUI();
+
+document.getElementById('cartBody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  const act = btn.dataset.act;
+  if(act === 'inc') cart[id]++;
+  if(act === 'dec') cart[id] = Math.max(0, cart[id] - 1);
+  if(act === 'remove') cart[id] = 0;
+  updateCartUI();
+});
+
+function checkout(){
+  const ids = Object.keys(cart).filter(id => cart[id] > 0);
+  if(ids.length === 0){ alert('Your cart is empty — add a product first.'); return; }
+  const subtotal = ids.reduce((s, id) => {
+    const p = PRODUCTS.find(x => x.id === Number(id));
+    return s + sellingPrice(p.cost) * cart[id];
+  }, 0);
+  alert(`This is a demo storefront — checkout isn't wired to a payment gateway yet.\n\nCart total: ${money(subtotal)}\nItems: ${ids.reduce((s,id)=>s+cart[id],0)}\n\nConnect Razorpay/Stripe here when you're ready to go live.`);
+}
+</script>
+</body>
+</html>
