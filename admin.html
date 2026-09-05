@@ -6,7 +6,10 @@
 
   <title>Fashion Fusion — Admin</title>
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Your existing Supabase configuration -->
   <script src="supabase-config.js"></script>
 
   <style>
@@ -42,6 +45,11 @@
       padding: 10px 16px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      opacity: 0.85;
     }
 
     .container {
@@ -55,7 +63,7 @@
       border-radius: 12px;
       padding: 25px;
       margin-bottom: 25px;
-      box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+      box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
     }
 
     h2 {
@@ -76,116 +84,188 @@
       text-align: center;
       padding: 30px;
     }
+
+    .admin-badge {
+      display: inline-block;
+      background: #16803c;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-left: 8px;
+    }
   </style>
 </head>
 
 <body>
 
-<header>
-  <h1>Fashion Fusion — Admin</h1>
-  <button class="logout-btn" id="logoutBtn">Logout</button>
-</header>
+  <header>
+    <h1>Fashion Fusion — Admin</h1>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+  </header>
 
-<div class="container">
+  <div class="container">
 
-  <div class="card">
-    <h2>Admin Dashboard</h2>
-    <p id="adminInfo" class="loading">Checking administrator access...</p>
+    <div class="card">
+      <h2>Admin Dashboard</h2>
+
+      <p id="adminInfo" class="loading">
+        Checking administrator access...
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Product Catalog</h2>
+
+      <p>
+        Administrator access has been verified.
+        Product management will be available here.
+      </p>
+    </div>
+
   </div>
 
-  <div class="card">
-    <h2>Product Catalog</h2>
-    <p>
-      Product management will be connected here after the admin
-      authorization has been verified.
-    </p>
-  </div>
+  <script>
 
-</div>
+    /*
+      IMPORTANT:
+      Do NOT create another supabaseClient here.
 
-<script>
+      supabase-config.js already creates:
+      const supabaseClient = window.supabase.createClient(...)
 
-const supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+      We use that existing client below.
+    */
 
-async function checkAdmin() {
+    async function checkAdmin() {
 
-  const adminInfo = document.getElementById("adminInfo");
+      const adminInfo = document.getElementById("adminInfo");
 
-  try {
+      try {
 
-    const {
-      data: { user },
-      error: userError
-    } = await supabaseClient.auth.getUser();
+        /*
+          Get currently logged-in user
+        */
+        const {
+          data: { user },
+          error: userError
+        } = await supabaseClient.auth.getUser();
 
-    if (userError || !user) {
-      window.location.href = "login.html";
-      return;
+        /*
+          No logged-in user
+        */
+        if (userError || !user) {
+
+          window.location.href = "login.html";
+
+          return;
+        }
+
+        /*
+          Get admin status from profiles table
+        */
+        const {
+          data: profile,
+          error: profileError
+        } = await supabaseClient
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .single();
+
+        /*
+          Profile lookup failed
+        */
+        if (profileError) {
+
+          console.error(
+            "Profile lookup error:",
+            profileError
+          );
+
+          adminInfo.textContent =
+            "Unable to verify administrator access.";
+
+          adminInfo.className = "error";
+
+          return;
+        }
+
+        /*
+          User is NOT an administrator
+        */
+        if (!profile || profile.is_admin !== true) {
+
+          adminInfo.textContent =
+            "Access denied. Administrator privileges are required.";
+
+          adminInfo.className = "error";
+
+          setTimeout(function () {
+
+            window.location.href = "account.html";
+
+          }, 2000);
+
+          return;
+        }
+
+        /*
+          User IS an administrator
+        */
+        adminInfo.innerHTML =
+          "Administrator access granted: " +
+          user.email +
+          ' <span class="admin-badge">ADMIN</span>';
+
+        adminInfo.className = "success";
+
+      } catch (error) {
+
+        console.error(
+          "Admin check error:",
+          error
+        );
+
+        adminInfo.textContent =
+          "An unexpected error occurred.";
+
+        adminInfo.className = "error";
+      }
     }
 
-    const { data: profile, error: profileError } =
-      await supabaseClient
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .single();
 
-    if (profileError) {
-      console.error(profileError);
+    /*
+      Logout
+    */
+    document
+      .getElementById("logoutBtn")
+      .addEventListener("click", async function () {
 
-      adminInfo.textContent =
-        "Unable to verify administrator access.";
+        try {
 
-      adminInfo.className = "error";
+          await supabaseClient.auth.signOut();
 
-      return;
-    }
+        } catch (error) {
 
-    if (!profile || profile.is_admin !== true) {
+          console.error(
+            "Logout error:",
+            error
+          );
 
-      adminInfo.textContent =
-        "Access denied. Administrator privileges are required.";
+        }
 
-      adminInfo.className = "error";
+        window.location.href = "login.html";
 
-      setTimeout(() => {
-        window.location.href = "account.html";
-      }, 2000);
+      });
 
-      return;
-    }
 
-    adminInfo.textContent =
-      "Administrator access granted: " + user.email;
+    /*
+      Start admin check
+    */
+    checkAdmin();
 
-    adminInfo.className = "success";
-
-  } catch (error) {
-
-    console.error(error);
-
-    adminInfo.textContent =
-      "An unexpected error occurred.";
-
-    adminInfo.className = "error";
-  }
-}
-
-document
-  .getElementById("logoutBtn")
-  .addEventListener("click", async () => {
-
-    await supabaseClient.auth.signOut();
-
-    window.location.href = "login.html";
-  });
-
-checkAdmin();
-
-</script>
+  </script>
 
 </body>
 </html>
