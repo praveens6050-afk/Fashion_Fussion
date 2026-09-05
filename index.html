@@ -370,7 +370,7 @@
       <a href="#shop">Shop</a>
       <a href="#categories">Categories</a>
       <a href="#contact">Contact</a>
-      <a href="account.html">Account</a>
+      <a href="account.html" id="accountNav">Account</a>
     </nav>
     <div class="nav-actions">
       <button class="icon-btn" onclick="alert('Search coming soon — try browsing by category below.')">Search</button>
@@ -517,7 +517,7 @@
         <h4>Company</h4>
         <ul>
           <li><a href="#contact">Contact</a></li>
-          <li><a href="account.html">Account</a></li>
+          <li><a href="account.html" id="accountFooterNav">Account</a></li>
           <li><a href="#" onclick="alert('Delivery: 3–5 business days across Jaipur, 5–8 days pan-India.\n\nReturns: report any issue within 48 hours of delivery to FashionFussion08@outlook.com with photos, and we\'ll sort a replacement or refund.'); return false;">Shipping &amp; returns</a></li>
           <li><a href="mailto:FashionFussion08@outlook.com?subject=Bulk%2FReseller%20Order%20Enquiry">Bulk / reseller orders</a></li>
         </ul>
@@ -856,6 +856,44 @@ function checkout(){
   }, 0);
   alert(`This is a demo storefront — checkout isn't wired to a payment gateway yet.\n\nCart total: ${money(subtotal)}\nItems: ${ids.reduce((s,id)=>s+cart[id],0)}\n\nConnect Razorpay/Stripe here when you're ready to go live.`);
 }
+
+  // ---------- Account navigation ----------
+  async function updateAccountNavigation(){
+    const accountNav = document.getElementById('accountNav');
+    const accountFooterNav = document.getElementById('accountFooterNav');
+
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const loggedIn = !!session;
+
+      if (accountNav) {
+        accountNav.textContent = loggedIn ? 'My Account' : 'Account';
+        accountNav.href = loggedIn ? 'account.html' : 'login.html';
+      }
+
+      if (accountFooterNav) {
+        accountFooterNav.textContent = loggedIn ? 'My Account' : 'Account';
+        accountFooterNav.href = loggedIn ? 'account.html' : 'login.html';
+      }
+    } catch (error) {
+      console.error('Account navigation error:', error);
+      if (accountNav) {
+        accountNav.textContent = 'Account';
+        accountNav.href = 'login.html';
+      }
+      if (accountFooterNav) {
+        accountFooterNav.textContent = 'Account';
+        accountFooterNav.href = 'login.html';
+      }
+    }
+  }
+
+  updateAccountNavigation();
+
+  supabaseClient.auth.onAuthStateChange(() => {
+    updateAccountNavigation();
+  });
+
 </script>
 </body>
 </html>
