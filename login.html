@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -179,128 +180,227 @@
 </div>
 
 <script>
-  const loginForm = document.getElementById("loginForm");
-  const loginButton = document.getElementById("loginButton");
-  const message = document.getElementById("message");
+
+  /*
+    IMPORTANT:
+    supabaseClient is already created by supabase-config.js.
+    Do NOT create another Supabase client here.
+  */
+
+  const loginForm =
+    document.getElementById("loginForm");
+
+  const loginButton =
+    document.getElementById("loginButton");
+
+  const message =
+    document.getElementById("message");
+
 
   function showMessage(text, type) {
+
     message.textContent = text;
     message.className = "message " + type;
     message.style.display = "block";
+
   }
 
-  loginForm.addEventListener("submit", async function(event) {
-    event.preventDefault();
 
-    const email =
-      document.getElementById("email").value.trim();
+  /*
+    LOGIN
+  */
 
-    const password =
-      document.getElementById("password").value;
-
-    loginButton.disabled = true;
-    loginButton.textContent = "Signing in...";
-
-    message.style.display = "none";
-
-    try {
-
-      const { data, error } =
-        await supabaseClient.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
-
-      if (error) {
-        showMessage(error.message, "error");
-        return;
-      }
-
-      if (!data || !data.user) {
-        showMessage(
-          "Login was not completed. Please try again.",
-          "error"
-        );
-        return;
-      }
-
-      showMessage(
-        "Login successful. Redirecting...",
-        "success"
-      );
-
-      setTimeout(function() {
-        window.location.href = "account.html";
-      }, 700);
-
-    } catch (error) {
-
-      console.error(error);
-
-      showMessage(
-        "An unexpected error occurred. Please try again.",
-        "error"
-      );
-
-    } finally {
-
-      loginButton.disabled = false;
-      loginButton.textContent = "Login";
-
-    }
-  });
-
-  document
-    .getElementById("forgotPassword")
-    .addEventListener("click", async function(event) {
+  loginForm.addEventListener(
+    "submit",
+    async function(event) {
 
       event.preventDefault();
 
       const email =
-        document.getElementById("email").value.trim();
+        document
+          .getElementById("email")
+          .value
+          .trim();
 
-      if (!email) {
-        showMessage(
-          "Enter your email address first.",
-          "error"
-        );
-        return;
-      }
+      const password =
+        document
+          .getElementById("password")
+          .value;
+
+      loginButton.disabled = true;
+      loginButton.textContent = "Signing in...";
+
+      message.style.display = "none";
 
       try {
 
-        const { error } =
-          await supabaseClient.auth.resetPasswordForEmail(
-            email,
-            {
-              redirectTo:
-                window.location.origin +
-                "/reset-password.html"
-            }
-          );
+        const {
+          data,
+          error
+        } =
+          await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
+
 
         if (error) {
-          showMessage(error.message, "error");
+
+          showMessage(
+            error.message,
+            "error"
+          );
+
           return;
         }
 
+
+        if (!data || !data.user) {
+
+          showMessage(
+            "Login was not completed. Please try again.",
+            "error"
+          );
+
+          return;
+        }
+
+
         showMessage(
-          "Password reset instructions have been sent to your email.",
+          "Login successful. Redirecting...",
           "success"
         );
 
+
+        /*
+          Use a relative URL so GitHub Pages
+          keeps the /Fashion_Fussion/ path.
+        */
+
+        setTimeout(function() {
+
+          window.location.href =
+            new URL(
+              "account.html",
+              window.location.href
+            ).href;
+
+        }, 700);
+
+
       } catch (error) {
 
-        console.error(error);
+        console.error(
+          "Login error:",
+          error
+        );
 
         showMessage(
-          "Unable to send the password reset email.",
+          "An unexpected error occurred. Please try again.",
           "error"
         );
 
+      } finally {
+
+        loginButton.disabled = false;
+        loginButton.textContent = "Login";
+
       }
-    });
+
+    }
+  );
+
+
+  /*
+    FORGOT PASSWORD
+  */
+
+  document
+    .getElementById("forgotPassword")
+    .addEventListener(
+      "click",
+      async function(event) {
+
+        event.preventDefault();
+
+        const email =
+          document
+            .getElementById("email")
+            .value
+            .trim();
+
+
+        if (!email) {
+
+          showMessage(
+            "Enter your email address first.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        try {
+
+          /*
+            Correct GitHub Pages reset URL.
+          */
+
+          const resetUrl =
+            new URL(
+              "reset-password.html",
+              window.location.href
+            ).href;
+
+
+          const {
+            error
+          } =
+            await supabaseClient.auth.resetPasswordForEmail(
+              email,
+              {
+                redirectTo: resetUrl
+              }
+            );
+
+
+          if (error) {
+
+            showMessage(
+              error.message,
+              "error"
+            );
+
+            return;
+          }
+
+
+          showMessage(
+            "Password reset instructions have been sent to your email.",
+            "success"
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Password reset error:",
+            error
+          );
+
+          showMessage(
+            "Unable to send the password reset email.",
+            "error"
+          );
+
+        }
+
+      }
+    );
+
 </script>
 
 </body>
 </html>
+```
