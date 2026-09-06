@@ -220,26 +220,27 @@ module.exports = async function (req, res) {
       6. Send only safe information to browser.
     */
     return json(res, 200, {
-      key_id: KEY_ID,
+  key_id: KEY_ID,
 
-      order: {
-        id:
-          razorpayOrder.id,
+  order: {
+    id: razorpayOrder.id,
+    amount: razorpayOrder.amount,
+    currency: razorpayOrder.currency
+  },
 
-        amount:
-          razorpayOrder.amount,
+  items: calc.items,
 
-        currency:
-          razorpayOrder.currency
-      },
+  pricing: {
+    subtotal: calc.subtotal,
+    discount: calc.discount,
+    gst: calc.gst,
+    delivery: calc.delivery,
+    other_charges: calc.other_charges,
+    total: calc.total
+  },
 
-      items:
-        calc.items,
-
-      total:
-        calc.total
-    });
-
+  total: calc.total
+});
   } catch (error) {
     console.error(
       "create-order error:",
