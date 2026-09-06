@@ -565,6 +565,27 @@ const ADMIN_USER_ID =
 
 
 /* =========================================================
+   CHECKOUT REDIRECT
+   ========================================================= */
+
+/*
+ * index.html sends customers here as:
+ *
+ * login.html?redirect=checkout
+ *
+ * We preserve that destination through login.
+ */
+
+const urlParams =
+  new URLSearchParams(
+    window.location.search
+  );
+
+const redirectTarget =
+  urlParams.get("redirect");
+
+
+/* =========================================================
    ELEMENTS
    ========================================================= */
 
@@ -827,13 +848,39 @@ async function redirectUser(user){
      */
 
     showBanner(
-      "Signed in successfully. Redirecting...",
+      redirectTarget === "checkout"
+        ? "Signed in successfully. Returning to checkout..."
+        : "Signed in successfully. Redirecting...",
       "success"
     );
 
 
     setTimeout(
       function(){
+
+        /*
+         * IMPORTANT:
+         *
+         * If customer came from checkout,
+         * return to index.html with a checkout
+         * flag.
+         */
+
+        if(
+          redirectTarget ===
+          "checkout"
+        ){
+
+          window.location.href =
+            "index.html?checkout=1";
+
+          return;
+        }
+
+
+        /*
+         * Normal customer login.
+         */
 
         window.location.href =
           "account.html";
