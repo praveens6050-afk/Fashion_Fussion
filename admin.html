@@ -1,564 +1,733 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Fashion_FUSSION — Admin Panel</title>
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>Fashion_FUSSION — Admin</title>
+
 <link rel="icon" href="data:,">
 
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 
+
 <style>
-* {
-  box-sizing: border-box;
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+
+*{
+  box-sizing:border-box;
 }
 
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f1f3f6;
-  color: #212121;
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f1f3f6;
+  color:#212121;
 }
 
 button,
 input,
 select,
-textarea {
-  font: inherit;
+textarea{
+  font:inherit;
 }
 
-button {
-  cursor: pointer;
+button{
+  cursor:pointer;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
+a{
+  text-decoration:none;
+  color:inherit;
 }
 
-/* ================= HEADER ================= */
 
-.header {
-  background: #2874f0;
-  color: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,.20);
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.header{
+  background:#2874f0;
+  color:white;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
 }
 
-.header-inner {
-  max-width: 1250px;
-  margin: auto;
-  padding: 10px 18px;
+.header-inner{
+  max-width:1250px;
+  margin:auto;
+  padding:14px 18px;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  gap:20px;
 }
 
-.logo {
-  font-size: 25px;
-  font-weight: 800;
-  font-style: italic;
+.logo{
+  font-size:25px;
+  font-weight:800;
+  font-style:italic;
 }
 
-.logo span {
-  color: #ffe500;
+.logo span{
+  color:#ffe500;
 }
 
-.admin-badge {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 6px 12px;
-  border-radius: 4px;
-  background: rgba(255,255,255,.18);
-  font-size: 12px;
-  font-weight: 700;
+.admin-badge{
+  display:inline-block;
+
+  margin-top:5px;
+
+  padding:7px 12px;
+
+  border-radius:4px;
+
+  background:rgba(255,255,255,.18);
+
+  font-size:12px;
+  font-weight:700;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.header-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 .header-actions a,
-.header-actions button {
-  border: 1px solid rgba(255,255,255,.45);
-  background: transparent;
-  color: white;
-  padding: 8px 13px;
-  border-radius: 4px;
+.header-actions button{
+
+  border:1px solid rgba(255,255,255,.4);
+
+  background:transparent;
+
+  color:white;
+
+  padding:8px 12px;
+
+  border-radius:4px;
 }
 
-.header-actions a:hover,
-.header-actions button:hover {
-  background: rgba(255,255,255,.12);
+.header-actions button:hover,
+.header-actions a:hover{
+  background:rgba(255,255,255,.12);
 }
 
-/* ================= COMMON ================= */
 
-.container {
-  max-width: 1250px;
-  margin: auto;
-  padding: 22px 16px;
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.container{
+  max-width:1250px;
+  margin:auto;
+  padding:22px 16px;
 }
 
-/* ================= LOADING / ACCESS ================= */
+
+/* =========================================================
+   ACCESS
+   ========================================================= */
 
 #loadingScreen,
-#accessDenied {
-  min-height: calc(100vh - 70px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 25px;
+#accessDenied{
+
+  min-height:70vh;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
 }
 
-.message-card {
-  width: 100%;
-  max-width: 520px;
-  padding: 35px;
-  background: white;
-  border-radius: 9px;
-  text-align: center;
-  box-shadow: 0 2px 12px rgba(0,0,0,.10);
+.message-card{
+
+  max-width:500px;
+  width:100%;
+
+  padding:35px;
+
+  background:white;
+
+  border-radius:8px;
+
+  text-align:center;
+
+  box-shadow:0 2px 10px rgba(0,0,0,.08);
 }
 
-.message-card h2 {
-  margin-top: 0;
+.message-card h2{
+  margin-top:0;
 }
 
-.message-card p {
-  line-height: 1.6;
+.error{
+  color:#d32f2f;
 }
 
-.error-title {
-  color: #d32f2f;
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+.dashboard{
+  display:none;
 }
 
-.access-error {
-  margin: 18px 0;
-  padding: 12px 15px;
-  border-radius: 5px;
-  background: #ffebee;
-  color: #c62828;
-  font-size: 13px;
-  line-height: 1.5;
-  word-break: break-word;
+.page-title{
+
+  margin-bottom:20px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:15px;
 }
 
-/* ================= DASHBOARD ================= */
-
-.dashboard {
-  display: none;
+.page-title h1{
+  margin:0;
+  font-size:26px;
 }
 
-.page-title {
-  margin-bottom: 20px;
+.page-title p{
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
+  margin:5px 0 0;
+
+  color:#777;
+
+  font-size:13px;
 }
 
-.page-title h1 {
-  margin: 0;
-  font-size: 26px;
+
+/* =========================================================
+   STATS
+   ========================================================= */
+
+.stats{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(4,1fr);
+
+  gap:14px;
+
+  margin-bottom:18px;
 }
 
-.page-title p {
-  margin: 6px 0 0;
-  color: #777;
-  font-size: 13px;
+.stat{
+
+  padding:20px;
+
+  background:white;
+
+  border:1px solid #e5e5e5;
+
+  border-radius:7px;
 }
 
-/* ================= STATS ================= */
+.stat-label{
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 18px;
+  color:#777;
+
+  font-size:12px;
 }
 
-.stat {
-  padding: 20px;
-  background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 7px;
+.stat-value{
+
+  margin-top:7px;
+
+  font-size:25px;
+
+  font-weight:700;
 }
 
-.stat-label {
-  color: #777;
-  font-size: 12px;
+
+/* =========================================================
+   MAIN CARD
+   ========================================================= */
+
+.card{
+
+  background:white;
+
+  border:1px solid #ddd;
+
+  border-radius:7px;
+
+  margin-bottom:18px;
 }
 
-.stat-value {
-  margin-top: 7px;
-  font-size: 25px;
-  font-weight: 700;
+.card-header{
+
+  padding:17px 20px;
+
+  border-bottom:1px solid #eee;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:15px;
 }
 
-/* ================= CARDS ================= */
+.card-header h2{
 
-.card {
-  margin-bottom: 18px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 7px;
+  margin:0;
+
+  font-size:19px;
 }
 
-.card-header {
-  padding: 17px 20px;
-  border-bottom: 1px solid #eee;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
+.card-body{
+  padding:20px;
 }
 
-.card-header h2 {
-  margin: 0;
-  font-size: 19px;
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.primary{
+
+  border:0;
+
+  border-radius:4px;
+
+  padding:10px 17px;
+
+  background:#2874f0;
+
+  color:white;
+
+  font-weight:700;
 }
 
-.card-body {
-  padding: 20px;
+.primary:hover{
+  background:#125dd1;
 }
 
-/* ================= BUTTONS ================= */
+.success{
 
-.primary {
-  border: 0;
-  border-radius: 4px;
-  padding: 10px 17px;
-  background: #2874f0;
-  color: white;
-  font-weight: 700;
+  border:0;
+
+  border-radius:4px;
+
+  padding:9px 15px;
+
+  background:#388e3c;
+
+  color:white;
+
+  font-weight:700;
 }
 
-.primary:hover {
-  background: #125dd1;
+.danger{
+
+  border:0;
+
+  border-radius:4px;
+
+  padding:8px 13px;
+
+  background:#e53935;
+
+  color:white;
+
+  font-weight:700;
 }
 
-.success {
-  border: 0;
-  border-radius: 4px;
-  padding: 9px 15px;
-  background: #388e3c;
-  color: white;
-  font-weight: 700;
+.secondary{
+
+  border:1px solid #ccc;
+
+  border-radius:4px;
+
+  padding:9px 14px;
+
+  background:white;
 }
 
-.danger {
-  border: 0;
-  border-radius: 4px;
-  padding: 8px 13px;
-  background: #e53935;
-  color: white;
-  font-weight: 700;
+.secondary:hover{
+  background:#f7f7f7;
 }
 
-.secondary {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 9px 14px;
-  background: white;
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.search-row{
+
+  display:flex;
+
+  gap:10px;
 }
 
-.secondary:hover {
-  background: #f7f7f7;
+.search{
+
+  flex:1;
+
+  height:42px;
+
+  padding:0 14px;
+
+  border:1px solid #bbb;
+
+  border-radius:4px;
+
+  outline:none;
 }
 
-/* ================= SEARCH ================= */
-
-.search-row {
-  display: flex;
-  gap: 10px;
+.search:focus{
+  border-color:#2874f0;
 }
 
-.search {
-  flex: 1;
-  height: 42px;
-  padding: 0 14px;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  outline: none;
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.table-wrapper{
+  overflow-x:auto;
 }
 
-.search:focus {
-  border-color: #2874f0;
+table{
+
+  width:100%;
+
+  border-collapse:collapse;
 }
 
-/* ================= TABLE ================= */
+th{
 
-.table-wrapper {
-  overflow-x: auto;
+  background:#f7f7f7;
+
+  text-align:left;
+
+  padding:12px;
+
+  border-bottom:1px solid #ddd;
+
+  font-size:12px;
+
+  color:#555;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+td{
+
+  padding:12px;
+
+  border-bottom:1px solid #eee;
+
+  vertical-align:middle;
+
+  font-size:13px;
 }
 
-th {
-  background: #f7f7f7;
-  text-align: left;
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
-  font-size: 12px;
-  color: #555;
-  white-space: nowrap;
+.product-thumb{
+
+  width:55px;
+  height:55px;
+
+  object-fit:contain;
+
+  border:1px solid #eee;
+
+  border-radius:4px;
+
+  background:#fff;
 }
 
-td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-  vertical-align: middle;
-  font-size: 13px;
+.product-name{
+
+  font-weight:700;
+
+  margin-top:7px;
 }
 
-.product-cell {
-  min-width: 220px;
+.action-buttons{
+
+  display:flex;
+
+  gap:7px;
+
+  flex-wrap:wrap;
 }
 
-.product-thumb {
-  width: 58px;
-  height: 58px;
-  object-fit: contain;
-  border: 1px solid #eee;
-  border-radius: 5px;
-  background: #fff;
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.modal{
+
+  position:fixed;
+
+  inset:0;
+
+  background:rgba(0,0,0,.55);
+
+  display:none;
+
+  align-items:center;
+
+  justify-content:center;
+
+  padding:15px;
+
+  z-index:100;
 }
 
-.no-image {
-  width: 58px;
-  height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #eee;
-  border-radius: 5px;
-  font-size: 24px;
-  background: #fafafa;
+.modal.open{
+  display:flex;
 }
 
-.product-name {
-  margin-top: 7px;
-  font-weight: 700;
+.modal-box{
+
+  width:650px;
+
+  max-width:100%;
+
+  max-height:92vh;
+
+  overflow-y:auto;
+
+  background:white;
+
+  border-radius:8px;
 }
 
-.product-category {
-  margin-top: 3px;
-  color: #777;
-  font-size: 11px;
+.modal-header{
+
+  padding:17px 20px;
+
+  border-bottom:1px solid #eee;
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
+.modal-header h2{
+
+  margin:0;
+
+  font-size:20px;
 }
 
-/* ================= STATUS ================= */
+.close{
 
-#status {
-  margin-bottom: 15px;
+  border:0;
+
+  background:transparent;
+
+  font-size:27px;
+
+  line-height:1;
 }
 
-.alert {
-  padding: 11px 14px;
-  border-radius: 4px;
-  font-size: 13px;
+.form{
+  padding:20px;
 }
 
-.success-alert {
-  background: #e8f5e9;
-  color: #2e7d32;
+.form-grid{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap:15px;
 }
 
-.error-alert {
-  background: #ffebee;
-  color: #c62828;
+.form-group{
+  margin-bottom:15px;
 }
 
-/* ================= MODAL ================= */
-
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-
-  display: none;
-  align-items: center;
-  justify-content: center;
-
-  padding: 15px;
-
-  background: rgba(0,0,0,.55);
+.form-group.full{
+  grid-column:1/-1;
 }
 
-.modal.open {
-  display: flex;
-}
+label{
 
-.modal-box {
-  width: 680px;
-  max-width: 100%;
-  max-height: 92vh;
-  overflow-y: auto;
+  display:block;
 
-  background: white;
-  border-radius: 8px;
-}
+  margin-bottom:6px;
 
-.modal-header {
-  padding: 17px 20px;
-  border-bottom: 1px solid #eee;
+  font-size:12px;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.close {
-  border: 0;
-  background: transparent;
-  font-size: 28px;
-  line-height: 1;
-}
-
-.form {
-  padding: 20px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group.full {
-  grid-column: 1 / -1;
-}
-
-label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 12px;
-  font-weight: 700;
+  font-weight:700;
 }
 
 input,
 select,
-textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  outline: none;
+textarea{
+
+  width:100%;
+
+  padding:10px;
+
+  border:1px solid #bbb;
+
+  border-radius:4px;
+
+  outline:none;
+}
+
+textarea{
+
+  min-height:85px;
+
+  resize:vertical;
 }
 
 input:focus,
 select:focus,
-textarea:focus {
-  border-color: #2874f0;
+textarea:focus{
+
+  border-color:#2874f0;
 }
 
-textarea {
-  min-height: 100px;
-  resize: vertical;
+.form-actions{
+
+  padding-top:8px;
+
+  display:flex;
+
+  justify-content:flex-end;
+
+  gap:10px;
 }
 
-.price-preview {
-  margin-top: 7px;
-  color: #388e3c;
-  font-size: 12px;
-  font-weight: 700;
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+#status{
+  margin-bottom:15px;
 }
 
-.form-actions {
-  padding-top: 8px;
+.alert{
 
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  padding:11px 14px;
+
+  border-radius:4px;
+
+  font-size:13px;
 }
 
-/* ================= MOBILE ================= */
+.success-alert{
 
-@media (max-width: 850px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
+  background:#e8f5e9;
+
+  color:#2e7d32;
+}
+
+.error-alert{
+
+  background:#ffebee;
+
+  color:#c62828;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media(max-width:850px){
+
+  .stats{
+    grid-template-columns:
+      repeat(2,1fr);
   }
+
 }
 
-@media (max-width: 600px) {
-  .header-inner {
-    align-items: flex-start;
-    flex-direction: column;
+@media(max-width:600px){
+
+  .header-inner{
+
+    align-items:flex-start;
+
+    flex-direction:column;
   }
 
-  .header-actions {
-    width: 100%;
+  .header-actions{
+
+    width:100%;
   }
 
   .header-actions a,
-  .header-actions button {
-    flex: 1;
-    text-align: center;
+  .header-actions button{
+
+    flex:1;
+
+    text-align:center;
   }
 
-  .page-title {
-    align-items: flex-start;
-    flex-direction: column;
+  .stats{
+
+    grid-template-columns:
+      1fr 1fr;
   }
 
-  .stats {
-    grid-template-columns: 1fr 1fr;
+  .page-title{
+
+    align-items:flex-start;
+
+    flex-direction:column;
   }
 
-  .form-grid {
-    grid-template-columns: 1fr;
+  .form-grid{
+
+    grid-template-columns:1fr;
   }
 
-  .form-group.full {
-    grid-column: auto;
+  .form-group.full{
+
+    grid-column:auto;
   }
 
-  .card-body {
-    padding: 12px;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
 }
+
 </style>
+
 </head>
+
 
 <body>
 
-<!-- ================= HEADER ================= -->
+
+<!-- =========================================================
+     HEADER
+     ========================================================= -->
 
 <header class="header">
+
   <div class="header-inner">
 
     <div>
+
       <div class="logo">
         Fashion<span>_FUSSION</span>
       </div>
@@ -566,7 +735,9 @@ textarea {
       <div class="admin-badge">
         ADMIN PANEL
       </div>
+
     </div>
+
 
     <div class="header-actions">
 
@@ -578,56 +749,67 @@ textarea {
         My Account
       </a>
 
-      <button id="logoutButton" type="button">
+      <button
+        id="logoutButton"
+        type="button"
+      >
         Sign Out
       </button>
 
     </div>
 
   </div>
+
 </header>
 
-<!-- ================= LOADING ================= -->
+
+
+<!-- =========================================================
+     LOADING
+     ========================================================= -->
 
 <section id="loadingScreen">
 
   <div class="message-card">
 
-    <h2>Checking administrator access...</h2>
+    <h2>
+      Checking administrator access...
+    </h2>
 
     <p>
-      Please wait while Supabase verifies your account.
+      Please wait.
     </p>
 
   </div>
 
 </section>
 
-<!-- ================= ACCESS DENIED ================= -->
 
-<section id="accessDenied" style="display:none;">
+
+<!-- =========================================================
+     ACCESS DENIED
+     ========================================================= -->
+
+<section
+  id="accessDenied"
+  style="display:none;"
+>
 
   <div class="message-card">
 
-    <h2 class="error-title">
+    <h2 class="error">
       Access Denied
     </h2>
 
-    <p>
-      Administrator privileges are required to access this page.
+    <p id="accessDeniedMessage">
+      Administrator privileges are required
+      to access this page.
     </p>
-
-    <div
-      id="accessError"
-      class="access-error"
-    >
-      Unable to verify administrator access.
-    </div>
 
     <button
       class="primary"
+      id="goToLoginButton"
       type="button"
-      onclick="window.location.href='login.html'"
     >
       Go to Login
     </button>
@@ -636,14 +818,19 @@ textarea {
 
 </section>
 
-<!-- ================= DASHBOARD ================= -->
+
+
+<!-- =========================================================
+     DASHBOARD
+     ========================================================= -->
 
 <main
-  id="dashboard"
   class="dashboard"
+  id="dashboard"
 >
 
   <div class="container">
+
 
     <!-- TITLE -->
 
@@ -661,9 +848,10 @@ textarea {
 
       </div>
 
+
       <button
-        id="addProductButton"
         class="primary"
+        id="addProductButton"
         type="button"
       >
         + Add Product
@@ -671,13 +859,18 @@ textarea {
 
     </div>
 
+
+
     <!-- STATUS -->
 
     <div id="status"></div>
 
+
+
     <!-- STATS -->
 
     <section class="stats">
+
 
       <div class="stat">
 
@@ -686,13 +879,14 @@ textarea {
         </div>
 
         <div
-          id="totalProducts"
           class="stat-value"
+          id="totalProducts"
         >
           0
         </div>
 
       </div>
+
 
       <div class="stat">
 
@@ -701,13 +895,14 @@ textarea {
         </div>
 
         <div
-          id="totalCategories"
           class="stat-value"
+          id="totalCategories"
         >
           0
         </div>
 
       </div>
+
 
       <div class="stat">
 
@@ -716,13 +911,14 @@ textarea {
         </div>
 
         <div
-          id="activeProducts"
           class="stat-value"
+          id="activeProducts"
         >
           0
         </div>
 
       </div>
+
 
       <div class="stat">
 
@@ -739,7 +935,10 @@ textarea {
 
       </div>
 
+
     </section>
+
+
 
     <!-- PRODUCT CATALOG -->
 
@@ -752,8 +951,8 @@ textarea {
         </h2>
 
         <button
-          id="refreshButton"
           class="secondary"
+          id="refreshButton"
           type="button"
         >
           ↻ Refresh
@@ -761,13 +960,14 @@ textarea {
 
       </div>
 
+
       <div class="card-body">
 
         <div class="search-row">
 
           <input
-            id="productSearch"
             class="search"
+            id="productSearch"
             type="search"
             placeholder="Search products..."
           >
@@ -776,30 +976,58 @@ textarea {
 
         <br>
 
+
         <div class="table-wrapper">
 
           <table>
 
             <thead>
+
               <tr>
-                <th>PRODUCT</th>
-                <th>CATEGORY</th>
-                <th>COST</th>
-                <th>SELLING PRICE</th>
-                <th>STATUS</th>
-                <th>ACTIONS</th>
+
+                <th>
+                  PRODUCT
+                </th>
+
+                <th>
+                  CATEGORY
+                </th>
+
+                <th>
+                  COST
+                </th>
+
+                <th>
+                  SELLING PRICE
+                </th>
+
+                <th>
+                  STATUS
+                </th>
+
+                <th>
+                  ACTIONS
+                </th>
+
               </tr>
+
             </thead>
+
 
             <tbody id="productTable">
 
               <tr>
+
                 <td
                   colspan="6"
-                  style="text-align:center;padding:40px;"
+                  style="
+                    text-align:center;
+                    padding:40px;
+                  "
                 >
                   Loading products...
                 </td>
+
               </tr>
 
             </tbody>
@@ -816,14 +1044,19 @@ textarea {
 
 </main>
 
-<!-- ================= PRODUCT MODAL ================= -->
+
+
+<!-- =========================================================
+     PRODUCT MODAL
+     ========================================================= -->
 
 <div
-  id="productModal"
   class="modal"
+  id="productModal"
 >
 
   <div class="modal-box">
+
 
     <div class="modal-header">
 
@@ -832,26 +1065,31 @@ textarea {
       </h2>
 
       <button
-        id="closeModal"
         class="close"
+        id="closeModal"
         type="button"
+        aria-label="Close"
       >
         ×
       </button>
 
     </div>
 
+
+
     <form
-      id="productForm"
       class="form"
+      id="productForm"
     >
 
       <input
-        id="productId"
         type="hidden"
+        id="productId"
       >
 
+
       <div class="form-grid">
+
 
         <!-- NAME -->
 
@@ -863,13 +1101,14 @@ textarea {
 
           <input
             id="productName"
-            type="text"
             required
             maxlength="150"
-            placeholder="Example: Premium Stainless Steel Bottle"
+            placeholder="Example: Stainless Steel Water Bottle"
           >
 
         </div>
+
+
 
         <!-- CATEGORY -->
 
@@ -924,6 +1163,8 @@ textarea {
 
         </div>
 
+
+
         <!-- COST -->
 
         <div class="form-group">
@@ -941,14 +1182,9 @@ textarea {
             placeholder="100"
           >
 
-          <div
-            id="pricePreview"
-            class="price-preview"
-          >
-            Selling Price: ₹0
-          </div>
-
         </div>
+
+
 
         <!-- RATING -->
 
@@ -969,6 +1205,8 @@ textarea {
 
         </div>
 
+
+
         <!-- REVIEWS -->
 
         <div class="form-group">
@@ -987,6 +1225,8 @@ textarea {
 
         </div>
 
+
+
         <!-- IMAGE -->
 
         <div class="form-group full">
@@ -998,10 +1238,12 @@ textarea {
           <input
             id="productImage"
             type="url"
-            placeholder="https://example.com/product-image.jpg"
+            placeholder="https://..."
           >
 
         </div>
+
+
 
         <!-- BADGE -->
 
@@ -1029,7 +1271,9 @@ textarea {
 
         </div>
 
-        <!-- STATUS -->
+
+
+        <!-- ACTIVE -->
 
         <div class="form-group">
 
@@ -1051,6 +1295,8 @@ textarea {
 
         </div>
 
+
+
         <!-- DESCRIPTION -->
 
         <div class="form-group full">
@@ -1061,18 +1307,21 @@ textarea {
 
           <textarea
             id="productDescription"
-            placeholder="Write product description..."
+            placeholder="Product description..."
           ></textarea>
 
         </div>
 
+
       </div>
+
+
 
       <div class="form-actions">
 
         <button
-          id="cancelButton"
           class="secondary"
+          id="cancelButton"
           type="button"
         >
           Cancel
@@ -1093,13 +1342,21 @@ textarea {
 
 </div>
 
-<!-- ================= JAVASCRIPT ================= -->
+
 
 <script>
 
 /* =========================================================
    ADMIN CONFIG
    ========================================================= */
+
+/*
+ * IMPORTANT:
+ *
+ * We intentionally use the Supabase USER ID instead of email.
+ * This avoids the fashion_fussion / fashion_fusssion spelling
+ * problem completely.
+ */
 
 const ADMIN_USER_ID =
   "53165e6e-4e81-492e-9f9f-7a1611ee9801";
@@ -1110,53 +1367,36 @@ const ADMIN_USER_ID =
    ========================================================= */
 
 let products = [];
+
 let editingProductId = null;
 
 
 /* =========================================================
-   ELEMENTS
+   ELEMENT SHORTCUT
    ========================================================= */
 
-const loadingScreen =
-  document.getElementById("loadingScreen");
-
-const accessDenied =
-  document.getElementById("accessDenied");
-
-const accessError =
-  document.getElementById("accessError");
-
-const dashboard =
-  document.getElementById("dashboard");
-
-const statusBox =
-  document.getElementById("status");
+function $(id){
+  return document.getElementById(id);
+}
 
 
 /* =========================================================
    PRICE CALCULATION
-   =========================================================
-   
-   Cost
-   + 2% cost
-   + ₹12
-   then × 1.50
-   
-   Example:
-   Cost ₹100
-   = (100 + 2 + 12) × 1.50
-   = ₹171
-   
    ========================================================= */
 
-function sellingPrice(cost) {
+/*
+ * Cost
+ * + 2% handling
+ * + ₹12
+ * then 1.50x
+ */
 
-  const amount = Number(cost) || 0;
+function sellingPrice(cost){
 
   return Math.ceil(
     (
-      amount +
-      (amount * 0.02) +
+      Number(cost) +
+      Number(cost) * 0.02 +
       12
     ) * 1.50
   );
@@ -1168,34 +1408,11 @@ function sellingPrice(cost) {
    MONEY
    ========================================================= */
 
-function money(value) {
+function money(value){
 
   return "₹" +
-    Number(value || 0).toLocaleString("en-IN");
-
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-   ========================================================= */
-
-function escapeHtml(value) {
-
-  return String(value ?? "")
-    .replace(/[&<>"']/g, function(match) {
-
-      const chars = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-      };
-
-      return chars[match];
-
-    });
+    Number(value || 0)
+      .toLocaleString("en-IN");
 
 }
 
@@ -1207,9 +1424,17 @@ function escapeHtml(value) {
 function showStatus(
   message,
   type = "success"
-) {
+){
 
-  statusBox.innerHTML = `
+  const box =
+    $("status");
+
+  if(!box){
+    return;
+  }
+
+
+  box.innerHTML = `
     <div class="alert ${
       type === "error"
         ? "error-alert"
@@ -1219,181 +1444,168 @@ function showStatus(
     </div>
   `;
 
-  setTimeout(function() {
 
-    statusBox.innerHTML = "";
+  setTimeout(
+    function(){
 
-  }, 4000);
+      box.innerHTML = "";
 
-}
-
-
-/* =========================================================
-   ACCESS DENIED
-   ========================================================= */
-
-function denyAccess(reason) {
-
-  console.error("ADMIN ACCESS DENIED:", reason);
-
-  loadingScreen.style.display = "none";
-  dashboard.style.display = "none";
-  accessDenied.style.display = "flex";
-
-  accessError.textContent =
-    reason ||
-    "Administrator privileges are required.";
+    },
+    4000
+  );
 
 }
 
 
 /* =========================================================
-   ADMIN AUTH CHECK
+   ESCAPE HTML
    ========================================================= */
 
-async function checkAdmin() {
+function escapeHtml(value){
 
-  try {
+  return String(value ?? "")
+    .replace(
+      /[&<>"']/g,
+      function(match){
+
+        return {
+
+          "&":"&amp;",
+          "<":"&lt;",
+          ">":"&gt;",
+          '"':"&quot;",
+          "'":"&#039;"
+
+        }[match];
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   DENY ACCESS
+   ========================================================= */
+
+function denyAccess(
+  reason =
+    "Administrator privileges are required to access this page."
+){
+
+  $("loadingScreen").style.display =
+    "none";
+
+  $("dashboard").style.display =
+    "none";
+
+  $("accessDenied").style.display =
+    "flex";
+
+
+  const message =
+    $("accessDeniedMessage");
+
+  if(message){
+
+    message.textContent =
+      reason;
+
+  }
+
+}
+
+
+/* =========================================================
+   ADMIN SECURITY CHECK
+   ========================================================= */
+
+async function checkAdmin(){
+
+  try{
 
     /*
-     * Make sure supabase-config.js created
-     * the global supabaseClient.
+     * Make sure Supabase client exists.
      */
 
-    if (
-      typeof supabaseClient === "undefined" ||
+    if(
+      typeof supabaseClient ===
+      "undefined" ||
       !supabaseClient
-    ) {
+    ){
 
       denyAccess(
-        "supabaseClient is not available. Check that supabase-config.js is loading correctly."
+        "Supabase could not be loaded. Please refresh the page."
       );
 
       return;
+
     }
 
 
     /*
-     * STEP 1:
-     * Check browser session.
+     * Get authenticated user.
      */
 
     const {
-      data: sessionData,
-      error: sessionError
+      data: {
+        user
+      },
+      error: userError
     } =
-      await supabaseClient.auth.getSession();
+      await supabaseClient
+        .auth
+        .getUser();
 
 
-    if (sessionError) {
+    if(userError){
 
       console.error(
-        "getSession error:",
-        sessionError
+        "Supabase user error:",
+        userError
       );
 
       denyAccess(
-        "Supabase session error: " +
-        (sessionError.message ||
-        "Unknown session error.")
+        userError.message ||
+        "Could not verify your Supabase session."
       );
 
       return;
+
     }
 
 
-    const session =
-      sessionData?.session;
-
-
-    if (!session || !session.user) {
+    if(!user){
 
       denyAccess(
         "No active Supabase login was found. Please log in again."
       );
 
       return;
+
     }
-
-
-    console.log(
-      "Supabase session found:",
-      session.user.id,
-      session.user.email
-    );
 
 
     /*
-     * STEP 2:
-     * Ask Supabase to verify the authenticated user.
+     * EXACT ADMIN UID CHECK
      */
 
-    const {
-      data: userData,
-      error: userError
-    } =
-      await supabaseClient.auth.getUser();
-
-
-    if (userError) {
-
-      console.error(
-        "getUser error:",
-        userError
-      );
-
-      denyAccess(
-        "Supabase user verification failed: " +
-        (userError.message ||
-        "Unable to verify user.")
-      );
-
-      return;
-    }
-
-
-    const user =
-      userData?.user;
-
-
-    if (!user) {
-
-      denyAccess(
-        "Supabase did not return an authenticated user. Please log in again."
-      );
-
-      return;
-    }
-
-
-    console.log(
-      "Authenticated user:",
-      user.id,
-      user.email
-    );
-
-
-    /*
-     * STEP 3:
-     * Exact Admin UID check.
-     */
-
-    if (
+    if(
       String(user.id) !==
       String(ADMIN_USER_ID)
-    ) {
+    ){
 
       denyAccess(
-        "This account is not the configured administrator account."
+        "This account is not authorized to access the Admin Panel."
       );
 
       return;
+
     }
 
 
     /*
-     * STEP 4:
-     * Database admin flag.
+     * DATABASE ADMIN FLAG CHECK
      */
 
     const {
@@ -1403,91 +1615,82 @@ async function checkAdmin() {
       await supabaseClient
         .from("profiles")
         .select("id,is_admin")
-        .eq("id", user.id)
+        .eq(
+          "id",
+          user.id
+        )
         .maybeSingle();
 
 
-    if (profileError) {
+    if(profileError){
 
       console.error(
-        "Profile query error:",
+        "Admin profile query failed:",
         profileError
       );
 
       denyAccess(
-        "Could not verify administrator profile: " +
-        (profileError.message ||
-        "Profile query failed.")
+        "Could not verify administrator status: " +
+        profileError.message
       );
 
       return;
+
     }
 
 
-    if (!profile) {
+    if(
+      !profile ||
+      String(profile.id) !==
+        String(user.id) ||
+      profile.is_admin !== true
+    ){
 
       denyAccess(
-        "No profile was found for this administrator account."
+        "Administrator flag is not enabled for this account."
       );
 
       return;
-    }
 
-
-    if (profile.is_admin !== true) {
-
-      denyAccess(
-        "Administrator access is not enabled for this account."
-      );
-
-      return;
     }
 
 
     /*
-     * STEP 5:
-     * ACCESS GRANTED.
+     * ADMIN VERIFIED
      */
 
-    console.log(
-      "ADMIN ACCESS GRANTED"
-    );
+    $("adminEmail").textContent =
+      user.email || "Administrator";
 
 
-    document.getElementById(
-      "adminEmail"
-    ).textContent =
-      user.email ||
-      "Administrator";
-
-
-    loadingScreen.style.display =
+    $("loadingScreen").style.display =
       "none";
 
-    accessDenied.style.display =
+    $("accessDenied").style.display =
       "none";
 
-    dashboard.style.display =
+    $("dashboard").style.display =
       "block";
 
 
     /*
-     * Load products only after admin
-     * verification succeeds.
+     * Load products after successful
+     * administrator verification.
      */
 
     await loadProducts();
 
-  } catch (error) {
+
+  }catch(error){
 
     console.error(
-      "Unexpected admin authentication error:",
+      "Admin check error:",
       error
     );
 
     denyAccess(
-      error?.message ||
-      "Unexpected authentication error."
+      error.message ||
+      "Could not verify administrator access."
     );
 
   }
@@ -1499,26 +1702,9 @@ async function checkAdmin() {
    LOAD PRODUCTS
    ========================================================= */
 
-async function loadProducts() {
+async function loadProducts(){
 
-  const table =
-    document.getElementById(
-      "productTable"
-    );
-
-  table.innerHTML = `
-    <tr>
-      <td
-        colspan="6"
-        style="text-align:center;padding:40px;"
-      >
-        Loading products...
-      </td>
-    </tr>
-  `;
-
-
-  try {
+  try{
 
     const {
       data,
@@ -1530,26 +1716,28 @@ async function loadProducts() {
         .order(
           "created_at",
           {
-            ascending: false
+            ascending:false
           }
         );
 
 
-    if (error) {
+    if(error){
+
       throw error;
+
     }
 
 
     products =
-      Array.isArray(data)
-        ? data
-        : [];
+      data || [];
 
 
     renderProducts();
+
     updateStats();
 
-  } catch (error) {
+
+  }catch(error){
 
     console.error(
       "Product loading error:",
@@ -1557,8 +1745,10 @@ async function loadProducts() {
     );
 
 
-    table.innerHTML = `
+    $("productTable").innerHTML = `
+
       <tr>
+
         <td
           colspan="6"
           style="
@@ -1567,14 +1757,20 @@ async function loadProducts() {
             color:#d32f2f;
           "
         >
-          <b>Products could not be loaded.</b>
+
+          Products table could not be loaded.
+
           <br><br>
+
           ${escapeHtml(
             error.message ||
             "Unknown Supabase error."
           )}
+
         </td>
+
       </tr>
+
     `;
 
   }
@@ -1586,50 +1782,54 @@ async function loadProducts() {
    RENDER PRODUCTS
    ========================================================= */
 
-function renderProducts() {
+function renderProducts(){
 
   const search =
-    document.getElementById(
-      "productSearch"
-    )
-    .value
-    .trim()
-    .toLowerCase();
+    $("productSearch")
+      .value
+      .trim()
+      .toLowerCase();
 
 
-  const filtered =
-    products.filter(function(product) {
+  const list =
+    products.filter(
+      function(product){
 
-      const name =
-        String(
-          product.name || ""
-        ).toLowerCase();
-
-      const category =
-        String(
-          product.category ||
-          product.cat ||
-          ""
-        ).toLowerCase();
-
-      return (
-        name.includes(search) ||
-        category.includes(search)
-      );
-
-    });
+        const name =
+          String(
+            product.name || ""
+          )
+          .toLowerCase();
 
 
-  const table =
-    document.getElementById(
-      "productTable"
+        const category =
+          String(
+            product.category ||
+            product.cat ||
+            ""
+          )
+          .toLowerCase();
+
+
+        return (
+          name.includes(search) ||
+          category.includes(search)
+        );
+
+      }
     );
 
 
-  if (!filtered.length) {
+  const table =
+    $("productTable");
+
+
+  if(!list.length){
 
     table.innerHTML = `
+
       <tr>
+
         <td
           colspan="6"
           style="
@@ -1640,104 +1840,131 @@ function renderProducts() {
         >
           No products found.
         </td>
+
       </tr>
+
     `;
 
     return;
+
   }
 
 
   table.innerHTML =
-    filtered.map(function(product) {
+    list.map(
+      function(product){
 
-      const cost =
-        Number(
-          product.cost ||
-          product.cost_price ||
-          0
-        );
-
-
-      const price =
-        Number(
-          product.price ||
-          sellingPrice(cost)
-        );
+        const cost =
+          Number(
+            product.cost ??
+            product.cost_price ??
+            0
+          );
 
 
-      const image =
-        product.image_url ||
-        product.img ||
-        "";
+        const price =
+          Number(
+            product.price ||
+            sellingPrice(cost)
+          );
 
 
-      const category =
-        product.category ||
-        product.cat ||
-        "";
+        const image =
+          product.image_url ||
+          product.img ||
+          "";
 
 
-      const active =
-        product.is_active !== false;
+        const active =
+          product.is_active !== false;
 
 
-      return `
-        <tr>
+        return `
 
-          <td class="product-cell">
+          <tr>
 
-            ${
-              image
-                ? `
+            <td>
+
+              ${
+                image
+
+                ?
+
+                `
                   <img
                     class="product-thumb"
                     src="${escapeHtml(image)}"
                     alt="${escapeHtml(product.name)}"
                     onerror="
-                      this.outerHTML='<div class=&quot;no-image&quot;>🛍️</div>'
+                      this.style.display='none'
                     "
                   >
                 `
-                : `
-                  <div class="no-image">
+
+                :
+
+                `
+                  <div
+                    class="product-thumb"
+                    style="
+                      display:flex;
+                      align-items:center;
+                      justify-content:center;
+                      font-size:22px;
+                    "
+                  >
                     🛍️
                   </div>
                 `
-            }
-
-            <div class="product-name">
-              ${escapeHtml(product.name)}
-            </div>
-
-            <div class="product-category">
-              ${escapeHtml(category)}
-            </div>
-
-          </td>
+              }
 
 
-          <td>
-            ${escapeHtml(category)}
-          </td>
+              <div class="product-name">
+
+                ${escapeHtml(
+                  product.name
+                )}
+
+              </div>
+
+            </td>
 
 
-          <td>
-            ${money(cost)}
-          </td>
+            <td>
+
+              ${escapeHtml(
+                product.category ||
+                product.cat ||
+                ""
+              )}
+
+            </td>
 
 
-          <td>
-            <b>
-              ${money(price)}
-            </b>
-          </td>
+            <td>
+
+              ${money(cost)}
+
+            </td>
 
 
-          <td>
+            <td>
 
-            ${
-              active
-                ? `
+              <b>
+                ${money(price)}
+              </b>
+
+            </td>
+
+
+            <td>
+
+              ${
+                active
+
+                ?
+
+                `
                   <span
                     style="
                       color:#388e3c;
@@ -1747,7 +1974,10 @@ function renderProducts() {
                     ● Active
                   </span>
                 `
-                : `
+
+                :
+
+                `
                   <span
                     style="
                       color:#d32f2f;
@@ -1757,89 +1987,98 @@ function renderProducts() {
                     ● Hidden
                   </span>
                 `
-            }
+              }
 
-          </td>
+            </td>
 
 
-          <td>
+            <td>
 
-            <div class="action-buttons">
+              <div class="action-buttons">
 
-              <button
-                class="secondary"
-                type="button"
-                onclick="editProduct('${escapeHtml(String(product.id))}')"
-              >
-                Edit
-              </button>
+                <button
+                  class="secondary"
+                  type="button"
+                  data-action="edit"
+                  data-id="${escapeHtml(product.id)}"
+                >
+                  Edit
+                </button>
 
-              <button
-                class="danger"
-                type="button"
-                onclick="deleteProduct('${escapeHtml(String(product.id))}')"
-              >
-                Delete
-              </button>
 
-            </div>
+                <button
+                  class="danger"
+                  type="button"
+                  data-action="delete"
+                  data-id="${escapeHtml(product.id)}"
+                >
+                  Delete
+                </button>
 
-          </td>
+              </div>
 
-        </tr>
-      `;
+            </td>
 
-    }).join("");
+          </tr>
+
+        `;
+
+      }
+    )
+    .join("");
 
 }
 
 
 /* =========================================================
-   UPDATE STATS
+   STATS
    ========================================================= */
 
-function updateStats() {
+function updateStats(){
 
-  document.getElementById(
-    "totalProducts"
-  ).textContent =
+  $("totalProducts").textContent =
     products.length;
 
 
   const categorySet =
-    new Set(
-      products
-        .map(function(product) {
-
-          return (
-            product.category ||
-            product.cat ||
-            ""
-          );
-
-        })
-        .filter(Boolean)
-    );
+    new Set();
 
 
-  document.getElementById(
-    "totalCategories"
-  ).textContent =
+  products.forEach(
+    function(product){
+
+      const category =
+        product.category ||
+        product.cat ||
+        "";
+
+
+      if(category){
+
+        categorySet.add(
+          category
+        );
+
+      }
+
+    }
+  );
+
+
+  $("totalCategories").textContent =
     categorySet.size;
 
 
-  const activeCount =
-    products.filter(function(product) {
+  $("activeProducts").textContent =
+    products.filter(
+      function(product){
 
-      return product.is_active !== false;
+        return (
+          product.is_active !== false
+        );
 
-    }).length;
-
-
-  document.getElementById(
-    "activeProducts"
-  ).textContent =
-    activeCount;
+      }
+    ).length;
 
 }
 
@@ -1848,51 +2087,38 @@ function updateStats() {
    OPEN ADD PRODUCT
    ========================================================= */
 
-function openAddProduct() {
+function openAddProduct(){
 
-  editingProductId = null;
+  editingProductId =
+    null;
 
 
-  document.getElementById(
-    "modalTitle"
-  ).textContent =
+  $("modalTitle").textContent =
     "Add Product";
 
 
-  document.getElementById(
-    "productForm"
-  ).reset();
+  $("productForm").reset();
 
 
-  document.getElementById(
-    "productId"
-  ).value = "";
+  $("productId").value =
+    "";
 
 
-  document.getElementById(
-    "productRating"
-  ).value =
+  $("productRating").value =
     "4.5";
 
 
-  document.getElementById(
-    "productReviews"
-  ).value =
+  $("productReviews").value =
     "0";
 
 
-  document.getElementById(
-    "productActive"
-  ).value =
+  $("productActive").value =
     "true";
 
 
-  updatePricePreview();
-
-
-  document.getElementById(
-    "productModal"
-  ).classList.add("open");
+  $("productModal")
+    .classList
+    .add("open");
 
 }
 
@@ -1901,18 +2127,22 @@ function openAddProduct() {
    EDIT PRODUCT
    ========================================================= */
 
-function editProduct(id) {
+function editProduct(id){
 
   const product =
-    products.find(function(item) {
+    products.find(
+      function(item){
 
-      return String(item.id) ===
-        String(id);
+        return (
+          String(item.id) ===
+          String(id)
+        );
 
-    });
+      }
+    );
 
 
-  if (!product) {
+  if(!product){
 
     showStatus(
       "Product not found.",
@@ -1920,6 +2150,7 @@ function editProduct(id) {
     );
 
     return;
+
   }
 
 
@@ -1927,90 +2158,65 @@ function editProduct(id) {
     product.id;
 
 
-  document.getElementById(
-    "modalTitle"
-  ).textContent =
+  $("modalTitle").textContent =
     "Edit Product";
 
 
-  document.getElementById(
-    "productId"
-  ).value =
+  $("productId").value =
     product.id;
 
 
-  document.getElementById(
-    "productName"
-  ).value =
+  $("productName").value =
     product.name || "";
 
 
-  document.getElementById(
-    "productCategory"
-  ).value =
+  $("productCategory").value =
     product.category ||
     product.cat ||
     "";
 
 
-  document.getElementById(
-    "productCost"
-  ).value =
-    product.cost ||
-    product.cost_price ||
+  $("productCost").value =
+    product.cost ??
+    product.cost_price ??
     "";
 
 
-  document.getElementById(
-    "productRating"
-  ).value =
+  $("productRating").value =
     product.rating ??
     "4.5";
 
 
-  document.getElementById(
-    "productReviews"
-  ).value =
+  $("productReviews").value =
     product.reviews ??
     "0";
 
 
-  document.getElementById(
-    "productImage"
-  ).value =
+  $("productImage").value =
     product.image_url ||
     product.img ||
     "";
 
 
-  document.getElementById(
-    "productBadge"
-  ).value =
+  $("productBadge").value =
     product.badge ||
     "";
 
 
-  document.getElementById(
-    "productActive"
-  ).value =
+  $("productActive").value =
     product.is_active === false
       ? "false"
       : "true";
 
 
-  document.getElementById(
-    "productDescription"
-  ).value =
+  $("productDescription").value =
     product.description ||
     "";
 
 
-  updatePricePreview();
-
-
-  document.getElementById(
-    "productModal"
-  ).classList.add("open");
+  $("productModal")
+    .classList
+    .add("open");
 
 }
 
@@ -2019,34 +2225,11 @@ function editProduct(id) {
    CLOSE MODAL
    ========================================================= */
 
-function closeModal() {
+function closeModal(){
 
-  document.getElementById(
-    "productModal"
-  ).classList.remove("open");
-
-}
-
-
-/* =========================================================
-   PRICE PREVIEW
-   ========================================================= */
-
-function updatePricePreview() {
-
-  const cost =
-    Number(
-      document.getElementById(
-        "productCost"
-      ).value
-    ) || 0;
-
-
-  document.getElementById(
-    "pricePreview"
-  ).textContent =
-    "Selling Price: " +
-    money(sellingPrice(cost));
+  $("productModal")
+    .classList
+    .remove("open");
 
 }
 
@@ -2055,109 +2238,92 @@ function updatePricePreview() {
    SAVE PRODUCT
    ========================================================= */
 
-async function saveProduct(event) {
+async function saveProduct(event){
 
   event.preventDefault();
 
 
   const name =
-    document.getElementById(
-      "productName"
-    ).value.trim();
+    $("productName")
+      .value
+      .trim();
 
 
   const category =
-    document.getElementById(
-      "productCategory"
-    ).value;
+    $("productCategory")
+      .value;
 
 
   const cost =
     Number(
-      document.getElementById(
-        "productCost"
-      ).value
+      $("productCost")
+        .value
     );
 
 
   const rating =
     Number(
-      document.getElementById(
-        "productRating"
-      ).value
-    ) || 4.5;
+      $("productRating")
+        .value ||
+      4.5
+    );
 
 
   const reviews =
     Number(
-      document.getElementById(
-        "productReviews"
-      ).value
-    ) || 0;
+      $("productReviews")
+        .value ||
+      0
+    );
 
 
   const image =
-    document.getElementById(
-      "productImage"
-    ).value.trim();
+    $("productImage")
+      .value
+      .trim();
 
 
   const badge =
-    document.getElementById(
-      "productBadge"
-    ).value;
+    $("productBadge")
+      .value;
 
 
   const active =
-    document.getElementById(
-      "productActive"
-    ).value ===
-    "true";
+    $("productActive")
+      .value === "true";
 
 
   const description =
-    document.getElementById(
-      "productDescription"
-    ).value.trim();
+    $("productDescription")
+      .value
+      .trim();
 
 
-  if (!name) {
+  /*
+   * Validation
+   */
+
+  if(
+    !name ||
+    !category ||
+    !cost ||
+    cost <= 0
+  ){
 
     showStatus(
-      "Please enter product name.",
+      "Please enter valid product details.",
       "error"
     );
 
     return;
+
   }
 
 
-  if (!category) {
-
-    showStatus(
-      "Please select a category.",
-      "error"
-    );
-
-    return;
-  }
-
-
-  if (!cost || cost <= 0) {
-
-    showStatus(
-      "Please enter a valid cost price.",
-      "error"
-    );
-
-    return;
-  }
-
-
-  if (
+  if(
     rating < 0 ||
     rating > 5
-  ) {
+  ){
 
     showStatus(
       "Rating must be between 0 and 5.",
@@ -2165,77 +2331,72 @@ async function saveProduct(event) {
     );
 
     return;
+
   }
 
 
+  /*
+   * Product object
+   */
+
   const productData = {
 
-    name: name,
+    name:name,
 
-    category: category,
+    category:category,
 
-    cost: cost,
+    cost:cost,
 
-    price: sellingPrice(cost),
+    price:sellingPrice(cost),
 
-    rating: rating,
+    rating:rating,
 
-    reviews: reviews,
+    reviews:reviews,
 
     image_url:
-      image ||
-      null,
+      image || null,
 
     badge:
-      badge ||
-      null,
+      badge || null,
 
     is_active:
       active,
 
     description:
-      description ||
-      null
+      description
 
   };
 
 
-  const saveButton =
-    document.querySelector(
-      '#productForm button[type="submit"]'
-    );
+  try{
 
+    /*
+     * EDIT
+     */
 
-  if (saveButton) {
-
-    saveButton.disabled = true;
-    saveButton.textContent =
-      "Saving...";
-
-  }
-
-
-  try {
-
-    if (
+    if(
       editingProductId !==
       null
-    ) {
+    ){
 
       const {
         error
       } =
         await supabaseClient
           .from("products")
-          .update(productData)
+          .update(
+            productData
+          )
           .eq(
             "id",
             editingProductId
           );
 
 
-      if (error) {
+      if(error){
+
         throw error;
+
       }
 
 
@@ -2243,7 +2404,14 @@ async function saveProduct(event) {
         "Product updated successfully."
       );
 
-    } else {
+    }
+
+
+    /*
+     * ADD
+     */
+
+    else{
 
       const {
         error
@@ -2255,8 +2423,10 @@ async function saveProduct(event) {
           );
 
 
-      if (error) {
+      if(error){
+
         throw error;
+
       }
 
 
@@ -2269,12 +2439,11 @@ async function saveProduct(event) {
 
     closeModal();
 
-    editingProductId =
-      null;
 
     await loadProducts();
 
-  } catch (error) {
+
+  }catch(error){
 
     console.error(
       "Save product error:",
@@ -2288,16 +2457,6 @@ async function saveProduct(event) {
       "error"
     );
 
-  } finally {
-
-    if (saveButton) {
-
-      saveButton.disabled = false;
-      saveButton.textContent =
-        "Save Product";
-
-    }
-
   }
 
 }
@@ -2307,18 +2466,22 @@ async function saveProduct(event) {
    DELETE PRODUCT
    ========================================================= */
 
-async function deleteProduct(id) {
+async function deleteProduct(id){
 
   const product =
-    products.find(function(item) {
+    products.find(
+      function(item){
 
-      return String(item.id) ===
-        String(id);
+        return (
+          String(item.id) ===
+          String(id)
+        );
 
-    });
+      }
+    );
 
 
-  if (!product) {
+  if(!product){
 
     showStatus(
       "Product not found.",
@@ -2326,23 +2489,24 @@ async function deleteProduct(id) {
     );
 
     return;
+
   }
 
 
   const confirmed =
     window.confirm(
-      'Delete "' +
-      product.name +
-      '"?'
+      `Delete "${product.name}"?`
     );
 
 
-  if (!confirmed) {
+  if(!confirmed){
+
     return;
+
   }
 
 
-  try {
+  try{
 
     const {
       error
@@ -2356,8 +2520,10 @@ async function deleteProduct(id) {
         );
 
 
-    if (error) {
+    if(error){
+
       throw error;
+
     }
 
 
@@ -2368,7 +2534,8 @@ async function deleteProduct(id) {
 
     await loadProducts();
 
-  } catch (error) {
+
+  }catch(error){
 
     console.error(
       "Delete error:",
@@ -2388,143 +2555,229 @@ async function deleteProduct(id) {
 
 
 /* =========================================================
-   EVENT LISTENERS
+   TABLE ACTIONS
    ========================================================= */
 
-document.getElementById(
-  "addProductButton"
-).addEventListener(
-  "click",
-  openAddProduct
-);
+$("productTable")
+  .addEventListener(
+    "click",
+    function(event){
+
+      const button =
+        event.target.closest(
+          "button[data-action]"
+        );
 
 
-document.getElementById(
-  "refreshButton"
-).addEventListener(
-  "click",
-  loadProducts
-);
+      if(!button){
+
+        return;
+
+      }
 
 
-document.getElementById(
-  "productSearch"
-).addEventListener(
-  "input",
-  renderProducts
-);
+      const action =
+        button.dataset.action;
 
 
-document.getElementById(
-  "productCost"
-).addEventListener(
-  "input",
-  updatePricePreview
-);
+      const id =
+        button.dataset.id;
 
 
-document.getElementById(
-  "productForm"
-).addEventListener(
-  "submit",
-  saveProduct
-);
+      if(action === "edit"){
+
+        editProduct(id);
+
+      }
 
 
-document.getElementById(
-  "closeModal"
-).addEventListener(
-  "click",
-  closeModal
-);
+      if(action === "delete"){
 
+        deleteProduct(id);
 
-document.getElementById(
-  "cancelButton"
-).addEventListener(
-  "click",
-  closeModal
-);
-
-
-document.getElementById(
-  "productModal"
-).addEventListener(
-  "click",
-  function(event) {
-
-    if (
-      event.target ===
-      this
-    ) {
-
-      closeModal();
+      }
 
     }
+  );
 
-  }
-);
+
+/* =========================================================
+   ADD PRODUCT
+   ========================================================= */
+
+$("addProductButton")
+  .addEventListener(
+    "click",
+    openAddProduct
+  );
+
+
+/* =========================================================
+   REFRESH
+   ========================================================= */
+
+$("refreshButton")
+  .addEventListener(
+    "click",
+    async function(){
+
+      await loadProducts();
+
+    }
+  );
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+$("productSearch")
+  .addEventListener(
+    "input",
+    renderProducts
+  );
+
+
+/* =========================================================
+   FORM SUBMIT
+   ========================================================= */
+
+$("productForm")
+  .addEventListener(
+    "submit",
+    saveProduct
+  );
+
+
+/* =========================================================
+   CLOSE BUTTON
+   ========================================================= */
+
+$("closeModal")
+  .addEventListener(
+    "click",
+    closeModal
+  );
+
+
+/* =========================================================
+   CANCEL
+   ========================================================= */
+
+$("cancelButton")
+  .addEventListener(
+    "click",
+    closeModal
+  );
+
+
+/* =========================================================
+   CLICK OUTSIDE MODAL
+   ========================================================= */
+
+$("productModal")
+  .addEventListener(
+    "click",
+    function(event){
+
+      if(
+        event.target ===
+        this
+      ){
+
+        closeModal();
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   GO TO LOGIN
+   ========================================================= */
+
+$("goToLoginButton")
+  .addEventListener(
+    "click",
+    function(){
+
+      window.location.href =
+        "login.html";
+
+    }
+  );
 
 
 /* =========================================================
    SIGN OUT
    ========================================================= */
 
-document.getElementById(
-  "logoutButton"
-).addEventListener(
-  "click",
-  async function() {
+/*
+ * IMPORTANT:
+ * Logout now returns to HOME PAGE,
+ * not login.html.
+ */
 
-    try {
+$("logoutButton")
+  .addEventListener(
+    "click",
+    async function(){
 
-      await supabaseClient
-        .auth
-        .signOut();
+      const button =
+        $("logoutButton");
 
-    } finally {
 
-      window.location.href =
-        "login.html";
+      button.disabled =
+        true;
+
+      button.textContent =
+        "Signing Out...";
+
+
+      try{
+
+        const {
+          error
+        } =
+          await supabaseClient
+            .auth
+            .signOut();
+
+
+        if(error){
+
+          console.error(
+            "Sign out error:",
+            error
+          );
+
+        }
+
+      }catch(error){
+
+        console.error(
+          "Sign out exception:",
+          error
+        );
+
+      }finally{
+
+        /*
+         * ALWAYS go to home page.
+         */
+
+        window.location.href =
+          "index.html";
+
+      }
 
     }
-
-  }
-);
+  );
 
 
 /* =========================================================
-   AUTH STATE CHANGE
-   ========================================================= */
-
-supabaseClient.auth.onAuthStateChange(
-  function(event, session) {
-
-    console.log(
-      "Auth state changed:",
-      event
-    );
-
-    /*
-     * Don't reload the page for TOKEN_REFRESHED.
-     * Supabase automatically maintains the session.
-     */
-
-    if (
-      event === "SIGNED_OUT"
-    ) {
-
-      window.location.href =
-        "login.html";
-
-    }
-
-  }
-);
-
-
-/* =========================================================
-   START
+   START ADMIN
    ========================================================= */
 
 checkAdmin();
