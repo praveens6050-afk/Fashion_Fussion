@@ -1,1088 +1,1210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
-<title>Fashion_Fussion — Everyday Wholesale, Retail Simple</title>
-<meta name="description" content="Home, kitchen, beauty, decor and travel essentials at honest retail prices. Sourced wholesale, delivered doorstep.">
-
-<style>
-  :root{
-    --paper:#F4EEE1;
-    --paper-dim:#EAE1CC;
-    --ink:#1C2333;
-    --ink-soft:#4B5266;
-    --indigo:#1B2A4A;
-    --marigold:#E5972E;
-    --marigold-deep:#C97D1B;
-    --bottle:#2F5233;
-    --line:#D8CDAE;
-    --white:#FFFDF8;
-    --danger:#B23A2E;
-    --radius-stamp:3px;
-    --serif:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
-    --sans:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
-  }
-
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
-
-  *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
-
-  body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:var(--sans);
-    -webkit-font-smoothing:antialiased;
-  }
-
-  img{
-    max-width:100%;
-    display:block;
-  }
-
-  a{
-    color:inherit;
-    text-decoration:none;
-  }
-
-  button{
-    font-family:inherit;
-    cursor:pointer;
-  }
-
-  .wrap{
-    max-width:1180px;
-    margin:0 auto;
-    padding:0 24px;
-  }
-
-  .ticker{
-    background:var(--indigo);
-    color:var(--paper);
-    overflow:hidden;
-    white-space:nowrap;
-    font-size:13px;
-    letter-spacing:.02em;
-    border-bottom:1px solid #0f1830;
-  }
-
-  .ticker-track{
-    display:inline-flex;
-    padding:9px 0;
-    animation:scroll 32s linear infinite;
-  }
-
-  .ticker-track span{
-    padding:0 28px;
-    position:relative;
-  }
-
-  .ticker-track span:not(:last-child)::after{
-    content:"•";
-    position:absolute;
-    right:-2px;
-    color:var(--marigold);
-  }
-
-  @keyframes scroll{
-    from{transform:translateX(0);}
-    to{transform:translateX(-50%);}
-  }
-
-  header.site{
-    position:sticky;
-    top:0;
-    z-index:50;
-    background:var(--paper);
-    border-bottom:1px solid var(--line);
-  }
-
-  .nav{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:16px 0;
-    gap:24px;
-  }
-
-  .logo{
-    font-family:var(--serif);
-    font-weight:700;
-    font-size:26px;
-    color:var(--indigo);
-    display:flex;
-    align-items:baseline;
-    gap:8px;
-  }
-
-  .logo small{
-    font-family:var(--sans);
-    font-weight:500;
-    font-size:11px;
-    color:var(--ink-soft);
-    letter-spacing:.06em;
-  }
-
-  .nav-links{
-    display:flex;
-    gap:28px;
-    font-size:15px;
-    font-weight:500;
-  }
-
-  .nav-links a{
-    padding:6px 0;
-    border-bottom:2px solid transparent;
-    transition:border-color .15s;
-  }
-
-  .nav-links a:hover{
-    border-color:var(--marigold);
-  }
-
-  .nav-actions{
-    display:flex;
-    align-items:center;
-    gap:18px;
-  }
-
-  .icon-btn{
-    background:none;
-    border:none;
-    color:var(--ink);
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-size:14px;
-    font-weight:600;
-    position:relative;
-  }
-
-  .cart-count{
-    background:var(--marigold-deep);
-    color:var(--white);
-    font-size:11px;
-    font-weight:700;
-    border-radius:50%;
-    width:18px;
-    height:18px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:absolute;
-    top:-8px;
-    right:-10px;
-  }
-
-  .nav-toggle{
-    display:none;
-    background:none;
-    border:none;
-    font-size:22px;
-  }
-
-  .hero{
-    position:relative;
-    padding:88px 0 64px;
-    overflow:hidden;
-    border-bottom:1px solid var(--line);
-  }
-
-  .hero-bg{
-    position:absolute;
-    inset:0;
-    background-size:cover;
-    background-position:center;
-  }
-
-  .hero-scrim{
-    position:absolute;
-    inset:0;
-    background:linear-gradient(
-      100deg,
-      var(--paper) 0%,
-      var(--paper) 38%,
-      rgba(244,238,225,.88) 55%,
-      rgba(244,238,225,.55) 75%,
-      rgba(244,238,225,.25) 100%
-    );
-  }
-
-  .hero-inner{
-    position:relative;
-    z-index:1;
-    display:grid;
-    grid-template-columns:1.1fr .9fr;
-    gap:48px;
-    align-items:center;
-  }
-
-  .hero-eyebrow{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    font-size:13px;
-    font-weight:600;
-    color:var(--bottle);
-    background:#E4E9DD;
-    padding:6px 12px;
-    border-radius:100px;
-    margin-bottom:22px;
-  }
-
-  .hero h1{
-    font-family:var(--serif);
-    font-size:clamp(38px,4.6vw,58px);
-    line-height:1.04;
-    margin:0 0 20px;
-    color:var(--indigo);
-    max-width:11ch;
-  }
-
-  .hero p.lede{
-    font-size:17px;
-    line-height:1.6;
-    color:var(--ink-soft);
-    max-width:46ch;
-    margin:0 0 28px;
-  }
-
-  .hero-ctas{
-    display:flex;
-    gap:14px;
-    flex-wrap:wrap;
-  }
-
-  .btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    padding:14px 26px;
-    border-radius:var(--radius-stamp);
-    font-weight:600;
-    font-size:15px;
-    border:1.5px solid transparent;
-    transition:transform .12s ease,box-shadow .12s ease;
-  }
-
-  .btn-primary{
-    background:var(--indigo);
-    color:var(--paper);
-  }
-
-  .btn-primary:hover{
-    transform:translateY(-1px);
-    box-shadow:0 6px 0 0 #0f1830;
-  }
-
-  .btn-ghost{
-    background:transparent;
-    border-color:var(--indigo);
-    color:var(--indigo);
-  }
-
-  .btn-ghost:hover{
-    background:var(--indigo);
-    color:var(--paper);
-  }
-
-  .hero-stats{
-    display:flex;
-    gap:28px;
-    margin-top:36px;
-    flex-wrap:wrap;
-  }
-
-  .stat b{
-    font-family:var(--serif);
-    font-size:26px;
-    color:var(--indigo);
-    display:block;
-  }
-
-  .stat span{
-    font-size:12.5px;
-    color:var(--ink-soft);
-  }
-
-  .hero-visual{
-    position:relative;
-  }
-
-  .stall-card{
-    background:var(--white);
-    border:1px solid var(--line);
-    border-radius:6px;
-    padding:18px;
-    box-shadow:0 18px 40px -22px rgba(27,42,74,.5);
-    position:relative;
-  }
-
-  .stall-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-
-  .stall-grid img{
-    border-radius:4px;
-    aspect-ratio:1/1;
-    object-fit:cover;
-    border:1px solid var(--line);
-  }
-
-  .stall-badge{
-    position:absolute;
-    top:-14px;
-    left:18px;
-    background:var(--marigold);
-    color:var(--indigo);
-    font-weight:700;
-    font-size:12.5px;
-    padding:7px 14px;
-    border-radius:3px;
-    transform:rotate(-2deg);
-    box-shadow:0 4px 0 0 var(--marigold-deep);
-  }
-
-  .trust-strip{
-    background:var(--indigo);
-  }
-
-  .trust-strip-inner{
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:space-between;
-    gap:14px;
-    padding:16px 24px;
-    color:var(--paper);
-    font-size:13px;
-    font-weight:600;
-  }
-
-  .trust-item{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    opacity:.92;
-  }
-
-  .trust-ico{
-    font-size:16px;
-  }
-
-  .cat-banner-grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:16px;
-    margin-bottom:24px;
-  }
-
-  .cat-banner{
-    position:relative;
-    aspect-ratio:4/3;
-    border-radius:6px;
-    overflow:hidden;
-    background-size:cover;
-    background-position:center;
-    cursor:pointer;
-    border:1px solid var(--line);
-  }
-
-  .cat-banner::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(
-      180deg,
-      rgba(27,42,74,0) 40%,
-      rgba(20,24,38,.82) 100%
-    );
-  }
-
-  .cat-banner span{
-    position:absolute;
-    left:12px;
-    right:12px;
-    bottom:10px;
-    z-index:1;
-    color:var(--paper);
-    font-weight:700;
-    font-size:13.5px;
-    line-height:1.25;
-  }
-
-  .promo-band{
-    position:relative;
-    overflow:hidden;
-    padding:64px 0;
-  }
-
-  .promo-bg{
-    position:absolute;
-    inset:0;
-    background-size:cover;
-    background-position:center;
-  }
-
-  .promo-scrim{
-    position:absolute;
-    inset:0;
-    background:rgba(20,24,38,.72);
-  }
-
-  .promo-content{
-    position:relative;
-    z-index:1;
-    text-align:center;
-    color:var(--paper);
-  }
-
-  .promo-content h2{
-    font-family:var(--serif);
-    font-size:clamp(26px,3.4vw,38px);
-    margin:0 0 12px;
-    max-width:20ch;
-    margin-left:auto;
-    margin-right:auto;
-  }
-
-  .promo-content p{
-    margin:0 0 24px;
-    color:#D9DEE8;
-    font-size:15px;
-  }
-
-  .rating-summary{
-    text-align:right;
-    flex-shrink:0;
-  }
-
-  .rating-num{
-    font-family:var(--serif);
-    font-size:34px;
-    color:var(--indigo);
-    font-weight:700;
-  }
-
-  .rating-num span{
-    font-size:16px;
-    color:var(--ink-soft);
-    font-weight:500;
-  }
-
-  .rating-stars{
-    color:var(--marigold-deep);
-    font-size:15px;
-    letter-spacing:2px;
-  }
-
-  .rating-count{
-    font-size:12px;
-    color:var(--ink-soft);
-  }
-
-  .testimonial-head{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:12px;
-  }
-
-  .avatar{
-    width:36px;
-    height:36px;
-    border-radius:50%;
-    background:var(--indigo);
-    color:var(--paper);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:700;
-    font-size:14px;
-    flex-shrink:0;
-  }
-
-  .testimonial .stars{
-    color:var(--marigold-deep);
-    font-size:13px;
-    display:block;
-    margin-bottom:2px;
-  }
-
-  .section{
-    padding:56px 0;
-  }
-
-  .section-head{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:24px;
-    margin-bottom:28px;
-    flex-wrap:wrap;
-  }
-
-  .section-head h2{
-    font-family:var(--serif);
-    font-size:32px;
-    margin:0 0 6px;
-    color:var(--indigo);
-  }
-
-  .section-head p{
-    margin:0;
-    color:var(--ink-soft);
-    font-size:15px;
-    max-width:52ch;
-  }
-
-  .chips{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-bottom:34px;
-  }
-
-  .chip{
-    padding:9px 16px;
-    border-radius:100px;
-    border:1.5px solid var(--line);
-    background:var(--white);
-    font-size:13.5px;
-    font-weight:600;
-    color:var(--ink-soft);
-    transition:all .15s;
-  }
-
-  .chip.active,
-  .chip:hover{
-    background:var(--indigo);
-    color:var(--paper);
-    border-color:var(--indigo);
-  }
-
-  .product-grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:20px;
-  }
-
-  .product-card{
-    background:var(--white);
-    border:1px solid var(--line);
-    border-radius:6px;
-    overflow:hidden;
-    transition:transform .15s,box-shadow .15s;
-  }
-
-  .product-card:hover{
-    transform:translateY(-3px);
-    box-shadow:0 12px 28px -20px rgba(27,42,74,.55);
-  }
-
-  .product-image{
-    position:relative;
-    background:var(--paper-dim);
-    aspect-ratio:1/1;
-    overflow:hidden;
-  }
-
-  .product-image img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-  }
-
-  .badge{
-    position:absolute;
-    top:10px;
-    left:10px;
-    background:var(--marigold);
-    color:var(--indigo);
-    padding:5px 9px;
-    font-size:11px;
-    font-weight:700;
-    border-radius:3px;
-  }
-
-  .product-info{
-    padding:15px;
-  }
-
-  .product-category{
-    color:var(--ink-soft);
-    font-size:11px;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    margin-bottom:6px;
-  }
-
-  .product-name{
-    font-family:var(--serif);
-    font-size:18px;
-    line-height:1.2;
-    margin-bottom:8px;
-    color:var(--indigo);
-  }
-
-  .product-description{
-    color:var(--ink-soft);
-    font-size:12.5px;
-    line-height:1.45;
-    margin-bottom:12px;
-  }
-
-  .product-bottom{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-  }
-
-  .price{
-    font-weight:700;
-    font-size:17px;
-    color:var(--indigo);
-  }
-
-  .rating{
-    font-size:12px;
-    color:var(--ink-soft);
-  }
-
-  .add-btn{
-    width:100%;
-    margin-top:12px;
-    border:1px solid var(--indigo);
-    background:var(--indigo);
-    color:var(--paper);
-    padding:10px;
-    border-radius:3px;
-    font-weight:600;
-    font-size:13px;
-  }
-
-  .add-btn:hover{
-    background:var(--marigold);
-    color:var(--indigo);
-    border-color:var(--marigold);
-  }
-
-  .testimonial-grid{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:18px;
-  }
-
-  .testimonial{
-    background:var(--white);
-    border:1px solid var(--line);
-    padding:20px;
-    border-radius:6px;
-  }
-
-  .who{
-    font-size:13px;
-    font-weight:700;
-  }
-
-  .testimonial p{
-    font-size:14px;
-    line-height:1.6;
-    color:var(--ink-soft);
-    margin:0;
-  }
-
-  .about-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:40px;
-    align-items:center;
-  }
-
-  .about-copy h2{
-    font-family:var(--serif);
-    color:var(--indigo);
-    font-size:34px;
-    margin:0 0 14px;
-  }
-
-  .about-copy p{
-    color:var(--ink-soft);
-    line-height:1.7;
-    font-size:15px;
-  }
-
-  .about-card{
-    background:var(--indigo);
-    color:var(--paper);
-    padding:32px;
-    border-radius:6px;
-  }
-
-  .about-card h3{
-    font-family:var(--serif);
-    font-size:26px;
-    margin:0 0 12px;
-  }
-
-  .about-card p{
-    color:#D9DEE8;
-    line-height:1.65;
-    font-size:14px;
-    margin:0;
-  }
-
-  footer{
-    background:var(--indigo);
-    color:var(--paper);
-    padding:42px 0 26px;
-  }
-
-  .footer-grid{
-    display:grid;
-    grid-template-columns:1.4fr .8fr .8fr;
-    gap:40px;
-  }
-
-  .footer-brand{
-    font-family:var(--serif);
-    font-size:27px;
-    font-weight:700;
-    margin-bottom:10px;
-  }
-
-  .footer-copy{
-    color:#D9DEE8;
-    line-height:1.6;
-    font-size:13.5px;
-    max-width:42ch;
-  }
-
-  .footer-title{
-    font-weight:700;
-    margin-bottom:12px;
-  }
-
-  .footer-links{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    color:#D9DEE8;
-    font-size:13.5px;
-  }
-
-  .footer-links a:hover{
-    color:var(--marigold);
-  }
-
-  .footer-bottom{
-    margin-top:35px;
-    padding-top:18px;
-    border-top:1px solid rgba(255,255,255,.15);
-    display:flex;
-    justify-content:space-between;
-    gap:20px;
-    color:#BFC6D3;
-    font-size:12px;
-    flex-wrap:wrap;
-  }
-
-  .overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.45);
-    z-index:90;
-    display:none;
-  }
-
-  .overlay.open{
-    display:block;
-  }
-
-  .cart-drawer{
-    position:fixed;
-    right:0;
-    top:0;
-    bottom:0;
-    width:min(440px,100%);
-    background:var(--white);
-    z-index:100;
-    transform:translateX(100%);
-    transition:transform .22s ease;
-    display:flex;
-    flex-direction:column;
-    border-left:1px solid var(--line);
-  }
-
-  .cart-drawer.open{
-    transform:translateX(0);
-  }
-
-  .cart-head{
-    padding:20px;
-    border-bottom:1px solid var(--line);
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-
-  .cart-head h3{
-    font-family:var(--serif);
-    font-size:25px;
-    margin:0;
-    color:var(--indigo);
-  }
-
-  .drawer-close{
-    background:none;
-    border:none;
-    font-size:22px;
-    color:var(--ink);
-  }
-
-  .cart-body{
-    flex:1;
-    overflow:auto;
-    padding:18px;
-  }
-
-  .cart-empty{
-    text-align:center;
-    color:var(--ink-soft);
-    padding:60px 20px;
-  }
-
-  .cart-item{
-    display:grid;
-    grid-template-columns:70px 1fr auto;
-    gap:12px;
-    align-items:center;
-    padding:12px 0;
-    border-bottom:1px solid var(--line);
-  }
-
-  .cart-item img{
-    width:70px;
-    height:70px;
-    object-fit:cover;
-    border-radius:4px;
-    border:1px solid var(--line);
-  }
-
-  .cart-item-name{
-    font-family:var(--serif);
-    font-size:16px;
-    color:var(--indigo);
-  }
-
-  .cart-item-price{
-    font-size:13px;
-    color:var(--ink-soft);
-    margin-top:3px;
-  }
-
-  .qty-controls{
-    display:flex;
-    align-items:center;
-    gap:7px;
-    margin-top:7px;
-  }
-
-  .qty-btn{
-    width:25px;
-    height:25px;
-    border:1px solid var(--line);
-    background:var(--paper);
-    border-radius:3px;
-  }
-
-  .remove-btn{
-    border:none;
-    background:none;
-    color:var(--danger);
-    font-size:12px;
-    padding:0;
-    margin-top:5px;
-  }
-
-  .cart-footer{
-    padding:18px;
-    border-top:1px solid var(--line);
-    background:var(--paper);
-  }
-
-  .subtotal-row{
-    display:flex;
-    justify-content:space-between;
-    font-weight:700;
-    font-size:17px;
-    margin-bottom:14px;
-  }
-
-  .checkout-btn{
-    width:100%;
-    padding:14px;
-    background:var(--indigo);
-    color:var(--paper);
-    border:none;
-    border-radius:3px;
-    font-weight:700;
-    font-size:15px;
-  }
-
-  .checkout-btn:hover{
-    background:var(--marigold);
-    color:var(--indigo);
-  }
-
-  @media(max-width:900px){
-    .hero-inner{
-      grid-template-columns:1fr;
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=5"
+  >
+
+  <title>Fashion_Fussion — Everyday Wholesale, Retail Simple</title>
+
+  <meta
+    name="description"
+    content="Home, kitchen, beauty, decor and travel essentials at honest retail prices."
+  >
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Your Supabase configuration -->
+  <script src="supabase-config.js"></script>
+
+  <!-- Razorpay -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <style>
+    :root{
+      --paper:#F4EEE1;
+      --paper-dim:#EAE1CC;
+      --ink:#1C2333;
+      --ink-soft:#4B5266;
+      --indigo:#1B2A4A;
+      --marigold:#E5972E;
+      --marigold-deep:#C97D1B;
+      --bottle:#2F5233;
+      --line:#D8CDAE;
+      --white:#FFFDF8;
+      --danger:#B23A2E;
+
+      --serif:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
+      --sans:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
     }
 
-    .hero-visual{
-      max-width:650px;
-      width:100%;
-      margin:auto;
+    *{
+      box-sizing:border-box;
     }
 
-    .product-grid{
-      grid-template-columns:repeat(3,1fr);
+    html{
+      scroll-behavior:smooth;
     }
 
-    .cat-banner-grid{
-      grid-template-columns:repeat(2,1fr);
-    }
-  }
-
-  @media(max-width:700px){
-    .wrap{
-      padding:0 16px;
+    body{
+      margin:0;
+      background:var(--paper);
+      color:var(--ink);
+      font-family:var(--sans);
+      -webkit-font-smoothing:antialiased;
     }
 
-    .nav{
-      padding:13px 0;
-    }
-
-    .nav-links{
-      display:none;
-    }
-
-    .nav-toggle{
+    img{
+      max-width:100%;
       display:block;
     }
 
-    .nav-actions{
-      gap:12px;
+    a{
+      color:inherit;
+      text-decoration:none;
+    }
+
+    button{
+      font-family:inherit;
+      cursor:pointer;
+    }
+
+    .wrap{
+      max-width:1180px;
+      margin:0 auto;
+      padding:0 24px;
+    }
+
+    /* ================= TICKER ================= */
+
+    .ticker{
+      background:var(--indigo);
+      color:var(--paper);
+      overflow:hidden;
+      white-space:nowrap;
+      font-size:13px;
+      letter-spacing:.02em;
+      border-bottom:1px solid #0f1830;
+    }
+
+    .ticker-track{
+      display:inline-flex;
+      padding:9px 0;
+      animation:scroll 32s linear infinite;
+    }
+
+    .ticker-track span{
+      padding:0 28px;
+      position:relative;
+    }
+
+    .ticker-track span:not(:last-child)::after{
+      content:"•";
+      position:absolute;
+      right:-2px;
+      color:var(--marigold);
+    }
+
+    @keyframes scroll{
+      from{
+        transform:translateX(0);
+      }
+
+      to{
+        transform:translateX(-50%);
+      }
+    }
+
+    /* ================= HEADER ================= */
+
+    header.site{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background:var(--paper);
+      border-bottom:1px solid var(--line);
+    }
+
+    .nav{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:16px 0;
+      gap:24px;
     }
 
     .logo{
-      font-size:22px;
+      font-family:var(--serif);
+      font-weight:700;
+      font-size:26px;
+      color:var(--indigo);
+      display:flex;
+      align-items:baseline;
+      gap:8px;
+      white-space:nowrap;
     }
 
-    .hero{
-      padding:55px 0 45px;
+    .logo small{
+      font-family:var(--sans);
+      font-weight:500;
+      font-size:11px;
+      color:var(--ink-soft);
+      letter-spacing:.06em;
     }
 
-    .hero-inner{
-      gap:30px;
+    .nav-links{
+      display:flex;
+      gap:28px;
+      font-size:15px;
+      font-weight:500;
     }
 
-    .hero h1{
-      max-width:100%;
+    .nav-links a{
+      padding:6px 0;
+      border-bottom:2px solid transparent;
     }
 
-    .product-grid{
-      grid-template-columns:repeat(2,1fr);
-      gap:12px;
+    .nav-links a:hover{
+      border-color:var(--marigold);
     }
 
-    .testimonial-grid{
-      grid-template-columns:1fr;
-    }
-
-    .about-grid{
-      grid-template-columns:1fr;
-    }
-
-    .footer-grid{
-      grid-template-columns:1fr;
-      gap:25px;
-    }
-
-    .trust-strip-inner{
-      padding:14px 16px;
-    }
-  }
-
-  @media(max-width:450px){
-    .product-grid{
-      grid-template-columns:1fr 1fr;
-    }
-
-    .product-info{
-      padding:11px;
-    }
-
-    .product-name{
-      font-size:16px;
-    }
-
-    .hero-stats{
+    .nav-actions{
+      display:flex;
+      align-items:center;
       gap:18px;
     }
 
+    .icon-btn{
+      background:none;
+      border:none;
+      color:var(--ink);
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-size:14px;
+      font-weight:600;
+      position:relative;
+    }
+
+    .cart-count{
+      background:var(--marigold-deep);
+      color:var(--white);
+      font-size:11px;
+      font-weight:700;
+      border-radius:50%;
+      width:18px;
+      height:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:absolute;
+      top:-8px;
+      right:-10px;
+    }
+
+    .nav-toggle{
+      display:none;
+      background:none;
+      border:none;
+      font-size:22px;
+    }
+
+    /* ================= HERO ================= */
+
+    .hero{
+      position:relative;
+      padding:88px 0 64px;
+      overflow:hidden;
+      border-bottom:1px solid var(--line);
+    }
+
+    .hero-bg{
+      position:absolute;
+      inset:0;
+      background-image:url(
+        "https://picsum.photos/seed/rozana-hero-market/1600/1100"
+      );
+      background-size:cover;
+      background-position:center;
+    }
+
+    .hero-scrim{
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(
+          100deg,
+          var(--paper) 0%,
+          var(--paper) 38%,
+          rgba(244,238,225,.88) 55%,
+          rgba(244,238,225,.55) 75%,
+          rgba(244,238,225,.25) 100%
+        );
+    }
+
+    .hero-inner{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:48px;
+      align-items:center;
+    }
+
+    .hero-eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      font-weight:600;
+      color:var(--bottle);
+      background:#E4E9DD;
+      padding:6px 12px;
+      border-radius:100px;
+      margin-bottom:22px;
+    }
+
+    .hero h1{
+      font-family:var(--serif);
+      font-size:clamp(38px,4.6vw,58px);
+      line-height:1.04;
+      margin:0 0 20px;
+      color:var(--indigo);
+      max-width:11ch;
+    }
+
+    .hero p.lede{
+      font-size:17px;
+      line-height:1.6;
+      color:var(--ink-soft);
+      max-width:46ch;
+      margin:0 0 28px;
+    }
+
+    .hero-ctas{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:14px 26px;
+      border-radius:3px;
+      font-weight:600;
+      font-size:15px;
+      border:1.5px solid transparent;
+      transition:transform .12s ease,box-shadow .12s ease;
+    }
+
+    .btn-primary{
+      background:var(--indigo);
+      color:var(--paper);
+    }
+
+    .btn-primary:hover{
+      transform:translateY(-1px);
+      box-shadow:0 6px 0 0 #0f1830;
+    }
+
+    .btn-ghost{
+      background:transparent;
+      border-color:var(--indigo);
+      color:var(--indigo);
+    }
+
+    .btn-ghost:hover{
+      background:var(--indigo);
+      color:var(--paper);
+    }
+
+    .hero-stats{
+      display:flex;
+      gap:28px;
+      margin-top:36px;
+      flex-wrap:wrap;
+    }
+
+    .stat b{
+      font-family:var(--serif);
+      font-size:26px;
+      color:var(--indigo);
+      display:block;
+    }
+
+    .stat span{
+      font-size:12.5px;
+      color:var(--ink-soft);
+    }
+
+    .hero-visual{
+      position:relative;
+    }
+
+    .stall-card{
+      background:var(--white);
+      border:1px solid var(--line);
+      border-radius:6px;
+      padding:18px;
+      box-shadow:0 18px 40px -22px rgba(27,42,74,.5);
+      position:relative;
+    }
+
+    .stall-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .stall-grid img{
+      border-radius:4px;
+      aspect-ratio:1/1;
+      object-fit:cover;
+      border:1px solid var(--line);
+      background:#eee;
+    }
+
+    .stall-badge{
+      position:absolute;
+      top:-14px;
+      left:18px;
+      background:var(--marigold);
+      color:var(--indigo);
+      font-weight:700;
+      font-size:12.5px;
+      padding:7px 14px;
+      border-radius:3px;
+      transform:rotate(-2deg);
+      box-shadow:0 4px 0 0 var(--marigold-deep);
+      z-index:2;
+    }
+
+    /* ================= TRUST ================= */
+
+    .trust-strip{
+      background:var(--indigo);
+    }
+
+    .trust-strip-inner{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      gap:14px;
+      padding:16px 24px;
+      color:var(--paper);
+      font-size:13px;
+      font-weight:600;
+    }
+
+    .trust-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      opacity:.92;
+    }
+
+    .trust-ico{
+      font-size:16px;
+    }
+
+    /* ================= SECTIONS ================= */
+
+    .section{
+      padding:56px 0;
+    }
+
+    .section-head{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:24px;
+      margin-bottom:28px;
+      flex-wrap:wrap;
+    }
+
+    .section-head h2{
+      font-family:var(--serif);
+      font-size:32px;
+      margin:0 0 6px;
+      color:var(--indigo);
+    }
+
+    .section-head p{
+      margin:0;
+      color:var(--ink-soft);
+      font-size:15px;
+      max-width:52ch;
+    }
+
+    /* ================= CATEGORIES ================= */
+
     .cat-banner-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:16px;
+      margin-bottom:24px;
+    }
+
+    .cat-banner{
+      position:relative;
+      aspect-ratio:4/3;
+      border-radius:6px;
+      overflow:hidden;
+      background-size:cover;
+      background-position:center;
+      cursor:pointer;
+      border:1px solid var(--line);
+    }
+
+    .cat-banner::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(27,42,74,0) 40%,
+          rgba(20,24,38,.82) 100%
+        );
+    }
+
+    .cat-banner span{
+      position:absolute;
+      left:12px;
+      right:12px;
+      bottom:10px;
+      z-index:1;
+      color:var(--paper);
+      font-weight:700;
+      font-size:13.5px;
+      line-height:1.25;
+    }
+
+    .chips{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .chip{
+      padding:9px 16px;
+      border-radius:100px;
+      border:1.5px solid var(--line);
+      background:var(--white);
+      font-size:13.5px;
+      font-weight:600;
+      color:var(--ink-soft);
+      transition:all .15s;
+    }
+
+    .chip.active,
+    .chip:hover{
+      border-color:var(--indigo);
+      color:var(--indigo);
+      background:var(--paper-dim);
+    }
+
+    /* ================= PRODUCTS ================= */
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:20px;
+    }
+
+    .card{
+      background:var(--white);
+      border:1px solid var(--line);
+      border-radius:6px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      transition:box-shadow .15s ease,transform .15s ease;
+    }
+
+    .card:hover{
+      box-shadow:0 16px 30px -20px rgba(27,42,74,.4);
+      transform:translateY(-2px);
+    }
+
+    .card-media{
+      position:relative;
+      aspect-ratio:1/1;
+      background:#F0EAD8;
+      overflow:hidden;
+    }
+
+    .card-media img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .tag{
+      position:absolute;
+      top:10px;
+      left:10px;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.03em;
+      padding:4px 9px;
+      border-radius:3px;
+      color:var(--white);
+      z-index:2;
+    }
+
+    .tag.new{
+      background:var(--bottle);
+    }
+
+    .tag.best{
+      background:var(--marigold-deep);
+    }
+
+    .card-body{
+      padding:14px 14px 16px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      flex:1;
+    }
+
+    .card-cat{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:var(--ink-soft);
+      font-weight:600;
+    }
+
+    .card-title{
+      font-size:14.5px;
+      font-weight:600;
+      line-height:1.35;
+      color:var(--ink);
+      min-height:39px;
+    }
+
+    .card-rating{
+      font-size:12.5px;
+      color:var(--ink-soft);
+      display:flex;
+      align-items:center;
+      gap:5px;
+    }
+
+    .card-rating .stars{
+      color:var(--marigold-deep);
+      font-weight:700;
+    }
+
+    .card-price-row{
+      display:flex;
+      align-items:baseline;
+      gap:8px;
+      margin-top:auto;
+    }
+
+    .price{
+      font-family:var(--serif);
+      font-weight:700;
+      font-size:19px;
+      color:var(--indigo);
+    }
+
+    .card-actions{
+      display:flex;
+      gap:8px;
+      margin-top:6px;
+    }
+
+    .add-btn{
+      flex:1;
+      background:var(--indigo);
+      color:var(--paper);
+      border:none;
+      padding:10px 12px;
+      border-radius:4px;
+      font-weight:600;
+      font-size:13.5px;
+      transition:background .15s;
+    }
+
+    .add-btn:hover{
+      background:#0f1830;
+    }
+
+    .add-btn.added{
+      background:var(--bottle);
+    }
+
+    .loading-products,
+    .empty-products{
+      grid-column:1/-1;
+      background:var(--white);
+      border:1px solid var(--line);
+      padding:60px 20px;
+      text-align:center;
+      border-radius:6px;
+      color:var(--ink-soft);
+    }
+
+    /* ================= PROMO ================= */
+
+    .promo-band{
+      position:relative;
+      overflow:hidden;
+      padding:64px 0;
+    }
+
+    .promo-bg{
+      position:absolute;
+      inset:0;
+      background-image:url(
+        "https://picsum.photos/seed/rozana-sale-crates/1600/700"
+      );
+      background-size:cover;
+      background-position:center;
+    }
+
+    .promo-scrim{
+      position:absolute;
+      inset:0;
+      background:rgba(20,24,38,.72);
+    }
+
+    .promo-content{
+      position:relative;
+      z-index:1;
+      text-align:center;
+      color:var(--paper);
+    }
+
+    .promo-content h2{
+      font-family:var(--serif);
+      font-size:clamp(26px,3.4vw,38px);
+      margin:0 auto 12px;
+      max-width:20ch;
+    }
+
+    .promo-content p{
+      margin:0 0 24px;
+      color:#D9DEE8;
+      font-size:15px;
+    }
+
+    /* ================= PROPS ================= */
+
+    .props{
+      background:var(--indigo);
+      color:var(--paper);
+    }
+
+    .props .wrap{
+      padding-top:56px;
+      padding-bottom:56px;
+    }
+
+    .props h2{
+      font-family:var(--serif);
+      font-size:30px;
+      margin:0;
+      max-width:16ch;
+    }
+
+    .props-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:28px;
+      margin-top:28px;
+    }
+
+    .props-grid h3{
+      font-size:16px;
+      margin:0 0 8px;
+      color:var(--marigold);
+    }
+
+    .props-grid p{
+      font-size:14px;
+      line-height:1.55;
+      color:#CBD1DE;
+      margin:0;
+    }
+
+    /* ================= REVIEWS ================= */
+
+    .rating-summary{
+      text-align:right;
+      flex-shrink:0;
+    }
+
+    .rating-num{
+      font-family:var(--serif);
+      font-size:34px;
+      color:var(--indigo);
+      font-weight:700;
+    }
+
+    .rating-num span{
+      font-size:16px;
+      color:var(--ink-soft);
+      font-weight:500;
+    }
+
+    .rating-stars{
+      color:var(--marigold-deep);
+      font-size:15px;
+      letter-spacing:2px;
+    }
+
+    .rating-count{
+      font-size:12px;
+      color:var(--ink-soft);
+    }
+
+    .testimonials-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:20px;
+    }
+
+    .testimonial{
+      background:var(--white);
+      border:1px solid var(--line);
+      border-radius:6px;
+      padding:24px;
+    }
+
+    .testimonial-head{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .avatar{
+      width:36px;
+      height:36px;
+      border-radius:50%;
+      background:var(--indigo);
+      color:var(--paper);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      font-size:14px;
+      flex-shrink:0;
+    }
+
+    .testimonial .stars{
+      color:var(--marigold-deep);
+      font-size:13px;
+      display:block;
+      margin-bottom:2px;
+    }
+
+    .testimonial p{
+      font-size:15px;
+      line-height:1.6;
+      color:var(--ink);
+      margin:0 0 16px;
+    }
+
+    .testimonial .who{
+      font-size:13px;
+      color:var(--ink-soft);
+      font-weight:600;
+    }
+
+    /* ================= CTA ================= */
+
+    .cta-band{
+      background:var(--marigold);
+      color:var(--indigo);
+      text-align:center;
+      padding:52px 24px;
+      border-radius:8px;
+      margin:0 24px 64px;
+    }
+
+    .cta-band h2{
+      font-family:var(--serif);
+      font-size:32px;
+      margin:0 0 10px;
+    }
+
+    .cta-band p{
+      margin:0 0 24px;
+      font-size:15px;
+    }
+
+    /* ================= FOOTER ================= */
+
+    footer{
+      background:#151B2C;
+      color:#B9C0D1;
+      padding:56px 0 26px;
+    }
+
+    .footer-grid{
+      display:grid;
+      grid-template-columns:1.4fr 1fr 1fr 1fr;
+      gap:32px;
+      padding-bottom:36px;
+      border-bottom:1px solid #262E44;
+    }
+
+    .footer-logo{
+      font-family:var(--serif);
+      font-size:22px;
+      color:var(--paper);
+      margin-bottom:10px;
+    }
+
+    footer p{
+      font-size:13.5px;
+      line-height:1.6;
+      color:#93A0B8;
+      max-width:32ch;
+    }
+
+    footer h4{
+      color:var(--paper);
+      font-size:13.5px;
+      margin:0 0 14px;
+    }
+
+    footer ul{
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:flex;
+      flex-direction:column;
+      gap:9px;
+    }
+
+    footer ul a{
+      font-size:13.5px;
+      color:#93A0B8;
+    }
+
+    footer ul a:hover{
+      color:var(--marigold);
+    }
+
+    .footer-bottom{
+      display:flex;
+      justify-content:space-between;
+      padding-top:22px;
+      font-size:12.5px;
+      color:#6C7891;
+      flex-wrap:wrap;
       gap:10px;
     }
-  }
-</style>
+
+    /* ================= CART ================= */
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(20,24,38,.45);
+      z-index:90;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s;
+    }
+
+    .overlay.open{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    .drawer{
+      position:fixed;
+      top:0;
+      right:0;
+      height:100%;
+      width:400px;
+      max-width:92vw;
+      background:var(--white);
+      z-index:91;
+      box-shadow:-16px 0 40px rgba(0,0,0,.15);
+      transform:translateX(100%);
+      transition:transform .25s ease;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .drawer.open{
+      transform:translateX(0);
+    }
+
+    .drawer-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:20px 22px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .drawer-head h3{
+      font-family:var(--serif);
+      font-size:21px;
+      margin:0;
+      color:var(--indigo);
+    }
+
+    .drawer-close{
+      background:none;
+      border:none;
+      font-size:22px;
+      color:var(--ink-soft);
+    }
+
+    .drawer-body{
+      flex:1;
+      overflow-y:auto;
+      padding:16px 22px;
+    }
+
+    .cart-item{
+      display:flex;
+      gap:12px;
+      padding:14px 0;
+      border-bottom:1px solid var(--line);
+    }
+
+    .cart-item img{
+      width:64px;
+      height:64px;
+      object-fit:cover;
+      border-radius:4px;
+      border:1px solid var(--line);
+      background:#eee;
+    }
+
+    .cart-item-info{
+      flex:1;
+    }
+
+    .cart-item-info .name{
+      font-size:13.5px;
+      font-weight:600;
+      margin-bottom:4px;
+      line-height:1.3;
+    }
+
+    .cart-price{
+      font-size:13px;
+      color:var(--ink-soft);
+    }
+
+    .qty-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:8px;
+    }
+
+    .qty-btn{
+      width:24px;
+      height:24px;
+      border:1px solid var(--line);
+      background:var(--paper);
+      border-radius:4px;
+      font-weight:700;
+    }
+
+    .remove-btn{
+      background:none;
+      border:none;
+      color:var(--danger);
+      font-size:12px;
+      font-weight:600;
+      margin-left:auto;
+    }
+
+    .drawer-foot{
+      padding:20px 22px;
+      border-top:1px solid var(--line);
+    }
+
+    .subtotal-row{
+      display:flex;
+      justify-content:space-between;
+      font-size:15px;
+      margin-bottom:14px;
+      font-weight:700;
+      color:var(--indigo);
+    }
+
+    .empty-cart{
+      text-align:center;
+      padding:60px 20px;
+      color:var(--ink-soft);
+      font-size:14px;
+    }
+
+    /* ================= MOBILE ================= */
+
+    @media(max-width:980px){
+
+      .hero-inner{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        padding-top:48px;
+      }
+
+      .grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+
+      .props-grid{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .footer-grid{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .testimonials-grid{
+        grid-template-columns:1fr;
+      }
+
+      .cat-banner-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+
+      .trust-strip-inner{
+        justify-content:center;
+        text-align:center;
+      }
+    }
+
+    @media(max-width:640px){
+
+      .wrap{
+        padding-left:16px;
+        padding-right:16px;
+      }
+
+      .nav-links{
+        display:none;
+      }
+
+      .nav-toggle{
+        display:block;
+      }
+
+      .grid{
+        grid-template-columns:repeat(2,1fr);
+        gap:12px;
+      }
+
+      .card-title{
+        min-height:0;
+      }
+
+      .footer-grid{
+        grid-template-columns:1fr;
+      }
+
+      .hero-inner{
+        gap:32px;
+      }
+
+      .cat-banner-grid{
+        grid-template-columns:repeat(2,1fr);
+        gap:10px;
+      }
+
+      .section-head{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .rating-summary{
+        text-align:left;
+      }
+
+      .props-grid{
+        grid-template-columns:1fr;
+      }
+
+      .hero-stats{
+        gap:18px;
+      }
+
+      .drawer{
+        width:100%;
+        max-width:100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="ticker">
-  <div class="ticker-track">
-    <span>Everyday essentials</span>
-    <span>Honest retail pricing</span>
-    <span>Wholesale sourced</span>
-    <span>Delivered to your doorstep</span>
-    <span>Everyday essentials</span>
-    <span>Honest retail pricing</span>
-    <span>Wholesale sourced</span>
-    <span>Delivered to your doorstep</span>
+  <!-- ================= TICKER ================= -->
+
+  <div class="ticker">
+    <div class="ticker-track" id="tickerTrack"></div>
   </div>
-</div>
 
-<header class="site">
-  <div class="wrap">
-    <nav class="nav">
+  <!-- ================= HEADER ================= -->
 
-      <a href="#home" class="logo">
-        Fashion_Fussion
-        <small>EVERYDAY ESSENTIALS</small>
+  <header class="site">
+
+    <div class="wrap nav">
+
+      <a href="#top" class="logo">
+        Fashion
+        <small>_FUSSION</small>
       </a>
 
-      <div class="nav-links">
-        <a href="#shop">Shop</a>
-        <a href="#categories">Categories</a>
-        <a href="#reviews">Reviews</a>
-        <a href="#about">About</a>
-      </div>
+      <nav class="nav-links">
+
+        <a href="#shop">
+          Shop
+        </a>
+
+        <a href="#categories">
+          Categories
+        </a>
+
+        <a href="#contact">
+          Contact
+        </a>
+
+      </nav>
 
       <div class="nav-actions">
 
         <a
           href="login.html"
-          id="accountNav"
           class="icon-btn"
+          id="accountLink"
         >
-          Account
+          Login
         </a>
 
         <button
@@ -1090,56 +1212,58 @@
           id="cartOpenBtn"
           type="button"
         >
-          🛒
+          Cart
+
           <span
             class="cart-count"
             id="cartCount"
           >
             0
           </span>
+
         </button>
 
         <button
           class="nav-toggle"
+          id="mobileMenuBtn"
           type="button"
-          aria-label="Open menu"
+          aria-label="Menu"
         >
           ☰
         </button>
 
       </div>
 
-    </nav>
-  </div>
-</header>
+    </div>
 
-<main id="home">
+  </header>
 
-<section class="hero">
+  <!-- ================= HERO ================= -->
 
-  <div
-    class="hero-bg"
-    id="heroBg"
-  ></div>
+  <section
+    class="hero"
+    id="top"
+  >
 
-  <div class="hero-scrim"></div>
+    <div class="hero-bg"></div>
+    <div class="hero-scrim"></div>
 
-  <div class="wrap">
-
-    <div class="hero-inner">
+    <div class="wrap hero-inner">
 
       <div>
 
-        <div class="hero-eyebrow">
-          ✦ Simple shopping. Everyday value.
-        </div>
+        <span class="hero-eyebrow">
+          ● Sourced wholesale · Priced for retail
+        </span>
 
         <h1>
-          A better bazaar for everyday living.
+          Everyday things, honestly priced.
         </h1>
 
         <p class="lede">
-          Home, kitchen, beauty, decor and travel essentials at honest retail prices. Sourced wholesale, delivered doorstep.
+          Home, kitchen, beauty and travel essentials,
+          picked from our supplier's catalog and delivered
+          to your door — quality-checked before it ships.
         </p>
 
         <div class="hero-ctas">
@@ -1148,14 +1272,14 @@
             href="#shop"
             class="btn btn-primary"
           >
-            Shop now →
+            Browse the bazaar
           </a>
 
           <a
             href="#categories"
             class="btn btn-ghost"
           >
-            Browse categories
+            Explore categories
           </a>
 
         </div>
@@ -1163,18 +1287,33 @@
         <div class="hero-stats">
 
           <div class="stat">
-            <b id="heroProductCount">0</b>
-            <span>Products</span>
+            <b id="heroProductCount">
+              0
+            </b>
+
+            <span>
+              SKUs live right now
+            </span>
           </div>
 
           <div class="stat">
-            <b>4.8★</b>
-            <span>Customer rating</span>
+            <b id="heroCategoryCount">
+              0
+            </b>
+
+            <span>
+              categories stocked
+            </span>
           </div>
 
           <div class="stat">
-            <b>Simple</b>
-            <span>Everyday shopping</span>
+            <b>
+              ₹599
+            </b>
+
+            <span>
+              free delivery above this
+            </span>
           </div>
 
         </div>
@@ -1183,38 +1322,16 @@
 
       <div class="hero-visual">
 
+        <span class="stall-badge">
+          Fresh stock ↓
+        </span>
+
         <div class="stall-card">
 
-          <div class="stall-badge">
-            Everyday picks
-          </div>
-
-          <div class="stall-grid">
-
-            <img
-              id="heroThumb1"
-              src=""
-              alt="Featured product"
-            >
-
-            <img
-              id="heroThumb2"
-              src=""
-              alt="Featured product"
-            >
-
-            <img
-              id="heroThumb3"
-              src=""
-              alt="Featured product"
-            >
-
-            <img
-              id="heroThumb4"
-              src=""
-              alt="Featured product"
-            >
-
+          <div
+            class="stall-grid"
+            id="heroThumbs"
+          >
           </div>
 
         </div>
@@ -1223,2100 +1340,2797 @@
 
     </div>
 
-  </div>
+  </section>
 
-</section>
+  <!-- ================= TRUST ================= -->
 
-<div class="trust-strip">
+  <div class="trust-strip">
 
-  <div class="wrap">
-
-    <div class="trust-strip-inner">
-
-      <div class="trust-item">
-        <span class="trust-ico">✓</span>
-        Wholesale sourced
-      </div>
-
-      <div class="trust-item">
-        <span class="trust-ico">₹</span>
-        Honest pricing
-      </div>
+    <div class="wrap trust-strip-inner">
 
       <div class="trust-item">
         <span class="trust-ico">🚚</span>
-        Doorstep delivery
+        Free delivery above ₹599
       </div>
 
       <div class="trust-item">
-        <span class="trust-ico">★</span>
-        Customer-first service
+        <span class="trust-ico">✅</span>
+        Quality-checked before dispatch
+      </div>
+
+      <div class="trust-item">
+        <span class="trust-ico">↩️</span>
+        48-hr issue reporting window
+      </div>
+
+      <div class="trust-item">
+        <span class="trust-ico">💬</span>
+        Real support, 9am–7pm
       </div>
 
     </div>
 
   </div>
 
-</div>
+  <!-- ================= CATEGORIES ================= -->
 
-<section
-  class="section"
-  id="categories"
->
+  <section
+    class="section"
+    id="categories"
+  >
 
-  <div class="wrap">
+    <div class="wrap">
 
-    <div class="section-head">
+      <div class="section-head">
 
-      <div>
-        <h2>Shop by category</h2>
+        <div>
 
-        <p>
-          Browse useful products for home, kitchen, beauty, decor and travel.
-        </p>
+          <h2>
+            Shop by category
+          </h2>
+
+          <p>
+            Browse our currently active products
+            by category.
+          </p>
+
+        </div>
+
+      </div>
+
+      <div
+        class="cat-banner-grid"
+        id="categoryBanners"
+      >
+      </div>
+
+      <div
+        class="chips"
+        id="categoryChips"
+      >
       </div>
 
     </div>
 
-    <div
-      class="cat-banner-grid"
-      id="categoryBanners"
-    ></div>
+  </section>
 
-    <div
-      class="chips"
-      id="categoryChips"
-    ></div>
+  <!-- ================= PRODUCTS ================= -->
 
-  </div>
+  <section
+    class="section"
+    id="shop"
+  >
 
-</section>
+    <div class="wrap">
 
-<section
-  class="section"
-  id="shop"
->
+      <div class="section-head">
 
-  <div class="wrap">
+        <div>
 
-    <div class="section-head">
+          <h2 id="gridHeading">
+            All products
+          </h2>
 
-      <div>
-        <h2>Everyday favourites</h2>
+          <p id="gridSub">
+            Loading products from our store...
+          </p>
 
-        <p>
-          Practical products, simple prices and a shopping experience without the clutter.
-        </p>
+        </div>
+
+      </div>
+
+      <div
+        class="grid"
+        id="productsGrid"
+      >
       </div>
 
     </div>
 
-    <div
-      class="product-grid"
-      id="productGrid"
-    ></div>
+  </section>
 
-  </div>
+  <!-- ================= PROMO ================= -->
 
-</section>
+  <div class="promo-band">
 
-<section class="promo-band">
+    <div class="promo-bg"></div>
+    <div class="promo-scrim"></div>
 
-  <div
-    class="promo-bg"
-    id="promoBg"
-  ></div>
+    <div class="wrap promo-content">
 
-  <div class="promo-scrim"></div>
-
-  <div class="wrap">
-
-    <div class="promo-content">
+      <span
+        class="hero-eyebrow"
+        style="
+          background:rgba(255,255,255,.16);
+          color:var(--paper);
+        "
+      >
+        ● Limited stock
+      </span>
 
       <h2>
-        Good products don't need complicated shopping.
+        This week: free delivery on every order above ₹599
       </h2>
 
       <p>
-        We source everyday essentials at wholesale prices and bring them to you simply.
+        No code needed — it's applied automatically at checkout.
       </p>
 
       <a
         href="#shop"
-        class="btn btn-primary"
+        class="btn"
+        style="
+          background:var(--marigold);
+          color:var(--indigo);
+        "
       >
-        Explore products →
+        Shop products
       </a>
 
     </div>
 
   </div>
 
-</section>
+  <!-- ================= VALUE PROPS ================= -->
 
-<section
-  class="section"
-  id="reviews"
->
+  <section class="props">
 
-  <div class="wrap">
+    <div class="wrap">
 
-    <div class="section-head">
+      <h2>
+        Why buy from a focused store instead of a giant marketplace?
+      </h2>
 
-      <div>
-        <h2>What customers say</h2>
+      <div class="props-grid">
 
-        <p>
-          Simple shopping and useful products are what matter most.
-        </p>
+        <div>
+
+          <h3>
+            Curated, not endless
+          </h3>
+
+          <p>
+            We list products worth stocking without
+            thousands of duplicate listings.
+          </p>
+
+        </div>
+
+        <div>
+
+          <h3>
+            Fair, steady pricing
+          </h3>
+
+          <p>
+            What's listed is what you pay.
+            No fake discount games.
+          </p>
+
+        </div>
+
+        <div>
+
+          <h3>
+            Same-week dispatch
+          </h3>
+
+          <p>
+            Active products are maintained through
+            our store inventory.
+          </p>
+
+        </div>
+
+        <div>
+
+          <h3>
+            Real support
+          </h3>
+
+          <p>
+            Contact us directly for support,
+            bulk or reseller enquiries.
+          </p>
+
+        </div>
+
       </div>
 
-      <div class="rating-summary">
+    </div>
 
-        <div class="rating-num">
-          4.8<span>/5</span>
+  </section>
+
+  <!-- ================= REVIEWS ================= -->
+
+  <section
+    class="section"
+    id="reviews"
+  >
+
+    <div class="wrap">
+
+      <div class="section-head">
+
+        <div>
+
+          <h2>
+            What early customers say
+          </h2>
+
+          <p>
+            Notes from our early buyers.
+          </p>
+
         </div>
 
-        <div class="rating-stars">
-          ★★★★★
-        </div>
+        <div class="rating-summary">
 
-        <div class="rating-count">
-          Customer rating
+          <div class="rating-num">
+            4.7<span>/5</span>
+          </div>
+
+          <div class="rating-stars">
+            ★★★★★
+          </div>
+
+          <div class="rating-count">
+            from 6 early reviews
+          </div>
+
         </div>
 
       </div>
+
+      <div
+        class="testimonials-grid"
+        id="reviewsGrid"
+      >
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ================= CTA ================= -->
+
+  <div
+    class="cta-band"
+    id="contact"
+  >
+
+    <h2>
+      Ready to fill your cart?
+    </h2>
+
+    <p>
+      Everything on this page ships from Jaipur.
+      Message us for bulk / reseller rates.
+    </p>
+
+    <a
+      href="#shop"
+      class="btn btn-primary"
+    >
+      Start shopping
+    </a>
+
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+
+  <footer>
+
+    <div class="wrap">
+
+      <div class="footer-grid">
+
+        <div>
+
+          <div class="footer-logo">
+            Fashion_Fussion
+          </div>
+
+          <p>
+            Everyday home, kitchen, beauty and travel
+            essentials — sourced wholesale and delivered
+            to your door in Jaipur and beyond.
+          </p>
+
+        </div>
+
+        <div>
+
+          <h4>
+            Shop
+          </h4>
+
+          <ul>
+
+            <li>
+              <a href="#shop">
+                All products
+              </a>
+            </li>
+
+            <li>
+              <a href="#categories">
+                Categories
+              </a>
+            </li>
+
+          </ul>
+
+        </div>
+
+        <div>
+
+          <h4>
+            Company
+          </h4>
+
+          <ul>
+
+            <li>
+              <a href="#contact">
+                Contact
+              </a>
+            </li>
+
+            <li>
+              <a
+                href="#"
+                id="shippingReturnsLink"
+              >
+                Shipping &amp; returns
+              </a>
+            </li>
+
+            <li>
+              <a
+                href="mailto:FashionFussion08@outlook.com?subject=Bulk%2FReseller%20Order%20Enquiry"
+              >
+                Bulk / reseller orders
+              </a>
+            </li>
+
+          </ul>
+
+        </div>
+
+        <div>
+
+          <h4>
+            Reach us
+          </h4>
+
+          <ul>
+
+            <li>
+              Flat No S2, 3rd Floor,
+              Kalpataru Homes – 69,
+              <br>
+              Mansarovar, Jaipur 302020
+            </li>
+
+            <li>
+              <a href="tel:+917372976856">
+                +91 73729 76856
+              </a>
+            </li>
+
+            <li>
+              <a href="mailto:FashionFussion08@outlook.com">
+                FashionFussion08@outlook.com
+              </a>
+            </li>
+
+          </ul>
+
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+
+        <span>
+          © 2026 Fashion_Fussion. All rights reserved.
+        </span>
+
+        <span>
+          Secure checkout powered by Razorpay.
+        </span>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+  <!-- ================= CART ================= -->
+
+  <div
+    class="overlay"
+    id="cartOverlay"
+  >
+  </div>
+
+  <div
+    class="drawer"
+    id="cartDrawer"
+  >
+
+    <div class="drawer-head">
+
+      <h3>
+        Your cart
+      </h3>
+
+      <button
+        class="drawer-close"
+        id="drawerClose"
+        type="button"
+      >
+        ×
+      </button>
 
     </div>
 
     <div
-      class="testimonial-grid"
-      id="reviewsGrid"
-    ></div>
-
-  </div>
-
-</section>
-
-<section
-  class="section"
-  id="about"
->
-
-  <div class="wrap">
-
-    <div class="about-grid">
-
-      <div class="about-copy">
-
-        <h2>
-          Built for everyday shopping.
-        </h2>
-
-        <p>
-          Fashion_Fussion brings together practical products from categories people use every day. Our approach is simple: source smart, price honestly and make shopping easy.
-        </p>
-
-        <p>
-          From home and kitchen essentials to beauty, decor and travel products, we focus on things that are useful rather than complicated.
-        </p>
-
-      </div>
-
-      <div class="about-card">
-
-        <h3>
-          Simple by design.
-        </h3>
-
-        <p>
-          We believe online shopping should feel as easy as walking into a good neighbourhood bazaar — clear products, fair prices and no unnecessary complexity.
-        </p>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
-
-</main>
-
-<footer>
-
-  <div class="wrap">
-
-    <div class="footer-grid">
-
-      <div>
-
-        <div class="footer-brand">
-          Fashion_Fussion
-        </div>
-
-        <div class="footer-copy">
-          Everyday home, kitchen, beauty, decor and travel essentials at honest retail prices.
-        </div>
-
-      </div>
-
-      <div>
-
-        <div class="footer-title">
-          Shop
-        </div>
-
-        <div class="footer-links">
-
-          <a href="#shop">All Products</a>
-          <a href="#categories">Categories</a>
-          <a href="#reviews">Reviews</a>
-
-        </div>
-
-      </div>
-
-      <div>
-
-        <div class="footer-title">
-          Account
-        </div>
-
-        <div class="footer-links">
-
-          <a
-            href="login.html"
-            id="accountFooterNav"
-          >
-            Account
-          </a>
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="footer-bottom">
-
-      <span>
-        © 2026 Fashion_Fussion. All rights reserved.
-      </span>
-
-      <span>
-        Everyday Wholesale, Retail Simple
-      </span>
-
-    </div>
-
-  </div>
-
-</footer>
-
-<div
-  class="overlay"
-  id="overlay"
-></div>
-
-<aside
-  class="cart-drawer"
-  id="cartDrawer"
->
-
-  <div class="cart-head">
-
-    <h3>Your cart</h3>
-
-    <button
-      class="drawer-close"
-      id="drawerClose"
-      type="button"
-      aria-label="Close cart"
+      class="drawer-body"
+      id="cartItems"
     >
-      ×
-    </button>
+    </div>
 
-  </div>
+    <div class="drawer-foot">
 
-  <div
-    class="cart-body"
-    id="cartBody"
-  ></div>
+      <div class="subtotal-row">
 
-  <div class="cart-footer">
+        <span>
+          Subtotal
+        </span>
 
-    <div class="subtotal-row">
+        <span id="cartTotal">
+          ₹0
+        </span>
 
-      <span>Subtotal</span>
+      </div>
 
-      <span id="subtotalAmt">
-        ₹0
-      </span>
+      <button
+        class="btn btn-primary"
+        style="width:100%;"
+        id="checkoutBtn"
+        type="button"
+      >
+        Checkout
+      </button>
 
     </div>
 
-    <button
-      class="checkout-btn"
-      type="button"
-      onclick="checkout()"
-    >
-      Proceed to checkout
-    </button>
-
   </div>
 
-</aside>
+  <!-- ================= MAIN JAVASCRIPT ================= -->
+
+  <script>
+
+    /* =========================================================
+       CONFIG
+       ========================================================= */
+
+    const BACKEND_URL =
+      "https://fashion-fussion-olive.vercel.app";
+
+    const ADMIN_USER_ID =
+      "53165e6e-4e81-492e-9f9f-7a1611ee9801";
 
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    /* =========================================================
+       GLOBAL STATE
+       ========================================================= */
 
-<script>
+    let PRODUCTS = [];
 
-const BACKEND_URL =
-  "https://fashion-fussion-olive.vercel.app";
+    let activeCategory = "All";
 
-const ADMIN_USER_ID =
-  "53165e6e-4e81-492e-9f9f-7a1611ee9801";
-
-let PRODUCTS = [];
-
-let cart = {};
-
-let activeCategory = "All";
+    let cart = {};
 
 
-/* =========================
-   HELPERS
-   ========================= */
+    /* =========================================================
+       CART STORAGE
+       ========================================================= */
 
-function escapeHtml(value){
-
-  return String(
-    value ?? ""
-  )
-  .replace(/&/g,"&amp;")
-  .replace(/</g,"&lt;")
-  .replace(/>/g,"&gt;")
-  .replace(/"/g,"&quot;")
-  .replace(/'/g,"&#039;");
-
-}
+    const CART_KEY =
+      "fashion_fussion_cart";
 
 
-function money(value){
+    function loadCart(){
 
-  const number =
-    Number(value || 0);
+      try{
 
-  return "₹" +
-    number.toLocaleString(
-      "en-IN",
-      {
-        maximumFractionDigits:0
-      }
-    );
+        const saved =
+          localStorage.getItem(CART_KEY);
 
-}
+        if(!saved){
+          cart = {};
+          return;
+        }
 
+        const parsed =
+          JSON.parse(saved);
 
-function sellingPrice(cost){
+        cart =
+          parsed &&
+          typeof parsed === "object"
+            ? parsed
+            : {};
 
-  const c =
-    Number(cost || 0);
+      }catch(error){
 
-  return Math.ceil(
-    (c + c * 0.02 + 12) * 1.50
-  );
-
-}
-
-
-function placeholderTile(name){
-
-  const safeName =
-    encodeURIComponent(
-      String(name || "Product")
-    );
-
-  return `
-    https://placehold.co/700x700/F4EEE1/1B2A4A?text=${safeName}
-  `;
-
-}
-
-
-/* =========================
-   LOAD PRODUCTS
-   ========================= */
-
-async function loadProducts(){
-
-  try{
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("products")
-        .select(`
-          id,
-          name,
-          category,
-          cost,
-          price,
-          rating,
-          reviews,
-          image_url,
-          badge,
-          is_active,
-          description
-        `)
-        .eq("is_active", true)
-        .order(
-          "id",
-          {
-            ascending:false
-          }
+        console.error(
+          "Cart load error:",
+          error
         );
 
-    if(error){
-
-      throw error;
+        cart = {};
+      }
 
     }
 
-    PRODUCTS =
-      Array.isArray(data)
-        ? data
-        : [];
 
-    buildCategories();
+    function saveCart(){
 
-    renderCategories();
+      try{
 
-    renderCategoryBanners();
+        localStorage.setItem(
+          CART_KEY,
+          JSON.stringify(cart)
+        );
 
-    updateHeroStats();
+      }catch(error){
 
-    updateHeroImages();
+        console.error(
+          "Cart save error:",
+          error
+        );
 
-    renderGrid();
+      }
 
-  }catch(error){
+    }
 
-    console.error(
-      "Product loading error:",
-      error
-    );
 
-    const grid =
-      document.getElementById(
-        "productGrid"
+    /* =========================================================
+       MONEY
+       ========================================================= */
+
+    function money(value){
+
+      const amount =
+        Number(value) || 0;
+
+      return (
+        "₹" +
+        amount.toLocaleString(
+          "en-IN"
+        )
       );
 
-    if(grid){
+    }
+
+
+    /* =========================================================
+       HTML ESCAPE
+       ========================================================= */
+
+    function escapeHtml(value){
+
+      return String(
+        value ?? ""
+      )
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+
+    }
+
+
+    /* =========================================================
+       PLACEHOLDER IMAGE
+       ========================================================= */
+
+    function placeholderImage(){
+
+      const svg = `
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 500 500"
+        >
+          <rect
+            width="500"
+            height="500"
+            fill="#EAE1CC"
+          />
+
+          <text
+            x="250"
+            y="235"
+            text-anchor="middle"
+            font-size="90"
+          >
+            🛍️
+          </text>
+
+          <text
+            x="250"
+            y="315"
+            text-anchor="middle"
+            font-family="Arial"
+            font-size="18"
+            fill="#4B5266"
+          >
+            Fashion_Fussion
+          </text>
+        </svg>
+      `;
+
+      return (
+        "data:image/svg+xml;charset=UTF-8," +
+        encodeURIComponent(svg)
+      );
+
+    }
+
+
+    /* =========================================================
+       TICKER
+       ========================================================= */
+
+    function setupTicker(){
+
+      const ticker =
+        document.getElementById(
+          "tickerTrack"
+        );
+
+      const items = [
+
+        "New stock synced regularly",
+
+        "Secure Razorpay checkout",
+
+        "Free delivery above ₹599",
+
+        "Quality-checked before dispatch",
+
+        "Jaipur dispatch"
+
+      ];
+
+      const repeated =
+        items.concat(items);
+
+      ticker.innerHTML =
+        repeated
+          .map(
+            item =>
+              `<span>${escapeHtml(item)}</span>`
+          )
+          .join("");
+
+    }
+
+
+    /* =========================================================
+       LOAD PRODUCTS FROM SUPABASE
+       ========================================================= */
+
+    async function loadProducts(){
+
+      const grid =
+        document.getElementById(
+          "productsGrid"
+        );
 
       grid.innerHTML = `
-        <div style="
-          grid-column:1/-1;
-          text-align:center;
-          padding:40px;
-          color:var(--ink-soft);
-        ">
-          Unable to load products right now.
+        <div class="loading-products">
+          Loading products...
         </div>
       `;
 
-    }
+      try{
 
-  }
+        if(
+          typeof supabaseClient ===
+          "undefined" ||
+          !supabaseClient
+        ){
 
-}
-
-
-/* =========================
-   CATEGORIES
-   ========================= */
-
-let CATEGORIES = [];
-
-
-function buildCategories(){
-
-  const categories =
-    PRODUCTS
-      .map(
-        product =>
-          String(
-            product.category || ""
-          ).trim()
-      )
-      .filter(Boolean);
-
-  CATEGORIES =
-    [
-      "All",
-      ...new Set(categories)
-    ];
-
-}
-
-
-function renderCategories(){
-
-  const container =
-    document.getElementById(
-      "categoryChips"
-    );
-
-  if(!container) return;
-
-  container.innerHTML =
-    CATEGORIES
-      .map(category => {
-
-        const active =
-          category === activeCategory
-            ? "active"
-            : "";
-
-        return `
-          <button
-            class="chip ${active}"
-            data-category="${escapeHtml(category)}"
-            type="button"
-          >
-            ${escapeHtml(category)}
-          </button>
-        `;
-
-      })
-      .join("");
-
-}
-
-
-function renderCategoryBanners(){
-
-  const container =
-    document.getElementById(
-      "categoryBanners"
-    );
-
-  if(!container) return;
-
-  const categories =
-    CATEGORIES
-      .filter(
-        category =>
-          category !== "All"
-      )
-      .slice(0,4);
-
-  container.innerHTML =
-    categories
-      .map(category => {
-
-        const product =
-          PRODUCTS.find(
-            item =>
-              String(
-                item.category || ""
-              ).trim() === category
+          throw new Error(
+            "Supabase client is not available."
           );
 
-        const image =
-          product?.image_url ||
-          placeholderTile(category);
+        }
 
-        return `
-          <div
-            class="cat-banner"
-            data-category="${escapeHtml(category)}"
-            style="
-              background-image:url('${escapeHtml(image)}')
-            "
-          >
-            <span>
-              ${escapeHtml(category)}
-            </span>
+        const {
+          data,
+          error
+        } =
+          await supabaseClient
+            .from("products")
+            .select(
+              "id,name,category,cost,price,rating,reviews,image_url,badge,is_active,description"
+            )
+            .eq(
+              "is_active",
+              true
+            )
+            .order(
+              "created_at",
+              {
+                ascending:false
+              }
+            );
+
+        if(error){
+          throw error;
+        }
+
+        PRODUCTS =
+          Array.isArray(data)
+            ? data
+            : [];
+
+        updateHeroStats();
+
+        setupCategories();
+
+        renderHeroProducts();
+
+        renderProducts();
+
+        updateCartUI();
+
+      }catch(error){
+
+        console.error(
+          "Product loading error:",
+          error
+        );
+
+        PRODUCTS = [];
+
+        document.getElementById(
+          "productsGrid"
+        ).innerHTML = `
+          <div class="empty-products">
+            <strong>
+              Products could not be loaded.
+            </strong>
+
+            <br><br>
+
+            Please refresh the page and try again.
           </div>
         `;
 
-      })
-      .join("");
-
-}
-
-
-/* =========================
-   HERO
-   ========================= */
-
-function updateHeroStats(){
-
-  const count =
-    document.getElementById(
-      "heroProductCount"
-    );
-
-  if(count){
-
-    count.textContent =
-      PRODUCTS.length;
-
-  }
-
-}
-
-
-function updateHeroImages(){
-
-  const images =
-    [
-      "heroThumb1",
-      "heroThumb2",
-      "heroThumb3",
-      "heroThumb4"
-    ];
-
-  images.forEach(
-    (id,index) => {
-
-      const element =
-        document.getElementById(id);
-
-      if(!element) return;
-
-      const product =
-        PRODUCTS[index];
-
-      element.src =
-        product?.image_url ||
-        placeholderTile(
-          product?.name ||
-          "Fashion_Fussion"
-        );
-
-      element.alt =
-        product?.name ||
-        "Featured product";
-
-    }
-  );
-
-  const heroBg =
-    document.getElementById(
-      "heroBg"
-    );
-
-  const promoBg =
-    document.getElementById(
-      "promoBg"
-    );
-
-  const image =
-    PRODUCTS[0]?.image_url ||
-    "";
-
-  if(heroBg && image){
-
-    heroBg.style.backgroundImage =
-      `url("${image}")`;
-
-  }
-
-  if(promoBg && image){
-
-    promoBg.style.backgroundImage =
-      `url("${image}")`;
-
-  }
-
-}
-
-
-/* =========================
-   FILTER PRODUCTS
-   ========================= */
-
-function filteredProducts(){
-
-  if(
-    activeCategory ===
-    "All"
-  ){
-
-    return PRODUCTS;
-
-  }
-
-  return PRODUCTS.filter(
-    product =>
-      String(
-        product.category || ""
-      ).trim() ===
-      activeCategory
-  );
-
-}
-
-
-/* =========================
-   RENDER GRID
-   ========================= */
-
-function renderGrid(){
-
-  const grid =
-    document.getElementById(
-      "productGrid"
-    );
-
-  if(!grid) return;
-
-  const products =
-    filteredProducts();
-
-  if(!products.length){
-
-    grid.innerHTML = `
-      <div style="
-        grid-column:1/-1;
-        text-align:center;
-        padding:50px 20px;
-        color:var(--ink-soft);
-      ">
-        No products found in this category.
-      </div>
-    `;
-
-    return;
-
-  }
-
-  grid.innerHTML =
-    products
-      .map(product => {
-
-        const image =
-          product.image_url ||
-          placeholderTile(
-            product.name
-          );
-
-        const price =
-          Number(
-            product.price ||
-            0
-          ) ||
-          sellingPrice(
-            product.cost
-          );
-
-        const rating =
-          Number(
-            product.rating || 0
-          );
-
-        return `
-          <article
-            class="product-card"
-            data-product-id="${escapeHtml(product.id)}"
-          >
-
-            <div class="product-image">
-
-              <img
-                src="${escapeHtml(image)}"
-                alt="${escapeHtml(product.name)}"
-                loading="lazy"
-              >
-
-              ${
-                product.badge
-                  ? `
-                    <span class="badge">
-                      ${escapeHtml(product.badge)}
-                    </span>
-                  `
-                  : ""
-              }
-
-            </div>
-
-            <div class="product-info">
-
-              <div class="product-category">
-                ${escapeHtml(product.category || "Everyday")}
-              </div>
-
-              <div class="product-name">
-                ${escapeHtml(product.name)}
-              </div>
-
-              ${
-                product.description
-                  ? `
-                    <div class="product-description">
-                      ${escapeHtml(product.description)}
-                    </div>
-                  `
-                  : ""
-              }
-
-              <div class="product-bottom">
-
-                <div class="price">
-                  ${money(price)}
-                </div>
-
-                <div class="rating">
-                  ${
-                    rating
-                      ? `★ ${rating.toFixed(1)}`
-                      : ""
-                  }
-                </div>
-
-              </div>
-
-              <button
-                class="add-btn"
-                type="button"
-                data-product-id="${escapeHtml(product.id)}"
-              >
-                Add to cart
-              </button>
-
-            </div>
-
-          </article>
-        `;
-
-      })
-      .join("");
-
-}
-
-
-/* =========================
-   CART UI
-   ========================= */
-
-function updateCartUI(){
-
-  const countElement =
-    document.getElementById(
-      "cartCount"
-    );
-
-  const body =
-    document.getElementById(
-      "cartBody"
-    );
-
-  const subtotalElement =
-    document.getElementById(
-      "subtotalAmt"
-    );
-
-  const entries =
-    Object.entries(cart);
-
-  let totalItems = 0;
-
-  let subtotal = 0;
-
-  const items =
-    entries
-      .map(
-        ([id,quantity]) => {
-
-          const product =
-            PRODUCTS.find(
-              item =>
-                String(item.id) ===
-                String(id)
-            );
-
-          if(!product){
-
-            return null;
-
-          }
-
-          const price =
-            Number(
-              product.price ||
-              0
-            ) ||
-            sellingPrice(
-              product.cost
-            );
-
-          const qty =
-            Number(quantity || 0);
-
-          totalItems += qty;
-
-          subtotal +=
-            price * qty;
-
-          return {
-            product,
-            price,
-            qty
-          };
-
-        }
-      )
-      .filter(Boolean);
-
-  if(countElement){
-
-    countElement.textContent =
-      totalItems;
-
-  }
-
-  if(subtotalElement){
-
-    subtotalElement.textContent =
-      money(subtotal);
-
-  }
-
-  if(!body) return;
-
-  if(!items.length){
-
-    body.innerHTML = `
-      <div class="cart-empty">
-
-        <div style="
-          font-size:38px;
-          margin-bottom:12px;
-        ">
-          🛒
-        </div>
-
-        <strong>Your cart is empty.</strong>
-
-        <div style="
-          margin-top:8px;
-          font-size:13px;
-        ">
-          Add some everyday favourites to get started.
-        </div>
-
-      </div>
-    `;
-
-    return;
-
-  }
-
-  body.innerHTML =
-    items
-      .map(
-        ({
-          product,
-          price,
-          qty
-        }) => {
-
-          const image =
-            product.image_url ||
-            placeholderTile(
-              product.name
-            );
-
-          return `
-            <div
-              class="cart-item"
-              data-id="${escapeHtml(product.id)}"
-            >
-
-              <img
-                src="${escapeHtml(image)}"
-                alt="${escapeHtml(product.name)}"
-              >
-
-              <div>
-
-                <div class="cart-item-name">
-                  ${escapeHtml(product.name)}
-                </div>
-
-                <div class="cart-item-price">
-                  ${money(price)} each
-                </div>
-
-                <div class="qty-controls">
-
-                  <button
-                    class="qty-btn"
-                    type="button"
-                    data-action="minus"
-                  >
-                    −
-                  </button>
-
-                  <strong>
-                    ${qty}
-                  </strong>
-
-                  <button
-                    class="qty-btn"
-                    type="button"
-                    data-action="plus"
-                  >
-                    +
-                  </button>
-
-                </div>
-
-                <button
-                  class="remove-btn"
-                  type="button"
-                  data-action="remove"
-                >
-                  Remove
-                </button>
-
-              </div>
-
-              <strong>
-                ${money(price * qty)}
-              </strong>
-
-            </div>
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-/* =========================
-   OPEN / CLOSE CART
-   ========================= */
-
-function openCart(){
-
-  const overlay =
-    document.getElementById(
-      "overlay"
-    );
-
-  const drawer =
-    document.getElementById(
-      "cartDrawer"
-    );
-
-  if(overlay){
-
-    overlay.classList.add(
-      "open"
-    );
-
-  }
-
-  if(drawer){
-
-    drawer.classList.add(
-      "open"
-    );
-
-  }
-
-  updateCartUI();
-
-}
-
-
-function closeCart(){
-
-  const overlay =
-    document.getElementById(
-      "overlay"
-    );
-
-  const drawer =
-    document.getElementById(
-      "cartDrawer"
-    );
-
-  if(overlay){
-
-    overlay.classList.remove(
-      "open"
-    );
-
-  }
-
-  if(drawer){
-
-    drawer.classList.remove(
-      "open"
-    );
-
-  }
-
-}
-
-
-/* =========================
-   ADD TO CART
-   ========================= */
-
-document.addEventListener(
-  "click",
-  function(event){
-
-    const button =
-      event.target.closest(
-        ".add-btn"
-      );
-
-    if(!button) return;
-
-    const id =
-      button.dataset.productId;
-
-    if(!id) return;
-
-    cart[id] =
-      Number(cart[id] || 0) + 1;
-
-    updateCartUI();
-
-    const originalText =
-      button.textContent;
-
-    button.textContent =
-      "Added ✓";
-
-    setTimeout(
-      function(){
-
-        button.textContent =
-          originalText;
-
-      },
-      900
-    );
-
-  }
-);
-
-
-/* =========================
-   CART QUANTITY
-   ========================= */
-
-document.addEventListener(
-  "click",
-  function(event){
-
-    const actionButton =
-      event.target.closest(
-        "#cartBody [data-action]"
-      );
-
-    if(!actionButton) return;
-
-    const item =
-      actionButton.closest(
-        ".cart-item"
-      );
-
-    if(!item) return;
-
-    const id =
-      item.dataset.id;
-
-    const action =
-      actionButton.dataset.action;
-
-    if(!id) return;
-
-    if(action === "plus"){
-
-      cart[id] =
-        Number(cart[id] || 0) + 1;
-
-    }
-
-    if(action === "minus"){
-
-      cart[id] =
-        Number(cart[id] || 0) - 1;
-
-      if(cart[id] <= 0){
-
-        delete cart[id];
+        document.getElementById(
+          "gridSub"
+        ).textContent =
+          "Unable to load products right now.";
 
       }
 
     }
 
-    if(action === "remove"){
 
-      delete cart[id];
+    /* =========================================================
+       HERO STATS
+       ========================================================= */
 
-    }
+    function updateHeroStats(){
 
-    updateCartUI();
+      const productCount =
+        document.getElementById(
+          "heroProductCount"
+        );
 
-  }
-);
+      const categoryCount =
+        document.getElementById(
+          "heroCategoryCount"
+        );
 
+      const categories =
+        new Set(
+          PRODUCTS
+            .map(
+              product =>
+                String(
+                  product.category || ""
+                ).trim()
+            )
+            .filter(Boolean)
+        );
 
-/* =========================
-   CATEGORY CHIPS
-   ========================= */
+      productCount.textContent =
+        PRODUCTS.length;
 
-document.addEventListener(
-  "click",
-  function(event){
-
-    const chip =
-      event.target.closest(
-        ".chip"
-      );
-
-    if(!chip) return;
-
-    activeCategory =
-      chip.dataset.category ||
-      "All";
-
-    renderCategories();
-
-    renderGrid();
-
-    const shop =
-      document.getElementById(
-        "shop"
-      );
-
-    if(shop){
-
-      shop.scrollIntoView({
-        behavior:"smooth",
-        block:"start"
-      });
+      categoryCount.textContent =
+        categories.size;
 
     }
 
-  }
-);
 
+    /* =========================================================
+       HERO PRODUCT IMAGES
+       ========================================================= */
 
-/* =========================
-   CATEGORY BANNERS
-   ========================= */
+    function renderHeroProducts(){
 
-document.addEventListener(
-  "click",
-  function(event){
+      const container =
+        document.getElementById(
+          "heroThumbs"
+        );
 
-    const banner =
-      event.target.closest(
-        ".cat-banner"
-      );
+      const picks =
+        PRODUCTS
+          .filter(
+            product =>
+              product.image_url
+          )
+          .slice(0,4);
 
-    if(!banner) return;
+      if(!picks.length){
 
-    activeCategory =
-      banner.dataset.category ||
-      "All";
+        container.innerHTML = `
+          <img
+            src="${placeholderImage()}"
+            alt="Fashion_Fussion"
+          >
 
-    renderCategories();
+          <img
+            src="${placeholderImage()}"
+            alt="Fashion_Fussion"
+          >
 
-    renderGrid();
+          <img
+            src="${placeholderImage()}"
+            alt="Fashion_Fussion"
+          >
 
-    const shop =
-      document.getElementById(
-        "shop"
-      );
+          <img
+            src="${placeholderImage()}"
+            alt="Fashion_Fussion"
+          >
+        `;
 
-    if(shop){
+        return;
+      }
 
-      shop.scrollIntoView({
-        behavior:"smooth",
-        block:"start"
-      });
+      container.innerHTML =
+        picks
+          .map(
+            product => `
+              <img
+                src="${escapeHtml(
+                  product.image_url
+                )}"
+                alt="${escapeHtml(
+                  product.name
+                )}"
+                loading="lazy"
+                onerror="
+                  this.src='${placeholderImage()}'
+                "
+              >
+            `
+          )
+          .join("");
 
     }
 
-  }
-);
+
+    /* =========================================================
+       CATEGORIES
+       ========================================================= */
+
+    function setupCategories(){
+
+      const categoryChips =
+        document.getElementById(
+          "categoryChips"
+        );
+
+      const bannerContainer =
+        document.getElementById(
+          "categoryBanners"
+        );
+
+      const categories = [
+        "All",
+        ...Array.from(
+          new Set(
+            PRODUCTS
+              .map(
+                product =>
+                  String(
+                    product.category || ""
+                  ).trim()
+              )
+              .filter(Boolean)
+          )
+        )
+      ];
+
+      categoryChips.innerHTML =
+        categories
+          .map(
+            category => `
+              <button
+                class="chip ${
+                  category === "All"
+                    ? "active"
+                    : ""
+                }"
+                type="button"
+                data-category="${escapeHtml(
+                  category
+                )}"
+              >
+                ${escapeHtml(
+                  category
+                )}
+              </button>
+            `
+          )
+          .join("");
+
+      categoryChips.onclick =
+        function(event){
+
+          const button =
+            event.target.closest(
+              ".chip"
+            );
+
+          if(!button){
+            return;
+          }
+
+          activeCategory =
+            button.dataset.category;
+
+          document
+            .querySelectorAll(
+              ".chip"
+            )
+            .forEach(
+              chip => {
+
+                chip.classList.toggle(
+                  "active",
+                  chip === button
+                );
+
+              }
+            );
+
+          renderProducts();
+
+        };
 
 
-/* =========================
-   CART BUTTONS
-   ========================= */
+      const categoryPhotos = [
 
-document.addEventListener(
-  "DOMContentLoaded",
-  function(){
+        "https://picsum.photos/seed/fashion-kitchen/500/400",
 
-    const openButton =
+        "https://picsum.photos/seed/fashion-beauty/500/400",
+
+        "https://picsum.photos/seed/fashion-home/500/400",
+
+        "https://picsum.photos/seed/fashion-travel/500/400",
+
+        "https://picsum.photos/seed/fashion-toys/500/400",
+
+        "https://picsum.photos/seed/fashion-sport/500/400",
+
+        "https://picsum.photos/seed/fashion-care/500/400",
+
+        "https://picsum.photos/seed/fashion-gifts/500/400"
+
+      ];
+
+
+      const bannerCategories =
+        categories.filter(
+          category =>
+            category !== "All"
+        );
+
+
+      bannerContainer.innerHTML =
+        bannerCategories
+          .map(
+            (category,index) => {
+
+              const count =
+                PRODUCTS.filter(
+                  product =>
+                    String(
+                      product.category
+                    ) ===
+                    String(category)
+                ).length;
+
+              return `
+                <div
+                  class="cat-banner"
+                  data-category="${escapeHtml(
+                    category
+                  )}"
+                  style="
+                    background-image:url(
+                      '${categoryPhotos[
+                        index %
+                        categoryPhotos.length
+                      ]}'
+                    );
+                  "
+                >
+                  <span>
+                    ${escapeHtml(category)}
+                    <br>
+                    <small
+                      style="
+                        font-weight:500;
+                        opacity:.85;
+                      "
+                    >
+                      ${count}
+                      item${count === 1 ? "" : "s"}
+                    </small>
+                  </span>
+                </div>
+              `;
+
+            }
+          )
+          .join("");
+
+
+      bannerContainer.onclick =
+        function(event){
+
+          const banner =
+            event.target.closest(
+              ".cat-banner"
+            );
+
+          if(!banner){
+            return;
+          }
+
+          activeCategory =
+            banner.dataset.category;
+
+          document
+            .querySelectorAll(
+              ".chip"
+            )
+            .forEach(
+              chip => {
+
+                chip.classList.toggle(
+                  "active",
+                  chip.dataset.category ===
+                  activeCategory
+                );
+
+              }
+            );
+
+          renderProducts();
+
+          document
+            .getElementById(
+              "shop"
+            )
+            .scrollIntoView({
+              behavior:"smooth"
+            });
+
+        };
+
+    }
+
+
+    /* =========================================================
+       PRODUCT PRICE
+       ========================================================= */
+
+    function productPrice(product){
+
+      const databasePrice =
+        Number(
+          product.price
+        );
+
+      if(
+        Number.isFinite(
+          databasePrice
+        ) &&
+        databasePrice > 0
+      ){
+
+        return databasePrice;
+
+      }
+
+      const cost =
+        Number(
+          product.cost
+        ) || 0;
+
+      return Math.ceil(
+        (
+          cost +
+          cost * 0.02 +
+          12
+        ) * 1.5
+      );
+
+    }
+
+
+    /* =========================================================
+       RENDER PRODUCTS
+       ========================================================= */
+
+    function renderProducts(){
+
+      const grid =
+        document.getElementById(
+          "productsGrid"
+        );
+
+      const heading =
+        document.getElementById(
+          "gridHeading"
+        );
+
+      const sub =
+        document.getElementById(
+          "gridSub"
+        );
+
+
+      const list =
+        activeCategory === "All"
+
+          ? PRODUCTS
+
+          : PRODUCTS.filter(
+              product =>
+                String(
+                  product.category || ""
+                ) ===
+                String(
+                  activeCategory
+                )
+            );
+
+
+      heading.textContent =
+        activeCategory === "All"
+          ? "All products"
+          : activeCategory;
+
+
+      sub.textContent =
+        `${list.length} item${
+          list.length === 1
+            ? ""
+            : "s"
+        } available`;
+
+
+      if(!list.length){
+
+        grid.innerHTML = `
+          <div class="empty-products">
+            No active products found
+            in this category.
+          </div>
+        `;
+
+        return;
+
+      }
+
+
+      grid.innerHTML =
+        list
+          .map(
+            product => {
+
+              const price =
+                productPrice(
+                  product
+                );
+
+              const image =
+                product.image_url ||
+                placeholderImage();
+
+              const rating =
+                Number(
+                  product.rating
+                ) || 0;
+
+              const reviews =
+                Number(
+                  product.reviews
+                ) || 0;
+
+              const badge =
+                product.badge;
+
+
+              return `
+                <article class="card">
+
+                  <div class="card-media">
+
+                    ${
+                      badge
+                        ? `
+                          <span
+                            class="tag ${
+                              badge === "best"
+                                ? "best"
+                                : "new"
+                            }"
+                          >
+                            ${
+                              badge === "best"
+                                ? "BESTSELLER"
+                                : "NEW"
+                            }
+                          </span>
+                        `
+                        : ""
+                    }
+
+                    <img
+                      src="${escapeHtml(
+                        image
+                      )}"
+                      alt="${escapeHtml(
+                        product.name
+                      )}"
+                      loading="lazy"
+                      onerror="
+                        this.src='${placeholderImage()}'
+                      "
+                    >
+
+                  </div>
+
+                  <div class="card-body">
+
+                    <div class="card-cat">
+                      ${escapeHtml(
+                        product.category ||
+                        "General"
+                      )}
+                    </div>
+
+                    <div class="card-title">
+                      ${escapeHtml(
+                        product.name
+                      )}
+                    </div>
+
+                    <div class="card-rating">
+
+                      <span class="stars">
+                        ★ ${rating.toFixed(1)}
+                      </span>
+
+                      ${
+                        reviews
+                          ? `(${reviews.toLocaleString(
+                              "en-IN"
+                            )})`
+                          : ""
+                      }
+
+                    </div>
+
+                    <div class="card-price-row">
+
+                      <span class="price">
+                        ${money(price)}
+                      </span>
+
+                    </div>
+
+                    <div class="card-actions">
+
+                      <button
+                        class="add-btn"
+                        type="button"
+                        data-product-id="${escapeHtml(
+                          product.id
+                        )}"
+                      >
+                        Add to cart
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </article>
+              `;
+
+            }
+          )
+          .join("");
+
+    }
+
+
+    /* =========================================================
+       ADD TO CART
+       ========================================================= */
+
+    function addToCart(productId){
+
+      const product =
+        PRODUCTS.find(
+          item =>
+            String(item.id) ===
+            String(productId)
+        );
+
+      if(!product){
+        return;
+      }
+
+      const id =
+        String(product.id);
+
+      cart[id] =
+        Number(
+          cart[id] || 0
+        ) + 1;
+
+      saveCart();
+
+      updateCartUI();
+
+    }
+
+
+    /* =========================================================
+       CHANGE QUANTITY
+       ========================================================= */
+
+    function changeQuantity(
+      productId,
+      delta
+    ){
+
+      const id =
+        String(productId);
+
+      const current =
+        Number(
+          cart[id] || 0
+        );
+
+      const next =
+        current + delta;
+
+      if(next <= 0){
+
+        delete cart[id];
+
+      }else{
+
+        cart[id] =
+          next;
+
+      }
+
+      saveCart();
+
+      updateCartUI();
+
+    }
+
+
+    /* =========================================================
+       REMOVE CART ITEM
+       ========================================================= */
+
+    function removeFromCart(
+      productId
+    ){
+
+      delete cart[
+        String(productId)
+      ];
+
+      saveCart();
+
+      updateCartUI();
+
+    }
+
+
+    /* =========================================================
+       CART UI
+       ========================================================= */
+
+    function updateCartUI(){
+
+      const cartItems =
+        document.getElementById(
+          "cartItems"
+        );
+
+      const cartCount =
+        document.getElementById(
+          "cartCount"
+        );
+
+      const cartTotal =
+        document.getElementById(
+          "cartTotal"
+        );
+
+
+      const ids =
+        Object.keys(cart)
+          .filter(
+            id =>
+              Number(cart[id]) > 0
+          );
+
+
+      const totalQuantity =
+        ids.reduce(
+          (
+            total,
+            id
+          ) =>
+            total +
+            Number(
+              cart[id]
+            ),
+          0
+        );
+
+
+      cartCount.textContent =
+        totalQuantity;
+
+
+      if(!ids.length){
+
+        cartItems.innerHTML = `
+          <div class="empty-cart">
+            Your cart is empty.
+            <br><br>
+            Browse the store and add something.
+          </div>
+        `;
+
+        cartTotal.textContent =
+          "₹0";
+
+        return;
+
+      }
+
+
+      let subtotal = 0;
+
+
+      cartItems.innerHTML =
+        ids
+          .map(
+            id => {
+
+              const product =
+                PRODUCTS.find(
+                  item =>
+                    String(
+                      item.id
+                    ) ===
+                    String(id)
+                );
+
+              if(!product){
+                return "";
+              }
+
+              const quantity =
+                Number(
+                  cart[id]
+                );
+
+              const price =
+                productPrice(
+                  product
+                );
+
+              subtotal +=
+                price *
+                quantity;
+
+
+              const image =
+                product.image_url ||
+                placeholderImage();
+
+
+              return `
+                <div class="cart-item">
+
+                  <img
+                    src="${escapeHtml(
+                      image
+                    )}"
+                    alt="${escapeHtml(
+                      product.name
+                    )}"
+                    onerror="
+                      this.src='${placeholderImage()}'
+                    "
+                  >
+
+                  <div class="cart-item-info">
+
+                    <div class="name">
+                      ${escapeHtml(
+                        product.name
+                      )}
+                    </div>
+
+                    <div class="cart-price">
+                      ${money(price)}
+                      each
+                    </div>
+
+                    <div class="qty-row">
+
+                      <button
+                        class="qty-btn"
+                        type="button"
+                        data-action="decrease"
+                        data-id="${escapeHtml(
+                          id
+                        )}"
+                      >
+                        −
+                      </button>
+
+                      <span>
+                        ${quantity}
+                      </span>
+
+                      <button
+                        class="qty-btn"
+                        type="button"
+                        data-action="increase"
+                        data-id="${escapeHtml(
+                          id
+                        )}"
+                      >
+                        +
+                      </button>
+
+                      <button
+                        class="remove-btn"
+                        type="button"
+                        data-action="remove"
+                        data-id="${escapeHtml(
+                          id
+                        )}"
+                      >
+                        Remove
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </div>
+              `;
+
+            }
+          )
+          .join("");
+
+
+      cartTotal.textContent =
+        money(
+          subtotal
+        );
+
+    }
+
+
+    /* =========================================================
+       CART EVENT
+       ========================================================= */
+
+    document
+      .getElementById(
+        "productsGrid"
+      )
+      .addEventListener(
+        "click",
+        function(event){
+
+          const button =
+            event.target.closest(
+              ".add-btn"
+            );
+
+          if(!button){
+            return;
+          }
+
+          const id =
+            button.dataset.productId;
+
+          addToCart(id);
+
+          button.textContent =
+            "Added ✓";
+
+          button.classList.add(
+            "added"
+          );
+
+          setTimeout(
+            function(){
+
+              button.textContent =
+                "Add to cart";
+
+              button.classList.remove(
+                "added"
+              );
+
+            },
+            900
+          );
+
+        }
+      );
+
+
+    /* =========================================================
+       CART DRAWER
+       ========================================================= */
+
+    const cartOverlay =
       document.getElementById(
+        "cartOverlay"
+      );
+
+    const cartDrawer =
+      document.getElementById(
+        "cartDrawer"
+      );
+
+
+    function openCart(){
+
+      cartOverlay.classList.add(
+        "open"
+      );
+
+      cartDrawer.classList.add(
+        "open"
+      );
+
+    }
+
+
+    function closeCart(){
+
+      cartOverlay.classList.remove(
+        "open"
+      );
+
+      cartDrawer.classList.remove(
+        "open"
+      );
+
+    }
+
+
+    document
+      .getElementById(
         "cartOpenBtn"
-      );
-
-    const closeButton =
-      document.getElementById(
-        "drawerClose"
-      );
-
-    const overlay =
-      document.getElementById(
-        "overlay"
-      );
-
-    if(openButton){
-
-      openButton.addEventListener(
+      )
+      .addEventListener(
         "click",
         openCart
       );
 
-    }
 
-    if(closeButton){
-
-      closeButton.addEventListener(
-        "click",
-        closeCart
-      );
-
-    }
-
-    if(overlay){
-
-      overlay.addEventListener(
-        "click",
-        closeCart
-      );
-
-    }
-
-  }
-);
-
-
-/* =========================
-   CHECKOUT
-   ========================= */
-
-async function checkout(){
-
-  const items =
-    Object.entries(cart)
-      .map(
-        ([id,quantity]) => {
-
-          const product =
-            PRODUCTS.find(
-              item =>
-                String(item.id) ===
-                String(id)
-            );
-
-          if(!product) return null;
-
-          return {
-            product_id:product.id,
-            quantity:Number(quantity || 0)
-          };
-
-        }
+    document
+      .getElementById(
+        "drawerClose"
       )
-      .filter(
-        item =>
-          item &&
-          item.quantity > 0
+      .addEventListener(
+        "click",
+        closeCart
       );
 
-  if(!items.length){
 
-    alert(
-      "Your cart is empty."
+    cartOverlay.addEventListener(
+      "click",
+      closeCart
     );
 
-    return;
-  }
 
-
-  /* =========================
-     CHECK SUPABASE LOGIN
-     ========================= */
-
-  let session = null;
-
-  try{
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient.auth.getSession();
-
-    if(error){
-
-      throw error;
-
-    }
-
-    session =
-      data?.session || null;
-
-  }catch(error){
-
-    console.error(
-      "Session error:",
-      error
-    );
-
-    alert(
-      "Unable to check your login. Please try again."
-    );
-
-    return;
-
-  }
-
-
-  if(!session){
-
-    const goLogin =
-      confirm(
-        "Please login before checkout.\n\nWould you like to login now?"
-      );
-
-    if(goLogin){
-
-      window.location.href =
-        "login.html?redirect=checkout";
-
-    }
-
-    return;
-
-  }
-
-
-  /* =========================
-     CLOSE CART
-     ========================= */
-
-  closeCart();
-
-
-  /* =========================
-     CREATE RAZORPAY ORDER
-     ========================= */
-
-  let orderData;
-
-  try{
-
-    const response =
-      await fetch(
-        BACKEND_URL +
-        "/api/create-order",
-        {
-          method:"POST",
-
-          headers:{
-            "Content-Type":
-              "application/json",
-
-            "Authorization":
-              "Bearer " +
-              session.access_token
-          },
-
-          body:JSON.stringify({
-            items
-          })
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if(!response.ok){
-
-      throw new Error(
-        data.error ||
-        "Could not create order."
-      );
-
-    }
-
-    orderData = data;
-
-  }catch(error){
-
-    console.error(
-      "Create order error:",
-      error
-    );
-
-    alert(
-      error.message ||
-      "Unable to start checkout."
-    );
-
-    return;
-
-  }
-
-
-  if(
-    !orderData?.order?.id ||
-    !orderData?.key_id
-  ){
-
-    alert(
-      "Invalid payment order received from server."
-    );
-
-    return;
-
-  }
-
-
-  /* =========================
-     RAZORPAY OPTIONS
-     ========================= */
-
-  const options = {
-
-    key:
-      orderData.key_id,
-
-    amount:
-      orderData.order.amount,
-
-    currency:
-      orderData.order.currency ||
-      "INR",
-
-    name:
-      "Fashion_Fussion",
-
-    description:
-      "Fashion_Fussion order",
-
-    order_id:
-      orderData.order.id,
-
-    prefill:{
-      name:"",
-      email:"",
-      contact:""
-    },
-
-    notes:{
-      store:
-        "Fashion_Fussion"
-    },
-
-    theme:{
-      color:
-        "#1B2A4A"
-    },
-
-
-    /* =========================
-       PAYMENT SUCCESS
-       ========================= */
-
-    handler:
-      async function(paymentResponse){
-
-        try{
-
-          const verifyResponse =
-            await fetch(
-              BACKEND_URL +
-              "/api/verify-payment",
-              {
-                method:"POST",
-
-                headers:{
-                  "Content-Type":
-                    "application/json",
-
-                  "Authorization":
-                    "Bearer " +
-                    session.access_token
-                },
-
-                body:JSON.stringify({
-
-                  order_id:
-                    orderData.order.id,
-
-                  razorpay_payment_id:
-                    paymentResponse.razorpay_payment_id,
-
-                  razorpay_order_id:
-                    paymentResponse.razorpay_order_id,
-
-                  razorpay_signature:
-                    paymentResponse.razorpay_signature
-
-                })
-
-              }
+    document
+      .getElementById(
+        "cartItems"
+      )
+      .addEventListener(
+        "click",
+        function(event){
+
+          const button =
+            event.target.closest(
+              "button[data-action]"
             );
 
+          if(!button){
+            return;
+          }
 
-          const verifyData =
-            await verifyResponse.json();
+          const id =
+            button.dataset.id;
+
+          const action =
+            button.dataset.action;
 
 
           if(
-            !verifyResponse.ok ||
-            !verifyData.verified
+            action ===
+            "increase"
           ){
 
-            throw new Error(
-              verifyData.error ||
-              "Payment verification failed."
+            changeQuantity(
+              id,
+              1
             );
 
           }
 
 
-          /* =========================
-             PAYMENT VERIFIED
-             ========================= */
+          if(
+            action ===
+            "decrease"
+          ){
 
-          cart = {};
+            changeQuantity(
+              id,
+              -1
+            );
 
-          updateCartUI();
+          }
 
-          alert(
-            "Payment successful! Your order has been verified."
-          );
 
-          window.location.href =
-            "account.html";
+          if(
+            action ===
+            "remove"
+          ){
 
-        }catch(error){
+            removeFromCart(
+              id
+            );
 
-          console.error(
-            "Payment verification error:",
-            error
-          );
-
-          alert(
-            "Payment was received, but verification could not be completed. Please contact support with your payment ID: " +
-            (
-              paymentResponse
-                ?.razorpay_payment_id ||
-              "N/A"
-            )
-          );
+          }
 
         }
-
-      },
-
-
-    modal:{
-      ondismiss:
-        function(){
-
-          console.log(
-            "Razorpay checkout closed."
-          );
-
-        }
-    }
-
-  };
+      );
 
 
-  /* =========================
-     OPEN RAZORPAY
-     ========================= */
+    /* =========================================================
+       SUPABASE SESSION
+       ========================================================= */
 
-  try{
+    async function getCurrentSession(){
 
-    if(
-      typeof Razorpay ===
-      "undefined"
-    ){
+      if(
+        typeof supabaseClient ===
+        "undefined" ||
+        !supabaseClient
+      ){
 
-      throw new Error(
-        "Razorpay checkout could not be loaded."
+        return null;
+
+      }
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient
+          .auth
+          .getSession();
+
+      if(error){
+        throw error;
+      }
+
+      return (
+        data?.session ||
+        null
       );
 
     }
 
-    const razorpay =
-      new Razorpay(options);
 
-    razorpay.on(
-      "payment.failed",
-      function(response){
+    /* =========================================================
+       ACCOUNT LINK
+       ========================================================= */
+
+    async function updateAccountLink(){
+
+      const link =
+        document.getElementById(
+          "accountLink"
+        );
+
+      try{
+
+        const session =
+          await getCurrentSession();
+
+
+        if(!session){
+
+          link.textContent =
+            "Login";
+
+          link.href =
+            "login.html";
+
+          return;
+
+        }
+
+
+        if(
+          String(
+            session.user.id
+          ) ===
+          String(
+            ADMIN_USER_ID
+          )
+        ){
+
+          link.textContent =
+            "Admin";
+
+          link.href =
+            "admin.html";
+
+          return;
+
+        }
+
+
+        link.textContent =
+          "My Account";
+
+        link.href =
+          "account.html";
+
+
+      }catch(error){
 
         console.error(
-          "Payment failed:",
-          response
+          "Account link error:",
+          error
+        );
+
+        link.textContent =
+          "Login";
+
+        link.href =
+          "login.html";
+
+      }
+
+    }
+
+
+    /* =========================================================
+       CHECKOUT
+       ========================================================= */
+
+    async function checkout(){
+
+      if(
+        !Array.isArray(
+          PRODUCTS
+        ) ||
+        !PRODUCTS.length
+      ){
+
+        alert(
+          "Products are still loading. Please try again."
+        );
+
+        return;
+
+      }
+
+
+      const items = [];
+
+
+      Object.keys(cart).forEach(
+        id => {
+
+          const quantity =
+            Number(
+              cart[id] || 0
+            );
+
+          if(
+            quantity < 1
+          ){
+            return;
+          }
+
+
+          const product =
+            PRODUCTS.find(
+              item =>
+                String(
+                  item.id
+                ) ===
+                String(id)
+            );
+
+
+          if(!product){
+            return;
+          }
+
+
+          items.push({
+
+            product_id:
+              Number(
+                product.id
+              ),
+
+            quantity:
+              quantity
+
+          });
+
+        }
+      );
+
+
+      if(!items.length){
+
+        alert(
+          "Your cart is empty."
+        );
+
+        return;
+
+      }
+
+
+      let session =
+        null;
+
+
+      try{
+
+        session =
+          await getCurrentSession();
+
+      }catch(error){
+
+        console.error(
+          "Session error:",
+          error
         );
 
         alert(
-          response?.error?.description ||
-          "Payment failed. Please try again."
+          "Unable to check your login. Please try again."
+        );
+
+        return;
+
+      }
+
+
+      if(!session){
+
+        const goLogin =
+          confirm(
+            "Please login before checkout.\n\n" +
+            "Would you like to login now?"
+          );
+
+
+        if(goLogin){
+
+          window.location.href =
+            "login.html?redirect=checkout";
+
+        }
+
+        return;
+
+      }
+
+
+      let customerName =
+        "";
+
+      let customerPhone =
+        "";
+
+
+      try{
+
+        const {
+          data:profile,
+          error:profileError
+        } =
+          await supabaseClient
+            .from("profiles")
+            .select(
+              "full_name,phone"
+            )
+            .eq(
+              "id",
+              session.user.id
+            )
+            .maybeSingle();
+
+
+        if(profileError){
+          throw profileError;
+        }
+
+
+        customerName =
+          String(
+            profile?.full_name ||
+            ""
+          ).trim();
+
+
+        customerPhone =
+          String(
+            profile?.phone ||
+            ""
+          ).trim();
+
+
+      }catch(error){
+
+        console.error(
+          "Profile error:",
+          error
+        );
+
+        alert(
+          "Unable to load your customer details. Please try again."
+        );
+
+        return;
+
+      }
+
+
+      if(
+        !customerName ||
+        !customerPhone
+      ){
+
+        alert(
+          "Please complete your name and phone number in your account before checkout."
+        );
+
+        window.location.href =
+          "account.html";
+
+        return;
+
+      }
+
+
+      closeCart();
+
+
+      let orderData =
+        null;
+
+
+      try{
+
+        const response =
+          await fetch(
+            BACKEND_URL +
+            "/api/create-order",
+            {
+
+              method:"POST",
+
+              headers:{
+
+                "Content-Type":
+                  "application/json",
+
+                "Authorization":
+                  "Bearer " +
+                  session.access_token
+
+              },
+
+              body:
+                JSON.stringify({
+
+                  items:
+                    items.map(
+                      item => ({
+
+                        id:
+                          Number(
+                            item.product_id
+                          ),
+
+                        qty:
+                          Number(
+                            item.quantity
+                          )
+
+                      })
+                    ),
+
+                  customer_name:
+                    customerName,
+
+                  customer_phone:
+                    customerPhone
+
+                })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if(!response.ok){
+
+          throw new Error(
+            data?.error ||
+            data?.message ||
+            "Could not create order."
+          );
+
+        }
+
+
+        orderData =
+          data;
+
+
+      }catch(error){
+
+        console.error(
+          "Create order error:",
+          error
+        );
+
+        alert(
+          error.message ||
+          "Unable to start checkout."
+        );
+
+        return;
+
+      }
+
+
+      if(
+        !orderData?.order?.id ||
+        !orderData?.key_id
+      ){
+
+        console.error(
+          "Invalid order response:",
+          orderData
+        );
+
+        alert(
+          "Invalid payment order received from server."
+        );
+
+        return;
+
+      }
+
+
+      const options = {
+
+        key:
+          orderData.key_id,
+
+        amount:
+          orderData.order.amount,
+
+        currency:
+          orderData.order.currency ||
+          "INR",
+
+        name:
+          "Fashion_Fussion",
+
+        description:
+          "Fashion_Fussion order",
+
+        order_id:
+          orderData.order.id,
+
+
+        prefill:{
+
+          name:
+            customerName,
+
+          email:
+            session.user.email ||
+            "",
+
+          contact:
+            customerPhone
+
+        },
+
+
+        notes:{
+
+          store:
+            "Fashion_Fussion"
+
+        },
+
+
+        theme:{
+
+          color:
+            "#1B2A4A"
+
+        },
+
+
+        handler:
+          async function(
+            paymentResponse
+          ){
+
+            try{
+
+              const verifyResponse =
+                await fetch(
+                  BACKEND_URL +
+                  "/api/verify-payment",
+                  {
+
+                    method:"POST",
+
+                    headers:{
+
+                      "Content-Type":
+                        "application/json",
+
+                      "Authorization":
+                        "Bearer " +
+                        session.access_token
+
+                    },
+
+                    body:
+                      JSON.stringify({
+
+                        order_id:
+                          orderData.order.id,
+
+                        razorpay_payment_id:
+                          paymentResponse
+                            .razorpay_payment_id,
+
+                        razorpay_order_id:
+                          paymentResponse
+                            .razorpay_order_id,
+
+                        razorpay_signature:
+                          paymentResponse
+                            .razorpay_signature
+
+                      })
+
+                  }
+                );
+
+
+              const verifyData =
+                await verifyResponse.json();
+
+
+              if(
+                !verifyResponse.ok ||
+                !verifyData?.verified
+              ){
+
+                throw new Error(
+                  verifyData?.error ||
+                  verifyData?.message ||
+                  "Payment verification failed."
+                );
+
+              }
+
+
+              cart = {};
+
+              saveCart();
+
+              updateCartUI();
+
+
+              alert(
+                "Payment successful! Your order has been verified."
+              );
+
+
+              window.location.href =
+                "account.html";
+
+
+            }catch(error){
+
+              console.error(
+                "Payment verification error:",
+                error
+              );
+
+
+              alert(
+                "Payment was received, but verification could not be completed.\n\n" +
+                "Please contact support with your payment ID: " +
+                (
+                  paymentResponse
+                    ?.razorpay_payment_id ||
+                  "N/A"
+                )
+              );
+
+            }
+
+          },
+
+
+        modal:{
+
+          ondismiss:
+            function(){
+
+              console.log(
+                "Razorpay checkout closed."
+              );
+
+            }
+
+        }
+
+      };
+
+
+      try{
+
+        if(
+          typeof Razorpay ===
+          "undefined"
+        ){
+
+          throw new Error(
+            "Razorpay checkout could not be loaded."
+          );
+
+        }
+
+
+        const razorpay =
+          new Razorpay(
+            options
+          );
+
+
+        razorpay.on(
+          "payment.failed",
+          function(response){
+
+            console.error(
+              "Payment failed:",
+              response
+            );
+
+
+            alert(
+              response
+                ?.error
+                ?.description ||
+              "Payment failed. Please try again."
+            );
+
+          }
+        );
+
+
+        razorpay.open();
+
+
+      }catch(error){
+
+        console.error(
+          "Razorpay error:",
+          error
+        );
+
+
+        alert(
+          error.message ||
+          "Unable to open Razorpay checkout."
         );
 
       }
-    );
-
-    razorpay.open();
-
-  }catch(error){
-
-    console.error(
-      "Razorpay error:",
-      error
-    );
-
-    alert(
-      error.message ||
-      "Unable to open Razorpay checkout."
-    );
-
-  }
-
-}
-
-
-/* =========================
-   LOAD REVIEWS
-   ========================= */
-
-function renderReviews(){
-
-  const container =
-    document.getElementById(
-      "reviewsGrid"
-    );
-
-  if(!container) return;
-
-  const reviews = [
-
-    {
-      name:"Aarav",
-      text:"Good quality and simple pricing. The products arrived exactly as expected."
-    },
-
-    {
-      name:"Priya",
-      text:"I liked how easy the store was to browse. Checkout was smooth too."
-    },
-
-    {
-      name:"Rahul",
-      text:"Useful everyday products without making the shopping experience complicated."
-    }
-
-  ];
-
-  container.innerHTML =
-    reviews.map(review => {
-
-      const initial =
-        String(
-          review.name || "F"
-        )
-          .charAt(0)
-          .toUpperCase();
-
-      return `
-        <article class="testimonial">
-
-          <div class="testimonial-head">
-
-            <div class="avatar">
-              ${escapeHtml(initial)}
-            </div>
-
-            <div>
-
-              <span class="stars">
-                ★★★★★
-              </span>
-
-              <div class="who">
-                ${escapeHtml(review.name)}
-              </div>
-
-            </div>
-
-          </div>
-
-          <p>
-            ${escapeHtml(review.text)}
-          </p>
-
-        </article>
-      `;
-
-    }).join("");
-
-}
-
-
-/* =========================
-   AUTH NAVIGATION
-   ========================= */
-
-async function updateAccountLinks(){
-
-  const accountNav =
-    document.getElementById(
-      "accountNav"
-    );
-
-  const accountFooter =
-    document.getElementById(
-      "accountFooterNav"
-    );
-
-  try{
-
-    const {
-      data
-    } =
-      await supabaseClient.auth.getSession();
-
-    const session =
-      data?.session;
-
-    if(!session){
-
-      if(accountNav){
-
-        accountNav.href =
-          "login.html";
-
-        accountNav.textContent =
-          "Account";
-
-      }
-
-      if(accountFooter){
-
-        accountFooter.href =
-          "login.html";
-
-        accountFooter.textContent =
-          "Account";
-
-      }
-
-      return;
 
     }
 
 
-    /* =========================
-       CHECK ADMIN
-       ========================= */
+    /* =========================================================
+       CHECKOUT BUTTON
+       ========================================================= */
 
-    const user =
-      session.user;
+    document
+      .getElementById(
+        "checkoutBtn"
+      )
+      .addEventListener(
+        "click",
+        checkout
+      );
+
+
+    /* =========================================================
+       REVIEWS
+       ========================================================= */
+
+    const REVIEWS = [
+
+      {
+        name:"Priya M.",
+        city:"Jaipur",
+        rating:5,
+        text:
+          "Ordered from Fashion_Fussion and the products arrived well packed."
+      },
+
+      {
+        name:"Arjun S.",
+        city:"Jaipur",
+        rating:5,
+        text:
+          "Liked the simple pricing and straightforward shopping experience."
+      },
+
+      {
+        name:"Neha K.",
+        city:"Jaipur",
+        rating:4,
+        text:
+          "Ordering was simple and delivery was smooth."
+      },
+
+      {
+        name:"Rohit V.",
+        city:"Jaipur",
+        rating:5,
+        text:
+          "Good quality for the price. Would order again."
+      },
+
+      {
+        name:"Simran K.",
+        city:"Jaipur",
+        rating:5,
+        text:
+          "The products looked good and arrived safely packed."
+      },
+
+      {
+        name:"Deepak T.",
+        city:"Jaipur",
+        rating:4,
+        text:
+          "Cart total was clear and checkout was easy."
+      }
+
+    ];
+
+
+    function renderReviews(){
+
+      const container =
+        document.getElementById(
+          "reviewsGrid"
+        );
+
+
+      container.innerHTML =
+        REVIEWS
+          .map(
+            review => {
+
+              const initials =
+                review.name
+                  .split(" ")
+                  .map(
+                    word =>
+                      word[0]
+                  )
+                  .join("");
+
+
+              const stars =
+                "★".repeat(
+                  review.rating
+                ) +
+                "☆".repeat(
+                  5 -
+                  review.rating
+                );
+
+
+              return `
+                <div class="testimonial">
+
+                  <div class="testimonial-head">
+
+                    <div class="avatar">
+                      ${escapeHtml(
+                        initials
+                      )}
+                    </div>
+
+                    <div>
+
+                      <div class="stars">
+                        ${stars}
+                      </div>
+
+                      <div class="who">
+                        ${escapeHtml(
+                          review.name
+                        )},
+                        ${escapeHtml(
+                          review.city
+                        )}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <p>
+                    "${escapeHtml(
+                      review.text
+                    )}"
+                  </p>
+
+                </div>
+              `;
+
+            }
+          )
+          .join("");
+
+    }
+
+
+    /* =========================================================
+       SHIPPING / RETURNS
+       ========================================================= */
+
+    document
+      .getElementById(
+        "shippingReturnsLink"
+      )
+      .addEventListener(
+        "click",
+        function(event){
+
+          event.preventDefault();
+
+          alert(
+            "Delivery: 3–5 business days across Jaipur, 5–8 days pan-India.\n\n" +
+            "Returns: report any issue within 48 hours of delivery to FashionFussion08@outlook.com with photos, and we'll sort a replacement or refund."
+          );
+
+        }
+      );
+
+
+    /* =========================================================
+       MOBILE MENU
+       ========================================================= */
+
+    document
+      .getElementById(
+        "mobileMenuBtn"
+      )
+      .addEventListener(
+        "click",
+        function(){
+
+          const nav =
+            document.querySelector(
+              ".nav-links"
+            );
+
+
+          const visible =
+            nav.style.display ===
+            "flex";
+
+
+          if(visible){
+
+            nav.style.display =
+              "";
+
+          }else{
+
+            nav.style.display =
+              "flex";
+
+            nav.style.flexDirection =
+              "column";
+
+            nav.style.position =
+              "absolute";
+
+            nav.style.top =
+              "70px";
+
+            nav.style.left =
+              "16px";
+
+            nav.style.right =
+              "16px";
+
+            nav.style.padding =
+              "18px";
+
+            nav.style.background =
+              "var(--paper)";
+
+            nav.style.border =
+              "1px solid var(--line)";
+
+            nav.style.boxShadow =
+              "0 10px 30px rgba(0,0,0,.08)";
+
+          }
+
+        }
+      );
+
+
+    /* =========================================================
+       INITIALIZE STORE
+       ========================================================= */
+
+    async function initializeStore(){
+
+      loadCart();
+
+      setupTicker();
+
+      renderReviews();
+
+      updateCartUI();
+
+      await updateAccountLink();
+
+      await loadProducts();
+
+    }
+
+
+    /* =========================================================
+       AUTH STATE CHANGE
+       ========================================================= */
 
     if(
-      user &&
-      user.id === ADMIN_USER_ID
+      typeof supabaseClient !==
+      "undefined" &&
+      supabaseClient
     ){
 
-      if(accountNav){
+      supabaseClient.auth.onAuthStateChange(
+        function(){
 
-        accountNav.href =
-          "admin.html";
+          updateAccountLink();
 
-        accountNav.textContent =
-          "Admin";
+        }
+      );
+
+    }
+
+
+    /* =========================================================
+       START
+       ========================================================= */
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      function(){
+
+        initializeStore();
 
       }
-
-      if(accountFooter){
-
-        accountFooter.href =
-          "admin.html";
-
-        accountFooter.textContent =
-          "Admin";
-
-      }
-
-      return;
-
-    }
-
-
-    /* =========================
-       NORMAL CUSTOMER
-       ========================= */
-
-    if(accountNav){
-
-      accountNav.href =
-        "account.html";
-
-      accountNav.textContent =
-        "My Account";
-
-    }
-
-    if(accountFooter){
-
-      accountFooter.href =
-        "account.html";
-
-      accountFooter.textContent =
-        "My Account";
-
-    }
-
-  }catch(error){
-
-    console.error(
-      "Auth navigation error:",
-      error
     );
 
-  }
-
-}
-
-
-/* =========================
-   AUTH STATE LISTENER
-   ========================= */
-
-supabaseClient.auth.onAuthStateChange(
-  function(){
-
-    updateAccountLinks();
-
-  }
-);
-
-
-/* =========================
-   MOBILE NAV
-   ========================= */
-
-const navToggle =
-  document.querySelector(
-    ".nav-toggle"
-  );
-
-const navLinks =
-  document.querySelector(
-    ".nav-links"
-  );
-
-if(navToggle && navLinks){
-
-  navToggle.addEventListener(
-    "click",
-    function(){
-
-      const isOpen =
-        navLinks.style.display ===
-        "flex";
-
-      navLinks.style.display =
-        isOpen
-          ? ""
-          : "flex";
-
-      if(!isOpen){
-
-        navLinks.style.position =
-          "absolute";
-
-        navLinks.style.top =
-          "100%";
-
-        navLinks.style.left =
-          "0";
-
-        navLinks.style.right =
-          "0";
-
-        navLinks.style.background =
-          "var(--paper)";
-
-        navLinks.style.padding =
-          "15px 24px";
-
-        navLinks.style.flexDirection =
-          "column";
-
-        navLinks.style.borderBottom =
-          "1px solid var(--line)";
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================
-   INITIALIZE STORE
-   ========================= */
-
-async function initializeStore(){
-
-  renderReviews();
-
-  await updateAccountLinks();
-
-  await loadProducts();
-
-}
-
-
-/* =========================
-   START
-   ========================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  function(){
-
-    initializeStore();
-
-  }
-);
-
-</script>
+  </script>
 
 </body>
 </html>
