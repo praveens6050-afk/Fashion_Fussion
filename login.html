@@ -12,6 +12,8 @@
 <script src="supabase-config.js"></script>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
+
 :root{
   --paper:#F4EEE1;
   --paper-dim:#EAE1CC;
@@ -28,8 +30,6 @@
   --serif:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
   --sans:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
 
 *{
   box-sizing:border-box;
@@ -99,7 +99,7 @@ header.site{
   padding:64px 56px;
   display:flex;
   flex-direction:column;
-  justify-content:space-between;
+  justify-content:center;
   position:relative;
   overflow:hidden;
 }
@@ -119,6 +119,7 @@ header.site{
 .brand-copy{
   position:relative;
   z-index:1;
+  max-width:520px;
 }
 
 .stamp{
@@ -149,25 +150,6 @@ header.site{
   color:#C7CEDD;
   max-width:38ch;
   margin:0;
-}
-
-.brand-stats{
-  position:relative;
-  z-index:1;
-  display:flex;
-  gap:32px;
-}
-
-.brand-stats .stat b{
-  font-family:var(--serif);
-  font-size:24px;
-  display:block;
-  color:var(--marigold);
-}
-
-.brand-stats .stat span{
-  font-size:12.5px;
-  color:#9FA9C0;
 }
 
 .form-side{
@@ -369,11 +351,12 @@ header.site{
 
   .brand-side{
     padding:44px 28px;
-    min-height:260px;
+    min-height:300px;
+    justify-content:center;
   }
 
-  .brand-stats{
-    flex-wrap:wrap;
+  .form-side{
+    padding:44px 24px;
   }
 
 }
@@ -419,32 +402,6 @@ header.site{
         save items for later, and check
         out faster next time.
       </p>
-
-    </div>
-
-
-    <div class="brand-stats">
-
-      <div class="stat">
-
-        <b>57</b>
-
-        <span>
-          SKUs live right now
-        </span>
-
-      </div>
-
-
-      <div class="stat">
-
-        <b>₹599</b>
-
-        <span>
-          free delivery above this
-        </span>
-
-      </div>
 
     </div>
 
