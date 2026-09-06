@@ -1,650 +1,1303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 
-  <title>Login | Fashion_FUSSION</title>
+<title>Sign In — Fashion_Fussion</title>
+<meta name="description" content="Sign in to your Fashion_Fussion account.">
 
-  <link rel="icon" href="data:,">
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+<style>
+:root{
+  --paper:#F4EEE1;
+  --paper-dim:#EAE1CC;
+  --ink:#1C2333;
+  --ink-soft:#4B5266;
+  --indigo:#1B2A4A;
+  --marigold:#E5972E;
+  --marigold-deep:#C97D1B;
+  --bottle:#2F5233;
+  --line:#D8CDAE;
+  --white:#FFFDF8;
+  --danger:#B23A2E;
+  --radius-stamp:3px;
+  --serif:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --sans:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
 
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f1f3f6;
-      color: #212121;
-    }
+*{
+  box-sizing:border-box;
+}
 
-    .header {
-      background: #2874f0;
-      color: white;
-      padding: 15px 30px;
-    }
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
 
-    .logo {
-      max-width: 1100px;
-      margin: auto;
-      font-size: 25px;
-      font-weight: 800;
-      font-style: italic;
-    }
+a{
+  color:inherit;
+  text-decoration:none;
+}
 
-    .logo span {
-      color: #ffe500;
-    }
+button{
+  font-family:inherit;
+  cursor:pointer;
+}
 
-    .wrapper {
-      min-height: calc(100vh - 65px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
+img{
+  max-width:100%;
+  display:block;
+}
 
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.12);
-    }
+header.site{
+  padding:18px 0;
+  border-bottom:1px solid var(--line);
+}
 
-    h1 {
-      margin-top: 0;
-      text-align: center;
-      font-size: 25px;
-    }
+.wrap-header{
+  max-width:1180px;
+  margin:0 auto;
+  padding:0 24px;
+}
 
-    .subtitle {
-      text-align: center;
-      color: #777;
-      font-size: 14px;
-      margin-bottom: 25px;
-    }
+.logo{
+  font-family:var(--serif);
+  font-weight:700;
+  font-size:24px;
+  color:var(--indigo);
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+}
 
-    label {
-      display: block;
-      margin-bottom: 7px;
-      font-size: 13px;
-      font-weight: bold;
-    }
+.logo small{
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:11px;
+  color:var(--ink-soft);
+  letter-spacing:.06em;
+}
 
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #bbb;
-      border-radius: 4px;
-      outline: none;
-      margin-bottom: 17px;
-    }
+.shell{
+  min-height:calc(100vh - 76px);
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
 
-    input:focus {
-      border-color: #2874f0;
-    }
+.brand-side{
+  background:var(--indigo);
+  color:var(--paper);
+  padding:64px 56px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  position:relative;
+  overflow:hidden;
+}
 
-    .login-btn {
-      width: 100%;
-      border: 0;
-      border-radius: 4px;
-      padding: 12px;
-      background: #fb641b;
-      color: white;
-      font-weight: bold;
-      font-size: 15px;
-      cursor: pointer;
-    }
+.brand-side::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(
+    ellipse at 20% 110%,
+    rgba(229,151,46,.18),
+    transparent 60%
+  );
+  pointer-events:none;
+}
 
-    .login-btn:hover {
-      background: #e85b16;
-    }
+.brand-copy{
+  position:relative;
+  z-index:1;
+}
 
-    .login-btn:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
+.stamp{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--indigo);
+  background:var(--marigold);
+  padding:6px 12px;
+  border-radius:100px;
+  margin-bottom:26px;
+}
 
-    .links {
-      margin-top: 20px;
-      text-align: center;
-      font-size: 14px;
-    }
+.brand-side h1{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:clamp(30px,3.4vw,42px);
+  line-height:1.12;
+  margin:0 0 18px;
+  max-width:11ch;
+}
 
-    .links a {
-      color: #2874f0;
-      text-decoration: none;
-    }
+.brand-side p{
+  font-size:15.5px;
+  line-height:1.6;
+  color:#C7CEDD;
+  max-width:38ch;
+  margin:0;
+}
 
-    .links a:hover {
-      text-decoration: underline;
-    }
+.brand-stats{
+  position:relative;
+  z-index:1;
+  display:flex;
+  gap:32px;
+}
 
-    .forgot {
-      text-align: right;
-      margin-top: -8px;
-      margin-bottom: 18px;
-      font-size: 13px;
-    }
+.brand-stats .stat b{
+  font-family:var(--serif);
+  font-size:24px;
+  display:block;
+  color:var(--marigold);
+}
 
-    .message {
-      display: none;
-      margin-bottom: 15px;
-      padding: 11px;
-      border-radius: 4px;
-      font-size: 13px;
-    }
+.brand-stats .stat span{
+  font-size:12.5px;
+  color:#9FA9C0;
+}
 
-    .error {
-      background: #ffebee;
-      color: #c62828;
-    }
+.form-side{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:56px 24px;
+}
 
-    .success {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
+.form-card{
+  width:100%;
+  max-width:400px;
+}
 
-    .loading {
-      text-align: center;
-      color: #777;
-      font-size: 13px;
-      display: none;
-      margin-top: 12px;
-    }
-  </style>
+.form-card h2{
+  font-family:var(--serif);
+  font-size:30px;
+  color:var(--indigo);
+  margin:0 0 8px;
+}
+
+.form-card .sub{
+  font-size:14.5px;
+  color:var(--ink-soft);
+  margin:0 0 32px;
+}
+
+.field{
+  margin-bottom:18px;
+}
+
+.field label{
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:7px;
+}
+
+.field input{
+  width:100%;
+  padding:12px 14px;
+  border-radius:4px;
+  border:1.5px solid var(--line);
+  background:var(--white);
+  font-size:14.5px;
+  font-family:var(--sans);
+  color:var(--ink);
+  transition:border-color .15s;
+}
+
+.field input:focus{
+  outline:none;
+  border-color:var(--indigo);
+}
+
+.field-error{
+  font-size:12.5px;
+  color:var(--danger);
+  margin-top:6px;
+  display:none;
+}
+
+.field.invalid input{
+  border-color:var(--danger);
+}
+
+.field.invalid .field-error{
+  display:block;
+}
+
+.row-between{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:26px;
+  font-size:13.5px;
+}
+
+.remember{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--ink-soft);
+}
+
+.remember input{
+  accent-color:var(--indigo);
+}
+
+.link-btn{
+  background:none;
+  border:none;
+  color:var(--indigo);
+  font-weight:600;
+  font-size:13.5px;
+  padding:0;
+}
+
+.link-btn:hover{
+  color:var(--marigold-deep);
+}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:14px 26px;
+  border-radius:var(--radius-stamp);
+  font-weight:600;
+  font-size:15px;
+  border:1.5px solid transparent;
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease;
+  width:100%;
+}
+
+.btn-primary{
+  background:var(--indigo);
+  color:var(--paper);
+}
+
+.btn-primary:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 0 0 #0f1830;
+}
+
+.btn-primary:disabled{
+  opacity:.6;
+  cursor:default;
+  transform:none;
+  box-shadow:none;
+}
+
+.divider{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:26px 0;
+  color:var(--ink-soft);
+  font-size:12.5px;
+}
+
+.divider::before,
+.divider::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background:var(--line);
+}
+
+.form-foot{
+  text-align:center;
+  font-size:14px;
+  color:var(--ink-soft);
+  margin-top:24px;
+}
+
+.form-foot a{
+  color:var(--indigo);
+  font-weight:600;
+}
+
+.form-foot a:hover{
+  color:var(--marigold-deep);
+}
+
+.banner{
+  display:none;
+  padding:12px 14px;
+  border-radius:4px;
+  font-size:13.5px;
+  font-weight:600;
+  margin-bottom:20px;
+  line-height:1.5;
+}
+
+.banner.show{
+  display:block;
+}
+
+.banner.success{
+  background:#E4E9DD;
+  color:var(--bottle);
+}
+
+.banner.error{
+  background:#F4E1DD;
+  color:var(--danger);
+}
+
+@media (max-width:880px){
+
+  .shell{
+    grid-template-columns:1fr;
+  }
+
+  .brand-side{
+    padding:44px 28px;
+    min-height:260px;
+  }
+
+  .brand-stats{
+    flex-wrap:wrap;
+  }
+
+}
+</style>
 </head>
 
 <body>
 
-  <header class="header">
-    <div class="logo">
-      Fashion<span>_FUSSION</span>
-    </div>
-  </header>
+<header class="site">
+
+  <div class="wrap-header">
+
+    <a
+      href="index.html"
+      class="logo"
+    >
+      Fashion<small>_FUSSION</small>
+    </a>
+
+  </div>
+
+</header>
 
 
-  <main class="wrapper">
+<div class="shell">
 
-    <div class="login-card">
+  <!-- ================= BRAND SIDE ================= -->
+
+  <div class="brand-side">
+
+    <div class="brand-copy">
+
+      <span class="stamp">
+        ● Welcome back
+      </span>
 
       <h1>
-        Login
+        Good to see you again.
       </h1>
 
-      <div class="subtitle">
-        Login to your Fashion_FUSSION account
+      <p>
+        Sign in to track your orders,
+        save items for later, and check
+        out faster next time.
+      </p>
+
+    </div>
+
+
+    <div class="brand-stats">
+
+      <div class="stat">
+
+        <b>57</b>
+
+        <span>
+          SKUs live right now
+        </span>
+
       </div>
 
 
+      <div class="stat">
+
+        <b>₹599</b>
+
+        <span>
+          free delivery above this
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================= LOGIN SIDE ================= -->
+
+  <div class="form-side">
+
+    <div class="form-card">
+
+      <h2>
+        Sign in
+      </h2>
+
+      <p class="sub">
+        Enter your details to access your account.
+      </p>
+
+
       <div
-        id="message"
-        class="message"
+        class="banner"
+        id="formBanner"
       ></div>
 
 
-      <form id="loginForm">
+      <form
+        id="loginForm"
+        novalidate
+      >
 
-        <label for="email">
-          Email
-        </label>
-
-        <input
-          id="email"
-          type="email"
-          autocomplete="email"
-          required
-          placeholder="Enter your email"
-        >
-
-
-        <label for="password">
-          Password
-        </label>
-
-        <input
-          id="password"
-          type="password"
-          autocomplete="current-password"
-          required
-          placeholder="Enter your password"
-        >
-
-
-        <div class="forgot">
-          <a
-            href="#"
-            id="forgotPassword"
-          >
-            Forgot Password?
-          </a>
-        </div>
-
-
-        <button
-          class="login-btn"
-          id="loginButton"
-          type="submit"
-        >
-          Login
-        </button>
-
+        <!-- EMAIL -->
 
         <div
-          class="loading"
-          id="loading"
+          class="field"
+          id="emailField"
         >
-          Checking account...
+
+          <label for="email">
+            Email address
+          </label>
+
+          <input
+            type="email"
+            id="email"
+            name="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+          >
+
+          <div class="field-error">
+            Enter a valid email address.
+          </div>
+
         </div>
+
+
+        <!-- PASSWORD -->
+
+        <div
+          class="field"
+          id="passwordField"
+        >
+
+          <label for="password">
+            Password
+          </label>
+
+          <input
+            type="password"
+            id="password"
+            name="password"
+            autocomplete="current-password"
+            placeholder="Your password"
+          >
+
+          <div class="field-error">
+            Enter your password.
+          </div>
+
+        </div>
+
+
+        <!-- OPTIONS -->
+
+        <div class="row-between">
+
+          <label class="remember">
+
+            <input
+              type="checkbox"
+              id="remember"
+              checked
+            >
+
+            Remember me
+
+          </label>
+
+
+          <button
+            type="button"
+            class="link-btn"
+            id="forgotBtn"
+          >
+            Forgot password?
+          </button>
+
+        </div>
+
+
+        <!-- SUBMIT -->
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          id="submitBtn"
+        >
+          Sign in
+        </button>
 
       </form>
 
 
-      <div class="links">
+      <div class="divider">
+        or
+      </div>
+
+
+      <p class="form-foot">
 
         Don't have an account?
 
         <a href="signup.html">
-          Create Account
+          Create one
         </a>
 
-        <br><br>
-
-        <a href="index.html">
-          ← Back to Store
-        </a>
-
-      </div>
+      </p>
 
     </div>
 
-  </main>
+  </div>
+
+</div>
 
 
-  <script>
+<script>
 
-    /*
-     * VERIFIED ADMIN UID
-     *
-     * Admin access is based on UID + profiles.is_admin.
-     * Email spelling is NOT used.
-     */
-
-    const ADMIN_USER_ID =
-      "53165e6e-4e81-492e-9f9f-7a1611ee9801";
+/* =========================================================
+   FASHION_FUSSION REAL SUPABASE LOGIN
+   ========================================================= */
 
 
-    const loginForm =
-      document.getElementById("loginForm");
+/* =========================================================
+   ADMIN USER ID
+   ========================================================= */
 
-    const loginButton =
-      document.getElementById("loginButton");
-
-    const message =
-      document.getElementById("message");
-
-    const loading =
-      document.getElementById("loading");
+const ADMIN_USER_ID =
+  "53165e6e-4e81-492e-9f9f-7a1611ee9801";
 
 
-    function showMessage(
-      text,
-      type = "error"
-    ) {
+/* =========================================================
+   ELEMENTS
+   ========================================================= */
 
-      message.textContent = text;
+const loginForm =
+  document.getElementById("loginForm");
 
-      message.className =
-        "message " + type;
+const emailInput =
+  document.getElementById("email");
 
-      message.style.display = "block";
+const passwordInput =
+  document.getElementById("password");
 
-    }
+const rememberInput =
+  document.getElementById("remember");
+
+const submitBtn =
+  document.getElementById("submitBtn");
+
+const forgotBtn =
+  document.getElementById("forgotBtn");
+
+const formBanner =
+  document.getElementById("formBanner");
 
 
-    function hideMessage() {
+/* =========================================================
+   BANNER
+   ========================================================= */
 
-      message.style.display = "none";
+function showBanner(
+  message,
+  type
+){
 
-    }
+  formBanner.textContent =
+    message;
+
+  formBanner.className =
+    "banner show " +
+    type;
+
+}
 
 
-    /*
-     * Check whether the logged-in user
-     * is the administrator.
-     */
+/* =========================================================
+   FIELD ERROR
+   ========================================================= */
 
-    async function redirectAfterLogin(user) {
+function setFieldError(
+  fieldId,
+  hasError
+){
 
-      console.log(
-        "Logged-in UID:",
-        user.id
+  const field =
+    document.getElementById(
+      fieldId
+    );
+
+  field.classList.toggle(
+    "invalid",
+    hasError
+  );
+
+}
+
+
+/* =========================================================
+   CLEAR ERRORS
+   ========================================================= */
+
+function clearErrors(){
+
+  setFieldError(
+    "emailField",
+    false
+  );
+
+  setFieldError(
+    "passwordField",
+    false
+  );
+
+}
+
+
+/* =========================================================
+   SUPABASE CLIENT CHECK
+   ========================================================= */
+
+function checkSupabase(){
+
+  if(
+    typeof supabaseClient ===
+    "undefined" ||
+    !supabaseClient
+  ){
+
+    showBanner(
+      "Supabase could not be loaded. Please refresh the page.",
+      "error"
+    );
+
+    return false;
+  }
+
+  return true;
+
+}
+
+
+/* =========================================================
+   ALREADY LOGGED-IN USER
+   ========================================================= */
+
+async function redirectIfAlreadyLoggedIn(){
+
+  if(!checkSupabase()){
+    return;
+  }
+
+  try{
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .auth
+        .getSession();
+
+
+    if(error){
+
+      console.error(
+        "Existing session check:",
+        error
       );
 
+      return;
+    }
 
-      /*
-       * First check exact admin UID.
-       */
 
-      if (
-        user.id === ADMIN_USER_ID
-      ) {
+    const session =
+      data?.session;
 
-        console.log(
-          "Admin UID matched."
+
+    if(
+      !session ||
+      !session.user
+    ){
+
+      return;
+    }
+
+
+    await redirectUser(
+      session.user
+    );
+
+  }catch(error){
+
+    console.error(
+      "Session check error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   REDIRECT USER
+   ========================================================= */
+
+async function redirectUser(user){
+
+  try{
+
+    /*
+     * ADMIN UID CHECK
+     */
+
+    if(
+      String(user.id) ===
+      String(ADMIN_USER_ID)
+    ){
+
+      const {
+        data: profile,
+        error: profileError
+      } =
+        await supabaseClient
+          .from("profiles")
+          .select("id,is_admin")
+          .eq(
+            "id",
+            user.id
+          )
+          .maybeSingle();
+
+
+      if(profileError){
+
+        console.error(
+          "Admin profile error:",
+          profileError
         );
 
-
-        /*
-         * Verify profiles.is_admin too.
-         */
-
-        const {
-          data: profile,
-          error
-        } =
-          await supabaseClient
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", user.id)
-            .maybeSingle();
-
-
-        if (error) {
-
-          console.error(
-            "Admin profile check failed:",
-            error
-          );
-
-          throw new Error(
-            "Could not verify administrator privileges."
-          );
-
-        }
-
-
-        if (
-          profile &&
-          profile.is_admin === true
-        ) {
-
-          console.log(
-            "ADMIN VERIFIED — redirecting to admin.html"
-          );
-
-          window.location.replace(
-            "admin.html"
-          );
-
-          return;
-
-        }
-
-
-        console.warn(
-          "Admin UID matched but is_admin is not true."
+        showBanner(
+          "Login successful, but administrator verification failed: " +
+          profileError.message,
+          "error"
         );
 
+        return;
+      }
+
+
+      if(
+        profile &&
+        profile.is_admin === true
+      ){
+
+        showBanner(
+          "Administrator verified. Redirecting...",
+          "success"
+        );
+
+        setTimeout(
+          function(){
+
+            window.location.href =
+              "admin.html";
+
+          },
+          500
+        );
+
+        return;
       }
 
 
       /*
-       * Normal customer.
+       * UID matches but admin flag is not enabled.
        */
 
-      console.log(
-        "Customer account — redirecting to account.html"
+      showBanner(
+        "This account is not currently enabled as an administrator.",
+        "error"
       );
 
-      window.location.replace(
-        "account.html"
-      );
+      return;
 
     }
 
 
     /*
-     * LOGIN
+     * NORMAL CUSTOMER
      */
 
-    loginForm.addEventListener(
-      "submit",
-      async function(event) {
-
-        event.preventDefault();
-
-        hideMessage();
-
-        loginButton.disabled = true;
-
-        loading.style.display = "block";
-
-
-        const email =
-          document
-            .getElementById("email")
-            .value
-            .trim();
-
-
-        const password =
-          document
-            .getElementById("password")
-            .value;
-
-
-        try {
-
-          const {
-            data,
-            error
-          } =
-            await supabaseClient
-              .auth
-              .signInWithPassword({
-                email,
-                password
-              });
-
-
-          if (error) {
-
-            throw error;
-
-          }
-
-
-          if (!data.user) {
-
-            throw new Error(
-              "Login succeeded but no user was returned."
-            );
-
-          }
-
-
-          console.log(
-            "Supabase login successful:",
-            data.user.id
-          );
-
-
-          await redirectAfterLogin(
-            data.user
-          );
-
-        }
-
-        catch (error) {
-
-          console.error(
-            "Login error:",
-            error
-          );
-
-
-          showMessage(
-            error.message ||
-            "Unable to login.",
-            "error"
-          );
-
-
-          loginButton.disabled = false;
-
-          loading.style.display = "none";
-
-        }
-
-      }
+    showBanner(
+      "Signed in successfully. Redirecting...",
+      "success"
     );
 
 
-    /*
-     * FORGOT PASSWORD
-     */
+    setTimeout(
+      function(){
 
-    document
-      .getElementById("forgotPassword")
-      .addEventListener(
-        "click",
-        async function(event) {
+        window.location.href =
+          "account.html";
 
-          event.preventDefault();
+      },
+      500
+    );
 
 
-          const email =
-            document
-              .getElementById("email")
-              .value
-              .trim();
+  }catch(error){
+
+    console.error(
+      "Redirect user error:",
+      error
+    );
+
+    showBanner(
+      error.message ||
+      "Could not verify your account.",
+      "error"
+    );
+
+  }
+
+}
 
 
-          if (!email) {
+/* =========================================================
+   LOGIN
+   ========================================================= */
 
-            showMessage(
-              "Enter your email address first.",
-              "error"
-            );
+loginForm.addEventListener(
+  "submit",
+  async function(event){
 
-            return;
-
-          }
-
-
-          try {
-
-            const resetUrl =
-              new URL(
-                "reset-password.html",
-                window.location.href
-              ).href;
+    event.preventDefault();
 
 
-            const {
-              error
-            } =
-              await supabaseClient
-                .auth
-                .resetPasswordForEmail(
-                  email,
-                  {
-                    redirectTo: resetUrl
-                  }
-                );
+    clearErrors();
 
 
-            if (error) {
-              throw error;
-            }
+    const email =
+      emailInput.value
+        .trim()
+        .toLowerCase();
 
 
-            showMessage(
-              "Password reset email sent. Check your inbox.",
-              "success"
-            );
-
-          }
-
-          catch (error) {
-
-            console.error(
-              "Password reset error:",
-              error
-            );
+    const password =
+      passwordInput.value;
 
 
-            showMessage(
-              error.message ||
-              "Could not send password reset email.",
-              "error"
-            );
+    const emailValid =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        .test(email);
 
-          }
 
-        }
+    const passwordValid =
+      password.length > 0;
+
+
+    setFieldError(
+      "emailField",
+      !emailValid
+    );
+
+
+    setFieldError(
+      "passwordField",
+      !passwordValid
+    );
+
+
+    if(
+      !emailValid ||
+      !passwordValid
+    ){
+
+      showBanner(
+        "Please fix the highlighted fields.",
+        "error"
       );
 
-
-    /*
-     * If already logged in, send user
-     * to the correct page automatically.
-     */
-
-    async function checkExistingSession() {
-
-      try {
-
-        const {
-          data: {
-            session
-          }
-        } =
-          await supabaseClient
-            .auth
-            .getSession();
-
-
-        if (!session || !session.user) {
-          return;
-        }
-
-
-        console.log(
-          "Existing session found:",
-          session.user.id
-        );
-
-
-        await redirectAfterLogin(
-          session.user
-        );
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Existing session check failed:",
-          error
-        );
-
-      }
-
+      return;
     }
 
 
-    checkExistingSession();
+    if(!checkSupabase()){
+      return;
+    }
 
-  </script>
+
+    /*
+     * Disable button while Supabase
+     * processes the login.
+     */
+
+    submitBtn.disabled =
+      true;
+
+    submitBtn.textContent =
+      "Signing in…";
+
+
+    try{
+
+      /*
+       * REAL SUPABASE AUTH
+       */
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient
+          .auth
+          .signInWithPassword({
+            email: email,
+            password: password
+          });
+
+
+      if(error){
+
+        console.error(
+          "Supabase login error:",
+          error
+        );
+
+        throw error;
+      }
+
+
+      if(
+        !data ||
+        !data.user
+      ){
+
+        throw new Error(
+          "Supabase login succeeded but no user was returned."
+        );
+
+      }
+
+
+      console.log(
+        "Supabase login successful:",
+        data.user.id,
+        data.user.email
+      );
+
+
+      /*
+       * Remember-me is informational here.
+       *
+       * Supabase's browser client maintains
+       * the auth session automatically.
+       */
+
+      if(
+        rememberInput &&
+        !rememberInput.checked
+      ){
+
+        console.log(
+          "User did not select Remember me."
+        );
+
+      }
+
+
+      /*
+       * Verify admin/customer and redirect.
+       */
+
+      await redirectUser(
+        data.user
+      );
+
+
+    }catch(error){
+
+      console.error(
+        "Login failed:",
+        error
+      );
+
+
+      let message =
+        "Email or password is incorrect.";
+
+
+      if(error){
+
+        const errorText =
+          String(
+            error.message ||
+            ""
+          ).toLowerCase();
+
+
+        if(
+          errorText.includes(
+            "email not confirmed"
+          )
+        ){
+
+          message =
+            "Please verify your email address before signing in.";
+
+        }else if(
+          errorText.includes(
+            "invalid login credentials"
+          )
+        ){
+
+          message =
+            "Email or password is incorrect.";
+
+        }else if(
+          errorText.includes(
+            "too many requests"
+          )
+        ){
+
+          message =
+            "Too many login attempts. Please wait a little and try again.";
+
+        }else if(
+          error.message
+        ){
+
+          message =
+            error.message;
+
+        }
+
+      }
+
+
+      showBanner(
+        message,
+        "error"
+      );
+
+
+      submitBtn.disabled =
+        false;
+
+      submitBtn.textContent =
+        "Sign in";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   FORGOT PASSWORD
+   ========================================================= */
+
+forgotBtn.addEventListener(
+  "click",
+  async function(){
+
+    if(!checkSupabase()){
+      return;
+    }
+
+
+    clearErrors();
+
+
+    const email =
+      emailInput.value
+        .trim()
+        .toLowerCase();
+
+
+    const emailValid =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        .test(email);
+
+
+    if(!emailValid){
+
+      setFieldError(
+        "emailField",
+        true
+      );
+
+
+      showBanner(
+        "Enter your email address first, then click Forgot password.",
+        "error"
+      );
+
+      emailInput.focus();
+
+      return;
+    }
+
+
+    forgotBtn.disabled =
+      true;
+
+    forgotBtn.textContent =
+      "Sending...";
+
+
+    try{
+
+      /*
+       * Send the user to the password
+       * reset page after clicking the email.
+       */
+
+      const resetUrl =
+        new URL(
+          "reset-password.html",
+          window.location.href
+        ).href;
+
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .auth
+          .resetPasswordForEmail(
+            email,
+            {
+              redirectTo:
+                resetUrl
+            }
+          );
+
+
+      if(error){
+
+        throw error;
+      }
+
+
+      showBanner(
+        "Password reset email sent. Please check your inbox.",
+        "success"
+      );
+
+
+    }catch(error){
+
+      console.error(
+        "Password reset error:",
+        error
+      );
+
+
+      showBanner(
+        error.message ||
+        "Could not send the password reset email.",
+        "error"
+      );
+
+
+    }finally{
+
+      forgotBtn.disabled =
+        false;
+
+      forgotBtn.textContent =
+        "Forgot password?";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   AUTH STATE CHANGE
+   ========================================================= */
+
+supabaseClient.auth.onAuthStateChange(
+  function(event, session){
+
+    console.log(
+      "Supabase auth event:",
+      event
+    );
+
+
+    if(
+      event ===
+      "SIGNED_OUT"
+    ){
+
+      console.log(
+        "User signed out."
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   INITIAL SESSION CHECK
+   ========================================================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function(){
+
+    redirectIfAlreadyLoggedIn();
+
+  }
+);
+
+</script>
 
 </body>
 </html>
