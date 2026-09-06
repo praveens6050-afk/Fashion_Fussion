@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fashion Fusion — Login</title>
+
+  <title>Login | Fashion_FUSSION</title>
+
+  <link rel="icon" href="data:,">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
@@ -15,263 +18,632 @@
 
     body {
       margin: 0;
-      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f1f3f6;
+      color: #212121;
+    }
+
+    .header {
+      background: #2874f0;
+      color: white;
+      padding: 15px 30px;
+    }
+
+    .logo {
+      max-width: 1100px;
+      margin: auto;
+      font-size: 25px;
+      font-weight: 800;
+      font-style: italic;
+    }
+
+    .logo span {
+      color: #ffe500;
+    }
+
+    .wrapper {
+      min-height: calc(100vh - 65px);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      padding: 20px;
     }
 
-    .login-box {
+    .login-card {
       width: 100%;
       max-width: 420px;
-      background: #fff;
-      padding: 32px;
-      border-radius: 14px;
-      box-shadow: 0 5px 25px rgba(0,0,0,.1);
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
     }
 
     h1 {
       margin-top: 0;
       text-align: center;
+      font-size: 25px;
     }
 
     .subtitle {
       text-align: center;
-      color: #666;
+      color: #777;
+      font-size: 14px;
       margin-bottom: 25px;
     }
 
     label {
       display: block;
       margin-bottom: 7px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: bold;
     }
 
     input {
       width: 100%;
       padding: 12px;
-      margin-bottom: 18px;
-      border: 1px solid #ccc;
-      border-radius: 7px;
-      font-size: 15px;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      outline: none;
+      margin-bottom: 17px;
     }
 
-    button {
+    input:focus {
+      border-color: #2874f0;
+    }
+
+    .login-btn {
       width: 100%;
-      padding: 13px;
       border: 0;
-      border-radius: 7px;
-      background: #111;
+      border-radius: 4px;
+      padding: 12px;
+      background: #fb641b;
       color: white;
-      font-size: 16px;
+      font-weight: bold;
+      font-size: 15px;
       cursor: pointer;
     }
 
-    button:disabled {
+    .login-btn:hover {
+      background: #e85b16;
+    }
+
+    .login-btn:disabled {
       opacity: .6;
       cursor: not-allowed;
-    }
-
-    .message {
-      margin-top: 15px;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    .error {
-      color: #d32f2f;
-    }
-
-    .success {
-      color: #16803c;
     }
 
     .links {
       margin-top: 20px;
       text-align: center;
+      font-size: 14px;
     }
 
     .links a {
-      color: #111;
+      color: #2874f0;
       text-decoration: none;
-      display: block;
-      margin-top: 10px;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    .forgot {
+      text-align: right;
+      margin-top: -8px;
+      margin-bottom: 18px;
+      font-size: 13px;
+    }
+
+    .message {
+      display: none;
+      margin-bottom: 15px;
+      padding: 11px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .loading {
+      text-align: center;
+      color: #777;
+      font-size: 13px;
+      display: none;
+      margin-top: 12px;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="login-box">
-    <h1>Fashion Fusion</h1>
-    <p class="subtitle">Sign in to your account</p>
-
-    <form id="loginForm">
-
-      <label for="email">Email</label>
-      <input
-        type="email"
-        id="email"
-        required
-        autocomplete="email"
-      >
-
-      <label for="password">Password</label>
-      <input
-        type="password"
-        id="password"
-        required
-        autocomplete="current-password"
-      >
-
-      <button type="submit" id="loginBtn">
-        Login
-      </button>
-
-    </form>
-
-    <div id="message" class="message"></div>
-
-    <div class="links">
-      <a href="#" id="forgotPassword">Forgot password?</a>
-      <a href="signup.html">Create a new account</a>
-      <a href="index.html">Continue shopping</a>
+  <header class="header">
+    <div class="logo">
+      Fashion<span>_FUSSION</span>
     </div>
-  </div>
+  </header>
+
+
+  <main class="wrapper">
+
+    <div class="login-card">
+
+      <h1>
+        Login
+      </h1>
+
+      <div class="subtitle">
+        Login to your Fashion_FUSSION account
+      </div>
+
+
+      <div
+        id="message"
+        class="message"
+      ></div>
+
+
+      <form id="loginForm">
+
+        <label for="email">
+          Email
+        </label>
+
+        <input
+          id="email"
+          type="email"
+          autocomplete="email"
+          required
+          placeholder="Enter your email"
+        >
+
+
+        <label for="password">
+          Password
+        </label>
+
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          placeholder="Enter your password"
+        >
+
+
+        <div class="forgot">
+          <a
+            href="#"
+            id="forgotPassword"
+          >
+            Forgot Password?
+          </a>
+        </div>
+
+
+        <button
+          class="login-btn"
+          id="loginButton"
+          type="submit"
+        >
+          Login
+        </button>
+
+
+        <div
+          class="loading"
+          id="loading"
+        >
+          Checking account...
+        </div>
+
+      </form>
+
+
+      <div class="links">
+
+        Don't have an account?
+
+        <a href="signup.html">
+          Create Account
+        </a>
+
+        <br><br>
+
+        <a href="index.html">
+          ← Back to Store
+        </a>
+
+      </div>
+
+    </div>
+
+  </main>
+
 
   <script>
-    const loginForm = document.getElementById("loginForm");
-    const loginBtn = document.getElementById("loginBtn");
-    const message = document.getElementById("message");
-    const forgotPassword = document.getElementById("forgotPassword");
 
-    function showMessage(text, type) {
+    /*
+     * VERIFIED ADMIN UID
+     *
+     * Admin access is based on UID + profiles.is_admin.
+     * Email spelling is NOT used.
+     */
+
+    const ADMIN_USER_ID =
+      "53165e6e-4e81-492e-9f9f-7a1611ee9801";
+
+
+    const loginForm =
+      document.getElementById("loginForm");
+
+    const loginButton =
+      document.getElementById("loginButton");
+
+    const message =
+      document.getElementById("message");
+
+    const loading =
+      document.getElementById("loading");
+
+
+    function showMessage(
+      text,
+      type = "error"
+    ) {
+
       message.textContent = text;
-      message.className = "message " + type;
+
+      message.className =
+        "message " + type;
+
+      message.style.display = "block";
+
     }
 
-    // If already logged in, go directly to Home.
-    async function checkExistingSession() {
-      const { data, error } =
-        await supabaseClient.auth.getSession();
 
-      if (error) {
-        console.error("Session check error:", error);
-        return;
-      }
+    function hideMessage() {
 
-      if (data.session) {
-        window.location.href =
-          new URL("index.html", window.location.href).href;
-      }
+      message.style.display = "none";
+
     }
 
-    loginForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+    /*
+     * Check whether the logged-in user
+     * is the administrator.
+     */
 
-      loginBtn.disabled = true;
-      loginBtn.textContent = "Logging in...";
-      showMessage("", "");
+    async function redirectAfterLogin(user) {
 
-      try {
-        const { data, error } =
-          await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: password
-          });
+      console.log(
+        "Logged-in UID:",
+        user.id
+      );
+
+
+      /*
+       * First check exact admin UID.
+       */
+
+      if (
+        user.id === ADMIN_USER_ID
+      ) {
+
+        console.log(
+          "Admin UID matched."
+        );
+
+
+        /*
+         * Verify profiles.is_admin too.
+         */
+
+        const {
+          data: profile,
+          error
+        } =
+          await supabaseClient
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", user.id)
+            .maybeSingle();
+
 
         if (error) {
-          console.error("Login error:", error);
-          showMessage(error.message, "error");
-          loginBtn.disabled = false;
-          loginBtn.textContent = "Login";
-          return;
+
+          console.error(
+            "Admin profile check failed:",
+            error
+          );
+
+          throw new Error(
+            "Could not verify administrator privileges."
+          );
+
         }
 
-        if (!data.session) {
+
+        if (
+          profile &&
+          profile.is_admin === true
+        ) {
+
+          console.log(
+            "ADMIN VERIFIED — redirecting to admin.html"
+          );
+
+          window.location.replace(
+            "admin.html"
+          );
+
+          return;
+
+        }
+
+
+        console.warn(
+          "Admin UID matched but is_admin is not true."
+        );
+
+      }
+
+
+      /*
+       * Normal customer.
+       */
+
+      console.log(
+        "Customer account — redirecting to account.html"
+      );
+
+      window.location.replace(
+        "account.html"
+      );
+
+    }
+
+
+    /*
+     * LOGIN
+     */
+
+    loginForm.addEventListener(
+      "submit",
+      async function(event) {
+
+        event.preventDefault();
+
+        hideMessage();
+
+        loginButton.disabled = true;
+
+        loading.style.display = "block";
+
+
+        const email =
+          document
+            .getElementById("email")
+            .value
+            .trim();
+
+
+        const password =
+          document
+            .getElementById("password")
+            .value;
+
+
+        try {
+
+          const {
+            data,
+            error
+          } =
+            await supabaseClient
+              .auth
+              .signInWithPassword({
+                email,
+                password
+              });
+
+
+          if (error) {
+
+            throw error;
+
+          }
+
+
+          if (!data.user) {
+
+            throw new Error(
+              "Login succeeded but no user was returned."
+            );
+
+          }
+
+
+          console.log(
+            "Supabase login successful:",
+            data.user.id
+          );
+
+
+          await redirectAfterLogin(
+            data.user
+          );
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "Login error:",
+            error
+          );
+
+
           showMessage(
-            "Login succeeded, but no session was created.",
+            error.message ||
+            "Unable to login.",
             "error"
           );
-          loginBtn.disabled = false;
-          loginBtn.textContent = "Login";
-          return;
+
+
+          loginButton.disabled = false;
+
+          loading.style.display = "none";
+
         }
 
-        showMessage("Login successful. Opening Home...", "success");
-
-        setTimeout(function () {
-          window.location.href =
-            new URL("index.html", window.location.href).href;
-        }, 500);
-
-      } catch (error) {
-        console.error("Unexpected login error:", error);
-        showMessage(
-          "Something went wrong. Please try again.",
-          "error"
-        );
-
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Login";
       }
-    });
+    );
 
-    forgotPassword.addEventListener("click", async function (event) {
-      event.preventDefault();
 
-      const email =
-        document.getElementById("email").value.trim();
+    /*
+     * FORGOT PASSWORD
+     */
 
-      if (!email) {
-        showMessage(
-          "Please enter your email first.",
-          "error"
-        );
-        return;
-      }
+    document
+      .getElementById("forgotPassword")
+      .addEventListener(
+        "click",
+        async function(event) {
+
+          event.preventDefault();
+
+
+          const email =
+            document
+              .getElementById("email")
+              .value
+              .trim();
+
+
+          if (!email) {
+
+            showMessage(
+              "Enter your email address first.",
+              "error"
+            );
+
+            return;
+
+          }
+
+
+          try {
+
+            const resetUrl =
+              new URL(
+                "reset-password.html",
+                window.location.href
+              ).href;
+
+
+            const {
+              error
+            } =
+              await supabaseClient
+                .auth
+                .resetPasswordForEmail(
+                  email,
+                  {
+                    redirectTo: resetUrl
+                  }
+                );
+
+
+            if (error) {
+              throw error;
+            }
+
+
+            showMessage(
+              "Password reset email sent. Check your inbox.",
+              "success"
+            );
+
+          }
+
+          catch (error) {
+
+            console.error(
+              "Password reset error:",
+              error
+            );
+
+
+            showMessage(
+              error.message ||
+              "Could not send password reset email.",
+              "error"
+            );
+
+          }
+
+        }
+      );
+
+
+    /*
+     * If already logged in, send user
+     * to the correct page automatically.
+     */
+
+    async function checkExistingSession() {
 
       try {
-        const resetUrl =
-          new URL(
-            "reset-password.html",
-            window.location.href
-          ).href;
 
-        const { error } =
-          await supabaseClient.auth.resetPasswordForEmail(
-            email,
-            {
-              redirectTo: resetUrl
-            }
-          );
+        const {
+          data: {
+            session
+          }
+        } =
+          await supabaseClient
+            .auth
+            .getSession();
 
-        if (error) {
-          console.error("Password reset error:", error);
-          showMessage(error.message, "error");
+
+        if (!session || !session.user) {
           return;
         }
 
-        showMessage(
-          "Password reset email sent. Check your inbox.",
-          "success"
+
+        console.log(
+          "Existing session found:",
+          session.user.id
         );
 
-      } catch (error) {
-        console.error(error);
-        showMessage(
-          "Unable to send password reset email.",
-          "error"
+
+        await redirectAfterLogin(
+          session.user
         );
+
       }
-    });
+
+      catch (error) {
+
+        console.error(
+          "Existing session check failed:",
+          error
+        );
+
+      }
+
+    }
+
 
     checkExistingSession();
+
   </script>
 
 </body>
