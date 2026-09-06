@@ -1804,17 +1804,46 @@
 
     <div class="drawer-foot">
 
-      <div class="subtotal-row">
+      <div class="cart-pricing">
+  <div class="subtotal-row">
+    <span>Subtotal</span>
+    <span id="cartSubtotal">₹0</span>
+  </div>
 
-        <span>
-          Subtotal
-        </span>
+  <div class="subtotal-row">
+    <span>Discount</span>
+    <span id="cartDiscount">− ₹0</span>
+  </div>
 
-        <span id="cartTotal">
-          ₹0
-        </span>
+  <div class="subtotal-row">
+    <span>GST</span>
+    <span id="cartGst">₹0</span>
+  </div>
 
-      </div>
+  <div class="subtotal-row">
+    <span>Delivery</span>
+    <span id="cartDelivery">₹0</span>
+  </div>
+
+  <div class="subtotal-row">
+    <span>Other applicable charges</span>
+    <span id="cartOtherCharges">₹0</span>
+  </div>
+
+  <div class="subtotal-row cart-final-total">
+    <strong>Final Amount</strong>
+    <strong id="cartTotal">₹0</strong>
+  </div>
+</div>
+
+<button
+  class="btn btn-primary"
+  style="width:100%;"
+  id="checkoutBtn"
+  type="button"
+>
+  Checkout
+</button>
 
       <button
         class="btn btn-primary"
