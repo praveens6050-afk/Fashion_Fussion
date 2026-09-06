@@ -17,7 +17,7 @@
   <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- YOUR EXISTING SUPABASE CONFIG -->
+  <!-- SUPABASE CONFIG -->
   <script src="supabase-config.js"></script>
 
 
@@ -26,7 +26,6 @@
     * {
       box-sizing: border-box;
     }
-
 
     body {
       margin: 0;
@@ -41,17 +40,14 @@
       color: #212121;
     }
 
-
     button,
     input {
       font: inherit;
     }
 
-
     button {
       cursor: pointer;
     }
-
 
     a {
       text-decoration: none;
@@ -72,7 +68,6 @@
         0 2px 8px rgba(0, 0, 0, 0.18);
     }
 
-
     .header-inner {
       max-width: 1200px;
 
@@ -89,7 +84,6 @@
       gap: 20px;
     }
 
-
     .logo {
       font-size: 25px;
 
@@ -98,11 +92,9 @@
       font-style: italic;
     }
 
-
     .logo span {
       color: #ffe500;
     }
-
 
     .nav {
       display: flex;
@@ -113,7 +105,6 @@
 
       flex-wrap: wrap;
     }
-
 
     .nav a,
     .nav button {
@@ -131,7 +122,6 @@
 
       font-size: 13px;
     }
-
 
     .nav a:hover,
     .nav button:hover {
@@ -153,18 +143,15 @@
       padding: 25px 16px 50px;
     }
 
-
     .page-title {
       margin-bottom: 20px;
     }
-
 
     .page-title h1 {
       margin: 0;
 
       font-size: 27px;
     }
-
 
     .page-title p {
       margin: 7px 0 0;
@@ -189,7 +176,6 @@
 
       justify-content: center;
     }
-
 
     .loading-card {
 
@@ -223,7 +209,6 @@
       overflow: hidden;
     }
 
-
     .card-header {
 
       padding: 17px 20px;
@@ -239,14 +224,12 @@
       gap: 15px;
     }
 
-
     .card-header h2 {
 
       margin: 0;
 
       font-size: 19px;
     }
-
 
     .card-body {
       padding: 20px;
@@ -267,16 +250,13 @@
       gap: 16px;
     }
 
-
     .form-group {
       margin-bottom: 5px;
     }
 
-
     .form-group.full {
       grid-column: 1 / -1;
     }
-
 
     label {
 
@@ -290,7 +270,6 @@
 
       color: #555;
     }
-
 
     input {
 
@@ -307,12 +286,10 @@
       background: white;
     }
 
-
     input:focus {
 
       border-color: #2874f0;
     }
-
 
     input[readonly] {
 
@@ -322,7 +299,6 @@
 
       cursor: not-allowed;
     }
-
 
     .profile-actions {
 
@@ -353,12 +329,10 @@
       font-weight: 700;
     }
 
-
     .primary:hover {
 
       background: #125dd1;
     }
-
 
     .secondary {
 
@@ -373,12 +347,10 @@
       color: #333;
     }
 
-
     .secondary:hover {
 
       background: #f7f7f7;
     }
-
 
     .logout-button {
 
@@ -395,7 +367,6 @@
       font-weight: 700;
     }
 
-
     .logout-button:hover {
 
       background: #c62828;
@@ -407,10 +378,8 @@
        ===================================================== */
 
     #profileStatus {
-
       margin-top: 15px;
     }
-
 
     .alert {
 
@@ -421,14 +390,12 @@
       font-size: 13px;
     }
 
-
     .success-alert {
 
       background: #e8f5e9;
 
       color: #2e7d32;
     }
-
 
     .error-alert {
 
@@ -451,7 +418,6 @@
       gap: 12px;
     }
 
-
     .order {
 
       border: 1px solid #e2e2e2;
@@ -462,7 +428,6 @@
 
       background: #fff;
     }
-
 
     .order-top {
 
@@ -479,14 +444,12 @@
       border-bottom: 1px solid #eee;
     }
 
-
     .order-id {
 
       font-size: 13px;
 
       font-weight: 700;
     }
-
 
     .order-date {
 
@@ -496,7 +459,6 @@
 
       margin-top: 5px;
     }
-
 
     .order-status {
 
@@ -515,7 +477,6 @@
       text-transform: uppercase;
     }
 
-
     .order-middle {
 
       display: flex;
@@ -526,7 +487,6 @@
 
       padding-top: 12px;
     }
-
 
     .order-items {
 
@@ -539,7 +499,6 @@
       flex: 1;
     }
 
-
     .order-total {
 
       font-size: 16px;
@@ -548,7 +507,6 @@
 
       white-space: nowrap;
     }
-
 
     .order-razorpay {
 
@@ -560,7 +518,6 @@
 
       word-break: break-all;
     }
-
 
     .empty-orders {
 
@@ -596,12 +553,9 @@
         0 2px 10px rgba(0, 0, 0, 0.08);
     }
 
-
     .center-card h2 {
-
       margin-top: 0;
     }
-
 
     .center-card p {
 
@@ -612,9 +566,7 @@
       line-height: 1.6;
     }
 
-
     .error-title {
-
       color: #d32f2f;
     }
 
@@ -632,12 +584,9 @@
         flex-direction: column;
       }
 
-
       .nav {
-
         width: 100%;
       }
-
 
       .nav a,
       .nav button {
@@ -647,18 +596,14 @@
         text-align: center;
       }
 
-
       .profile-grid {
 
         grid-template-columns: 1fr;
       }
 
-
       .form-group.full {
-
         grid-column: auto;
       }
-
 
       .order-top {
 
@@ -667,12 +612,10 @@
         flex-direction: column;
       }
 
-
       .order-middle {
 
         flex-direction: column;
       }
-
 
       .order-total {
 
@@ -696,7 +639,6 @@
   <header class="header">
 
     <div class="header-inner">
-
 
       <a
         href="index.html"
@@ -725,11 +667,9 @@
 
       </nav>
 
-
     </div>
 
   </header>
-
 
 
   <!-- =====================================================
@@ -754,7 +694,6 @@
     </div>
 
   </div>
-
 
 
   <!-- =====================================================
@@ -790,7 +729,6 @@
   </div>
 
 
-
   <!-- =====================================================
        ACCOUNT
        ===================================================== -->
@@ -818,7 +756,6 @@
       </div>
 
 
-
       <!-- =================================================
            PROFILE CARD
            ================================================= -->
@@ -835,7 +772,6 @@
 
 
         <div class="card-body">
-
 
           <form id="profileForm">
 
@@ -861,7 +797,6 @@
               </div>
 
 
-
               <!-- PHONE -->
 
               <div class="form-group">
@@ -878,7 +813,6 @@
                 >
 
               </div>
-
 
 
               <!-- EMAIL -->
@@ -901,11 +835,9 @@
             </div>
 
 
-
             <div
               id="profileStatus"
             ></div>
-
 
 
             <div class="profile-actions">
@@ -923,11 +855,9 @@
 
           </form>
 
-
         </div>
 
       </section>
-
 
 
       <!-- =================================================
@@ -969,7 +899,6 @@
         </div>
 
       </section>
-
 
 
       <!-- =================================================
@@ -1029,16 +958,13 @@
   </main>
 
 
-
   <script>
-
 
     /* =====================================================
        STATE
        ===================================================== */
 
     let currentUser = null;
-
 
 
     /* =====================================================
@@ -1050,7 +976,6 @@
       return document.getElementById(id);
 
     }
-
 
 
     /* =====================================================
@@ -1080,7 +1005,6 @@
     }
 
 
-
     /* =====================================================
        MONEY
        ===================================================== */
@@ -1092,7 +1016,6 @@
           .toLocaleString("en-IN");
 
     }
-
 
 
     /* =====================================================
@@ -1107,10 +1030,8 @@
 
       }
 
-
       const date =
         new Date(value);
-
 
       if (
         Number.isNaN(
@@ -1121,7 +1042,6 @@
         return "";
 
       }
-
 
       return date.toLocaleString(
         "en-IN",
@@ -1137,7 +1057,6 @@
     }
 
 
-
     /* =====================================================
        PROFILE STATUS
        ===================================================== */
@@ -1150,6 +1069,9 @@
       const box =
         $("profileStatus");
 
+      if (!box) {
+        return;
+      }
 
       box.innerHTML = `
 
@@ -1165,7 +1087,6 @@
 
       `;
 
-
       setTimeout(
         function () {
 
@@ -1178,7 +1099,6 @@
     }
 
 
-
     /* =====================================================
        AUTH / SESSION
        ===================================================== */
@@ -1186,7 +1106,6 @@
     async function loadAccount() {
 
       try {
-
 
         /* -----------------------------------------------
            Supabase check
@@ -1207,7 +1126,6 @@
         }
 
 
-
         /* -----------------------------------------------
            Get current user
            ----------------------------------------------- */
@@ -1223,14 +1141,12 @@
             .getUser();
 
 
-
         if (error) {
 
           console.error(
             "getUser error:",
             error
           );
-
 
           showLoginRequired(
             "Your login session could not be verified."
@@ -1239,7 +1155,6 @@
           return;
 
         }
-
 
 
         if (!user) {
@@ -1253,10 +1168,8 @@
         }
 
 
-
         currentUser =
           user;
-
 
 
         /* -----------------------------------------------
@@ -1268,18 +1181,15 @@
           .display =
           "none";
 
-
         $("loginRequired")
           .style
           .display =
           "none";
 
-
         $("accountPage")
           .style
           .display =
           "block";
-
 
 
         /* -----------------------------------------------
@@ -1289,10 +1199,9 @@
         $("email").value =
           user.email || "";
 
-
         $("accountEmailText").textContent =
-          user.email || "Your account";
-
+          user.email ||
+          "Your account";
 
 
         /* -----------------------------------------------
@@ -1306,12 +1215,10 @@
 
       } catch (error) {
 
-
         console.error(
           "Account loading error:",
           error
         );
-
 
         showLoginRequired(
           error.message ||
@@ -1321,7 +1228,6 @@
       }
 
     }
-
 
 
     /* =====================================================
@@ -1335,23 +1241,19 @@
         .display =
         "none";
 
-
       $("accountPage")
         .style
         .display =
         "none";
-
 
       $("loginRequired")
         .style
         .display =
         "block";
 
-
       const paragraph =
         $("loginRequired")
           .querySelector("p");
-
 
       if (paragraph) {
 
@@ -1361,7 +1263,6 @@
       }
 
     }
-
 
 
     /* =====================================================
@@ -1379,7 +1280,6 @@
 
       try {
 
-
         const {
           data: profile,
           error
@@ -1396,7 +1296,6 @@
             .maybeSingle();
 
 
-
         if (error) {
 
           throw error;
@@ -1405,8 +1304,8 @@
 
 
         /* -----------------------------------------------
-           Load saved customer details
-           Supabase first, localStorage fallback
+           Supabase first.
+           localStorage fallback.
            ----------------------------------------------- */
 
         const savedName =
@@ -1432,14 +1331,23 @@
         $("fullName").value =
           savedName;
 
-
         $("phone").value =
           savedPhone;
 
 
-        /*
-         * Keep localStorage synchronized.
-         */
+        /* -----------------------------------------------
+           Email
+           ----------------------------------------------- */
+
+        $("email").value =
+          currentUser.email ||
+          profile?.email ||
+          "";
+
+
+        /* -----------------------------------------------
+           Synchronize localStorage
+           ----------------------------------------------- */
 
         if (savedName) {
 
@@ -1449,7 +1357,6 @@
           );
 
         }
-
 
         if (savedPhone) {
 
@@ -1461,20 +1368,7 @@
         }
 
 
-        /*
-         * Prefer authenticated email.
-         * This avoids problems if the profile
-         * email column is empty.
-         */
-
-        $("email").value =
-          currentUser.email ||
-          profile?.email ||
-          "";
-
-
       } catch (error) {
-
 
         console.error(
           "Profile load error:",
@@ -1482,24 +1376,33 @@
         );
 
 
-        /*
-         * Profile loading should not prevent
-         * the customer from seeing orders.
-         */
+        /* -----------------------------------------------
+           localStorage fallback
+           ----------------------------------------------- */
+
+        $("fullName").value =
+          localStorage.getItem(
+            "customer_name"
+          ) || "";
+
+        $("phone").value =
+          localStorage.getItem(
+            "customer_phone"
+          ) || "";
+
+        $("email").value =
+          currentUser.email ||
+          "";
+
 
         showProfileStatus(
-          "Profile could not be loaded: " +
-          (
-            error.message ||
-            "Unknown error"
-          ),
+          "Profile could not be loaded from Supabase. Please save your profile again.",
           "error"
         );
 
       }
 
     }
-
 
 
     /* =====================================================
@@ -1512,6 +1415,11 @@
 
 
       if (!currentUser) {
+
+        showProfileStatus(
+          "You are not logged in.",
+          "error"
+        );
 
         return;
 
@@ -1534,10 +1442,44 @@
           .trim();
 
 
+      /* -----------------------------------------------
+         Validation
+         ----------------------------------------------- */
+
+      if (!fullName) {
+
+        showProfileStatus(
+          "Please enter your full name.",
+          "error"
+        );
+
+        $("fullName").focus();
+
+        return;
+
+      }
+
+
+      if (!phone) {
+
+        showProfileStatus(
+          "Please enter your phone number.",
+          "error"
+        );
+
+        $("phone").focus();
+
+        return;
+
+      }
+
+
+      /* -----------------------------------------------
+         Disable button
+         ----------------------------------------------- */
 
       button.disabled =
         true;
-
 
       button.textContent =
         "Saving...";
@@ -1546,28 +1488,42 @@
       try {
 
 
+        /* ---------------------------------------------
+           UPSERT PROFILE
+           --------------------------------------------- */
+
         const {
+          data,
           error
         } =
           await supabaseClient
             .from("profiles")
-            .update({
+            .upsert(
+              {
+                id:
+                  currentUser.id,
 
-              full_name:
-                fullName || null,
+                full_name:
+                  fullName,
 
-              phone:
-                phone || null,
+                phone:
+                  phone,
 
-              updated_at:
-                new Date().toISOString()
+                email:
+                  currentUser.email ||
+                  null,
 
-            })
-            .eq(
-              "id",
-              currentUser.id
-            );
-
+                updated_at:
+                  new Date()
+                    .toISOString()
+              },
+              {
+                onConflict:
+                  "id"
+              }
+            )
+            .select()
+            .single();
 
 
         if (error) {
@@ -1577,16 +1533,20 @@
         }
 
 
-        /*
-         * Save customer details locally too.
-         * Checkout can use these as fallback.
-         */
+        console.log(
+          "Profile saved successfully:",
+          data
+        );
+
+
+        /* ---------------------------------------------
+           Update localStorage
+           --------------------------------------------- */
 
         localStorage.setItem(
           "customer_name",
           fullName
         );
-
 
         localStorage.setItem(
           "customer_phone",
@@ -1594,13 +1554,35 @@
         );
 
 
+        /* ---------------------------------------------
+           Update form with Supabase result
+           --------------------------------------------- */
+
+        $("fullName").value =
+          data?.full_name ||
+          fullName;
+
+        $("phone").value =
+          data?.phone ||
+          phone;
+
+        $("email").value =
+          currentUser.email ||
+          data?.email ||
+          "";
+
+
+        /* ---------------------------------------------
+           Success
+           --------------------------------------------- */
+
         showProfileStatus(
-          "Profile saved successfully."
+          "Profile saved successfully.",
+          "success"
         );
 
 
       } catch (error) {
-
 
         console.error(
           "Profile save error:",
@@ -1617,10 +1599,8 @@
 
       } finally {
 
-
         button.disabled =
           false;
-
 
         button.textContent =
           "Save Profile";
@@ -1628,7 +1608,6 @@
       }
 
     }
-
 
 
     /* =====================================================
@@ -1659,7 +1638,6 @@
 
       try {
 
-
         const {
           data: orders,
           error
@@ -1679,13 +1657,11 @@
             );
 
 
-
         if (error) {
 
           throw error;
 
         }
-
 
 
         renderOrders(
@@ -1694,7 +1670,6 @@
 
 
       } catch (error) {
-
 
         console.error(
           "Orders load error:",
@@ -1724,7 +1699,6 @@
       }
 
     }
-
 
 
     /* =====================================================
@@ -1766,7 +1740,6 @@
       }
 
 
-
       container.innerHTML =
         orders
           .map(
@@ -1783,13 +1756,11 @@
     }
 
 
-
     /* =====================================================
        RENDER SINGLE ORDER
        ===================================================== */
 
     function renderOrder(order) {
-
 
       const status =
         String(
@@ -1822,11 +1793,10 @@
         order.items;
 
 
-
-      /*
-       * JSONB may already be an object/array.
-       * Handle string JSON too.
-       */
+      /* -----------------------------------------------
+         JSONB may already be object/array.
+         Handle string JSON too.
+         ----------------------------------------------- */
 
       if (
         typeof items ===
@@ -1840,12 +1810,12 @@
 
         } catch {
 
-          items = null;
+          items =
+            null;
 
         }
 
       }
-
 
 
       let itemText =
@@ -1886,7 +1856,6 @@
       }
 
 
-
       if (
         items &&
         !Array.isArray(items) &&
@@ -1920,7 +1889,6 @@
         }
 
       }
-
 
 
       return `
@@ -1965,7 +1933,6 @@
           </div>
 
 
-
           <div class="order-middle">
 
 
@@ -1997,7 +1964,6 @@
 
 
           </div>
-
 
 
           ${
@@ -2052,13 +2018,11 @@
     }
 
 
-
     /* =====================================================
        LOGOUT
        ===================================================== */
 
     async function logout() {
-
 
       const buttons = [
 
@@ -2072,6 +2036,10 @@
       buttons.forEach(
         function (button) {
 
+          if (!button) {
+            return;
+          }
+
           button.disabled =
             true;
 
@@ -2083,7 +2051,6 @@
 
 
       try {
-
 
         const {
           error
@@ -2105,7 +2072,6 @@
 
       } catch (error) {
 
-
         console.error(
           "Sign out exception:",
           error
@@ -2114,11 +2080,8 @@
 
       } finally {
 
-
         /*
-         * IMPORTANT:
-         *
-         * Account logout ALWAYS
+         * Account logout always
          * goes to homepage.
          */
 
@@ -2128,7 +2091,6 @@
       }
 
     }
-
 
 
     /* =====================================================
@@ -2147,7 +2109,6 @@
       );
 
 
-
     /* =====================================================
        PROFILE FORM
        ===================================================== */
@@ -2159,7 +2120,6 @@
       );
 
 
-
     /* =====================================================
        REFRESH ORDERS
        ===================================================== */
@@ -2169,7 +2129,6 @@
         "click",
         loadOrders
       );
-
 
 
     /* =====================================================
@@ -2190,15 +2149,9 @@
       );
 
 
-
     /* =====================================================
        AUTH STATE CHANGE
        ===================================================== */
-
-    /*
-     * If the session disappears in another tab/window,
-     * return to homepage.
-     */
 
     if (
       typeof supabaseClient !==
@@ -2230,13 +2183,11 @@
     }
 
 
-
     /* =====================================================
        START
        ===================================================== */
 
     loadAccount();
-
 
   </script>
 
