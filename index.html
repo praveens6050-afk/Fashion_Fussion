@@ -3437,19 +3437,32 @@
 
 
         customerName =
-          String(
-            profile?.full_name ||
-            ""
-          ).trim();
+  String(
+    profile?.full_name ||
+    localStorage.getItem("customer_name") ||
+    ""
+  ).trim();
 
+customerPhone =
+  String(
+    profile?.phone ||
+    localStorage.getItem("customer_phone") ||
+    ""
+  ).trim();
 
-        customerPhone =
-          String(
-            profile?.phone ||
-            ""
-          ).trim();
+if (customerName) {
+  localStorage.setItem(
+    "customer_name",
+    customerName
+  );
+}
 
-
+if (customerPhone) {
+  localStorage.setItem(
+    "customer_phone",
+    customerPhone
+  );
+}
       }catch(error){
 
         console.error(
