@@ -1404,16 +1404,29 @@
         }
 
 
+if (profile) {
 
-        if (profile) {
+  const savedName =
+    profile.full_name || "";
 
+  const savedPhone =
+    profile.phone || "";
 
-          $("fullName").value =
-            profile.full_name || "";
+  $("fullName").value =
+    savedName;
 
+  $("phone").value =
+    savedPhone;
 
-          $("phone").value =
-            profile.phone || "";
+  localStorage.setItem(
+    "customer_name",
+    savedName
+  );
+
+  localStorage.setItem(
+    "customer_phone",
+    savedPhone
+  );
 
 
           /*
