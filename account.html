@@ -14,10 +14,12 @@
 
   <link rel="icon" href="data:,">
 
-  <!-- SUPABASE -->
+  <!-- =====================================================
+       SUPABASE
+       ===================================================== -->
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- SUPABASE CONFIG -->
   <script src="supabase-config.js"></script>
 
 
@@ -26,6 +28,7 @@
     * {
       box-sizing: border-box;
     }
+
 
     body {
       margin: 0;
@@ -40,14 +43,17 @@
       color: #212121;
     }
 
+
     button,
     input {
       font: inherit;
     }
 
+
     button {
       cursor: pointer;
     }
+
 
     a {
       text-decoration: none;
@@ -68,6 +74,7 @@
         0 2px 8px rgba(0, 0, 0, 0.18);
     }
 
+
     .header-inner {
       max-width: 1200px;
 
@@ -84,6 +91,7 @@
       gap: 20px;
     }
 
+
     .logo {
       font-size: 25px;
 
@@ -92,9 +100,11 @@
       font-style: italic;
     }
 
+
     .logo span {
       color: #ffe500;
     }
+
 
     .nav {
       display: flex;
@@ -105,6 +115,7 @@
 
       flex-wrap: wrap;
     }
+
 
     .nav a,
     .nav button {
@@ -123,8 +134,10 @@
       font-size: 13px;
     }
 
+
     .nav a:hover,
     .nav button:hover {
+
       background:
         rgba(255, 255, 255, 0.12);
     }
@@ -143,17 +156,22 @@
       padding: 25px 16px 50px;
     }
 
+
     .page-title {
       margin-bottom: 20px;
     }
 
+
     .page-title h1 {
+
       margin: 0;
 
       font-size: 27px;
     }
 
+
     .page-title p {
+
       margin: 7px 0 0;
 
       color: #777;
@@ -176,6 +194,7 @@
 
       justify-content: center;
     }
+
 
     .loading-card {
 
@@ -209,6 +228,7 @@
       overflow: hidden;
     }
 
+
     .card-header {
 
       padding: 17px 20px;
@@ -224,6 +244,7 @@
       gap: 15px;
     }
 
+
     .card-header h2 {
 
       margin: 0;
@@ -231,7 +252,9 @@
       font-size: 19px;
     }
 
+
     .card-body {
+
       padding: 20px;
     }
 
@@ -250,13 +273,17 @@
       gap: 16px;
     }
 
+
     .form-group {
       margin-bottom: 5px;
     }
 
+
     .form-group.full {
+
       grid-column: 1 / -1;
     }
+
 
     label {
 
@@ -270,6 +297,7 @@
 
       color: #555;
     }
+
 
     input {
 
@@ -286,10 +314,12 @@
       background: white;
     }
 
+
     input:focus {
 
       border-color: #2874f0;
     }
+
 
     input[readonly] {
 
@@ -299,6 +329,7 @@
 
       cursor: not-allowed;
     }
+
 
     .profile-actions {
 
@@ -329,10 +360,12 @@
       font-weight: 700;
     }
 
+
     .primary:hover {
 
       background: #125dd1;
     }
+
 
     .secondary {
 
@@ -347,10 +380,12 @@
       color: #333;
     }
 
+
     .secondary:hover {
 
       background: #f7f7f7;
     }
+
 
     .logout-button {
 
@@ -367,6 +402,7 @@
       font-weight: 700;
     }
 
+
     .logout-button:hover {
 
       background: #c62828;
@@ -378,8 +414,10 @@
        ===================================================== */
 
     #profileStatus {
+
       margin-top: 15px;
     }
+
 
     .alert {
 
@@ -390,12 +428,14 @@
       font-size: 13px;
     }
 
+
     .success-alert {
 
       background: #e8f5e9;
 
       color: #2e7d32;
     }
+
 
     .error-alert {
 
@@ -418,6 +458,7 @@
       gap: 12px;
     }
 
+
     .order {
 
       border: 1px solid #e2e2e2;
@@ -428,6 +469,7 @@
 
       background: #fff;
     }
+
 
     .order-top {
 
@@ -444,12 +486,14 @@
       border-bottom: 1px solid #eee;
     }
 
+
     .order-id {
 
       font-size: 13px;
 
       font-weight: 700;
     }
+
 
     .order-date {
 
@@ -459,6 +503,7 @@
 
       margin-top: 5px;
     }
+
 
     .order-status {
 
@@ -477,6 +522,7 @@
       text-transform: uppercase;
     }
 
+
     .order-middle {
 
       display: flex;
@@ -487,6 +533,7 @@
 
       padding-top: 12px;
     }
+
 
     .order-items {
 
@@ -499,6 +546,7 @@
       flex: 1;
     }
 
+
     .order-total {
 
       font-size: 16px;
@@ -507,6 +555,7 @@
 
       white-space: nowrap;
     }
+
 
     .order-razorpay {
 
@@ -518,6 +567,7 @@
 
       word-break: break-all;
     }
+
 
     .empty-orders {
 
@@ -532,7 +582,7 @@
 
 
     /* =====================================================
-       ERROR / LOGIN
+       LOGIN / ERROR
        ===================================================== */
 
     .center-card {
@@ -553,9 +603,12 @@
         0 2px 10px rgba(0, 0, 0, 0.08);
     }
 
+
     .center-card h2 {
+
       margin-top: 0;
     }
+
 
     .center-card p {
 
@@ -566,7 +619,9 @@
       line-height: 1.6;
     }
 
+
     .error-title {
+
       color: #d32f2f;
     }
 
@@ -584,9 +639,12 @@
         flex-direction: column;
       }
 
+
       .nav {
+
         width: 100%;
       }
+
 
       .nav a,
       .nav button {
@@ -596,14 +654,18 @@
         text-align: center;
       }
 
+
       .profile-grid {
 
         grid-template-columns: 1fr;
       }
 
+
       .form-group.full {
+
         grid-column: auto;
       }
+
 
       .order-top {
 
@@ -612,10 +674,12 @@
         flex-direction: column;
       }
 
+
       .order-middle {
 
         flex-direction: column;
       }
+
 
       .order-total {
 
@@ -640,6 +704,7 @@
 
     <div class="header-inner">
 
+
       <a
         href="index.html"
         class="logo"
@@ -654,9 +719,11 @@
           Home
         </a>
 
+
         <a href="index.html">
           Store
         </a>
+
 
         <button
           id="logoutButton"
@@ -673,7 +740,7 @@
 
 
   <!-- =====================================================
-       LOADING
+       LOADING SCREEN
        ===================================================== -->
 
   <div
@@ -730,7 +797,7 @@
 
 
   <!-- =====================================================
-       ACCOUNT
+       ACCOUNT PAGE
        ===================================================== -->
 
   <main
@@ -741,7 +808,9 @@
     <div class="container">
 
 
-      <!-- PAGE TITLE -->
+      <!-- =================================================
+           PAGE TITLE
+           ================================================= -->
 
       <div class="page-title">
 
@@ -773,6 +842,7 @@
 
         <div class="card-body">
 
+
           <form id="profileForm">
 
 
@@ -792,6 +862,7 @@
                   type="text"
                   maxlength="100"
                   placeholder="Enter your full name"
+                  autocomplete="name"
                 >
 
               </div>
@@ -810,6 +881,7 @@
                   type="tel"
                   maxlength="20"
                   placeholder="Enter your phone number"
+                  autocomplete="tel"
                 >
 
               </div>
@@ -827,6 +899,7 @@
                   id="email"
                   type="email"
                   readonly
+                  autocomplete="email"
                 >
 
               </div>
@@ -871,6 +944,7 @@
           <h2>
             My Orders
           </h2>
+
 
           <button
             class="secondary"
@@ -958,7 +1032,12 @@
   </main>
 
 
+  <!-- =====================================================
+       JAVASCRIPT
+       ===================================================== -->
+
   <script>
+
 
     /* =====================================================
        STATE
@@ -1030,8 +1109,10 @@
 
       }
 
+
       const date =
         new Date(value);
+
 
       if (
         Number.isNaN(
@@ -1042,6 +1123,7 @@
         return "";
 
       }
+
 
       return date.toLocaleString(
         "en-IN",
@@ -1069,9 +1151,13 @@
       const box =
         $("profileStatus");
 
+
       if (!box) {
+
         return;
+
       }
+
 
       box.innerHTML = `
 
@@ -1087,6 +1173,7 @@
 
       `;
 
+
       setTimeout(
         function () {
 
@@ -1100,15 +1187,16 @@
 
 
     /* =====================================================
-       AUTH / SESSION
+       AUTH / LOAD ACCOUNT
        ===================================================== */
 
     async function loadAccount() {
 
       try {
 
+
         /* -----------------------------------------------
-           Supabase check
+           Check Supabase
            ----------------------------------------------- */
 
         if (
@@ -1127,7 +1215,7 @@
 
 
         /* -----------------------------------------------
-           Get current user
+           Get authenticated user
            ----------------------------------------------- */
 
         const {
@@ -1147,6 +1235,7 @@
             "getUser error:",
             error
           );
+
 
           showLoginRequired(
             "Your login session could not be verified."
@@ -1181,10 +1270,12 @@
           .display =
           "none";
 
+
         $("loginRequired")
           .style
           .display =
           "none";
+
 
         $("accountPage")
           .style
@@ -1193,11 +1284,13 @@
 
 
         /* -----------------------------------------------
-           Email
+           Email comes from Supabase Auth
+           NOT profiles table
            ----------------------------------------------- */
 
         $("email").value =
           user.email || "";
+
 
         $("accountEmailText").textContent =
           user.email ||
@@ -1205,7 +1298,7 @@
 
 
         /* -----------------------------------------------
-           Load profile + orders
+           Load profile and orders
            ----------------------------------------------- */
 
         await loadProfile();
@@ -1219,6 +1312,7 @@
           "Account loading error:",
           error
         );
+
 
         showLoginRequired(
           error.message ||
@@ -1241,19 +1335,23 @@
         .display =
         "none";
 
+
       $("accountPage")
         .style
         .display =
         "none";
+
 
       $("loginRequired")
         .style
         .display =
         "block";
 
+
       const paragraph =
         $("loginRequired")
           .querySelector("p");
+
 
       if (paragraph) {
 
@@ -1280,6 +1378,20 @@
 
       try {
 
+
+        /*
+         * IMPORTANT:
+         *
+         * profiles table DOES NOT have
+         * an email column.
+         *
+         * Therefore only select:
+         *
+         * id
+         * full_name
+         * phone
+         */
+
         const {
           data: profile,
           error
@@ -1287,7 +1399,7 @@
           await supabaseClient
             .from("profiles")
             .select(
-              "id,full_name,phone,email"
+              "id,full_name,phone"
             )
             .eq(
               "id",
@@ -1304,8 +1416,8 @@
 
 
         /* -----------------------------------------------
-           Supabase first.
-           localStorage fallback.
+           Supabase profile first
+           localStorage fallback
            ----------------------------------------------- */
 
         const savedName =
@@ -1331,22 +1443,22 @@
         $("fullName").value =
           savedName;
 
+
         $("phone").value =
           savedPhone;
 
 
         /* -----------------------------------------------
-           Email
+           Email ALWAYS comes from Auth
            ----------------------------------------------- */
 
         $("email").value =
           currentUser.email ||
-          profile?.email ||
           "";
 
 
         /* -----------------------------------------------
-           Synchronize localStorage
+           Keep localStorage synchronized
            ----------------------------------------------- */
 
         if (savedName) {
@@ -1357,6 +1469,7 @@
           );
 
         }
+
 
         if (savedPhone) {
 
@@ -1376,19 +1489,22 @@
         );
 
 
-        /* -----------------------------------------------
-           localStorage fallback
-           ----------------------------------------------- */
+        /*
+         * Even if Supabase profile
+         * cannot be loaded, use localStorage.
+         */
 
         $("fullName").value =
           localStorage.getItem(
             "customer_name"
           ) || "";
 
+
         $("phone").value =
           localStorage.getItem(
             "customer_phone"
           ) || "";
+
 
         $("email").value =
           currentUser.email ||
@@ -1443,7 +1559,7 @@
 
 
       /* -----------------------------------------------
-         Validation
+         Validate full name
          ----------------------------------------------- */
 
       if (!fullName) {
@@ -1459,6 +1575,10 @@
 
       }
 
+
+      /* -----------------------------------------------
+         Validate phone
+         ----------------------------------------------- */
 
       if (!phone) {
 
@@ -1481,6 +1601,7 @@
       button.disabled =
         true;
 
+
       button.textContent =
         "Saving...";
 
@@ -1488,9 +1609,12 @@
       try {
 
 
-        /* ---------------------------------------------
-           UPSERT PROFILE
-           --------------------------------------------- */
+        /* =================================================
+           SAVE TO SUPABASE
+           
+           IMPORTANT:
+           profiles table does NOT contain email.
+           ================================================= */
 
         const {
           data,
@@ -1509,20 +1633,19 @@
                 phone:
                   phone,
 
-                email:
-                  currentUser.email ||
-                  null,
-
                 updated_at:
                   new Date()
                     .toISOString()
+
               },
               {
                 onConflict:
                   "id"
               }
             )
-            .select()
+            .select(
+              "id,full_name,phone"
+            )
             .single();
 
 
@@ -1539,14 +1662,15 @@
         );
 
 
-        /* ---------------------------------------------
-           Update localStorage
-           --------------------------------------------- */
+        /* -----------------------------------------------
+           Save localStorage
+           ----------------------------------------------- */
 
         localStorage.setItem(
           "customer_name",
           fullName
         );
+
 
         localStorage.setItem(
           "customer_phone",
@@ -1554,27 +1678,33 @@
         );
 
 
-        /* ---------------------------------------------
-           Update form with Supabase result
-           --------------------------------------------- */
+        /* -----------------------------------------------
+           Update fields from Supabase result
+           ----------------------------------------------- */
 
         $("fullName").value =
           data?.full_name ||
           fullName;
 
+
         $("phone").value =
           data?.phone ||
           phone;
 
+
+        /*
+         * Email is never saved to profiles.
+         * It comes directly from Auth.
+         */
+
         $("email").value =
           currentUser.email ||
-          data?.email ||
           "";
 
 
-        /* ---------------------------------------------
-           Success
-           --------------------------------------------- */
+        /* -----------------------------------------------
+           SUCCESS
+           ----------------------------------------------- */
 
         showProfileStatus(
           "Profile saved successfully.",
@@ -1601,6 +1731,7 @@
 
         button.disabled =
           false;
+
 
         button.textContent =
           "Save Profile";
@@ -1637,6 +1768,7 @@
 
 
       try {
+
 
         const {
           data: orders,
@@ -1679,13 +1811,11 @@
 
         container.innerHTML = `
 
-          <div
-            class="alert error-alert"
-          >
+          <div class="alert error-alert">
 
             Could not load your orders.
 
-            <br>
+            <br><br>
 
             ${escapeHtml(
               error.message ||
@@ -1762,6 +1892,7 @@
 
     function renderOrder(order) {
 
+
       const status =
         String(
           order.status ||
@@ -1770,8 +1901,10 @@
 
 
       const total =
-        order.total_amount ||
-        0;
+        Number(
+          order.total_amount ||
+          0
+        );
 
 
       const currency =
@@ -1794,8 +1927,7 @@
 
 
       /* -----------------------------------------------
-         JSONB may already be object/array.
-         Handle string JSON too.
+         JSONB may be object/array or JSON string
          ----------------------------------------------- */
 
       if (
@@ -1822,12 +1954,22 @@
         "Order items";
 
 
-      if (Array.isArray(items)) {
+      /* -----------------------------------------------
+         Array of items
+         ----------------------------------------------- */
+
+      if (
+        Array.isArray(items)
+      ) {
 
         itemText =
           items
             .map(
               function (item) {
+
+                item =
+                  item || {};
+
 
                 const name =
                   item.name ||
@@ -1855,6 +1997,10 @@
 
       }
 
+
+      /* -----------------------------------------------
+         Object items
+         ----------------------------------------------- */
 
       if (
         items &&
@@ -1891,10 +2037,27 @@
       }
 
 
+      /* -----------------------------------------------
+         Currency display
+         ----------------------------------------------- */
+
+      const totalDisplay =
+        currency === "INR"
+
+          ? money(total)
+
+          : escapeHtml(currency) +
+            " " +
+            Number(total)
+              .toLocaleString("en-IN");
+
+
       return `
 
         <article class="order">
 
+
+          <!-- ORDER TOP -->
 
           <div class="order-top">
 
@@ -1933,6 +2096,8 @@
           </div>
 
 
+          <!-- ORDER MIDDLE -->
+
           <div class="order-middle">
 
 
@@ -1951,20 +2116,15 @@
 
             <div class="order-total">
 
-              ${
-                currency === "INR"
-                  ? "₹"
-                  : escapeHtml(currency) + " "
-              }
-
-              ${Number(total)
-                .toLocaleString("en-IN")}
+              ${totalDisplay}
 
             </div>
 
 
           </div>
 
+
+          <!-- RAZORPAY DETAILS -->
 
           ${
             razorpayOrder ||
@@ -2024,6 +2184,7 @@
 
     async function logout() {
 
+
       const buttons = [
 
         $("logoutButton"),
@@ -2037,11 +2198,15 @@
         function (button) {
 
           if (!button) {
+
             return;
+
           }
+
 
           button.disabled =
             true;
+
 
           button.textContent =
             "Signing Out...";
@@ -2051,6 +2216,7 @@
 
 
       try {
+
 
         const {
           error
@@ -2080,9 +2246,9 @@
 
       } finally {
 
+
         /*
-         * Account logout always
-         * goes to homepage.
+         * Always return to homepage.
          */
 
         window.location.href =
@@ -2127,7 +2293,11 @@
     $("refreshOrdersButton")
       .addEventListener(
         "click",
-        loadOrders
+        function () {
+
+          loadOrders();
+
+        }
       );
 
 
@@ -2184,7 +2354,7 @@
 
 
     /* =====================================================
-       START
+       START ACCOUNT PAGE
        ===================================================== */
 
     loadAccount();
