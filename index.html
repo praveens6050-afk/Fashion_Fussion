@@ -3,211 +3,242 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+
 <title>Fashion_Fussion — Everyday Wholesale, Retail Simple</title>
-<meta name="description" content="Home, kitchen, beauty, decor and travel essentials at honest retail prices. Sourced wholesale, delivered doorstep.">
+
+<meta
+  name="description"
+  content="Home, kitchen, beauty, decor and travel essentials at honest retail prices."
+>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 
 <style>
-  :root{
-    --paper:#F4EEE1;
-    --paper-dim:#EAE1CC;
-    --ink:#1C2333;
-    --ink-soft:#4B5266;
-    --indigo:#1B2A4A;
-    --marigold:#E5972E;
-    --marigold-deep:#C97D1B;
-    --bottle:#2F5233;
-    --line:#D8CDAE;
-    --white:#FFFDF8;
-    --danger:#B23A2E;
-    --radius-stamp:3px;
-    --serif:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
-    --sans:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+:root{
+  --paper:#F4EEE1;
+  --paper-dim:#EAE1CC;
+  --ink:#1C2333;
+  --ink-soft:#4B5266;
+  --indigo:#1B2A4A;
+  --marigold:#E5972E;
+  --marigold-deep:#C97D1B;
+  --bottle:#2F5233;
+  --line:#D8CDAE;
+  --white:#FFFDF8;
+  --danger:#B23A2E;
+
+  --radius-stamp:3px;
+
+  --serif:"Fraunces","Iowan Old Style","Palatino Linotype",
+          Georgia,serif;
+
+  --sans:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+
+@import url(
+  'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap'
+);
+
+*{
+  box-sizing:border-box;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+
+img{
+  max-width:100%;
+  display:block;
+}
+
+a{
+  color:inherit;
+  text-decoration:none;
+}
+
+button{
+  font-family:inherit;
+  cursor:pointer;
+}
+
+.wrap{
+  max-width:1180px;
+  margin:0 auto;
+  padding:0 24px;
+}
+
+/* =========================================================
+   TICKER
+   ========================================================= */
+
+.ticker{
+  background:var(--indigo);
+  color:var(--paper);
+  overflow:hidden;
+  white-space:nowrap;
+  font-size:13px;
+  letter-spacing:.02em;
+  border-bottom:1px solid #0f1830;
+}
+
+.ticker-track{
+  display:inline-flex;
+  padding:9px 0;
+  animation:scroll 32s linear infinite;
+}
+
+.ticker-track span{
+  padding:0 28px;
+  position:relative;
+}
+
+.ticker-track span:not(:last-child)::after{
+  content:"•";
+  position:absolute;
+  right:-2px;
+  color:var(--marigold);
+}
+
+@keyframes scroll{
+  from{
+    transform:translateX(0);
   }
 
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
-
-  *{box-sizing:border-box;}
-
-  html{scroll-behavior:smooth;}
-
-  body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:var(--sans);
-    -webkit-font-smoothing:antialiased;
+  to{
+    transform:translateX(-50%);
   }
+}
 
-  img{
-    max-width:100%;
-    display:block;
-  }
+/* =========================================================
+   HEADER
+   ========================================================= */
 
-  a{
-    color:inherit;
-    text-decoration:none;
-  }
+header.site{
+  position:sticky;
+  top:0;
+  z-index:50;
+  background:var(--paper);
+  border-bottom:1px solid var(--line);
+}
 
-  button{
-    font-family:inherit;
-    cursor:pointer;
-  }
+.nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 0;
+  gap:24px;
+}
 
-  .wrap{
-    max-width:1180px;
-    margin:0 auto;
-    padding:0 24px;
-  }
+.logo{
+  font-family:var(--serif);
+  font-weight:700;
+  font-size:26px;
+  color:var(--indigo);
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+}
 
-  /* ---------- Ticker ---------- */
+.logo small{
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:11px;
+  color:var(--ink-soft);
+  letter-spacing:.06em;
+}
 
-  .ticker{
-    background:var(--indigo);
-    color:var(--paper);
-    overflow:hidden;
-    white-space:nowrap;
-    font-size:13px;
-    letter-spacing:.02em;
-    border-bottom:1px solid #0f1830;
-  }
+.nav-links{
+  display:flex;
+  gap:28px;
+  font-size:15px;
+  font-weight:500;
+}
 
-  .ticker-track{
-    display:inline-flex;
-    padding:9px 0;
-    animation:scroll 32s linear infinite;
-  }
+.nav-links a{
+  padding:6px 0;
+  border-bottom:2px solid transparent;
+  transition:border-color .15s;
+}
 
-  .ticker-track span{
-    padding:0 28px;
-    position:relative;
-  }
+.nav-links a:hover{
+  border-color:var(--marigold);
+}
 
-  .ticker-track span:not(:last-child)::after{
-    content:"•";
-    position:absolute;
-    right:-2px;
-    color:var(--marigold);
-  }
+.nav-actions{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
 
-  @keyframes scroll{
-    from{transform:translateX(0);}
-    to{transform:translateX(-50%);}
-  }
+.icon-btn{
+  background:none;
+  border:none;
+  color:var(--ink);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
+  font-weight:600;
+  position:relative;
+}
 
-  /* ---------- Header ---------- */
+.cart-count{
+  background:var(--marigold-deep);
+  color:var(--white);
+  font-size:11px;
+  font-weight:700;
+  border-radius:50%;
+  width:18px;
+  height:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:absolute;
+  top:-8px;
+  right:-10px;
+}
 
-  header.site{
-    position:sticky;
-    top:0;
-    z-index:50;
-    background:var(--paper);
-    border-bottom:1px solid var(--line);
-  }
+.nav-toggle{
+  display:none;
+  background:none;
+  border:none;
+  font-size:22px;
+}
 
-  .nav{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:16px 0;
-    gap:24px;
-  }
+/* =========================================================
+   HERO
+   ========================================================= */
 
-  .logo{
-    font-family:var(--serif);
-    font-weight:700;
-    font-size:26px;
-    color:var(--indigo);
-    display:flex;
-    align-items:baseline;
-    gap:8px;
-  }
+.hero{
+  position:relative;
+  padding:88px 0 64px;
+  overflow:hidden;
+  border-bottom:1px solid var(--line);
+}
 
-  .logo small{
-    font-family:var(--sans);
-    font-weight:500;
-    font-size:11px;
-    color:var(--ink-soft);
-    letter-spacing:.06em;
-  }
+.hero-bg{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+}
 
-  .nav-links{
-    display:flex;
-    gap:28px;
-    font-size:15px;
-    font-weight:500;
-  }
-
-  .nav-links a{
-    padding:6px 0;
-    border-bottom:2px solid transparent;
-    transition:border-color .15s;
-  }
-
-  .nav-links a:hover{
-    border-color:var(--marigold);
-  }
-
-  .nav-actions{
-    display:flex;
-    align-items:center;
-    gap:18px;
-  }
-
-  .icon-btn{
-    background:none;
-    border:none;
-    color:var(--ink);
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-size:14px;
-    font-weight:600;
-    position:relative;
-  }
-
-  .cart-count{
-    background:var(--marigold-deep);
-    color:var(--white);
-    font-size:11px;
-    font-weight:700;
-    border-radius:50%;
-    width:18px;
-    height:18px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:absolute;
-    top:-8px;
-    right:-10px;
-  }
-
-  .nav-toggle{
-    display:none;
-    background:none;
-    border:none;
-    font-size:22px;
-  }
-
-  /* ---------- Hero ---------- */
-
-  .hero{
-    position:relative;
-    padding:88px 0 64px;
-    overflow:hidden;
-    border-bottom:1px solid var(--line);
-  }
-
-  .hero-bg{
-    position:absolute;
-    inset:0;
-    background-size:cover;
-    background-position:center;
-  }
-
-  .hero-scrim{
-    position:absolute;
-    inset:0;
-    background:linear-gradient(
+.hero-scrim{
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(
       100deg,
       var(--paper) 0%,
       var(--paper) 38%,
@@ -215,1007 +246,1098 @@
       rgba(244,238,225,.55) 75%,
       rgba(244,238,225,.25) 100%
     );
-  }
+}
 
-  .hero-inner{
-    position:relative;
-    z-index:1;
-    display:grid;
-    grid-template-columns:1.1fr .9fr;
-    gap:48px;
-    align-items:center;
-  }
+.hero-inner{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:48px;
+  align-items:center;
+}
 
-  .hero-eyebrow{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    font-size:13px;
-    font-weight:600;
-    color:var(--bottle);
-    background:#E4E9DD;
-    padding:6px 12px;
-    border-radius:100px;
-    margin-bottom:22px;
-  }
+.hero-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--bottle);
+  background:#E4E9DD;
+  padding:6px 12px;
+  border-radius:100px;
+  margin-bottom:22px;
+}
 
-  .hero h1{
-    font-family:var(--serif);
-    font-size:clamp(38px,4.6vw,58px);
-    line-height:1.04;
-    margin:0 0 20px;
-    color:var(--indigo);
-    max-width:11ch;
-  }
+.hero h1{
+  font-family:var(--serif);
+  font-size:clamp(38px,4.6vw,58px);
+  line-height:1.04;
+  margin:0 0 20px;
+  color:var(--indigo);
+  max-width:11ch;
+}
 
-  .hero p.lede{
-    font-size:17px;
-    line-height:1.6;
-    color:var(--ink-soft);
-    max-width:46ch;
-    margin:0 0 28px;
-  }
+.hero p.lede{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--ink-soft);
+  max-width:46ch;
+  margin:0 0 28px;
+}
 
-  .hero-ctas{
-    display:flex;
-    gap:14px;
-    flex-wrap:wrap;
-  }
+.hero-ctas{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+}
 
-  .btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    padding:14px 26px;
-    border-radius:var(--radius-stamp);
-    font-weight:600;
-    font-size:15px;
-    border:1.5px solid transparent;
-    transition:transform .12s ease,box-shadow .12s ease;
-  }
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:14px 26px;
+  border-radius:var(--radius-stamp);
+  font-weight:600;
+  font-size:15px;
+  border:1.5px solid transparent;
+  transition:transform .12s ease,box-shadow .12s ease;
+}
 
-  .btn-primary{
-    background:var(--indigo);
-    color:var(--paper);
-  }
+.btn-primary{
+  background:var(--indigo);
+  color:var(--paper);
+}
 
-  .btn-primary:hover{
-    transform:translateY(-1px);
-    box-shadow:0 6px 0 0 #0f1830;
-  }
+.btn-primary:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 0 0 #0f1830;
+}
 
-  .btn-ghost{
-    background:transparent;
-    border-color:var(--indigo);
-    color:var(--indigo);
-  }
+.btn-ghost{
+  background:transparent;
+  border-color:var(--indigo);
+  color:var(--indigo);
+}
 
-  .btn-ghost:hover{
-    background:var(--indigo);
-    color:var(--paper);
-  }
+.btn-ghost:hover{
+  background:var(--indigo);
+  color:var(--paper);
+}
 
-  .hero-stats{
-    display:flex;
-    gap:28px;
-    margin-top:36px;
-    flex-wrap:wrap;
-  }
+.hero-stats{
+  display:flex;
+  gap:28px;
+  margin-top:36px;
+  flex-wrap:wrap;
+}
 
-  .stat b{
-    font-family:var(--serif);
-    font-size:26px;
-    color:var(--indigo);
-    display:block;
-  }
+.stat b{
+  font-family:var(--serif);
+  font-size:26px;
+  color:var(--indigo);
+  display:block;
+}
 
-  .stat span{
-    font-size:12.5px;
-    color:var(--ink-soft);
-  }
+.stat span{
+  font-size:12.5px;
+  color:var(--ink-soft);
+}
 
-  .hero-visual{
-    position:relative;
-  }
+/* =========================================================
+   HERO PRODUCT VISUAL
+   ========================================================= */
 
-  .stall-card{
-    background:var(--white);
-    border:1px solid var(--line);
-    border-radius:6px;
-    padding:18px;
-    box-shadow:0 18px 40px -22px rgba(27,42,74,.5);
-    position:relative;
-  }
+.hero-visual{
+  position:relative;
+}
 
-  .stall-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
+.stall-card{
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:18px;
+  box-shadow:0 18px 40px -22px rgba(27,42,74,.5);
+  position:relative;
+}
 
-  .stall-grid img{
-    border-radius:4px;
-    aspect-ratio:1/1;
-    object-fit:cover;
-    border:1px solid var(--line);
-  }
+.stall-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 
-  .stall-badge{
-    position:absolute;
-    top:-14px;
-    left:18px;
-    background:var(--marigold);
-    color:var(--indigo);
-    font-weight:700;
-    font-size:12.5px;
-    padding:7px 14px;
-    border-radius:3px;
-    transform:rotate(-2deg);
-    box-shadow:0 4px 0 0 var(--marigold-deep);
-  }
+.stall-grid img{
+  border-radius:4px;
+  aspect-ratio:1/1;
+  object-fit:cover;
+  border:1px solid var(--line);
+  background:#F0EAD8;
+}
 
-  /* ---------- Trust strip ---------- */
+.stall-badge{
+  position:absolute;
+  top:-14px;
+  left:18px;
+  background:var(--marigold);
+  color:var(--indigo);
+  font-weight:700;
+  font-size:12.5px;
+  padding:7px 14px;
+  border-radius:3px;
+  transform:rotate(-2deg);
+  box-shadow:0 4px 0 0 var(--marigold-deep);
+}
 
-  .trust-strip{
-    background:var(--indigo);
-  }
+/* =========================================================
+   TRUST
+   ========================================================= */
 
-  .trust-strip-inner{
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:space-between;
-    gap:14px;
-    padding:16px 24px;
-    color:var(--paper);
-    font-size:13px;
-    font-weight:600;
-  }
+.trust-strip{
+  background:var(--indigo);
+}
 
-  .trust-item{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    opacity:.92;
-  }
+.trust-strip-inner{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:14px;
+  padding:16px 24px;
+  color:var(--paper);
+  font-size:13px;
+  font-weight:600;
+}
 
-  .trust-ico{
-    font-size:16px;
-  }
+.trust-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  opacity:.92;
+}
 
-  /* ---------- Category photo banners ---------- */
+.trust-ico{
+  font-size:16px;
+}
 
-  .cat-banner-grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:16px;
-    margin-bottom:24px;
-  }
+/* =========================================================
+   CATEGORY BANNERS
+   ========================================================= */
 
-  .cat-banner{
-    position:relative;
-    aspect-ratio:4/3;
-    border-radius:6px;
-    overflow:hidden;
-    background-size:cover;
-    background-position:center;
-    cursor:pointer;
-    border:1px solid var(--line);
-  }
+.cat-banner-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+  margin-bottom:24px;
+}
 
-  .cat-banner::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(
+.cat-banner{
+  position:relative;
+  aspect-ratio:4/3;
+  border-radius:6px;
+  overflow:hidden;
+  background-size:cover;
+  background-position:center;
+  cursor:pointer;
+  border:1px solid var(--line);
+}
+
+.cat-banner::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(
       180deg,
       rgba(27,42,74,0) 40%,
       rgba(20,24,38,.82) 100%
     );
+}
+
+.cat-banner span{
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:10px;
+  z-index:1;
+  color:var(--paper);
+  font-weight:700;
+  font-size:13.5px;
+  line-height:1.25;
+}
+
+/* =========================================================
+   PROMO
+   ========================================================= */
+
+.promo-band{
+  position:relative;
+  overflow:hidden;
+  padding:64px 0;
+}
+
+.promo-bg{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+}
+
+.promo-scrim{
+  position:absolute;
+  inset:0;
+  background:rgba(20,24,38,.72);
+}
+
+.promo-content{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  color:var(--paper);
+}
+
+.promo-content h2{
+  font-family:var(--serif);
+  font-size:clamp(26px,3.4vw,38px);
+  margin:0 auto 12px;
+  max-width:20ch;
+}
+
+.promo-content p{
+  margin:0 0 24px;
+  color:#D9DEE8;
+  font-size:15px;
+}
+
+/* =========================================================
+   SECTIONS
+   ========================================================= */
+
+.section{
+  padding:56px 0;
+}
+
+.section-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:28px;
+  flex-wrap:wrap;
+}
+
+.section-head h2{
+  font-family:var(--serif);
+  font-size:32px;
+  margin:0 0 6px;
+  color:var(--indigo);
+}
+
+.section-head p{
+  margin:0;
+  color:var(--ink-soft);
+  font-size:15px;
+  max-width:52ch;
+}
+
+/* =========================================================
+   CATEGORY CHIPS
+   ========================================================= */
+
+.chips{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:34px;
+}
+
+.chip{
+  padding:9px 16px;
+  border-radius:100px;
+  border:1.5px solid var(--line);
+  background:var(--white);
+  font-size:13.5px;
+  font-weight:600;
+  color:var(--ink-soft);
+  transition:all .15s;
+}
+
+.chip.active,
+.chip:hover{
+  border-color:var(--indigo);
+  color:var(--indigo);
+  background:var(--paper-dim);
+}
+
+/* =========================================================
+   PRODUCT GRID
+   ========================================================= */
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:20px;
+}
+
+.card{
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:6px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  transition:box-shadow .15s ease,transform .15s ease;
+}
+
+.card:hover{
+  box-shadow:0 16px 30px -20px rgba(27,42,74,.4);
+  transform:translateY(-2px);
+}
+
+.card-media{
+  position:relative;
+  aspect-ratio:1/1;
+  background:#F0EAD8;
+  overflow:hidden;
+}
+
+.card-media img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.tag{
+  position:absolute;
+  top:10px;
+  left:10px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.03em;
+  padding:4px 9px;
+  border-radius:3px;
+  color:var(--white);
+  z-index:2;
+}
+
+.tag.new{
+  background:var(--bottle);
+}
+
+.tag.best{
+  background:var(--marigold-deep);
+}
+
+.card-body{
+  padding:14px 14px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1;
+}
+
+.card-cat{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--ink-soft);
+  font-weight:600;
+}
+
+.card-title{
+  font-size:14.5px;
+  font-weight:600;
+  line-height:1.35;
+  color:var(--ink);
+  min-height:39px;
+}
+
+.card-rating{
+  font-size:12.5px;
+  color:var(--ink-soft);
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.card-rating .stars{
+  color:var(--marigold-deep);
+  font-weight:700;
+}
+
+.card-price-row{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  margin-top:auto;
+}
+
+.price{
+  font-family:var(--serif);
+  font-weight:700;
+  font-size:19px;
+  color:var(--indigo);
+}
+
+.card-actions{
+  display:flex;
+  gap:8px;
+  margin-top:6px;
+}
+
+.add-btn{
+  flex:1;
+  background:var(--indigo);
+  color:var(--paper);
+  border:none;
+  padding:10px 12px;
+  border-radius:4px;
+  font-weight:600;
+  font-size:13.5px;
+  transition:background .15s;
+}
+
+.add-btn:hover{
+  background:#0f1830;
+}
+
+.add-btn.added{
+  background:var(--bottle);
+}
+
+/* =========================================================
+   EMPTY / LOADING / ERROR
+   ========================================================= */
+
+.product-message{
+  grid-column:1/-1;
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:50px 25px;
+  text-align:center;
+  color:var(--ink-soft);
+}
+
+.product-message h3{
+  margin:0 0 10px;
+  color:var(--indigo);
+  font-family:var(--serif);
+  font-size:25px;
+}
+
+.product-message p{
+  margin:0;
+  line-height:1.6;
+}
+
+.product-message.error{
+  color:var(--danger);
+}
+
+.product-message.error h3{
+  color:var(--danger);
+}
+
+/* =========================================================
+   VALUE PROPS
+   ========================================================= */
+
+.props{
+  background:var(--indigo);
+  color:var(--paper);
+}
+
+.props .wrap{
+  padding:56px 24px;
+}
+
+.props-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:28px;
+  margin-top:28px;
+}
+
+.props h2{
+  font-family:var(--serif);
+  font-size:30px;
+  margin:0;
+  max-width:16ch;
+}
+
+.props-grid h3{
+  font-size:16px;
+  margin:0 0 8px;
+  color:var(--marigold);
+}
+
+.props-grid p{
+  font-size:14px;
+  line-height:1.55;
+  color:#CBD1DE;
+  margin:0;
+}
+
+/* =========================================================
+   REVIEWS
+   ========================================================= */
+
+.rating-summary{
+  text-align:right;
+  flex-shrink:0;
+}
+
+.rating-num{
+  font-family:var(--serif);
+  font-size:34px;
+  color:var(--indigo);
+  font-weight:700;
+}
+
+.rating-num span{
+  font-size:16px;
+  color:var(--ink-soft);
+  font-weight:500;
+}
+
+.rating-stars{
+  color:var(--marigold-deep);
+  font-size:15px;
+  letter-spacing:2px;
+}
+
+.rating-count{
+  font-size:12px;
+  color:var(--ink-soft);
+}
+
+.testimonials-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+
+.testimonial{
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:24px;
+}
+
+.testimonial-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:var(--indigo);
+  color:var(--paper);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:14px;
+  flex-shrink:0;
+}
+
+.testimonial .stars{
+  color:var(--marigold-deep);
+  font-size:13px;
+  display:block;
+  margin-bottom:2px;
+}
+
+.testimonial p{
+  font-size:15px;
+  line-height:1.6;
+  color:var(--ink);
+  margin:0 0 16px;
+}
+
+.testimonial .who{
+  font-size:13px;
+  color:var(--ink-soft);
+  font-weight:600;
+}
+
+/* =========================================================
+   CTA
+   ========================================================= */
+
+.cta-band{
+  background:var(--marigold);
+  color:var(--indigo);
+  text-align:center;
+  padding:52px 24px;
+  border-radius:8px;
+  margin:0 24px 64px;
+}
+
+.cta-band h2{
+  font-family:var(--serif);
+  font-size:32px;
+  margin:0 0 10px;
+}
+
+.cta-band p{
+  margin:0 0 24px;
+  font-size:15px;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+footer{
+  background:#151B2C;
+  color:#B9C0D1;
+  padding:56px 0 26px;
+}
+
+.footer-grid{
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr 1fr;
+  gap:32px;
+  padding-bottom:36px;
+  border-bottom:1px solid #262E44;
+}
+
+.footer-logo{
+  font-family:var(--serif);
+  font-size:22px;
+  color:var(--paper);
+  margin-bottom:10px;
+}
+
+footer p{
+  font-size:13.5px;
+  line-height:1.6;
+  color:#93A0B8;
+  max-width:32ch;
+}
+
+footer h4{
+  color:var(--paper);
+  font-size:13.5px;
+  margin:0 0 14px;
+  letter-spacing:.02em;
+}
+
+footer ul{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+
+footer ul a{
+  font-size:13.5px;
+  color:#93A0B8;
+  transition:color .15s;
+}
+
+footer ul a:hover{
+  color:var(--marigold);
+}
+
+.footer-bottom{
+  display:flex;
+  justify-content:space-between;
+  padding-top:22px;
+  font-size:12.5px;
+  color:#6C7891;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+/* =========================================================
+   CART
+   ========================================================= */
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(20,24,38,.45);
+  z-index:90;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s;
+}
+
+.overlay.open{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.drawer{
+  position:fixed;
+  top:0;
+  right:0;
+  height:100%;
+  width:400px;
+  max-width:92vw;
+  background:var(--white);
+  z-index:91;
+  box-shadow:-16px 0 40px rgba(0,0,0,.15);
+  transform:translateX(100%);
+  transition:transform .25s ease;
+  display:flex;
+  flex-direction:column;
+}
+
+.drawer.open{
+  transform:translateX(0);
+}
+
+.drawer-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 22px;
+  border-bottom:1px solid var(--line);
+}
+
+.drawer-head h3{
+  font-family:var(--serif);
+  font-size:21px;
+  margin:0;
+  color:var(--indigo);
+}
+
+.drawer-close{
+  background:none;
+  border:none;
+  font-size:22px;
+  color:var(--ink-soft);
+}
+
+.drawer-body{
+  flex:1;
+  overflow-y:auto;
+  padding:16px 22px;
+}
+
+.cart-item{
+  display:flex;
+  gap:12px;
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.cart-item img{
+  width:64px;
+  height:64px;
+  object-fit:cover;
+  border-radius:4px;
+  border:1px solid var(--line);
+}
+
+.cart-item-info{
+  flex:1;
+}
+
+.cart-item-info .name{
+  font-size:13.5px;
+  font-weight:600;
+  margin-bottom:4px;
+  line-height:1.3;
+}
+
+.qty-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:6px;
+}
+
+.qty-btn{
+  width:24px;
+  height:24px;
+  border:1px solid var(--line);
+  background:var(--paper);
+  border-radius:4px;
+  font-weight:700;
+}
+
+.remove-btn{
+  background:none;
+  border:none;
+  color:var(--danger);
+  font-size:12px;
+  font-weight:600;
+  margin-left:auto;
+}
+
+.drawer-foot{
+  padding:20px 22px;
+  border-top:1px solid var(--line);
+}
+
+.subtotal-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:15px;
+  margin-bottom:14px;
+  font-weight:700;
+  color:var(--indigo);
+}
+
+.empty-cart{
+  text-align:center;
+  padding:60px 20px;
+  color:var(--ink-soft);
+  font-size:14px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media(max-width:980px){
+
+  .hero-inner{
+    grid-template-columns:1fr;
   }
 
-  .cat-banner span{
-    position:absolute;
-    left:12px;
-    right:12px;
-    bottom:10px;
-    z-index:1;
-    color:var(--paper);
-    font-weight:700;
-    font-size:13.5px;
-    line-height:1.25;
+  .hero{
+    padding-top:48px;
   }
-
-  /* ---------- Promo / ad band ---------- */
-
-  .promo-band{
-    position:relative;
-    overflow:hidden;
-    padding:64px 0;
-  }
-
-  .promo-bg{
-    position:absolute;
-    inset:0;
-    background-size:cover;
-    background-position:center;
-  }
-
-  .promo-scrim{
-    position:absolute;
-    inset:0;
-    background:rgba(20,24,38,.72);
-  }
-
-  .promo-content{
-    position:relative;
-    z-index:1;
-    text-align:center;
-    color:var(--paper);
-  }
-
-  .promo-content h2{
-    font-family:var(--serif);
-    font-size:clamp(26px,3.4vw,38px);
-    margin:0 0 12px;
-    max-width:20ch;
-    margin-left:auto;
-    margin-right:auto;
-  }
-
-  .promo-content p{
-    margin:0 0 24px;
-    color:#D9DEE8;
-    font-size:15px;
-  }
-
-  /* ---------- Ratings summary ---------- */
-
-  .rating-summary{
-    text-align:right;
-    flex-shrink:0;
-  }
-
-  .rating-num{
-    font-family:var(--serif);
-    font-size:34px;
-    color:var(--indigo);
-    font-weight:700;
-  }
-
-  .rating-num span{
-    font-size:16px;
-    color:var(--ink-soft);
-    font-weight:500;
-  }
-
-  .rating-stars{
-    color:var(--marigold-deep);
-    font-size:15px;
-    letter-spacing:2px;
-  }
-
-  .rating-count{
-    font-size:12px;
-    color:var(--ink-soft);
-  }
-
-  .testimonial-head{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:12px;
-  }
-
-  .avatar{
-    width:36px;
-    height:36px;
-    border-radius:50%;
-    background:var(--indigo);
-    color:var(--paper);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:700;
-    font-size:14px;
-    flex-shrink:0;
-  }
-
-  .testimonial .stars{
-    color:var(--marigold-deep);
-    font-size:13px;
-    display:block;
-    margin-bottom:2px;
-  }
-
-  /* ---------- Section headers ---------- */
-
-  .section{
-    padding:56px 0;
-  }
-
-  .section-head{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:24px;
-    margin-bottom:28px;
-    flex-wrap:wrap;
-  }
-
-  .section-head h2{
-    font-family:var(--serif);
-    font-size:32px;
-    margin:0 0 6px;
-    color:var(--indigo);
-  }
-
-  .section-head p{
-    margin:0;
-    color:var(--ink-soft);
-    font-size:15px;
-    max-width:52ch;
-  }
-
-  /* ---------- Category chips ---------- */
-
-  .chips{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-bottom:34px;
-  }
-
-  .chip{
-    padding:9px 16px;
-    border-radius:100px;
-    border:1.5px solid var(--line);
-    background:var(--white);
-    font-size:13.5px;
-    font-weight:600;
-    color:var(--ink-soft);
-    transition:all .15s;
-  }
-
-  .chip.active,
-  .chip:hover{
-    border-color:var(--indigo);
-    color:var(--indigo);
-    background:var(--paper-dim);
-  }
-
-  /* ---------- Product grid ---------- */
 
   .grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:20px;
+    grid-template-columns:repeat(2,1fr);
   }
 
-  .card{
-    background:var(--white);
-    border:1px solid var(--line);
-    border-radius:6px;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    transition:box-shadow .15s ease,transform .15s ease;
-  }
-
-  .card:hover{
-    box-shadow:0 16px 30px -20px rgba(27,42,74,.4);
-    transform:translateY(-2px);
-  }
-
-  .card-media{
-    position:relative;
-    aspect-ratio:1/1;
-    background:#F0EAD8;
-    overflow:hidden;
-  }
-
-  .card-media img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-  }
-
-  .tag{
-    position:absolute;
-    top:10px;
-    left:10px;
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:.03em;
-    padding:4px 9px;
-    border-radius:3px;
-    color:var(--white);
-    background:var(--bottle);
-    z-index:2;
-  }
-
-  .tag.new{
-    background:var(--marigold-deep);
-  }
-
-  .tag.bestseller{
-    background:var(--indigo);
-  }
-
-  .card-body{
-    padding:15px;
-    display:flex;
-    flex-direction:column;
-    flex:1;
-  }
-
-  .card-cat{
-    color:var(--bottle);
-    font-size:11px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.07em;
-    margin-bottom:6px;
-  }
-
-  .card-title{
-    font-family:var(--serif);
-    font-size:17px;
-    line-height:1.2;
-    color:var(--indigo);
-    margin-bottom:7px;
-  }
-
-  .card-rating{
-    color:var(--ink-soft);
-    font-size:12px;
-    margin-bottom:13px;
-  }
-
-  .card-rating .stars{
-    color:var(--marigold-deep);
-    font-weight:700;
-  }
-
-  .card-price-row{
-    margin-top:auto;
-    margin-bottom:12px;
-  }
-
-  .price{
-    font-family:var(--serif);
-    font-size:22px;
-    font-weight:700;
-    color:var(--indigo);
-  }
-
-  .card-actions{
-    display:flex;
-  }
-
-  .add-btn{
-    width:100%;
-    padding:10px 12px;
-    border:1.5px solid var(--indigo);
-    background:transparent;
-    color:var(--indigo);
-    border-radius:3px;
-    font-weight:700;
-    font-size:13px;
-    transition:all .15s;
-  }
-
-  .add-btn:hover,
-  .add-btn.added{
-    background:var(--indigo);
-    color:var(--paper);
-  }
-
-  /* ---------- Reviews ---------- */
-
-  .reviews-grid{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:20px;
-  }
-
-  .testimonial{
-    background:var(--white);
-    border:1px solid var(--line);
-    border-radius:6px;
-    padding:20px;
-  }
-
-  .testimonial p{
-    color:var(--ink-soft);
-    line-height:1.6;
-    font-size:14px;
-    margin:0;
-  }
-
-  .who{
-    font-weight:700;
-    font-size:12px;
-    color:var(--indigo);
-  }
-
-  /* ---------- Cart drawer ---------- */
-
-  .overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(20,24,38,.45);
-    z-index:90;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .2s;
-  }
-
-  .overlay.open{
-    opacity:1;
-    pointer-events:auto;
-  }
-
-  .cart-drawer{
-    position:fixed;
-    top:0;
-    right:-430px;
-    width:min(430px,100vw);
-    height:100vh;
-    background:var(--paper);
-    border-left:1px solid var(--line);
-    z-index:100;
-    display:flex;
-    flex-direction:column;
-    transition:right .25s ease;
-  }
-
-  .cart-drawer.open{
-    right:0;
-  }
-
-  .drawer-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:20px;
-    border-bottom:1px solid var(--line);
-  }
-
-  .drawer-head h3{
-    font-family:var(--serif);
-    font-size:25px;
-    color:var(--indigo);
-    margin:0;
-  }
-
-  .drawer-close{
-    border:none;
-    background:none;
-    font-size:25px;
-    color:var(--ink);
-  }
-
-  .cart-body{
-    flex:1;
-    overflow:auto;
-    padding:18px;
-  }
-
-  .empty-cart{
-    text-align:center;
-    color:var(--ink-soft);
-    padding:60px 20px;
-    line-height:1.7;
-  }
-
-  .cart-item{
-    display:flex;
-    gap:13px;
-    padding:14px 0;
-    border-bottom:1px solid var(--line);
-  }
-
-  .cart-item img{
-    width:74px;
-    height:74px;
-    object-fit:cover;
-    border-radius:4px;
-    border:1px solid var(--line);
-    background:#F0EAD8;
-  }
-
-  .cart-item-info{
-    flex:1;
-    font-size:13px;
-    color:var(--ink-soft);
-  }
-
-  .cart-item-info .name{
-    font-family:var(--serif);
-    font-size:16px;
-    color:var(--indigo);
-    margin-bottom:4px;
-  }
-
-  .qty-row{
-    display:flex;
-    align-items:center;
-    gap:9px;
-    margin-top:9px;
-  }
-
-  .qty-btn{
-    width:28px;
-    height:28px;
-    border:1px solid var(--line);
-    background:var(--white);
-    border-radius:3px;
-    color:var(--indigo);
-    font-weight:700;
-  }
-
-  .remove-btn{
-    border:none;
-    background:none;
-    color:var(--danger);
-    font-size:11px;
-    margin-left:auto;
-  }
-
-  .drawer-footer{
-    padding:18px 20px 22px;
-    border-top:1px solid var(--line);
-    background:var(--white);
-  }
-
-  .subtotal-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:14px;
-  }
-
-  .subtotal-row span:first-child{
-    color:var(--ink-soft);
-    font-size:14px;
-  }
-
-  .subtotal-row strong{
-    font-family:var(--serif);
-    color:var(--indigo);
-    font-size:24px;
-  }
-
-  .checkout-btn{
-    width:100%;
-    padding:14px;
-    border:none;
-    border-radius:3px;
-    background:var(--indigo);
-    color:var(--paper);
-    font-weight:700;
-    font-size:15px;
-  }
-
-  /* ---------- Footer ---------- */
-
-  footer{
-    background:var(--indigo);
-    color:var(--paper);
-    padding:50px 0 25px;
+  .props-grid{
+    grid-template-columns:1fr 1fr;
   }
 
   .footer-grid{
-    display:grid;
-    grid-template-columns:1.5fr 1fr 1fr 1fr;
-    gap:36px;
-    padding-bottom:36px;
-    border-bottom:1px solid rgba(244,238,225,.18);
+    grid-template-columns:1fr 1fr;
   }
 
-  .footer-brand{
-    font-family:var(--serif);
-    font-size:27px;
-    font-weight:700;
-    margin-bottom:10px;
+  .testimonials-grid{
+    grid-template-columns:1fr;
   }
 
-  .footer-copy{
-    color:#C7CCDA;
-    font-size:13px;
-    line-height:1.6;
-    max-width:38ch;
+  .cat-banner-grid{
+    grid-template-columns:repeat(2,1fr);
   }
 
-  .footer-col h4{
-    margin:0 0 14px;
-    font-size:13px;
-    text-transform:uppercase;
-    letter-spacing:.07em;
-    color:var(--marigold);
+  .trust-strip-inner{
+    justify-content:center;
+    text-align:center;
+  }
+}
+
+@media(max-width:640px){
+
+  .nav-links{
+    display:none;
   }
 
-  .footer-col a{
+  .nav-toggle{
     display:block;
-    color:#D9DEE8;
-    font-size:13px;
-    margin-bottom:9px;
   }
 
-  .footer-col a:hover{
-    color:var(--paper);
+  .grid{
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
   }
 
-  .footer-bottom{
-    display:flex;
-    justify-content:space-between;
-    gap:20px;
-    padding-top:20px;
-    color:#AEB5C5;
-    font-size:11.5px;
-    flex-wrap:wrap;
+  .card-title{
+    min-height:0;
   }
 
-  /* ---------- Responsive ---------- */
-
-  @media(max-width:980px){
-    .nav-links{
-      gap:16px;
-    }
-
-    .hero-inner{
-      grid-template-columns:1fr;
-    }
-
-    .hero-visual{
-      max-width:600px;
-    }
-
-    .grid{
-      grid-template-columns:repeat(3,1fr);
-    }
-
-    .cat-banner-grid{
-      grid-template-columns:repeat(2,1fr);
-    }
-
-    .footer-grid{
-      grid-template-columns:repeat(2,1fr);
-    }
+  .footer-grid{
+    grid-template-columns:1fr;
   }
 
-  @media(max-width:720px){
-    .wrap{
-      padding:0 16px;
-    }
-
-    .nav{
-      padding:12px 0;
-    }
-
-    .logo{
-      font-size:22px;
-    }
-
-    .logo small{
-      display:none;
-    }
-
-    .nav-links{
-      display:none;
-    }
-
-    .nav-toggle{
-      display:block;
-    }
-
-    .hero{
-      padding:55px 0 42px;
-    }
-
-    .hero h1{
-      font-size:42px;
-    }
-
-    .trust-strip-inner{
-      padding:14px 16px;
-      justify-content:flex-start;
-    }
-
-    .section{
-      padding:42px 0;
-    }
-
-    .grid{
-      grid-template-columns:repeat(2,1fr);
-      gap:13px;
-    }
-
-    .card-body{
-      padding:12px;
-    }
-
-    .card-title{
-      font-size:15px;
-    }
-
-    .price{
-      font-size:19px;
-    }
-
-    .reviews-grid{
-      grid-template-columns:1fr;
-    }
-
-    .footer-grid{
-      grid-template-columns:1fr 1fr;
-      gap:25px;
-    }
+  .hero-inner{
+    gap:32px;
   }
 
-  @media(max-width:480px){
-    .nav-actions{
-      gap:9px;
-    }
-
-    .icon-btn{
-      font-size:12px;
-    }
-
-    .cat-banner-grid{
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
-
-    .grid{
-      gap:10px;
-    }
-
-    .card-media{
-      aspect-ratio:1/1;
-    }
-
-    .card-rating{
-      font-size:11px;
-    }
-
-    .footer-grid{
-      grid-template-columns:1fr;
-    }
-
-    .hero-stats{
-      gap:18px;
-    }
+  .cat-banner-grid{
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
   }
+
+  .section-head{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .rating-summary{
+    text-align:left;
+  }
+
+  .props-grid{
+    grid-template-columns:1fr;
+  }
+}
 </style>
-
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
 </head>
 
 <body>
 
-<!-- ---------- Ticker ---------- -->
+<!-- =========================================================
+     TICKER
+     ========================================================= -->
 
 <div class="ticker">
   <div class="ticker-track" id="tickerTrack"></div>
 </div>
 
-<!-- ---------- Header ---------- -->
+<!-- =========================================================
+     HEADER
+     ========================================================= -->
 
 <header class="site">
-  <div class="wrap">
-    <nav class="nav">
+  <div class="wrap nav">
 
-      <a class="logo" href="index.html">
-        Fashion_Fussion
-        <small>EVERYDAY BAZAAR</small>
-      </a>
+    <a href="#top" class="logo">
+      Fashion<small>_FUSSION</small>
+    </a>
 
-      <div class="nav-links">
-        <a href="#shop">Shop</a>
-        <a href="#categories">Categories</a>
-        <a href="#reviews">Reviews</a>
-        <a href="#about">About</a>
-      </div>
-
-      <div class="nav-actions">
-
-        <a href="login.html"
-           class="icon-btn"
-           id="accountNav">
-          Account
-        </a>
-
-        <button class="icon-btn" id="cartOpenBtn" type="button">
-          Cart
-          <span class="cart-count" id="cartCount">0</span>
-        </button>
-
-        <button class="nav-toggle" type="button" aria-label="Menu">
-          ☰
-        </button>
-
-      </div>
-
+    <nav class="nav-links">
+      <a href="#shop">Shop</a>
+      <a href="#categories">Categories</a>
+      <a href="#contact">Contact</a>
+      <a href="account.html" id="accountNav">Account</a>
     </nav>
+
+    <div class="nav-actions">
+
+      <button
+        class="icon-btn"
+        type="button"
+        onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})"
+      >
+        Search
+      </button>
+
+      <button
+        class="icon-btn"
+        id="cartOpenBtn"
+        type="button"
+      >
+        Cart
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+
+      <button
+        class="nav-toggle"
+        type="button"
+        onclick="document.querySelector('.nav-links').style.display =
+        document.querySelector('.nav-links').style.display === 'flex'
+        ? 'none'
+        : 'flex';"
+      >
+        ☰
+      </button>
+
+    </div>
+
   </div>
 </header>
 
-<!-- ---------- Hero ---------- -->
+<!-- =========================================================
+     HERO
+     ========================================================= -->
 
-<section class="hero">
+<section class="hero" id="top">
 
-  <div class="hero-bg"
-       style="background-image:url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1800&q=85');">
-  </div>
+  <div
+    class="hero-bg"
+    style="
+      background-image:url(
+        'https://picsum.photos/seed/rozana-hero-market/1600/1100'
+      );
+    "
+  ></div>
 
   <div class="hero-scrim"></div>
 
-  <div class="wrap">
+  <div class="wrap hero-inner">
 
-    <div class="hero-inner">
+    <div>
 
-      <div>
+      <span class="hero-eyebrow">
+        ● Sourced wholesale · Priced for retail
+      </span>
 
-        <div class="hero-eyebrow">
-          ✦ Jaipur-sourced · Delivered nationwide
+      <h1>
+        Everyday things, honestly priced.
+      </h1>
+
+      <p class="lede">
+        Home, kitchen, beauty and travel essentials,
+        picked from our supplier's catalog and delivered
+        to your door — quality-checked before it ships.
+      </p>
+
+      <div class="hero-ctas">
+
+        <a
+          href="#shop"
+          class="btn btn-primary"
+        >
+          Browse the bazaar
+        </a>
+
+        <a
+          href="#categories"
+          class="btn btn-ghost"
+        >
+          Explore categories
+        </a>
+
+      </div>
+
+      <div class="hero-stats">
+
+        <div class="stat">
+          <b id="heroProductCount">0</b>
+          <span>active products</span>
         </div>
 
-        <h1>
-          Good stuff.
-          Fair prices.
-          No nonsense.
-        </h1>
-
-        <p class="lede">
-          Home, kitchen, beauty, decor and everyday essentials —
-          sourced wholesale and brought to you at honest retail prices.
-        </p>
-
-        <div class="hero-ctas">
-          <a href="#shop" class="btn btn-primary">
-            Shop the bazaar →
-          </a>
-
-          <a href="#categories" class="btn btn-ghost">
-            Browse categories
-          </a>
+        <div class="stat">
+          <b id="heroCategoryCount">0</b>
+          <span>categories stocked</span>
         </div>
 
-        <div class="hero-stats">
-
-          <div class="stat">
-            <b>50K+</b>
-            <span>Wholesale SKUs</span>
-          </div>
-
-          <div class="stat">
-            <b>₹99+</b>
-            <span>Everyday pricing</span>
-          </div>
-
-          <div class="stat">
-            <b>24h</b>
-            <span>Jaipur dispatch</span>
-          </div>
-
+        <div class="stat">
+          <b>₹599</b>
+          <span>free delivery above this</span>
         </div>
 
       </div>
 
-      <div class="hero-visual">
+    </div>
 
-        <div class="stall-card">
+    <div class="hero-visual">
 
-          <div class="stall-badge">
-            Fresh picks
+      <span class="stall-badge">
+        Fresh stock ↓
+      </span>
+
+      <div class="stall-card">
+
+        <div
+          class="stall-grid"
+          id="heroThumbs"
+        >
+          <div class="product-message">
+            Loading...
           </div>
-
-          <div class="stall-grid" id="heroThumbs"></div>
-
         </div>
 
       </div>
@@ -1223,85 +1345,278 @@
     </div>
 
   </div>
-
 </section>
 
-<!-- ---------- Trust ---------- -->
+<!-- =========================================================
+     TRUST
+     ========================================================= -->
 
-<section class="trust-strip">
+<div class="trust-strip">
 
-  <div class="wrap">
+  <div class="wrap trust-strip-inner">
 
-    <div class="trust-strip-inner">
+    <div class="trust-item">
+      <span class="trust-ico">🚚</span>
+      Free delivery above ₹599
+    </div>
 
-      <div class="trust-item">
-        <span class="trust-ico">✓</span>
-        Honest prices
-      </div>
+    <div class="trust-item">
+      <span class="trust-ico">✅</span>
+      Quality-checked before dispatch
+    </div>
 
-      <div class="trust-item">
-        <span class="trust-ico">⚡</span>
-        Fast dispatch
-      </div>
+    <div class="trust-item">
+      <span class="trust-ico">↩️</span>
+      48-hr issue reporting window
+    </div>
 
-      <div class="trust-item">
-        <span class="trust-ico">📦</span>
-        Carefully packed
-      </div>
-
-      <div class="trust-item">
-        <span class="trust-ico">🔒</span>
-        Secure checkout
-      </div>
-
+    <div class="trust-item">
+      <span class="trust-ico">💬</span>
+      Real support, 9am–7pm
     </div>
 
   </div>
 
-</section>
+</div>
 
-<!-- ---------- Categories ---------- -->
+<!-- =========================================================
+     CATEGORIES
+     ========================================================= -->
 
-<section class="section" id="categories">
+<section
+  class="section"
+  id="categories"
+>
 
   <div class="wrap">
 
     <div class="section-head">
 
       <div>
-        <h2>Shop by category</h2>
+
+        <h2>
+          Shop by category
+        </h2>
+
         <p>
-          Little upgrades for everyday life, all in one bazaar.
+          Browse the active products currently available
+          in our store.
         </p>
+
       </div>
 
     </div>
 
-    <div class="cat-banner-grid" id="categoryBanners"></div>
+    <div
+      class="cat-banner-grid"
+      id="categoryBanners"
+    ></div>
+
+    <div
+      class="chips"
+      id="categoryChips"
+    ></div>
 
   </div>
 
 </section>
 
-<!-- ---------- Shop ---------- -->
+<!-- =========================================================
+     PRODUCTS
+     ========================================================= -->
 
-<section class="section" id="shop">
+<section
+  class="section"
+  id="shop"
+>
 
   <div class="wrap">
 
     <div class="section-head">
 
       <div>
-        <h2 id="gridHeading">All products</h2>
+
+        <h2 id="gridHeading">
+          All products
+        </h2>
+
         <p id="gridSub">
-          Everyday products at honest prices.
+          Loading products from our catalog...
         </p>
+
+      </div>
+
+    </div>
+
+    <div
+      class="grid"
+      id="productGrid"
+    >
+
+      <div class="product-message">
+
+        <h3>
+          Loading products
+        </h3>
+
+        <p>
+          Please wait while we load the latest
+          active products.
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- =========================================================
+     PROMO
+     ========================================================= -->
+
+<div class="promo-band">
+
+  <div
+    class="promo-bg"
+    style="
+      background-image:url(
+        'https://picsum.photos/seed/rozana-sale-crates/1600/700'
+      );
+    "
+  ></div>
+
+  <div class="promo-scrim"></div>
+
+  <div class="wrap promo-content">
+
+    <span
+      class="hero-eyebrow"
+      style="
+        background:rgba(255,255,255,.16);
+        color:var(--paper);
+      "
+    >
+      ● Limited stock
+    </span>
+
+    <h2>
+      This week: free delivery on every order above ₹599
+    </h2>
+
+    <p>
+      No code needed — it's applied automatically at checkout.
+    </p>
+
+    <a
+      href="#shop"
+      class="btn"
+      style="
+        background:var(--marigold);
+        color:var(--indigo);
+      "
+    >
+      Shop products
+    </a>
+
+  </div>
+
+</div>
+
+<!-- =========================================================
+     VALUE PROPS
+     ========================================================= -->
+
+<section class="props">
+
+  <div class="wrap">
+
+    <h2>
+      Why buy from Fashion_Fussion?
+    </h2>
+
+    <div class="props-grid">
+
+      <div>
+        <h3>
+          Curated, not endless
+        </h3>
+
+        <p>
+          We list products that are actually available
+          instead of filling the store with duplicate listings.
+        </p>
+      </div>
+
+      <div>
+        <h3>
+          Fair, steady pricing
+        </h3>
+
+        <p>
+          Prices are calculated from product cost and
+          maintained through the admin catalog.
+        </p>
+      </div>
+
+      <div>
+        <h3>
+          Fresh stock
+        </h3>
+
+        <p>
+          Products can be added, edited or hidden directly
+          from the admin panel.
+        </p>
+      </div>
+
+      <div>
+        <h3>
+          Real support
+        </h3>
+
+        <p>
+          A message to our number reaches an actual person,
+          not a ticket queue.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- =========================================================
+     REVIEWS
+     ========================================================= -->
+
+<section
+  class="section"
+  id="reviews"
+>
+
+  <div class="wrap">
+
+    <div class="section-head">
+
+      <div>
+
+        <h2>
+          What early customers say
+        </h2>
+
+        <p>
+          Notes from our first buyers.
+        </p>
+
       </div>
 
       <div class="rating-summary">
 
         <div class="rating-num">
-          4.8<span>/5</span>
+          4.7<span>/5</span>
         </div>
 
         <div class="rating-stars">
@@ -1309,104 +1624,55 @@
         </div>
 
         <div class="rating-count">
-          Trusted by shoppers
+          from 6 early reviews
         </div>
 
       </div>
 
     </div>
 
-    <div class="chips" id="categoryChips"></div>
-
-    <div class="grid" id="productGrid"></div>
-
-  </div>
-
-</section>
-
-<!-- ---------- Promo ---------- -->
-
-<section class="promo-band">
-
-  <div class="promo-bg"
-       style="background-image:url('https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&w=1800&q=85');">
-  </div>
-
-  <div class="promo-scrim"></div>
-
-  <div class="wrap">
-
-    <div class="promo-content">
-
-      <h2>
-        Wholesale sourcing.
-        Retail made simple.
-      </h2>
-
-      <p>
-        We find useful things at better rates and pass the value on.
-      </p>
-
-      <a href="#shop" class="btn btn-primary">
-        Explore products
-      </a>
-
-    </div>
+    <div
+      class="testimonials-grid"
+      id="reviewsGrid"
+    ></div>
 
   </div>
 
 </section>
 
-<!-- ---------- Reviews ---------- -->
+<!-- =========================================================
+     CTA
+     ========================================================= -->
 
-<section class="section" id="reviews">
+<div
+  class="cta-band"
+  id="contact"
+>
 
-  <div class="wrap">
+  <h2>
+    Ready to fill your cart?
+  </h2>
 
-    <div class="section-head">
+  <p>
+    Everything on this page ships from Jaipur.
+    Message us for bulk / reseller rates.
+  </p>
 
-      <div>
-        <h2>What shoppers say</h2>
-        <p>
-          Real feedback from customers ordering everyday essentials.
-        </p>
-      </div>
+  <a
+    href="#shop"
+    class="btn btn-primary"
+    style="
+      background:var(--indigo);
+    "
+  >
+    Start shopping
+  </a>
 
-    </div>
+</div>
 
-    <div class="reviews-grid" id="reviewsGrid"></div>
-
-  </div>
-
-</section>
-
-<!-- ---------- About ---------- -->
-
-<section class="section" id="about">
-
-  <div class="wrap">
-
-    <div class="section-head">
-
-      <div>
-
-        <h2>Why Fashion_Fussion?</h2>
-
-        <p>
-          We keep the buying process simple: source useful products
-          from wholesale markets, check the value, and offer them
-          online without unnecessary pricing games.
-        </p>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
-
-<!-- ---------- Footer ---------- -->
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
 
 <footer>
 
@@ -1416,49 +1682,118 @@
 
       <div>
 
-        <div class="footer-brand">
+        <div class="footer-logo">
           Fashion_Fussion
         </div>
 
-        <div class="footer-copy">
-          Everyday home, lifestyle, beauty, decor and travel
-          essentials sourced with a simple promise:
-          fair prices and useful products.
-        </div>
+        <p>
+          Everyday home, kitchen, beauty and travel essentials —
+          sourced wholesale and delivered to your door in Jaipur
+          and beyond.
+        </p>
 
       </div>
 
-      <div class="footer-col">
+      <div>
 
-        <h4>Shop</h4>
+        <h4>
+          Shop
+        </h4>
 
-        <a href="#shop">All Products</a>
-        <a href="#categories">Categories</a>
-        <a href="#shop">New Arrivals</a>
+        <ul>
+
+          <li>
+            <a href="#shop">
+              All products
+            </a>
+          </li>
+
+          <li>
+            <a href="#categories">
+              Categories
+            </a>
+          </li>
+
+        </ul>
 
       </div>
 
-      <div class="footer-col">
+      <div>
 
-        <h4>Help</h4>
+        <h4>
+          Company
+        </h4>
 
-        <a href="account.html">My Account</a>
-        <a href="#reviews">Reviews</a>
-        <a href="#about">About Us</a>
+        <ul>
+
+          <li>
+            <a href="#contact">
+              Contact
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="account.html"
+              id="accountFooterNav"
+            >
+              Account
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="#"
+              onclick="
+                alert(
+                  'Delivery: 3–5 business days across Jaipur, 5–8 days pan-India.\\n\\nReturns: report any issue within 48 hours of delivery.'
+                );
+                return false;
+              "
+            >
+              Shipping &amp; returns
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="mailto:FashionFussion08@outlook.com?subject=Bulk%2FReseller%20Order%20Enquiry"
+            >
+              Bulk / reseller orders
+            </a>
+          </li>
+
+        </ul>
 
       </div>
 
-      <div class="footer-col">
+      <div>
 
-        <h4>Account</h4>
+        <h4>
+          Reach us
+        </h4>
 
-        <a href="login.html" id="accountFooterNav">
-          Account
-        </a>
+        <ul>
 
-        <a href="signup.html">
-          Create Account
-        </a>
+          <li>
+            Flat No S2, 3rd Floor,
+            Kalpataru Homes – 69,<br>
+            Mansarovar, Jaipur 302020
+          </li>
+
+          <li>
+            <a href="tel:+917372976856">
+              +91 73729 76856
+            </a>
+          </li>
+
+          <li>
+            <a href="mailto:FashionFussion08@outlook.com">
+              FashionFussion08@outlook.com
+            </a>
+          </li>
+
+        </ul>
 
       </div>
 
@@ -1471,7 +1806,7 @@
       </span>
 
       <span>
-        Made for everyday shopping.
+        Product data managed through our admin catalog.
       </span>
 
     </div>
@@ -1480,1184 +1815,1016 @@
 
 </footer>
 
-<!-- ---------- Cart overlay ---------- -->
+<!-- =========================================================
+     CART DRAWER
+     ========================================================= -->
 
-<div class="overlay" id="overlay"></div>
+<div
+  class="overlay"
+  id="overlay"
+></div>
 
-<!-- ---------- Cart drawer ---------- -->
-
-<aside class="cart-drawer" id="cartDrawer">
+<div
+  class="drawer"
+  id="cartDrawer"
+>
 
   <div class="drawer-head">
 
-    <h3>Your Cart</h3>
+    <h3>
+      Your cart
+    </h3>
 
     <button
       class="drawer-close"
       id="drawerClose"
       type="button"
-      aria-label="Close cart">
+    >
       ×
     </button>
 
   </div>
 
-  <div class="cart-body" id="cartBody"></div>
+  <div
+    class="drawer-body"
+    id="cartBody"
+  ></div>
 
-  <div class="drawer-footer">
+  <div class="drawer-foot">
 
     <div class="subtotal-row">
 
-      <span>Subtotal</span>
+      <span>
+        Subtotal
+      </span>
 
-      <strong id="subtotalAmt">
+      <span id="subtotalAmt">
         ₹0
-      </strong>
+      </span>
 
     </div>
 
     <button
-      class="checkout-btn"
+      class="btn btn-primary"
+      style="width:100%;"
+      onclick="checkout()"
       type="button"
-      onclick="checkout()">
-      Proceed to checkout
+    >
+      Checkout
     </button>
 
   </div>
 
-</aside>
+</div>
+
+<!-- =========================================================
+     JAVASCRIPT
+     ========================================================= -->
 
 <script>
 
 /* =========================================================
-   FASHION_FUSSION HOME PAGE
+   CONFIG
    ========================================================= */
 
-/* ---------- Product data ---------- */
+const ADMIN_USER_ID =
+  "53165e6e-4e81-492e-9f9f-7a1611ee9801";
 
-const PRODUCTS = [
-  {
-    id:1,
-    name:"Portable Mini Blender",
-    cat:"Kitchen",
-    cost:199,
-    rating:4.6,
-    reviews:184,
-    img:"https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=700&q=80",
-    badge:"bestseller"
-  },
-  {
-    id:2,
-    name:"Silicone Back Scrubber",
-    cat:"Beauty",
-    cost:89,
-    rating:4.7,
-    reviews:312,
-    img:"https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=700&q=80",
-    badge:"bestseller"
-  },
-  {
-    id:3,
-    name:"Wooden Serving Tray",
-    cat:"Home",
-    cost:249,
-    rating:4.8,
-    reviews:127,
-    img:"https://images.unsplash.com/photo-1581428982868-e410f28a5626?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:4,
-    name:"LED Night Lamp",
-    cat:"Home",
-    cost:149,
-    rating:4.5,
-    reviews:205,
-    img:"https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=80",
-    badge:"new"
-  },
-  {
-    id:5,
-    name:"Travel Organiser Pouch",
-    cat:"Travel",
-    cost:129,
-    rating:4.7,
-    reviews:156,
-    img:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:6,
-    name:"Mini RC Helicopter",
-    cat:"Toys",
-    cost:499,
-    rating:4.4,
-    reviews:91,
-    img:"https://images.unsplash.com/photo-1567581935884-3349723552ca?auto=format&fit=crop&w=700&q=80",
-    badge:"new"
-  },
-  {
-    id:7,
-    name:"Makeup Storage Box",
-    cat:"Beauty",
-    cost:179,
-    rating:4.6,
-    reviews:173,
-    img:"https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:8,
-    name:"Decorative Storage Basket",
-    cat:"Home",
-    cost:299,
-    rating:4.8,
-    reviews:118,
-    img:"https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:9,
-    name:"Kitchen Spice Rack",
-    cat:"Kitchen",
-    cost:229,
-    rating:4.5,
-    reviews:144,
-    img:"https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:10,
-    name:"Foldable Travel Bottle Set",
-    cat:"Travel",
-    cost:109,
-    rating:4.6,
-    reviews:88,
-    img:"https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:11,
-    name:"Cotton Cushion Cover",
-    cat:"Home",
-    cost:99,
-    rating:4.7,
-    reviews:201,
-    img:"https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:12,
-    name:"Pooja Singhasan",
-    cat:"Pooja",
-    cost:349,
-    rating:4.8,
-    reviews:73,
-    img:"https://images.unsplash.com/photo-1604608672516-f1b9c4e9f1b1?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:13,
-    name:"Makhan Matki Decor",
-    cat:"Pooja",
-    cost:199,
-    rating:4.7,
-    reviews:102,
-    img:"https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:14,
-    name:"Bamboo Desk Organiser",
-    cat:"Office",
-    cost:189,
-    rating:4.6,
-    reviews:97,
-    img:"https://images.unsplash.com/photo-1497215842964-222b430dc094?auto=format&fit=crop&w=700&q=80",
-    badge:"bestseller"
-  },
-  {
-    id:15,
-    name:"Premium Pencil Case",
-    cat:"Office",
-    cost:79,
-    rating:4.8,
-    reviews:238,
-    img:"https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:16,
-    name:"Reusable Shopping Bag",
-    cat:"Travel",
-    cost:69,
-    rating:4.5,
-    reviews:155,
-    img:"https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:17,
-    name:"Ceramic Coffee Mug",
-    cat:"Kitchen",
-    cost:119,
-    rating:4.8,
-    reviews:286,
-    img:"https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?auto=format&fit=crop&w=700&q=80",
-    badge:"bestseller"
-  },
-  {
-    id:18,
-    name:"Wall Hanging Decor",
-    cat:"Decor",
-    cost:219,
-    rating:4.6,
-    reviews:86,
-    img:"https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:19,
-    name:"Desk Phone Stand",
-    cat:"Office",
-    cost:99,
-    rating:4.7,
-    reviews:174,
-    img:"https://images.unsplash.com/photo-1586953208448-b95a79798f07?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:20,
-    name:"Face Roller",
-    cat:"Beauty",
-    cost:139,
-    rating:4.5,
-    reviews:129,
-    img:"https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:21,
-    name:"Makeup Brush Set",
-    cat:"Beauty",
-    cost:159,
-    rating:4.7,
-    reviews:193,
-    img:"https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:22,
-    name:"Kitchen Oil Dispenser",
-    cat:"Kitchen",
-    cost:159,
-    rating:4.6,
-    reviews:143,
-    img:"https://images.unsplash.com/photo-1584990347449-a1a5f2b1e7a6?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:23,
-    name:"Wooden Hanger Set",
-    cat:"Home",
-    cost:179,
-    rating:4.7,
-    reviews:84,
-    img:"https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:24,
-    name:"Travel Neck Pillow",
-    cat:"Travel",
-    cost:249,
-    rating:4.6,
-    reviews:134,
-    img:"https://images.unsplash.com/photo-1514416432279-50fac261c7e1?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:25,
-    name:"Mini Table Clock",
-    cat:"Decor",
-    cost:149,
-    rating:4.5,
-    reviews:74,
-    img:"https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:26,
-    name:"Artificial Green Plant",
-    cat:"Decor",
-    cost:189,
-    rating:4.7,
-    reviews:114,
-    img:"https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:27,
-    name:"Storage Container Set",
-    cat:"Kitchen",
-    cost:299,
-    rating:4.8,
-    reviews:218,
-    img:"https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=700&q=80",
-    badge:"bestseller"
-  },
-  {
-    id:28,
-    name:"Bathroom Organiser",
-    cat:"Home",
-    cost:129,
-    rating:4.6,
-    reviews:109,
-    img:"https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:29,
-    name:"Hair Styling Comb",
-    cat:"Beauty",
-    cost:59,
-    rating:4.4,
-    reviews:89,
-    img:"https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:30,
-    name:"Decorative Candle",
-    cat:"Decor",
-    cost:119,
-    rating:4.8,
-    reviews:176,
-    img:"https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:31,
-    name:"Lunch Box",
-    cat:"Kitchen",
-    cost:199,
-    rating:4.7,
-    reviews:207,
-    img:"https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:32,
-    name:"Travel Toiletry Kit",
-    cat:"Travel",
-    cost:159,
-    rating:4.6,
-    reviews:94,
-    img:"https://images.unsplash.com/photo-1556229010-aa3f7ff66d71?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:33,
-    name:"Wireless Desk Lamp",
-    cat:"Office",
-    cost:399,
-    rating:4.7,
-    reviews:126,
-    img:"https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=80",
-    badge:"new"
-  },
-  {
-    id:34,
-    name:"Sticky Notes Pack",
-    cat:"Office",
-    cost:49,
-    rating:4.5,
-    reviews:203,
-    img:"https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:35,
-    name:"Cloth Storage Box",
-    cat:"Home",
-    cost:149,
-    rating:4.6,
-    reviews:111,
-    img:"https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:36,
-    name:"Pooja Diya Set",
-    cat:"Pooja",
-    cost:129,
-    rating:4.8,
-    reviews:162,
-    img:"https://images.unsplash.com/photo-1604608672516-f1b9c4e9f1b1?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:37,
-    name:"Decorative Brass Bell",
-    cat:"Pooja",
-    cost:179,
-    rating:4.7,
-    reviews:83,
-    img:"https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:38,
-    name:"Kitchen Grater",
-    cat:"Kitchen",
-    cost:89,
-    rating:4.5,
-    reviews:141,
-    img:"https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:39,
-    name:"Silicone Kitchen Spatula",
-    cat:"Kitchen",
-    cost:79,
-    rating:4.7,
-    reviews:173,
-    img:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:40,
-    name:"Mini Makeup Mirror",
-    cat:"Beauty",
-    cost:99,
-    rating:4.6,
-    reviews:132,
-    img:"https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:41,
-    name:"Cosmetic Travel Pouch",
-    cat:"Beauty",
-    cost:119,
-    rating:4.7,
-    reviews:102,
-    img:"https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:42,
-    name:"Foldable Laundry Basket",
-    cat:"Home",
-    cost:229,
-    rating:4.6,
-    reviews:93,
-    img:"https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:43,
-    name:"Travel Shoe Bag",
-    cat:"Travel",
-    cost:89,
-    rating:4.5,
-    reviews:76,
-    img:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:44,
-    name:"Passport Holder",
-    cat:"Travel",
-    cost:139,
-    rating:4.7,
-    reviews:118,
-    img:"https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:45,
-    name:"Mini Desk Calendar",
-    cat:"Office",
-    cost:69,
-    rating:4.5,
-    reviews:67,
-    img:"https://images.unsplash.com/photo-1495364141860-b0d03eccd065?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:46,
-    name:"Document Folder",
-    cat:"Office",
-    cost:89,
-    rating:4.6,
-    reviews:112,
-    img:"https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:47,
-    name:"Wall Photo Frame",
-    cat:"Decor",
-    cost:159,
-    rating:4.8,
-    reviews:124,
-    img:"https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:48,
-    name:"Decorative Vase",
-    cat:"Decor",
-    cost:199,
-    rating:4.7,
-    reviews:86,
-    img:"https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:49,
-    name:"Pooja Thali Set",
-    cat:"Pooja",
-    cost:299,
-    rating:4.8,
-    reviews:154,
-    img:"https://images.unsplash.com/photo-1604608672516-f1b9c4e9f1b1?auto=format&fit=crop&w=700&q=80",
-    badge:"bestseller"
-  },
-  {
-    id:50,
-    name:"Decorative Pooja Bell",
-    cat:"Pooja",
-    cost:149,
-    rating:4.7,
-    reviews:81,
-    img:"https://images.unsplash.com/photo-1604608672516-f1b9c4e9f1b1?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:51,
-    name:"Mini Storage Drawer",
-    cat:"Home",
-    cost:179,
-    rating:4.6,
-    reviews:99,
-    img:"https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:52,
-    name:"Hand Towel Set",
-    cat:"Home",
-    cost:129,
-    rating:4.7,
-    reviews:141,
-    img:"https://images.unsplash.com/photo-1600369671236-e74521d4b4ad?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:53,
-    name:"Portable Cosmetic Mirror",
-    cat:"Beauty",
-    cost:109,
-    rating:4.6,
-    reviews:83,
-    img:"https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:54,
-    name:"Hair Accessories Set",
-    cat:"Beauty",
-    cost:79,
-    rating:4.7,
-    reviews:156,
-    img:"https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:55,
-    name:"Kids Building Blocks",
-    cat:"Toys",
-    cost:299,
-    rating:4.8,
-    reviews:174,
-    img:"https://images.unsplash.com/photo-1594784053286-79f5d9f9d8a1?auto=format&fit=crop&w=700&q=80",
-    badge:"bestseller"
-  },
-  {
-    id:56,
-    name:"Kids Activity Set",
-    cat:"Toys",
-    cost:249,
-    rating:4.6,
-    reviews:96,
-    img:"https://images.unsplash.com/photo-1596464716127-f2a82984de30?auto=format&fit=crop&w=700&q=80"
-  },
-  {
-    id:57,
-    name:"Mini Decorative Showpiece",
-    cat:"Decor",
-    cost:139,
-    rating:4.7,
-    reviews:104,
-    img:"https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=700&q=80"
-  }
-];
 
-/* ---------- Categories ---------- */
+/* =========================================================
+   PRICING
+   Same formula used by Admin Panel
+   ========================================================= */
 
-const CATEGORIES = [
-  "All",
-  "Home",
-  "Kitchen",
-  "Beauty",
-  "Travel",
-  "Office",
-  "Decor",
-  "Pooja",
-  "Toys"
-];
+const GATEWAY_FEE_PCT = 0.02;
+const PACKING_FEE = 12;
+const MARGIN_PCT = 0.50;
 
-/* ---------- Category photos ---------- */
+function landedCost(cost){
 
-const CAT_PHOTOS = {
-  Home:
-    "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=900&q=85",
+  return (
+    Number(cost || 0) +
+    Number(cost || 0) * GATEWAY_FEE_PCT +
+    PACKING_FEE
+  );
 
-  Kitchen:
-    "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=900&q=85",
+}
 
-  Beauty:
-    "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=85",
+function sellingPrice(cost){
 
-  Travel:
-    "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=900&q=85",
+  return Math.ceil(
+    landedCost(cost) *
+    (1 + MARGIN_PCT)
+  );
 
-  Office:
-    "https://images.unsplash.com/photo-1497215842964-222b430dc094?auto=format&fit=crop&w=900&q=85",
+}
 
-  Decor:
-    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=85",
+function money(value){
 
-  Pooja:
-    "https://images.unsplash.com/photo-1604608672516-f1b9c4e9f1b1?auto=format&fit=crop&w=900&q=85",
+  return "₹" +
+    Number(value || 0)
+      .toLocaleString("en-IN");
 
-  Toys:
-    "https://images.unsplash.com/photo-1594784053286-79f5d9f9d8a1?auto=format&fit=crop&w=900&q=85"
-};
+}
 
-/* ---------- State ---------- */
+
+/* =========================================================
+   PRODUCT STATE
+   ========================================================= */
+
+let PRODUCTS = [];
+
+let CATEGORIES = ["All"];
 
 let activeCategory = "All";
 
-let cart = JSON.parse(
-  localStorage.getItem("ff_cart") || "{}"
-);
+let cart = {};
 
-/* ---------- Selling price ---------- */
 
-/*
-  Cost
-  + 2% cost handling
-  + ₹12
-  then 50% margin.
-*/
+/* =========================================================
+   CATEGORY VISUALS
+   ========================================================= */
 
-function sellingPrice(cost){
-  return Math.ceil(
-    (cost + cost * 0.02 + 12) * 1.50
-  );
-}
+const CAT_COLORS = {
 
-/* ---------- Placeholder ---------- */
+  "Home & Kitchen":"#C97D1B",
 
-function placeholderTile(p){
+  "Beauty & Personal Care":"#B23A2E",
 
-  const safeName = String(p.name || "Product")
+  "Home Decor & Pooja":"#7A5230",
+
+  "Toys & Stationery":"#2F5233",
+
+  "Auto & Travel":"#1B2A4A",
+
+  "Home Improvement":"#5B4B8A",
+
+  "Pet Care":"#0F6E63",
+
+  "Sports & Fitness":"#8A5A00"
+
+};
+
+
+const CAT_ICONS = {
+
+  "Home & Kitchen":"🍽️",
+
+  "Beauty & Personal Care":"✨",
+
+  "Home Decor & Pooja":"🪔",
+
+  "Toys & Stationery":"✏️",
+
+  "Auto & Travel":"🚗",
+
+  "Home Improvement":"🔧",
+
+  "Pet Care":"🐾",
+
+  "Sports & Fitness":"🏋️"
+
+};
+
+
+const CAT_PHOTOS = {
+
+  "Home & Kitchen":
+    "https://picsum.photos/seed/rozana-kitchen/500/400",
+
+  "Beauty & Personal Care":
+    "https://picsum.photos/seed/rozana-beauty/500/400",
+
+  "Home Decor & Pooja":
+    "https://picsum.photos/seed/rozana-decor/500/400",
+
+  "Toys & Stationery":
+    "https://picsum.photos/seed/rozana-stationery/500/400",
+
+  "Auto & Travel":
+    "https://picsum.photos/seed/rozana-auto/500/400",
+
+  "Home Improvement":
+    "https://picsum.photos/seed/rozana-improve/500/400",
+
+  "Pet Care":
+    "https://picsum.photos/seed/rozana-pet/500/400",
+
+  "Sports & Fitness":
+    "https://picsum.photos/seed/rozana-fitness/500/400"
+
+};
+
+
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
+function escapeHtml(value){
+
+  return String(value ?? "")
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;")
-    .slice(0,24);
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+}
+
+
+/* =========================================================
+   PLACEHOLDER IMAGE
+   ========================================================= */
+
+function placeholderTile(product){
+
+  const category =
+    product.category ||
+    "Home & Kitchen";
+
+  const bg =
+    CAT_COLORS[category] ||
+    "#4B5266";
+
+  const icon =
+    CAT_ICONS[category] ||
+    "🛍️";
 
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="600"
-         height="600"
-         viewBox="0 0 600 600">
-
-      <rect width="600" height="600" fill="#EAE1CC"/>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 400 400"
+    >
+      <rect
+        width="400"
+        height="400"
+        fill="${bg}"
+      />
 
       <text
-        x="300"
-        y="280"
+        x="200"
+        y="205"
+        font-size="120"
         text-anchor="middle"
-        font-family="Georgia"
-        font-size="30"
-        fill="#1B2A4A">
-        ${safeName}
+        dominant-baseline="middle"
+      >
+        ${icon}
       </text>
 
       <text
-        x="300"
-        y="325"
-        text-anchor="middle"
+        x="200"
+        y="358"
         font-family="Arial"
-        font-size="18"
-        fill="#4B5266">
-        Fashion_Fussion
+        font-size="15"
+        fill="#F4EEE1"
+        text-anchor="middle"
+        opacity=".8"
+      >
+        Photo pending upload
       </text>
-
     </svg>
   `;
 
-  return "data:image/svg+xml;charset=UTF-8," +
-    encodeURIComponent(svg);
+  return (
+    "data:image/svg+xml;utf8," +
+    encodeURIComponent(svg)
+  );
+
 }
 
-/* ---------- Ticker ---------- */
 
-const tickerItems = [
-  "Free shipping on qualifying orders",
-  "Honest prices, no fake discounts",
-  "Jaipur dispatch in 24 hours",
-  "Secure checkout",
-  "Everyday essentials, carefully sourced"
-];
+/* =========================================================
+   LOAD PRODUCTS FROM SUPABASE
+   ========================================================= */
 
-document.getElementById("tickerTrack").innerHTML =
-  tickerItems.concat(tickerItems)
-    .map(t => `<span>${t}</span>`)
-    .join("");
+async function loadProducts(){
 
-/* ---------- Hero thumbnails ---------- */
+  const productGrid =
+    document.getElementById("productGrid");
 
-const heroPicks = [
-  PRODUCTS[13],
-  PRODUCTS[16],
-  PRODUCTS[12],
-  PRODUCTS[5]
-];
+  if(!productGrid){
 
-document.getElementById("heroThumbs").innerHTML =
-  heroPicks
-    .map(p =>
-      `<img src="${p.img || placeholderTile(p)}" alt="${p.name}">`
-    )
-    .join("");
+    return;
 
-/* ---------- Category banners ---------- */
-
-const bannerCats = CATEGORIES.filter(
-  c => c !== "All"
-);
-
-document.getElementById("categoryBanners").innerHTML =
-  bannerCats.map(c => {
-
-    const count =
-      PRODUCTS.filter(p => p.cat === c).length;
-
-    return `
-      <div
-        class="cat-banner"
-        data-cat="${c}"
-        style="background-image:url('${CAT_PHOTOS[c]}');">
-
-        <span>
-          ${c}<br>
-          <small style="font-weight:500;opacity:.85;">
-            ${count} items
-          </small>
-        </span>
-
-      </div>
-    `;
-
-  }).join("");
-
-document
-  .getElementById("categoryBanners")
-  .addEventListener("click", e => {
-
-    const card =
-      e.target.closest(".cat-banner");
-
-    if(!card) return;
-
-    activeCategory =
-      card.dataset.cat;
-
-    document
-      .querySelectorAll(".chip")
-      .forEach(c =>
-        c.classList.toggle(
-          "active",
-          c.dataset.cat === activeCategory
-        )
-      );
-
-    renderGrid();
-
-    document
-      .getElementById("shop")
-      .scrollIntoView({
-        behavior:"smooth"
-      });
-  });
-
-/* ---------- Category chips ---------- */
-
-const chipsEl =
-  document.getElementById("categoryChips");
-
-chipsEl.innerHTML =
-  CATEGORIES.map(c => `
-    <button
-      class="chip ${c === "All" ? "active" : ""}"
-      data-cat="${c}"
-      type="button">
-      ${c}
-    </button>
-  `).join("");
-
-chipsEl.addEventListener("click", e => {
-
-  const btn =
-    e.target.closest(".chip");
-
-  if(!btn) return;
-
-  activeCategory =
-    btn.dataset.cat;
-
-  document
-    .querySelectorAll(".chip")
-    .forEach(c =>
-      c.classList.toggle(
-        "active",
-        c === btn
-      )
-    );
-
-  renderGrid();
-});
-
-/* ---------- Reviews ---------- */
-
-const REVIEWS = [
-  {
-    name:"Priya M.",
-    city:"Jaipur",
-    rating:5,
-    text:"Ordered the serving tray and the pencil case together — both exactly as pictured, and cheaper than what I'd pay at the local shop."
-  },
-  {
-    name:"Arjun S.",
-    city:"Jaipur",
-    rating:5,
-    text:"Liked that the price didn't have some fake 70% off sticker on it. Just told me what it costs."
-  },
-  {
-    name:"Neha K.",
-    city:"Jaipur",
-    rating:4,
-    text:"Got the RC helicopter for my nephew's birthday, arrived in three days, well packed."
-  },
-  {
-    name:"Rohit V.",
-    city:"Jaipur",
-    rating:5,
-    text:"The silicone back scrubber is genuinely good quality — didn't expect that at this price point."
-  },
-  {
-    name:"Simran K.",
-    city:"Jaipur",
-    rating:5,
-    text:"Bought a few pooja items for Diwali — the Makhan Matki and the Singhasan both looked better than the photos, honestly."
-  },
-  {
-    name:"Deepak T.",
-    city:"Jaipur",
-    rating:4,
-    text:"Ordering was simple and the cart total matched what I paid — no surprise charges at checkout."
   }
-];
 
-document.getElementById("reviewsGrid").innerHTML =
-  REVIEWS.map(r => `
+  productGrid.innerHTML = `
+    <div class="product-message">
 
-    <div class="testimonial">
-
-      <div class="testimonial-head">
-
-        <div class="avatar">
-          ${r.name
-            .split(" ")
-            .map(w => w[0])
-            .join("")}
-        </div>
-
-        <div>
-
-          <div class="stars">
-            ${"★".repeat(r.rating)}
-            ${"☆".repeat(5-r.rating)}
-          </div>
-
-          <div class="who">
-            ${r.name}, ${r.city}
-          </div>
-
-        </div>
-
-      </div>
+      <h3>
+        Loading products
+      </h3>
 
       <p>
-        "${r.text}"
+        Loading active products from Supabase...
       </p>
 
     </div>
+  `;
 
-  `).join("");
 
-/* ---------- Money ---------- */
+  try{
 
-function money(n){
-  return "₹" +
-    Number(n).toLocaleString("en-IN");
-}
+    const {
+      data,
+      error
+    } = await supabaseClient
 
-/* ---------- Product grid ---------- */
+      .from("products")
 
-function renderGrid(){
+      .select(`
+        id,
+        name,
+        category,
+        cost,
+        price,
+        rating,
+        reviews,
+        image_url,
+        badge,
+        is_active,
+        description
+      `)
 
-  const list =
-    activeCategory === "All"
-      ? PRODUCTS
-      : PRODUCTS.filter(
-          p => p.cat === activeCategory
-        );
+      .eq("is_active", true)
 
-  document.getElementById("gridHeading")
-    .textContent =
-      activeCategory === "All"
-        ? "All products"
-        : activeCategory;
+      .order("id", {
+        ascending:false
+      });
 
-  document.getElementById("gridSub")
-    .textContent =
-      `${list.length} item${list.length === 1 ? "" : "s"} in this category · showing ${PRODUCTS.length} of DeoDap's 50,000+ SKU catalog.`;
 
-  document.getElementById("productGrid").innerHTML =
-    list.map(p => {
+    if(error){
 
-      const price =
-        sellingPrice(p.cost);
+      throw error;
 
-      const img =
-        p.img || placeholderTile(p);
+    }
 
-      return `
 
-        <div class="card">
+    PRODUCTS =
+      Array.isArray(data)
+        ? data
+        : [];
 
-          <div class="card-media">
 
-            ${
-              p.badge
-                ? `
-                  <span class="tag ${p.badge}">
-                    ${
-                      p.badge === "new"
-                        ? "NEW"
-                        : "BESTSELLER"
-                    }
-                  </span>
-                `
-                : ""
-            }
+    buildCategories();
 
-            <img
-              src="${img}"
-              alt="${p.name}"
-              loading="lazy">
+    renderCategoryBanners();
 
-          </div>
+    renderCategoryChips();
 
-          <div class="card-body">
+    updateHeroStats();
 
-            <div class="card-cat">
-              ${p.cat}
-            </div>
+    renderHeroThumbs();
 
-            <div class="card-title">
-              ${p.name}
-            </div>
-
-            <div class="card-rating">
-
-              <span class="stars">
-                ★ ${p.rating}
-              </span>
-
-              (${Number(p.reviews).toLocaleString("en-IN")})
-
-            </div>
-
-            <div class="card-price-row">
-
-              <span class="price">
-                ${money(price)}
-              </span>
-
-            </div>
-
-            <div class="card-actions">
-
-              <button
-                class="add-btn"
-                data-id="${p.id}"
-                type="button">
-                Add to cart
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      `;
-
-    }).join("");
-}
-
-renderGrid();
-
-/* ---------- Add to cart ---------- */
-
-document
-  .getElementById("productGrid")
-  .addEventListener("click", e => {
-
-    const btn =
-      e.target.closest(".add-btn");
-
-    if(!btn) return;
-
-    const id =
-      Number(btn.dataset.id);
-
-    cart[id] =
-      (cart[id] || 0) + 1;
-
-    localStorage.setItem(
-      "ff_cart",
-      JSON.stringify(cart)
-    );
-
-    btn.textContent =
-      "Added ✓";
-
-    btn.classList.add("added");
-
-    setTimeout(() => {
-
-      btn.textContent =
-        "Add to cart";
-
-      btn.classList.remove("added");
-
-    },900);
+    renderGrid();
 
     updateCartUI();
-  });
 
-/* ---------- Cart drawer ---------- */
+  }catch(error){
 
-const overlay =
-  document.getElementById("overlay");
-
-const drawer =
-  document.getElementById("cartDrawer");
-
-function openDrawer(){
-
-  overlay.classList.add("open");
-  drawer.classList.add("open");
-
-}
-
-function closeDrawer(){
-
-  overlay.classList.remove("open");
-  drawer.classList.remove("open");
-
-}
-
-document
-  .getElementById("cartOpenBtn")
-  .addEventListener(
-    "click",
-    openDrawer
-  );
-
-document
-  .getElementById("drawerClose")
-  .addEventListener(
-    "click",
-    closeDrawer
-  );
-
-overlay.addEventListener(
-  "click",
-  closeDrawer
-);
-
-/* ---------- Cart UI ---------- */
-
-function updateCartUI(){
-
-  const ids =
-    Object.keys(cart)
-      .filter(id => cart[id] > 0);
-
-  const totalQty =
-    ids.reduce(
-      (s,id) => s + cart[id],
-      0
+    console.error(
+      "Supabase product loading error:",
+      error
     );
 
-  document.getElementById("cartCount")
-    .textContent = totalQty;
+    PRODUCTS = [];
 
-  const body =
-    document.getElementById("cartBody");
+    CATEGORIES = ["All"];
 
-  if(ids.length === 0){
+    document.getElementById(
+      "heroProductCount"
+    ).textContent = "0";
 
-    body.innerHTML = `
-      <div class="empty-cart">
-        Your cart is empty.<br>
-        Browse the bazaar and add something.
+    document.getElementById(
+      "heroCategoryCount"
+    ).textContent = "0";
+
+
+    document.getElementById(
+      "gridHeading"
+    ).textContent =
+      "Products unavailable";
+
+
+    document.getElementById(
+      "gridSub"
+    ).textContent =
+      "Could not load products from Supabase.";
+
+
+    productGrid.innerHTML = `
+
+      <div class="product-message error">
+
+        <h3>
+          Products could not be loaded
+        </h3>
+
+        <p>
+          ${escapeHtml(
+            error.message ||
+            "Please check the Supabase products table and its public SELECT policy."
+          )}
+        </p>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   BUILD CATEGORIES FROM DATABASE
+   ========================================================= */
+
+function buildCategories(){
+
+  const set = new Set();
+
+  PRODUCTS.forEach(product => {
+
+    const category =
+      String(
+        product.category || ""
+      ).trim();
+
+    if(category){
+
+      set.add(category);
+
+    }
+
+  });
+
+
+  CATEGORIES = [
+    "All",
+    ...Array.from(set).sort()
+  ];
+
+}
+
+
+/* =========================================================
+   HERO STATS
+   ========================================================= */
+
+function updateHeroStats(){
+
+  document.getElementById(
+    "heroProductCount"
+  ).textContent =
+    PRODUCTS.length;
+
+
+  const categoryCount =
+    CATEGORIES.filter(
+      category => category !== "All"
+    ).length;
+
+
+  document.getElementById(
+    "heroCategoryCount"
+  ).textContent =
+    categoryCount;
+
+}
+
+
+/* =========================================================
+   TICKER
+   ========================================================= */
+
+function renderTicker(){
+
+  const ticker =
+    document.getElementById(
+      "tickerTrack"
+    );
+
+  const productCount =
+    PRODUCTS.length;
+
+
+  const categoryCount =
+    CATEGORIES.length - 1;
+
+
+  const items = [
+
+    "Fresh stock synced from our catalog",
+
+    `${productCount} active products live`,
+
+    `${categoryCount} categories stocked`,
+
+    "Free delivery above ₹599",
+
+    "Quality-checked before dispatch",
+
+    "Jaipur dispatch in 24 hours"
+
+  ];
+
+
+  ticker.innerHTML =
+    items
+      .concat(items)
+      .map(
+        item =>
+          `<span>${escapeHtml(item)}</span>`
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   HERO THUMBNAILS
+   ========================================================= */
+
+function renderHeroThumbs(){
+
+  const container =
+    document.getElementById(
+      "heroThumbs"
+    );
+
+
+  if(!PRODUCTS.length){
+
+    container.innerHTML = `
+      <div class="product-message">
+
+        <h3>
+          No products yet
+        </h3>
+
+        <p>
+          Add your first product from Admin Panel.
+        </p>
+
       </div>
     `;
 
-  }else{
+    return;
 
-    body.innerHTML =
-      ids.map(id => {
+  }
 
-        const p =
-          PRODUCTS.find(
-            x => x.id === Number(id)
-          );
 
-        if(!p) return "";
+  const picks =
+    PRODUCTS.slice(0,4);
+
+
+  container.innerHTML =
+    picks
+      .map(product => {
+
+        const image =
+          product.image_url ||
+          placeholderTile(product);
+
 
         return `
 
-          <div class="cart-item">
+          <img
+            src="${escapeHtml(image)}"
+            alt="${escapeHtml(product.name)}"
+            loading="lazy"
+            onerror="
+              this.onerror=null;
+              this.src='${placeholderTile(product)}';
+            "
+          >
 
-            <img
-              src="${p.img || placeholderTile(p)}"
-              alt="${p.name}">
+        `;
 
-            <div class="cart-item-info">
+      })
+      .join("");
 
-              <div class="name">
-                ${p.name}
+}
+
+
+/* =========================================================
+   CATEGORY BANNERS
+   ========================================================= */
+
+function renderCategoryBanners(){
+
+  const container =
+    document.getElementById(
+      "categoryBanners"
+    );
+
+
+  const categories =
+    CATEGORIES.filter(
+      category => category !== "All"
+    );
+
+
+  if(!categories.length){
+
+    container.innerHTML = `
+      <div class="product-message">
+
+        <h3>
+          No categories yet
+        </h3>
+
+        <p>
+          Categories will appear automatically
+          when you add products from Admin Panel.
+        </p>
+
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    categories
+      .map(category => {
+
+        const count =
+          PRODUCTS.filter(
+            product =>
+              product.category === category
+          ).length;
+
+
+        const photo =
+          CAT_PHOTOS[category] ||
+          "https://picsum.photos/seed/fashion-fussion-category/500/400";
+
+
+        return `
+
+          <div
+            class="cat-banner"
+            data-cat="${escapeHtml(category)}"
+            style="
+              background-image:url('${photo}');
+            "
+          >
+
+            <span>
+
+              ${escapeHtml(category)}
+
+              <br>
+
+              <small
+                style="
+                  font-weight:500;
+                  opacity:.85;
+                "
+              >
+                ${count}
+                item${count === 1 ? "" : "s"}
+              </small>
+
+            </span>
+
+          </div>
+
+        `;
+
+      })
+      .join("");
+
+}
+
+
+/* =========================================================
+   CATEGORY CHIPS
+   ========================================================= */
+
+function renderCategoryChips(){
+
+  const chips =
+    document.getElementById(
+      "categoryChips"
+    );
+
+
+  chips.innerHTML =
+    CATEGORIES
+      .map(category => `
+
+        <button
+          class="chip ${
+            category === "All"
+              ? "active"
+              : ""
+          }"
+          data-cat="${escapeHtml(category)}"
+          type="button"
+        >
+          ${escapeHtml(category)}
+        </button>
+
+      `)
+      .join("");
+
+}
+
+
+/* =========================================================
+   CATEGORY BANNER CLICK
+   ========================================================= */
+
+document
+  .getElementById("categoryBanners")
+  .addEventListener(
+    "click",
+    function(event){
+
+      const card =
+        event.target.closest(
+          ".cat-banner"
+        );
+
+
+      if(!card){
+
+        return;
+
+      }
+
+
+      activeCategory =
+        card.dataset.cat;
+
+
+      document
+        .querySelectorAll(".chip")
+        .forEach(chip => {
+
+          chip.classList.toggle(
+            "active",
+            chip.dataset.cat ===
+            activeCategory
+          );
+
+        });
+
+
+      renderGrid();
+
+
+      document
+        .getElementById("shop")
+        .scrollIntoView({
+          behavior:"smooth"
+        });
+
+    }
+  );
+
+
+/* =========================================================
+   CATEGORY CHIP CLICK
+   ========================================================= */
+
+document
+  .getElementById("categoryChips")
+  .addEventListener(
+    "click",
+    function(event){
+
+      const button =
+        event.target.closest(
+          ".chip"
+        );
+
+
+      if(!button){
+
+        return;
+
+      }
+
+
+      activeCategory =
+        button.dataset.cat;
+
+
+      document
+        .querySelectorAll(".chip")
+        .forEach(chip => {
+
+          chip.classList.toggle(
+            "active",
+            chip === button
+          );
+
+        });
+
+
+      renderGrid();
+
+    }
+  );
+
+
+/* =========================================================
+   PRODUCT GRID
+   ========================================================= */
+
+function renderGrid(){
+
+  const grid =
+    document.getElementById(
+      "productGrid"
+    );
+
+
+  let list =
+    activeCategory === "All"
+
+      ? PRODUCTS
+
+      : PRODUCTS.filter(
+          product =>
+            product.category ===
+            activeCategory
+        );
+
+
+  document.getElementById(
+    "gridHeading"
+  ).textContent =
+    activeCategory === "All"
+      ? "All products"
+      : activeCategory;
+
+
+  document.getElementById(
+    "gridSub"
+  ).textContent =
+    `${list.length} active item${
+      list.length === 1 ? "" : "s"
+    } in this category.`;
+
+
+  if(!list.length){
+
+    grid.innerHTML = `
+
+      <div class="product-message">
+
+        <h3>
+          No products here yet
+        </h3>
+
+        <p>
+          There are currently no active products
+          in this category.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  grid.innerHTML =
+    list
+      .map(product => {
+
+        const price =
+          Number(product.price) > 0
+
+            ? Number(product.price)
+
+            : sellingPrice(
+                Number(product.cost || 0)
+              );
+
+
+        const image =
+          product.image_url ||
+          placeholderTile(product);
+
+
+        const rating =
+          Number(product.rating || 0);
+
+
+        const reviews =
+          Number(product.reviews || 0);
+
+
+        const badge =
+          product.badge;
+
+
+        return `
+
+          <div
+            class="card"
+            data-product-id="${escapeHtml(product.id)}"
+          >
+
+            <div class="card-media">
+
+              ${
+                badge
+
+                  ? `
+
+                    <span
+                      class="tag ${
+                        badge === "best"
+                          ? "best"
+                          : "new"
+                      }"
+                    >
+                      ${
+                        badge === "best"
+                          ? "BESTSELLER"
+                          : "NEW"
+                      }
+                    </span>
+
+                  `
+
+                  : ""
+              }
+
+
+              <img
+                src="${escapeHtml(image)}"
+                alt="${escapeHtml(product.name)}"
+                loading="lazy"
+                onerror="
+                  this.onerror=null;
+                  this.src='${placeholderTile(product)}';
+                "
+              >
+
+            </div>
+
+
+            <div class="card-body">
+
+              <div class="card-cat">
+                ${escapeHtml(
+                  product.category ||
+                  ""
+                )}
               </div>
 
-              <div>
-                ${money(sellingPrice(p.cost))}
+
+              <div class="card-title">
+                ${escapeHtml(
+                  product.name
+                )}
               </div>
 
-              <div class="qty-row">
 
-                <button
-                  class="qty-btn"
-                  data-act="dec"
-                  data-id="${p.id}"
-                  type="button">
-                  −
-                </button>
+              <div class="card-rating">
 
-                <span>
-                  ${cart[id]}
+                <span class="stars">
+                  ★ ${rating.toFixed(1)}
                 </span>
 
-                <button
-                  class="qty-btn"
-                  data-act="inc"
-                  data-id="${p.id}"
-                  type="button">
-                  +
-                </button>
+                ${
+                  reviews > 0
+                    ? `(${reviews.toLocaleString("en-IN")})`
+                    : ""
+                }
+
+              </div>
+
+
+              <div class="card-price-row">
+
+                <span class="price">
+                  ${money(price)}
+                </span>
+
+              </div>
+
+
+              <div class="card-actions">
 
                 <button
-                  class="remove-btn"
-                  data-act="remove"
-                  data-id="${p.id}"
-                  type="button">
-                  Remove
+                  class="add-btn"
+                  data-id="${escapeHtml(product.id)}"
+                  type="button"
+                >
+                  Add to cart
                 </button>
 
               </div>
@@ -2668,160 +2835,630 @@ function updateCartUI(){
 
         `;
 
-      }).join("");
-  }
+      })
+      .join("");
 
-  const subtotal =
-    ids.reduce((s,id) => {
-
-      const p =
-        PRODUCTS.find(
-          x => x.id === Number(id)
-        );
-
-      if(!p) return s;
-
-      return s +
-        sellingPrice(p.cost) *
-        cart[id];
-
-    },0);
-
-  document.getElementById("subtotalAmt")
-    .textContent =
-      money(subtotal);
 }
 
-updateCartUI();
 
-/* ---------- Cart quantity controls ---------- */
+/* =========================================================
+   ADD TO CART
+   ========================================================= */
+
+document
+  .getElementById("productGrid")
+  .addEventListener(
+    "click",
+    function(event){
+
+      const button =
+        event.target.closest(
+          ".add-btn"
+        );
+
+
+      if(!button){
+
+        return;
+
+      }
+
+
+      const id =
+        String(
+          button.dataset.id
+        );
+
+
+      cart[id] =
+        (cart[id] || 0) + 1;
+
+
+      button.textContent =
+        "Added ✓";
+
+
+      button.classList.add(
+        "added"
+      );
+
+
+      setTimeout(() => {
+
+        button.textContent =
+          "Add to cart";
+
+        button.classList.remove(
+          "added"
+        );
+
+      },900);
+
+
+      updateCartUI();
+
+    }
+  );
+
+
+/* =========================================================
+   CART DRAWER
+   ========================================================= */
+
+const overlay =
+  document.getElementById(
+    "overlay"
+  );
+
+const drawer =
+  document.getElementById(
+    "cartDrawer"
+  );
+
+
+function openDrawer(){
+
+  overlay.classList.add(
+    "open"
+  );
+
+  drawer.classList.add(
+    "open"
+  );
+
+}
+
+
+function closeDrawer(){
+
+  overlay.classList.remove(
+    "open"
+  );
+
+  drawer.classList.remove(
+    "open"
+  );
+
+}
+
+
+document
+  .getElementById("cartOpenBtn")
+  .addEventListener(
+    "click",
+    openDrawer
+  );
+
+
+document
+  .getElementById("drawerClose")
+  .addEventListener(
+    "click",
+    closeDrawer
+  );
+
+
+overlay.addEventListener(
+  "click",
+  closeDrawer
+);
+
+
+/* =========================================================
+   CART UI
+   ========================================================= */
+
+function updateCartUI(){
+
+  const ids =
+    Object.keys(cart)
+      .filter(
+        id => cart[id] > 0
+      );
+
+
+  const totalQty =
+    ids.reduce(
+      (total,id) =>
+        total + cart[id],
+      0
+    );
+
+
+  document.getElementById(
+    "cartCount"
+  ).textContent =
+    totalQty;
+
+
+  const body =
+    document.getElementById(
+      "cartBody"
+    );
+
+
+  if(!ids.length){
+
+    body.innerHTML = `
+
+      <div class="empty-cart">
+
+        Your cart is empty.
+
+        <br>
+
+        Browse the bazaar
+        and add something.
+
+      </div>
+
+    `;
+
+  }else{
+
+    body.innerHTML =
+      ids
+        .map(id => {
+
+          const product =
+            PRODUCTS.find(
+              item =>
+                String(item.id) ===
+                String(id)
+            );
+
+
+          if(!product){
+
+            return "";
+
+          }
+
+
+          const price =
+            Number(product.price) > 0
+
+              ? Number(product.price)
+
+              : sellingPrice(
+                  Number(product.cost || 0)
+                );
+
+
+          const image =
+            product.image_url ||
+            placeholderTile(product);
+
+
+          return `
+
+            <div class="cart-item">
+
+              <img
+                src="${escapeHtml(image)}"
+                alt="${escapeHtml(product.name)}"
+              >
+
+              <div class="cart-item-info">
+
+                <div class="name">
+                  ${escapeHtml(product.name)}
+                </div>
+
+                <div>
+                  ${money(price)}
+                </div>
+
+                <div class="qty-row">
+
+                  <button
+                    class="qty-btn"
+                    data-act="dec"
+                    data-id="${escapeHtml(id)}"
+                    type="button"
+                  >
+                    −
+                  </button>
+
+                  <span>
+                    ${cart[id]}
+                  </span>
+
+                  <button
+                    class="qty-btn"
+                    data-act="inc"
+                    data-id="${escapeHtml(id)}"
+                    type="button"
+                  >
+                    +
+                  </button>
+
+                  <button
+                    class="remove-btn"
+                    data-act="remove"
+                    data-id="${escapeHtml(id)}"
+                    type="button"
+                  >
+                    Remove
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          `;
+
+        })
+        .join("");
+
+  }
+
+
+  const subtotal =
+    ids.reduce(
+      (total,id) => {
+
+        const product =
+          PRODUCTS.find(
+            item =>
+              String(item.id) ===
+              String(id)
+          );
+
+
+        if(!product){
+
+          return total;
+
+        }
+
+
+        const price =
+          Number(product.price) > 0
+
+            ? Number(product.price)
+
+            : sellingPrice(
+                Number(product.cost || 0)
+              );
+
+
+        return (
+          total +
+          price * cart[id]
+        );
+
+      },
+      0
+    );
+
+
+  document.getElementById(
+    "subtotalAmt"
+  ).textContent =
+    money(subtotal);
+
+}
+
+
+/* =========================================================
+   CART BUTTONS
+   ========================================================= */
 
 document
   .getElementById("cartBody")
-  .addEventListener("click", e => {
+  .addEventListener(
+    "click",
+    function(event){
 
-    const btn =
-      e.target.closest(
-        "button[data-act]"
-      );
-
-    if(!btn) return;
-
-    const id =
-      btn.dataset.id;
-
-    const act =
-      btn.dataset.act;
-
-    if(act === "inc"){
-      cart[id] =
-        (cart[id] || 0) + 1;
-    }
-
-    if(act === "dec"){
-      cart[id] =
-        Math.max(
-          0,
-          (cart[id] || 0) - 1
+      const button =
+        event.target.closest(
+          "button[data-act]"
         );
+
+
+      if(!button){
+
+        return;
+
+      }
+
+
+      const id =
+        String(
+          button.dataset.id
+        );
+
+
+      const action =
+        button.dataset.act;
+
+
+      if(action === "inc"){
+
+        cart[id] =
+          (cart[id] || 0) + 1;
+
+      }
+
+
+      if(action === "dec"){
+
+        cart[id] =
+          Math.max(
+            0,
+            (cart[id] || 0) - 1
+          );
+
+      }
+
+
+      if(action === "remove"){
+
+        cart[id] = 0;
+
+      }
+
+
+      updateCartUI();
+
     }
+  );
 
-    if(act === "remove"){
-      cart[id] = 0;
-    }
 
-    localStorage.setItem(
-      "ff_cart",
-      JSON.stringify(cart)
-    );
-
-    updateCartUI();
-  });
-
-/* ---------- Checkout ---------- */
+/* =========================================================
+   CHECKOUT
+   ========================================================= */
 
 function checkout(){
 
   const ids =
     Object.keys(cart)
-      .filter(id => cart[id] > 0);
+      .filter(
+        id => cart[id] > 0
+      );
 
-  if(ids.length === 0){
+
+  if(!ids.length){
 
     alert(
       "Your cart is empty — add a product first."
     );
 
     return;
+
   }
 
-  const subtotal =
-    ids.reduce((s,id) => {
 
-      const p =
-        PRODUCTS.find(
-          x => x.id === Number(id)
+  const subtotal =
+    ids.reduce(
+      (total,id) => {
+
+        const product =
+          PRODUCTS.find(
+            item =>
+              String(item.id) ===
+              String(id)
+          );
+
+
+        if(!product){
+
+          return total;
+
+        }
+
+
+        const price =
+          Number(product.price) > 0
+
+            ? Number(product.price)
+
+            : sellingPrice(
+                Number(product.cost || 0)
+              );
+
+
+        return (
+          total +
+          price * cart[id]
         );
 
-      if(!p) return s;
+      },
+      0
+    );
 
-      return s +
-        sellingPrice(p.cost) *
-        cart[id];
-
-    },0);
 
   alert(
-    `This is a demo storefront — checkout isn't wired to a payment gateway yet.\n\nCart total: ${money(subtotal)}\nItems: ${ids.reduce((s,id) => s + cart[id],0)}\n\nConnect Razorpay/Stripe here when you're ready to go live.`
+    `Cart total: ${money(subtotal)}
+
+Items: ${ids.reduce(
+  (total,id) =>
+    total + cart[id],
+  0
+)}
+
+Razorpay checkout will use these database products.`
   );
+
 }
 
+
 /* =========================================================
-   ACCOUNT / ADMIN NAVIGATION
+   REVIEWS
    ========================================================= */
 
-/*
-  IMPORTANT:
-  Admin identification is based on the verified Supabase UID,
-  NOT on email spelling.
+const REVIEWS = [
 
-  Current Fashion_Fussion admin UID:
-  53165e6e-4e81-492e-9f9f-7a1611ee9801
-*/
+  {
+    name:"Priya M.",
+    city:"Jaipur",
+    rating:5,
+    text:"Ordered the serving tray and the pencil case together — both exactly as pictured."
+  },
 
-const ADMIN_USER_ID =
-  "53165e6e-4e81-492e-9f9f-7a1611ee9801";
+  {
+    name:"Arjun S.",
+    city:"Jaipur",
+    rating:5,
+    text:"Liked that the price didn't have some fake discount sticker."
+  },
+
+  {
+    name:"Neha K.",
+    city:"Jaipur",
+    rating:4,
+    text:"Got the RC helicopter for my nephew's birthday, arrived well packed."
+  },
+
+  {
+    name:"Rohit V.",
+    city:"Jaipur",
+    rating:5,
+    text:"The silicone back scrubber is genuinely good quality."
+  },
+
+  {
+    name:"Simran K.",
+    city:"Jaipur",
+    rating:5,
+    text:"Bought a few pooja items and was happy with the quality."
+  },
+
+  {
+    name:"Deepak T.",
+    city:"Jaipur",
+    rating:4,
+    text:"Ordering was simple and the cart total was clear."
+  }
+
+];
+
+
+function renderReviews(){
+
+  document.getElementById(
+    "reviewsGrid"
+  ).innerHTML =
+
+    REVIEWS
+      .map(review => `
+
+        <div class="testimonial">
+
+          <div class="testimonial-head">
+
+            <div class="avatar">
+              ${escapeHtml(
+                review.name
+                  .split(" ")
+                  .map(word => word[0])
+                  .join("")
+              )}
+            </div>
+
+            <div>
+
+              <div class="stars">
+
+                ${"★".repeat(
+                  review.rating
+                )}
+
+                ${"☆".repeat(
+                  5 - review.rating
+                )}
+
+              </div>
+
+              <div class="who">
+
+                ${escapeHtml(
+                  review.name
+                )},
+
+                ${escapeHtml(
+                  review.city
+                )}
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <p>
+            "${escapeHtml(
+              review.text
+            )}"
+          </p>
+
+        </div>
+
+      `)
+      .join("");
+
+}
+
+
+/* =========================================================
+   ACCOUNT NAVIGATION
+   ========================================================= */
 
 async function updateAccountNavigation(){
 
   const accountNav =
-    document.getElementById("accountNav");
+    document.getElementById(
+      "accountNav"
+    );
 
   const accountFooterNav =
     document.getElementById(
       "accountFooterNav"
     );
 
+
   try{
 
-    /*
-      Get currently logged-in Supabase user.
-    */
-
     const {
-      data: { session },
-      error: sessionError
+      data:{
+        session
+      },
+      error:sessionError
     } =
-      await supabaseClient.auth.getSession();
+      await supabaseClient
+        .auth
+        .getSession();
+
 
     if(sessionError){
+
       throw sessionError;
+
     }
 
-    /*
-      User is NOT logged in.
-      Send Account links to login.
-    */
 
     if(!session || !session.user){
 
@@ -2835,6 +3472,7 @@ async function updateAccountNavigation(){
 
       }
 
+
       if(accountFooterNav){
 
         accountFooterNav.textContent =
@@ -2845,30 +3483,35 @@ async function updateAccountNavigation(){
 
       }
 
+
       return;
+
     }
+
 
     const user =
       session.user;
 
+
     let isAdmin = false;
 
-    /*
-      Only the exact known admin UID can enter
-      the admin-profile verification branch.
-    */
 
     if(user.id === ADMIN_USER_ID){
 
       const {
-        data: profile,
-        error: profileError
+        data:profile,
+        error:profileError
       } =
         await supabaseClient
+
           .from("profiles")
+
           .select("is_admin")
-          .eq("id", user.id)
+
+          .eq("id",user.id)
+
           .maybeSingle();
+
 
       if(
         !profileError &&
@@ -2878,20 +3521,10 @@ async function updateAccountNavigation(){
 
         isAdmin = true;
 
-      }else if(profileError){
-
-        console.error(
-          "Admin profile check failed:",
-          profileError
-        );
-
       }
 
     }
 
-    /*
-      ADMIN
-    */
 
     if(isAdmin){
 
@@ -2905,6 +3538,7 @@ async function updateAccountNavigation(){
 
       }
 
+
       if(accountFooterNav){
 
         accountFooterNav.textContent =
@@ -2915,13 +3549,7 @@ async function updateAccountNavigation(){
 
       }
 
-    }
-
-    /*
-      NORMAL CUSTOMER
-    */
-
-    else{
+    }else{
 
       if(accountNav){
 
@@ -2932,6 +3560,7 @@ async function updateAccountNavigation(){
           "account.html";
 
       }
+
 
       if(accountFooterNav){
 
@@ -2952,11 +3581,6 @@ async function updateAccountNavigation(){
       error
     );
 
-    /*
-      Safe fallback:
-      if Supabase check fails, never expose
-      the admin link.
-    */
 
     if(accountNav){
 
@@ -2967,6 +3591,7 @@ async function updateAccountNavigation(){
         "login.html";
 
     }
+
 
     if(accountFooterNav){
 
@@ -2982,24 +3607,47 @@ async function updateAccountNavigation(){
 
 }
 
-/*
-  Initial navigation check.
-*/
 
-updateAccountNavigation();
+/* =========================================================
+   INITIALIZE STORE
+   ========================================================= */
 
-/*
-  Re-check whenever Supabase authentication changes.
-*/
+async function initializeStore(){
 
-supabaseClient.auth.onAuthStateChange(() => {
+  renderReviews();
 
-  setTimeout(
-    updateAccountNavigation,
-    0
-  );
+  updateCartUI();
 
-});
+  await loadProducts();
+
+  renderTicker();
+
+  await updateAccountNavigation();
+
+}
+
+
+/* =========================================================
+   AUTH STATE
+   ========================================================= */
+
+supabaseClient.auth.onAuthStateChange(
+  function(){
+
+    setTimeout(
+      updateAccountNavigation,
+      0
+    );
+
+  }
+);
+
+
+/* =========================================================
+   START
+   ========================================================= */
+
+initializeStore();
 
 </script>
 
