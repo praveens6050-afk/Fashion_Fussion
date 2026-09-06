@@ -20,42 +20,45 @@ const DELIVERY_BELOW_THRESHOLD = 49;
   Product-specific GST rates.
 
   IMPORTANT:
-  These are configuration values for your store.
+  These are store configuration values.
   Confirm the final GST/HSN classification for each
   product with your tax/accounting adviser.
+
+  Current store configuration:
+  Product IDs 1-57 = 18% GST.
 */
 const GST_RATES = {
-  1: 18,  // Silicone sealant
-  2: 18,  // Hair towel
-  3: 12,  // Geometry box
-  4: 18,  // Serving plate set
-  5: 18,  // Pet accessory
-  6: 18,  // Decorative LED light
-  7: 18,  // Metal clamp
-  8: 18,  // Towel holder
-  9: 18,  // Travel bottle
+  1: 18,
+  2: 18,
+  3: 18,
+  4: 18,
+  5: 18,
+  6: 18,
+  7: 18,
+  8: 18,
+  9: 18,
   10: 18,
   11: 18,
   12: 18,
-  13: 18, // Electronic toy
-  14: 12,
-  15: 12,
+  13: 18,
+  14: 18,
+  15: 18,
   16: 18,
   17: 18,
   18: 18,
-  19: 12,
+  19: 18,
   20: 18,
   21: 18,
   22: 18,
   23: 18,
-  24: 12,
+  24: 18,
   25: 18,
   26: 18,
   27: 18,
   28: 18,
   29: 18,
   30: 18,
-  31: 12,
+  31: 18,
   32: 18,
   33: 18,
   34: 18,
@@ -354,7 +357,7 @@ async function calculate(items) {
 
       /*
         No MRP/discount field currently exists
-        in your products table/data.
+        in the products table.
 
         Therefore current discount = 0.
       */
@@ -384,6 +387,9 @@ async function calculate(items) {
         );
       }
 
+      /*
+        Calculate GST in paise-safe precision.
+      */
       const gstAmount =
         Math.round(
           taxableAmount *
@@ -407,6 +413,7 @@ async function calculate(items) {
 
       return {
         id: product.id,
+
         qty,
 
         name:
@@ -419,10 +426,15 @@ async function calculate(items) {
           product.image_url,
 
         mrp,
-        discount,
-        unit_price: price,
 
-        gst_rate: gstRate,
+        discount,
+
+        unit_price:
+          price,
+
+        gst_rate:
+          gstRate,
+
         gst_amount:
           gstAmount,
 
@@ -436,6 +448,7 @@ async function calculate(items) {
 
   /*
     Free delivery at/above ₹599.
+    Otherwise delivery = ₹49.
   */
   const delivery =
     subtotal >= DELIVERY_THRESHOLD
@@ -465,8 +478,7 @@ async function calculate(items) {
   }
 
   /*
-    Round monetary values to paise-safe
-    two-decimal values.
+    Round all monetary values to two decimals.
   */
   const roundMoney =
     value =>
@@ -475,7 +487,8 @@ async function calculate(items) {
       ) / 100;
 
   return {
-    items: normalized,
+    items:
+      normalized,
 
     subtotal:
       roundMoney(subtotal),
