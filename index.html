@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1046,13 +1047,31 @@
       border-top:1px solid var(--line);
     }
 
+    .cart-pricing{
+      margin-bottom:18px;
+    }
+
     .subtotal-row{
       display:flex;
       justify-content:space-between;
-      font-size:15px;
-      margin-bottom:14px;
-      font-weight:700;
+      gap:16px;
+      font-size:14px;
+      margin-bottom:10px;
       color:var(--indigo);
+    }
+
+    .subtotal-row span:last-child{
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    .cart-final-total{
+      border-top:1px solid var(--line);
+      padding-top:14px;
+      margin-top:12px;
+      margin-bottom:0;
+      font-size:17px;
+      font-weight:700;
     }
 
     .empty-cart{
@@ -1804,47 +1823,42 @@
 
     <div class="drawer-foot">
 
+      <!-- CART PRICING -->
       <div class="cart-pricing">
-  <div class="subtotal-row">
-    <span>Subtotal</span>
-    <span id="cartSubtotal">₹0</span>
-  </div>
 
-  <div class="subtotal-row">
-    <span>Discount</span>
-    <span id="cartDiscount">− ₹0</span>
-  </div>
+        <div class="subtotal-row">
+          <span>Subtotal</span>
+          <span id="cartSubtotal">₹0</span>
+        </div>
 
-  <div class="subtotal-row">
-    <span>GST</span>
-    <span id="cartGst">₹0</span>
-  </div>
+        <div class="subtotal-row">
+          <span>Discount</span>
+          <span id="cartDiscount">− ₹0</span>
+        </div>
 
-  <div class="subtotal-row">
-    <span>Delivery</span>
-    <span id="cartDelivery">₹0</span>
-  </div>
+        <div class="subtotal-row">
+          <span>GST</span>
+          <span id="cartGst">₹0</span>
+        </div>
 
-  <div class="subtotal-row">
-    <span>Other applicable charges</span>
-    <span id="cartOtherCharges">₹0</span>
-  </div>
+        <div class="subtotal-row">
+          <span>Delivery</span>
+          <span id="cartDelivery">₹0</span>
+        </div>
 
-  <div class="subtotal-row cart-final-total">
-    <strong>Final Amount</strong>
-    <strong id="cartTotal">₹0</strong>
-  </div>
-</div>
+        <div class="subtotal-row">
+          <span>Other applicable charges</span>
+          <span id="cartOtherCharges">₹0</span>
+        </div>
 
-<button
-  class="btn btn-primary"
-  style="width:100%;"
-  id="checkoutBtn"
-  type="button"
->
-  Checkout
-</button>
+        <div class="subtotal-row cart-final-total">
+          <strong>Final Amount</strong>
+          <strong id="cartTotal">₹0</strong>
+        </div>
 
+      </div>
+
+      <!-- ONLY ONE CHECKOUT BUTTON -->
       <button
         class="btn btn-primary"
         style="width:100%;"
@@ -1871,6 +1885,50 @@
 
     const ADMIN_USER_ID =
       "53165e6e-4e81-492e-9f9f-7a1611ee9801";
+
+
+    /* =========================================================
+       PRICING CONFIG
+       ========================================================= */
+
+    const DELIVERY_THRESHOLD = 599;
+
+    const DELIVERY_BELOW_THRESHOLD = 49;
+
+    const DISCOUNT_AMOUNT = 0;
+
+    const OTHER_CHARGES = 0;
+
+
+    /*
+      GST rates used for the cart display.
+
+      IMPORTANT:
+      These are the storefront calculation rates currently
+      configured for the supplied product categories.
+
+      The backend remains the authoritative amount for payment.
+    */
+
+    const GST_RATES = {
+
+      "Home Improvement": 0.18,
+
+      "Beauty & Personal Care": 0.18,
+
+      "Toys & Stationery": 0.18,
+
+      "Home & Kitchen": 0.18,
+
+      "Pet Care": 0.18,
+
+      "Home Decor & Pooja": 0.18,
+
+      "Auto & Travel": 0.18,
+
+      "Sports & Fitness": 0.18
+
+    };
 
 
     /* =========================================================
@@ -1921,6 +1979,7 @@
         );
 
         cart = {};
+
       }
 
     }
@@ -1959,7 +2018,11 @@
       return (
         "₹" +
         amount.toLocaleString(
-          "en-IN"
+          "en-IN",
+          {
+            minimumFractionDigits:0,
+            maximumFractionDigits:2
+          }
         )
       );
 
@@ -2254,6 +2317,7 @@
         `;
 
         return;
+
       }
 
       container.innerHTML =
@@ -2527,6 +2591,215 @@
           12
         ) * 1.5
       );
+
+    }
+
+
+    /* =========================================================
+       GST RATE
+       ========================================================= */
+
+    function getGstRate(product){
+
+      const category =
+        String(
+          product?.category || ""
+        ).trim();
+
+      return (
+        Number(
+          GST_RATES[category]
+        ) || 0
+      );
+
+    }
+
+
+    /* =========================================================
+       CALCULATE CART PRICING
+       ========================================================= */
+
+    function calculateCartPricing(){
+
+      let subtotal = 0;
+
+      let gst = 0;
+
+      const ids =
+        Object.keys(cart)
+          .filter(
+            id =>
+              Number(cart[id]) > 0
+          );
+
+
+      ids.forEach(
+        id => {
+
+          const product =
+            PRODUCTS.find(
+              item =>
+                String(item.id) ===
+                String(id)
+            );
+
+          if(!product){
+            return;
+          }
+
+          const quantity =
+            Number(
+              cart[id]
+            ) || 0;
+
+          const price =
+            productPrice(
+              product
+            );
+
+          const lineSubtotal =
+            price *
+            quantity;
+
+          subtotal +=
+            lineSubtotal;
+
+          const gstRate =
+            getGstRate(
+              product
+            );
+
+          gst +=
+            lineSubtotal *
+            gstRate;
+
+        }
+      );
+
+
+      const discount =
+        Math.min(
+          Math.max(
+            Number(
+              DISCOUNT_AMOUNT
+            ) || 0,
+            0
+          ),
+          subtotal
+        );
+
+
+      const taxableSubtotal =
+        Math.max(
+          subtotal -
+          discount,
+          0
+        );
+
+
+      /*
+        GST is calculated on the displayed
+        product subtotal after discount.
+      */
+
+      gst = 0;
+
+
+      ids.forEach(
+        id => {
+
+          const product =
+            PRODUCTS.find(
+              item =>
+                String(item.id) ===
+                String(id)
+            );
+
+          if(!product){
+            return;
+          }
+
+          const quantity =
+            Number(
+              cart[id]
+            ) || 0;
+
+          const price =
+            productPrice(
+              product
+            );
+
+          const lineSubtotal =
+            price *
+            quantity;
+
+          const proportion =
+            subtotal > 0
+              ? lineSubtotal /
+                subtotal
+              : 0;
+
+          const lineDiscount =
+            discount *
+            proportion;
+
+          const taxableLine =
+            Math.max(
+              lineSubtotal -
+              lineDiscount,
+              0
+            );
+
+          gst +=
+            taxableLine *
+            getGstRate(
+              product
+            );
+
+        }
+      );
+
+
+      const delivery =
+        taxableSubtotal <= 0
+          ? 0
+          : taxableSubtotal >=
+            DELIVERY_THRESHOLD
+              ? 0
+              : DELIVERY_BELOW_THRESHOLD;
+
+
+      const otherCharges =
+        Math.max(
+          Number(
+            OTHER_CHARGES
+          ) || 0,
+          0
+        );
+
+
+      const total =
+        taxableSubtotal +
+        gst +
+        delivery +
+        otherCharges;
+
+
+      return {
+
+        subtotal,
+
+        discount,
+
+        gst,
+
+        delivery,
+
+        otherCharges,
+
+        total
+
+      };
 
     }
 
@@ -2835,6 +3108,31 @@
           "cartCount"
         );
 
+      const cartSubtotal =
+        document.getElementById(
+          "cartSubtotal"
+        );
+
+      const cartDiscount =
+        document.getElementById(
+          "cartDiscount"
+        );
+
+      const cartGst =
+        document.getElementById(
+          "cartGst"
+        );
+
+      const cartDelivery =
+        document.getElementById(
+          "cartDelivery"
+        );
+
+      const cartOtherCharges =
+        document.getElementById(
+          "cartOtherCharges"
+        );
+
       const cartTotal =
         document.getElementById(
           "cartTotal"
@@ -2877,15 +3175,27 @@
           </div>
         `;
 
+        cartSubtotal.textContent =
+          "₹0";
+
+        cartDiscount.textContent =
+          "− ₹0";
+
+        cartGst.textContent =
+          "₹0";
+
+        cartDelivery.textContent =
+          "₹0";
+
+        cartOtherCharges.textContent =
+          "₹0";
+
         cartTotal.textContent =
           "₹0";
 
         return;
 
       }
-
-
-      let subtotal = 0;
 
 
       cartItems.innerHTML =
@@ -2915,10 +3225,6 @@
                 productPrice(
                   product
                 );
-
-              subtotal +=
-                price *
-                quantity;
 
 
               const image =
@@ -3005,9 +3311,50 @@
           .join("");
 
 
+      const pricing =
+        calculateCartPricing();
+
+
+      cartSubtotal.textContent =
+        money(
+          pricing.subtotal
+        );
+
+
+      cartDiscount.textContent =
+        pricing.discount > 0
+          ? "− " +
+            money(
+              pricing.discount
+            )
+          : "− ₹0";
+
+
+      cartGst.textContent =
+        money(
+          pricing.gst
+        );
+
+
+      cartDelivery.textContent =
+        pricing.delivery > 0
+          ? money(
+              pricing.delivery
+            )
+          : "FREE";
+
+
+      cartOtherCharges.textContent =
+        pricing.otherCharges > 0
+          ? money(
+              pricing.otherCharges
+            )
+          : "₹0";
+
+
       cartTotal.textContent =
         money(
-          subtotal
+          pricing.total
         );
 
     }
@@ -3080,6 +3427,8 @@
 
 
     function openCart(){
+
+      updateCartUI();
 
       cartOverlay.classList.add(
         "open"
@@ -3466,32 +3815,41 @@
 
 
         customerName =
-  String(
-    profile?.full_name ||
-    localStorage.getItem("customer_name") ||
-    ""
-  ).trim();
+          String(
+            profile?.full_name ||
+            localStorage.getItem("customer_name") ||
+            ""
+          ).trim();
 
-customerPhone =
-  String(
-    profile?.phone ||
-    localStorage.getItem("customer_phone") ||
-    ""
-  ).trim();
 
-if (customerName) {
-  localStorage.setItem(
-    "customer_name",
-    customerName
-  );
-}
+        customerPhone =
+          String(
+            profile?.phone ||
+            localStorage.getItem("customer_phone") ||
+            ""
+          ).trim();
 
-if (customerPhone) {
-  localStorage.setItem(
-    "customer_phone",
-    customerPhone
-  );
-}
+
+        if(customerName){
+
+          localStorage.setItem(
+            "customer_name",
+            customerName
+          );
+
+        }
+
+
+        if(customerPhone){
+
+          localStorage.setItem(
+            "customer_phone",
+            customerPhone
+          );
+
+        }
+
+
       }catch(error){
 
         console.error(
@@ -3636,6 +3994,24 @@ if (customerPhone) {
         );
 
         return;
+
+      }
+
+
+      /*
+        If the backend returns authoritative pricing,
+        log it for debugging but do not replace the
+        Razorpay amount calculated by the backend.
+      */
+
+      if(
+        orderData.pricing
+      ){
+
+        console.log(
+          "Server pricing:",
+          orderData.pricing
+        );
 
       }
 
@@ -4176,3 +4552,4 @@ if (customerPhone) {
 
 </body>
 </html>
+```
