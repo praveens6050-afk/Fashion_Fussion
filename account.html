@@ -1404,43 +1404,73 @@
         }
 
 
-if (profile) {
+        /* -----------------------------------------------
+           Load saved customer details
+           Supabase first, localStorage fallback
+           ----------------------------------------------- */
 
-  const savedName =
-    profile.full_name || "";
-
-  const savedPhone =
-    profile.phone || "";
-
-  $("fullName").value =
-    savedName;
-
-  $("phone").value =
-    savedPhone;
-
-  localStorage.setItem(
-    "customer_name",
-    savedName
-  );
-
-  localStorage.setItem(
-    "customer_phone",
-    savedPhone
-  );
+        const savedName =
+          String(
+            profile?.full_name ||
+            localStorage.getItem(
+              "customer_name"
+            ) ||
+            ""
+          ).trim();
 
 
-          /*
-           * Prefer authenticated email.
-           * This avoids problems if the profile
-           * email column is empty.
-           */
+        const savedPhone =
+          String(
+            profile?.phone ||
+            localStorage.getItem(
+              "customer_phone"
+            ) ||
+            ""
+          ).trim();
 
-          $("email").value =
-            currentUser.email ||
-            profile.email ||
-            "";
+
+        $("fullName").value =
+          savedName;
+
+
+        $("phone").value =
+          savedPhone;
+
+
+        /*
+         * Keep localStorage synchronized.
+         */
+
+        if (savedName) {
+
+          localStorage.setItem(
+            "customer_name",
+            savedName
+          );
 
         }
+
+
+        if (savedPhone) {
+
+          localStorage.setItem(
+            "customer_phone",
+            savedPhone
+          );
+
+        }
+
+
+        /*
+         * Prefer authenticated email.
+         * This avoids problems if the profile
+         * email column is empty.
+         */
+
+        $("email").value =
+          currentUser.email ||
+          profile?.email ||
+          "";
 
 
       } catch (error) {
@@ -1546,15 +1576,24 @@ if (profile) {
 
         }
 
-localStorage.setItem(
-  "customer_name",
-  fullName
-);
 
-localStorage.setItem(
-  "customer_phone",
-  phone
-);
+        /*
+         * Save customer details locally too.
+         * Checkout can use these as fallback.
+         */
+
+        localStorage.setItem(
+          "customer_name",
+          fullName
+        );
+
+
+        localStorage.setItem(
+          "customer_phone",
+          phone
+        );
+
+
         showProfileStatus(
           "Profile saved successfully."
         );
