@@ -3114,77 +3114,426 @@ function updateCartUI(){
         .join("");
 
   }
+async function checkout() {
 
+  const ids =
+    Object.keys(cart)
+      .filter(id => cart[id] > 0);
 
-  const subtotal =
-    ids.reduce(
-      (total,id) => {
-
-        const product =
-          PRODUCTS.find(
-            item =>
-              String(item.id) ===
-              String(id)
-          );
-
-
-        if(!product){
-
-          return total;
-
-        }
-
-
-        const price =
-          Number(product.price) > 0
-
-            ? Number(product.price)
-
-            : sellingPrice(
-                Number(product.cost || 0)
-              );
-
-
-        return (
-          total +
-          price * cart[id]
-        );
-
-      },
-      0
+  if (!ids.length) {
+    alert(
+      "Your cart is empty — add a product first."
     );
 
+    return;
+  }
 
-  document.getElementById(
-    "subtotalAmt"
-  ).textContent =
-    money(subtotal);
+  /*
+    User must be logged in because
+    verified orders are connected to
+    their Supabase account.
+  */
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabaseClient.auth.getSession();
 
-}
+  if (
+    sessionError ||
+    !sessionData?.session
+  ) {
+    const shouldLogin =
+      confirm(
+        "Please log in before checkout.\n\nOpen login page?"
+      );
 
+    if (shouldLogin) {
+      window.location.href =
+        "login.html";
+    }
 
-/* =========================================================
-   CART BUTTONS
-   ========================================================= */
+    return;
+  }
 
-document
-  .getElementById("cartBody")
-  .addEventListener(
-    "click",
-    function(event){
+  const session =
+    sessionData.session;
 
-      const button =
-        event.target.closest(
-          "button[data-act]"
+  const user =
+    session.user;
+
+  /*
+    Load customer profile.
+  */
+  let customerName = "";
+  let customerPhone = "";
+
+  try {
+
+    const {
+      data: profile,
+      error: profileError
+    } =
+      await supabaseClient
+        .from("profiles")
+        .select(
+          "full_name,phone"
+        )
+        .eq(
+          "id",
+          user.id
+        )
+        .maybeSingle();
+
+    if (
+      !profileError &&
+      profile
+    ) {
+      customerName =
+        String(
+          profile.full_name || ""
+        ).trim();
+
+      customerPhone =
+        String(
+          profile.phone || ""
+        ).trim();
+    }
+
+  } catch (error) {
+    console.warn(
+      "Profile load warning:",
+      error
+    );
+  }
+
+  /*
+    If profile doesn't contain details,
+    ask customer.
+  */
+  if (!customerName) {
+    customerName =
+      prompt(
+        "Enter your full name:"
+      );
+
+    if (!customerName) {
+      return;
+    }
+
+    customerName =
+      customerName.trim();
+  }
+
+  if (!customerPhone) {
+    customerPhone =
+      prompt(
+        "Enter your 10-digit mobile number:"
+      );
+
+    if (!customerPhone) {
+      return;
+    }
+
+    customerPhone =
+      customerPhone.trim();
+  }
+
+  /*
+    Prepare ONLY product IDs and quantities.
+
+    The backend will calculate the
+    real prices from Supabase.
+  */
+  const items =
+    ids.map(id => ({
+      id: id,
+      qty: Number(cart[id])
+    }));
+
+  const checkoutButton =
+    document.querySelector(
+      ".drawer-foot .btn-primary"
+    );
+
+  if (checkoutButton) {
+    checkoutButton.disabled = true;
+    checkoutButton.textContent =
+      "Preparing payment...";
+  }
+
+  try {
+
+    /*
+      1. Create Razorpay order
+         through our Vercel backend.
+    */
+    const createResponse =
+      await fetch(
+        "https://fashion-fussion-olive.vercel.app/api/create-order",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              "Bearer " +
+              session.access_token
+          },
+
+          body: JSON.stringify({
+            items,
+
+            customer_name:
+              customerName,
+
+            customer_phone:
+              customerPhone
+          })
+        }
+      );
+
+    const createData =
+      await createResponse.json();
+
+    if (
+      !createResponse.ok
+    ) {
+      throw new Error(
+        createData?.error ||
+        "Could not create payment order"
+      );
+    }
+
+    if (
+      !createData?.order?.id
+    ) {
+      throw new Error(
+        "Razorpay order ID was not returned"
+      );
+    }
+
+    /*
+      2. Open Razorpay checkout.
+    */
+    const options = {
+
+      key:
+        createData.key_id,
+
+      order_id:
+        createData.order.id,
+
+      amount:
+        createData.order.amount,
+
+      currency:
+        createData.order.currency ||
+        "INR",
+
+      name:
+        "Fashion_Fussion",
+
+      description:
+        "Fashion_Fussion order",
+
+      prefill: {
+        name:
+          customerName,
+
+        email:
+          user.email || "",
+
+        contact:
+          customerPhone
+      },
+
+      theme: {
+        color:
+          "#1B2A4A"
+      },
+
+      modal: {
+        ondismiss: function () {
+
+          if (checkoutButton) {
+            checkoutButton.disabled =
+              false;
+
+            checkoutButton.textContent =
+              "Checkout";
+          }
+        }
+      },
+
+      handler:
+        async function (
+          response
+        ) {
+
+          if (checkoutButton) {
+            checkoutButton.disabled =
+              true;
+
+            checkoutButton.textContent =
+              "Verifying payment...";
+          }
+
+          try {
+
+            /*
+              3. Verify payment
+                 on our server.
+            */
+            const verifyResponse =
+              await fetch(
+                "https://fashion-fussion-olive.vercel.app/api/verify-payment",
+                {
+                  method: "POST",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+
+                    Authorization:
+                      "Bearer " +
+                      session.access_token
+                  },
+
+                  body:
+                    JSON.stringify({
+                      order_id:
+                        response.razorpay_order_id,
+
+                      razorpay_payment_id:
+                        response.razorpay_payment_id,
+
+                      razorpay_order_id:
+                        response.razorpay_order_id,
+
+                      razorpay_signature:
+                        response.razorpay_signature
+                    })
+                }
+              );
+
+            const verifyData =
+              await verifyResponse.json();
+
+            if (
+              !verifyResponse.ok ||
+              !verifyData.verified
+            ) {
+              throw new Error(
+                verifyData?.error ||
+                "Payment verification failed"
+              );
+            }
+
+            /*
+              4. Payment is verified.
+              Empty the cart.
+            */
+            cart = {};
+
+            updateCartUI();
+
+            closeCart();
+
+            alert(
+              "Payment successful! 🎉\n\n" +
+              "Payment ID: " +
+              response.razorpay_payment_id +
+              "\n\n" +
+              "Your order has been saved to your account."
+            );
+
+            /*
+              Go to Account → Orders.
+            */
+            window.location.href =
+              "account.html";
+
+          } catch (error) {
+
+            console.error(
+              "Payment verification error:",
+              error
+            );
+
+            alert(
+              "Payment was received, but verification could not be completed automatically.\n\n" +
+              error.message +
+              "\n\nPlease do not pay again. Check your Account → Orders."
+            );
+
+            if (checkoutButton) {
+              checkoutButton.disabled =
+                false;
+
+              checkoutButton.textContent =
+                "Checkout";
+            }
+          }
+        }
+    };
+
+    const razorpay =
+      new Razorpay(options);
+
+    razorpay.on(
+      "payment.failed",
+      function (response) {
+
+        console.error(
+          "Razorpay payment failed:",
+          response
         );
 
+        alert(
+          "Payment failed.\n\n" +
+          (
+            response?.error
+              ?.description ||
+            "Please try again."
+          )
+        );
 
-      if(!button){
+        if (checkoutButton) {
+          checkoutButton.disabled =
+            false;
 
-        return;
-
+          checkoutButton.textContent =
+            "Checkout";
+        }
       }
+    );
 
+    razorpay.open();
+
+  } catch (error) {
+
+    console.error(
+      "Checkout error:",
+      error
+    );
+
+    alert(
+      "Unable to start checkout.\n\n" +
+      error.message
+    );
+
+    if (checkoutButton) {
+      checkoutButton.disabled =
+        false;
+
+      checkoutButton.textContent =
+        "Checkout";
+    }
+  }
+}
 
       const id =
         String(
