@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -45,6 +46,11 @@ textarea{
 
 button{
   cursor:pointer;
+}
+
+button:disabled{
+  cursor:not-allowed;
+  opacity:.6;
 }
 
 a{
@@ -300,6 +306,52 @@ a{
 
 
 /* =========================================================
+   GST NOTICE
+   ========================================================= */
+
+.gst-notice{
+
+  margin-bottom:18px;
+
+  padding:13px 15px;
+
+  border-radius:6px;
+
+  background:#fff8e1;
+
+  border:1px solid #ffe082;
+
+  color:#795548;
+
+  font-size:13px;
+
+  line-height:1.55;
+}
+
+.gst-notice strong{
+  color:#5d4037;
+}
+
+.gst-ok{
+
+  background:#e8f5e9;
+
+  border-color:#a5d6a7;
+
+  color:#2e7d32;
+}
+
+.gst-warning{
+
+  background:#fff3e0;
+
+  border-color:#ffcc80;
+
+  color:#e65100;
+}
+
+
+/* =========================================================
    BUTTONS
    ========================================================= */
 
@@ -427,6 +479,8 @@ th{
   font-size:12px;
 
   color:#555;
+
+  white-space:nowrap;
 }
 
 td{
@@ -468,6 +522,32 @@ td{
   gap:7px;
 
   flex-wrap:wrap;
+}
+
+.gst-badge{
+
+  display:inline-block;
+
+  margin-top:4px;
+
+  padding:4px 7px;
+
+  border-radius:4px;
+
+  background:#e3f2fd;
+
+  color:#1565c0;
+
+  font-size:11px;
+
+  font-weight:700;
+}
+
+.gst-missing{
+
+  background:#ffebee;
+
+  color:#c62828;
 }
 
 
@@ -599,6 +679,17 @@ textarea{
   resize:vertical;
 }
 
+.form-help{
+
+  margin-top:5px;
+
+  font-size:11px;
+
+  color:#777;
+
+  line-height:1.4;
+}
+
 input:focus,
 select:focus,
 textarea:focus{
@@ -633,6 +724,8 @@ textarea:focus{
   border-radius:4px;
 
   font-size:13px;
+
+  line-height:1.5;
 }
 
 .success-alert{
@@ -647,6 +740,13 @@ textarea:focus{
   background:#ffebee;
 
   color:#c62828;
+}
+
+.warning-alert{
+
+  background:#fff3e0;
+
+  color:#e65100;
 }
 
 
@@ -867,6 +967,18 @@ textarea:focus{
 
 
 
+    <!-- GST INFORMATION -->
+
+    <div
+      class="gst-notice"
+      id="gstNotice"
+    >
+      <strong>GST configuration:</strong>
+      Checking product GST coverage...
+    </div>
+
+
+
     <!-- STATS -->
 
     <section class="stats">
@@ -923,14 +1035,15 @@ textarea:focus{
       <div class="stat">
 
         <div class="stat-label">
-          ADMIN
+          GST COVERAGE
         </div>
 
         <div
           class="stat-value"
+          id="gstCoverage"
           style="font-size:16px;"
         >
-          ✓ Verified
+          Checking...
         </div>
 
       </div>
@@ -1002,6 +1115,10 @@ textarea:focus{
                 </th>
 
                 <th>
+                  GST
+                </th>
+
+                <th>
                   STATUS
                 </th>
 
@@ -1019,7 +1136,7 @@ textarea:focus{
               <tr>
 
                 <td
-                  colspan="6"
+                  colspan="7"
                   style="
                     text-align:center;
                     padding:40px;
@@ -1182,6 +1299,10 @@ textarea:focus{
             placeholder="100"
           >
 
+          <div class="form-help">
+            Selling price is automatically calculated using the existing store formula.
+          </div>
+
         </div>
 
 
@@ -1329,6 +1450,7 @@ textarea:focus{
 
         <button
           class="primary"
+          id="saveProductButton"
           type="submit"
         >
           Save Product
@@ -1350,16 +1472,34 @@ textarea:focus{
    ADMIN CONFIG
    ========================================================= */
 
-/*
- * IMPORTANT:
- *
- * We intentionally use the Supabase USER ID instead of email.
- * This avoids the fashion_fussion / fashion_fusssion spelling
- * problem completely.
- */
-
 const ADMIN_USER_ID =
   "53165e6e-4e81-492e-9f9f-7a1611ee9801";
+
+
+/*
+ * IMPORTANT GST CONFIGURATION
+ *
+ * This mirrors the currently deployed backend GST coverage.
+ *
+ * Backend currently contains GST mappings for product IDs
+ * 1 through 57.
+ *
+ * We intentionally DO NOT create a fake database gst_rate
+ * field here because the existing products schema has not
+ * been confirmed to contain such a column.
+ */
+
+const GST_RATES = {};
+
+for(
+  let productId = 1;
+  productId <= 57;
+  productId++
+){
+  GST_RATES[productId] = 18;
+}
+
+const GST_MAX_SUPPORTED_ID = 57;
 
 
 /* =========================================================
@@ -1383,13 +1523,6 @@ function $(id){
 /* =========================================================
    PRICE CALCULATION
    ========================================================= */
-
-/*
- * Cost
- * + 2% handling
- * + ₹12
- * then 1.50x
- */
 
 function sellingPrice(cost){
 
@@ -1434,12 +1567,23 @@ function showStatus(
   }
 
 
+  let className =
+    "success-alert";
+
+
+  if(type === "error"){
+    className =
+      "error-alert";
+  }
+
+  if(type === "warning"){
+    className =
+      "warning-alert";
+  }
+
+
   box.innerHTML = `
-    <div class="alert ${
-      type === "error"
-        ? "error-alert"
-        : "success-alert"
-    }">
+    <div class="alert ${className}">
       ${escapeHtml(message)}
     </div>
   `;
@@ -1451,7 +1595,7 @@ function showStatus(
       box.innerHTML = "";
 
     },
-    4000
+    5000
   );
 
 }
@@ -1480,6 +1624,88 @@ function escapeHtml(value){
 
       }
     );
+
+}
+
+
+/* =========================================================
+   GST STATUS
+   ========================================================= */
+
+function getGSTRate(productId){
+
+  const id =
+    Number(productId);
+
+  return GST_RATES[id] ?? null;
+
+}
+
+
+function updateGSTStatus(){
+
+  const notice =
+    $("gstNotice");
+
+  const coverage =
+    $("gstCoverage");
+
+
+  const unsupported =
+    products.filter(
+      function(product){
+
+        return (
+          getGSTRate(product.id) ===
+          null
+        );
+
+      }
+    );
+
+
+  if(!unsupported.length){
+
+    notice.className =
+      "gst-notice gst-ok";
+
+    notice.innerHTML = `
+      <strong>GST coverage OK:</strong>
+      All current product IDs are covered by the
+      backend GST configuration.
+    `;
+
+
+    coverage.textContent =
+      "✓ Covered";
+
+    coverage.style.color =
+      "#2e7d32";
+
+    return;
+
+  }
+
+
+  notice.className =
+    "gst-notice gst-warning";
+
+  notice.innerHTML = `
+    <strong>GST configuration warning:</strong>
+    ${unsupported.length}
+    product(s) have IDs above the currently supported
+    GST range (1–${GST_MAX_SUPPORTED_ID}).
+    These products must not be used for checkout until
+    the backend GST configuration is updated.
+  `;
+
+
+  coverage.textContent =
+    unsupported.length +
+    " Missing";
+
+  coverage.style.color =
+    "#e65100";
 
 }
 
@@ -1524,10 +1750,6 @@ async function checkAdmin(){
 
   try{
 
-    /*
-     * Make sure Supabase client exists.
-     */
-
     if(
       typeof supabaseClient ===
       "undefined" ||
@@ -1542,10 +1764,6 @@ async function checkAdmin(){
 
     }
 
-
-    /*
-     * Get authenticated user.
-     */
 
     const {
       data: {
@@ -1673,11 +1891,6 @@ async function checkAdmin(){
       "block";
 
 
-    /*
-     * Load products after successful
-     * administrator verification.
-     */
-
     await loadProducts();
 
 
@@ -1736,6 +1949,8 @@ async function loadProducts(){
 
     updateStats();
 
+    updateGSTStatus();
+
 
   }catch(error){
 
@@ -1750,7 +1965,7 @@ async function loadProducts(){
       <tr>
 
         <td
-          colspan="6"
+          colspan="7"
           style="
             text-align:center;
             padding:40px;
@@ -1831,7 +2046,7 @@ function renderProducts(){
       <tr>
 
         <td
-          colspan="6"
+          colspan="7"
           style="
             text-align:center;
             padding:45px;
@@ -1877,6 +2092,30 @@ function renderProducts(){
 
         const active =
           product.is_active !== false;
+
+
+        const gstRate =
+          getGSTRate(product.id);
+
+
+        const gstHtml =
+          gstRate !== null
+
+          ?
+
+          `
+            <span class="gst-badge">
+              ${gstRate}%
+            </span>
+          `
+
+          :
+
+          `
+            <span class="gst-badge gst-missing">
+              Not configured
+            </span>
+          `;
 
 
         return `
@@ -1927,6 +2166,16 @@ function renderProducts(){
 
               </div>
 
+              <div
+                style="
+                  margin-top:4px;
+                  color:#999;
+                  font-size:10px;
+                "
+              >
+                ID: ${escapeHtml(product.id)}
+              </div>
+
             </td>
 
 
@@ -1953,6 +2202,13 @@ function renderProducts(){
               <b>
                 ${money(price)}
               </b>
+
+            </td>
+
+
+            <td>
+
+              ${gstHtml}
 
             </td>
 
@@ -2116,6 +2372,14 @@ function openAddProduct(){
     "true";
 
 
+  $("saveProductButton").disabled =
+    false;
+
+
+  $("saveProductButton").textContent =
+    "Save Product";
+
+
   $("productModal")
     .classList
     .add("open");
@@ -2212,6 +2476,14 @@ function editProduct(id){
   $("productDescription").value =
     product.description ||
     "";
+
+
+  $("saveProductButton").disabled =
+    false;
+
+
+  $("saveProductButton").textContent =
+    "Save Product";
 
 
   $("productModal")
@@ -2335,6 +2607,81 @@ async function saveProduct(event){
   }
 
 
+  if(
+    reviews < 0
+  ){
+
+    showStatus(
+      "Reviews cannot be negative.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * IMPORTANT:
+   *
+   * New Supabase products receive a new database ID.
+   * The current backend GST configuration supports IDs
+   * only through 57.
+   *
+   * Therefore we prevent creation of an additional product
+   * if the next generated ID is expected to exceed 57.
+   *
+   * This avoids creating a product that can later break
+   * checkout.
+   */
+
+  if(
+    editingProductId === null
+  ){
+
+    const numericIds =
+      products
+        .map(
+          function(product){
+            return Number(product.id);
+          }
+        )
+        .filter(
+          function(id){
+            return Number.isFinite(id);
+          }
+        );
+
+
+    const highestId =
+      numericIds.length
+        ? Math.max(...numericIds)
+        : 0;
+
+
+    const expectedNextId =
+      highestId + 1;
+
+
+    if(
+      expectedNextId >
+      GST_MAX_SUPPORTED_ID
+    ){
+
+      showStatus(
+        "Product was not added. The current backend GST configuration supports product IDs only through " +
+        GST_MAX_SUPPORTED_ID +
+        ". The backend GST configuration must be extended before adding another product.",
+        "warning"
+      );
+
+      return;
+
+    }
+
+  }
+
+
   /*
    * Product object
    */
@@ -2368,7 +2715,20 @@ async function saveProduct(event){
   };
 
 
+  const saveButton =
+    $("saveProductButton");
+
+
   try{
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      editingProductId !== null
+        ? "Updating..."
+        : "Adding...";
+
 
     /*
      * EDIT
@@ -2456,6 +2816,15 @@ async function saveProduct(event){
       "Could not save product.",
       "error"
     );
+
+
+  }finally{
+
+    saveButton.disabled =
+      false;
+
+    saveButton.textContent =
+      "Save Product";
 
   }
 
@@ -2713,12 +3082,6 @@ $("goToLoginButton")
    SIGN OUT
    ========================================================= */
 
-/*
- * IMPORTANT:
- * Logout now returns to HOME PAGE,
- * not login.html.
- */
-
 $("logoutButton")
   .addEventListener(
     "click",
@@ -2763,10 +3126,6 @@ $("logoutButton")
 
       }finally{
 
-        /*
-         * ALWAYS go to home page.
-         */
-
         window.location.href =
           "index.html";
 
@@ -2786,3 +3145,4 @@ checkAdmin();
 
 </body>
 </html>
+```
