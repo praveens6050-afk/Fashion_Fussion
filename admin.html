@@ -6,7 +6,6 @@
 
   <title>Fashion_FUSSION — Admin</title>
 
-  <!-- Prevent favicon 404 -->
   <link rel="icon" href="data:,">
 
   <!-- Supabase -->
@@ -41,7 +40,7 @@
       color: inherit;
     }
 
-    /* HEADER */
+    /* ================= HEADER ================= */
 
     .header {
       background: #2874f0;
@@ -52,7 +51,7 @@
     .header-inner {
       max-width: 1250px;
       margin: auto;
-      padding: 14px 18px;
+      padding: 12px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -72,7 +71,7 @@
     .admin-badge {
       display: inline-block;
       margin-top: 5px;
-      padding: 6px 12px;
+      padding: 5px 12px;
       border-radius: 4px;
       background: rgba(255,255,255,.18);
       font-size: 12px;
@@ -81,25 +80,25 @@
 
     .header-actions {
       display: flex;
-      align-items: center;
       gap: 10px;
+      align-items: center;
     }
 
     .header-actions a,
     .header-actions button {
-      border: 1px solid rgba(255,255,255,.45);
+      border: 1px solid rgba(255,255,255,.5);
       background: transparent;
       color: white;
-      padding: 8px 12px;
+      padding: 8px 13px;
       border-radius: 4px;
     }
 
     .header-actions a:hover,
     .header-actions button:hover {
-      background: rgba(255,255,255,.12);
+      background: rgba(255,255,255,.15);
     }
 
-    /* COMMON */
+    /* ================= COMMON ================= */
 
     .container {
       max-width: 1250px;
@@ -107,7 +106,7 @@
       padding: 22px 16px;
     }
 
-    /* ACCESS */
+    /* ================= LOADING / ACCESS ================= */
 
     #loadingScreen,
     #accessDenied {
@@ -121,8 +120,8 @@
     .message-card {
       width: 100%;
       max-width: 520px;
-      padding: 35px;
       background: white;
+      padding: 35px;
       border-radius: 8px;
       text-align: center;
       box-shadow: 0 2px 10px rgba(0,0,0,.08);
@@ -137,16 +136,16 @@
     }
 
     .message-error {
-      margin-top: 15px;
+      margin: 15px 0;
       padding: 12px;
+      border-radius: 5px;
       background: #ffebee;
       color: #c62828;
-      border-radius: 5px;
       font-size: 13px;
       word-break: break-word;
     }
 
-    /* DASHBOARD */
+    /* ================= DASHBOARD ================= */
 
     #dashboard {
       display: none;
@@ -155,8 +154,8 @@
     .page-title {
       margin-bottom: 20px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       gap: 15px;
     }
 
@@ -171,7 +170,7 @@
       font-size: 13px;
     }
 
-    /* STATS */
+    /* ================= STATS ================= */
 
     .stats {
       display: grid;
@@ -181,10 +180,10 @@
     }
 
     .stat {
-      padding: 20px;
       background: white;
       border: 1px solid #e5e5e5;
       border-radius: 7px;
+      padding: 20px;
     }
 
     .stat-label {
@@ -198,7 +197,7 @@
       font-weight: 700;
     }
 
-    /* CARD */
+    /* ================= CARDS ================= */
 
     .card {
       background: white;
@@ -225,7 +224,7 @@
       padding: 20px;
     }
 
-    /* BUTTONS */
+    /* ================= BUTTONS ================= */
 
     .primary {
       border: 0;
@@ -264,12 +263,7 @@
       background: #c62828;
     }
 
-    /* SEARCH */
-
-    .search-row {
-      display: flex;
-      gap: 10px;
-    }
+    /* ================= SEARCH ================= */
 
     .search {
       width: 100%;
@@ -284,7 +278,7 @@
       border-color: #2874f0;
     }
 
-    /* TABLE */
+    /* ================= TABLE ================= */
 
     .table-wrapper {
       overflow-x: auto;
@@ -292,15 +286,15 @@
 
     table {
       width: 100%;
+      min-width: 850px;
       border-collapse: collapse;
-      min-width: 800px;
     }
 
     th {
-      background: #f7f7f7;
-      text-align: left;
       padding: 12px;
+      background: #f7f7f7;
       border-bottom: 1px solid #ddd;
+      text-align: left;
       font-size: 12px;
       color: #555;
     }
@@ -316,25 +310,14 @@
       width: 60px;
       height: 60px;
       object-fit: contain;
+      background: white;
       border: 1px solid #eee;
       border-radius: 4px;
-      background: white;
     }
 
     .product-name {
       margin-top: 6px;
       font-weight: 700;
-    }
-
-    .product-category {
-      margin-top: 4px;
-      color: #777;
-      font-size: 11px;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 7px;
     }
 
     .active {
@@ -347,7 +330,12 @@
       font-weight: 700;
     }
 
-    /* STATUS */
+    .action-buttons {
+      display: flex;
+      gap: 7px;
+    }
+
+    /* ================= STATUS ================= */
 
     #status {
       margin-bottom: 15px;
@@ -369,17 +357,17 @@
       color: #c62828;
     }
 
-    /* MODAL */
+    /* ================= MODAL ================= */
 
     .modal {
       position: fixed;
       inset: 0;
       z-index: 100;
-      background: rgba(0,0,0,.55);
       display: none;
       align-items: center;
       justify-content: center;
       padding: 15px;
+      background: rgba(0,0,0,.55);
     }
 
     .modal.open {
@@ -467,18 +455,16 @@
       gap: 10px;
     }
 
-    /* MOBILE */
-
-    @media(max-width: 850px) {
+    @media (max-width: 850px) {
       .stats {
         grid-template-columns: repeat(2, 1fr);
       }
     }
 
-    @media(max-width: 600px) {
+    @media (max-width: 600px) {
       .header-inner {
-        align-items: flex-start;
         flex-direction: column;
+        align-items: flex-start;
       }
 
       .header-actions {
@@ -492,8 +478,8 @@
       }
 
       .page-title {
-        align-items: flex-start;
         flex-direction: column;
+        align-items: flex-start;
       }
 
       .form-grid {
@@ -509,9 +495,10 @@
 
 <body>
 
-  <!-- HEADER -->
+  <!-- ================= HEADER ================= -->
 
   <header class="header">
+
     <div class="header-inner">
 
       <div>
@@ -525,25 +512,38 @@
       </div>
 
       <div class="header-actions">
-        <a href="index.html">Store</a>
-        <a href="account.html">My Account</a>
 
-        <button id="logoutButton" type="button">
+        <a href="index.html">
+          Store
+        </a>
+
+        <a href="account.html">
+          My Account
+        </a>
+
+        <button
+          id="logoutButton"
+          type="button"
+        >
           Sign Out
         </button>
+
       </div>
 
     </div>
+
   </header>
 
 
-  <!-- LOADING -->
+  <!-- ================= LOADING ================= -->
 
   <section id="loadingScreen">
 
     <div class="message-card">
 
-      <h2>Checking administrator access...</h2>
+      <h2>
+        Checking administrator access...
+      </h2>
 
       <p>
         Please wait while we verify your account.
@@ -554,9 +554,12 @@
   </section>
 
 
-  <!-- ACCESS DENIED -->
+  <!-- ================= ACCESS DENIED ================= -->
 
-  <section id="accessDenied" style="display:none;">
+  <section
+    id="accessDenied"
+    style="display:none;"
+  >
 
     <div class="message-card">
 
@@ -570,9 +573,10 @@
 
       <div id="accessError"></div>
 
-      <br>
-
-      <a class="primary" href="login.html">
+      <a
+        class="primary"
+        href="login.html"
+      >
         Go to Login
       </a>
 
@@ -581,7 +585,7 @@
   </section>
 
 
-  <!-- DASHBOARD -->
+  <!-- ================= DASHBOARD ================= -->
 
   <main id="dashboard">
 
@@ -590,11 +594,15 @@
       <div class="page-title">
 
         <div>
-          <h1>Admin Dashboard</h1>
+
+          <h1>
+            Admin Dashboard
+          </h1>
 
           <p id="adminEmail">
             Administrator
           </p>
+
         </div>
 
         <button
@@ -608,16 +616,15 @@
       </div>
 
 
-      <!-- STATUS -->
-
       <div id="status"></div>
 
 
-      <!-- STATS -->
+      <!-- ================= STATS ================= -->
 
       <section class="stats">
 
         <div class="stat">
+
           <div class="stat-label">
             TOTAL PRODUCTS
           </div>
@@ -628,10 +635,12 @@
           >
             0
           </div>
+
         </div>
 
 
         <div class="stat">
+
           <div class="stat-label">
             CATEGORIES
           </div>
@@ -642,10 +651,12 @@
           >
             0
           </div>
+
         </div>
 
 
         <div class="stat">
+
           <div class="stat-label">
             ACTIVE PRODUCTS
           </div>
@@ -656,10 +667,12 @@
           >
             0
           </div>
+
         </div>
 
 
         <div class="stat">
+
           <div class="stat-label">
             ADMIN
           </div>
@@ -670,18 +683,21 @@
           >
             ✓ Verified
           </div>
+
         </div>
 
       </section>
 
 
-      <!-- PRODUCT CATALOG -->
+      <!-- ================= PRODUCTS ================= -->
 
       <section class="card">
 
         <div class="card-header">
 
-          <h2>Product Catalog</h2>
+          <h2>
+            Product Catalog
+          </h2>
 
           <button
             class="secondary"
@@ -696,17 +712,14 @@
 
         <div class="card-body">
 
-          <div class="search-row">
+          <input
+            class="search"
+            id="productSearch"
+            type="search"
+            placeholder="Search products..."
+          >
 
-            <input
-              class="search"
-              id="productSearch"
-              type="search"
-              placeholder="Search products..."
-            >
-
-          </div>
-
+          <br>
           <br>
 
           <div class="table-wrapper">
@@ -729,12 +742,14 @@
               <tbody id="productTable">
 
                 <tr>
+
                   <td
                     colspan="6"
                     style="text-align:center;padding:40px;"
                   >
                     Loading products...
                   </td>
+
                 </tr>
 
               </tbody>
@@ -752,7 +767,7 @@
   </main>
 
 
-  <!-- PRODUCT MODAL -->
+  <!-- ================= PRODUCT MODAL ================= -->
 
   <div
     class="modal"
@@ -803,7 +818,7 @@
               id="productName"
               required
               maxlength="150"
-              placeholder="Example: Stainless Steel Water Bottle"
+              placeholder="Product name"
             >
 
           </div>
@@ -821,7 +836,7 @@
               id="productCategory"
               required
               maxlength="100"
-              placeholder="Example: Home & Kitchen"
+              placeholder="Fashion"
             >
 
           </div>
@@ -897,7 +912,7 @@
             <input
               id="productImage"
               type="url"
-              placeholder="https://example.com/product.jpg"
+              placeholder="https://example.com/image.jpg"
             >
 
           </div>
@@ -1003,33 +1018,22 @@
 
   <script>
 
-    /*
-    ============================================================
-    ADMIN CONFIG
-    ============================================================
-    */
+    /* =========================================================
+       VERIFIED ADMIN USER
+       ========================================================= */
 
-    const ADMIN_EMAIL =
-      "fashion_fussion08@outlook.com";
+    const ADMIN_USER_ID =
+      "53165e6e-4e81-492e-9f9f-7a1611ee9801";
 
-
-    /*
-    ============================================================
-    STATE
-    ============================================================
-    */
 
     let products = [];
-
     let editingProductId = null;
 
 
-    /*
-    ============================================================
-    PRICE CALCULATION
-    Cost + 2% + ₹12, then 50% margin
-    ============================================================
-    */
+    /* =========================================================
+       PRICE
+       Cost + 2% + ₹12, then 50% margin
+       ========================================================= */
 
     function sellingPrice(cost) {
 
@@ -1044,11 +1048,9 @@
     }
 
 
-    /*
-    ============================================================
-    MONEY
-    ============================================================
-    */
+    /* =========================================================
+       MONEY
+       ========================================================= */
 
     function money(value) {
 
@@ -1059,37 +1061,38 @@
     }
 
 
-    /*
-    ============================================================
-    ESCAPE HTML
-    ============================================================
-    */
+    /* =========================================================
+       HTML ESCAPE
+       ========================================================= */
 
     function escapeHtml(value) {
 
       return String(value ?? "")
-        .replace(/[&<>"']/g, function(match) {
+        .replace(/[&<>"']/g, function(char) {
 
-          return {
+          const map = {
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#039;"
-          }[match];
+          };
+
+          return map[char];
 
         });
 
     }
 
 
-    /*
-    ============================================================
-    STATUS MESSAGE
-    ============================================================
-    */
+    /* =========================================================
+       STATUS MESSAGE
+       ========================================================= */
 
-    function showStatus(message, type = "success") {
+    function showStatus(
+      message,
+      type = "success"
+    ) {
 
       const box =
         document.getElementById("status");
@@ -1111,13 +1114,11 @@
     }
 
 
-    /*
-    ============================================================
-    ACCESS DENIED
-    ============================================================
-    */
+    /* =========================================================
+       ACCESS DENIED
+       ========================================================= */
 
-    function denyAccess(message = "") {
+    function denyAccess(message) {
 
       document
         .getElementById("loadingScreen")
@@ -1127,18 +1128,19 @@
         .getElementById("dashboard")
         .style.display = "none";
 
-      const errorBox =
-        document.getElementById("accessError");
 
       if (message) {
 
-        errorBox.innerHTML = `
-          <div class="message-error">
-            ${escapeHtml(message)}
-          </div>
-        `;
+        document
+          .getElementById("accessError")
+          .innerHTML = `
+            <div class="message-error">
+              ${escapeHtml(message)}
+            </div>
+          `;
 
       }
+
 
       document
         .getElementById("accessDenied")
@@ -1147,36 +1149,43 @@
     }
 
 
-    /*
-    ============================================================
-    ADMIN SECURITY CHECK
-    ============================================================
-    */
+    /* =========================================================
+       ADMIN CHECK
+       ========================================================= */
 
     async function checkAdmin() {
 
       try {
 
+        console.log(
+          "Starting admin verification..."
+        );
+
+
         /*
-        Get currently authenticated user
+          1. Get authenticated user
         */
 
         const {
-          data: { user },
+          data: {
+            user
+          },
           error: userError
         } =
-          await supabaseClient.auth.getUser();
+          await supabaseClient
+            .auth
+            .getUser();
 
 
         if (userError) {
 
           console.error(
-            "Auth error:",
+            "User verification error:",
             userError
           );
 
           denyAccess(
-            "Unable to verify your login session."
+            "Unable to verify your Supabase session."
           );
 
           return;
@@ -1185,6 +1194,10 @@
 
 
         if (!user) {
+
+          console.warn(
+            "No authenticated user."
+          );
 
           denyAccess(
             "Please login first."
@@ -1195,24 +1208,26 @@
         }
 
 
+        console.log(
+          "Logged in user:",
+          user.id,
+          user.email
+        );
+
+
         /*
-        Check exact admin email
+          2. Check exact admin UID
+
+          No email comparison is used.
         */
 
-        const email =
-          String(user.email || "")
-            .trim()
-            .toLowerCase();
-
-
         if (
-          email !==
-          ADMIN_EMAIL.toLowerCase()
+          user.id !== ADMIN_USER_ID
         ) {
 
           console.warn(
-            "Wrong admin email:",
-            email
+            "This user is not the authorized admin UID:",
+            user.id
           );
 
           denyAccess(
@@ -1225,7 +1240,7 @@
 
 
         /*
-        Get admin profile
+          3. Read profile
         */
 
         const {
@@ -1234,8 +1249,13 @@
         } =
           await supabaseClient
             .from("profiles")
-            .select("id,is_admin")
-            .eq("id", user.id)
+            .select(
+              "id,is_admin"
+            )
+            .eq(
+              "id",
+              user.id
+            )
             .maybeSingle();
 
 
@@ -1248,7 +1268,7 @@
         if (profileError) {
 
           console.error(
-            "Profile error:",
+            "Profile query error:",
             profileError
           );
 
@@ -1265,18 +1285,7 @@
         if (!profile) {
 
           denyAccess(
-            "Administrator profile does not exist."
-          );
-
-          return;
-
-        }
-
-
-        if (profile.is_admin !== true) {
-
-          denyAccess(
-            "Your account is not marked as an administrator."
+            "Administrator profile was not found."
           );
 
           return;
@@ -1285,35 +1294,59 @@
 
 
         /*
-        ADMIN VERIFIED
+          4. Check is_admin
         */
+
+        if (
+          profile.is_admin !== true
+        ) {
+
+          console.warn(
+            "is_admin is not true:",
+            profile.is_admin
+          );
+
+          denyAccess(
+            "Your administrator flag is not enabled."
+          );
+
+          return;
+
+        }
+
+
+        /*
+          5. SUCCESS
+        */
+
+        console.log(
+          "ADMIN VERIFIED SUCCESSFULLY"
+        );
+
 
         document
           .getElementById("adminEmail")
           .textContent =
-          user.email;
+          user.email || "Administrator";
 
 
         document
           .getElementById("loadingScreen")
-          .style.display =
-          "none";
+          .style.display = "none";
 
 
         document
           .getElementById("accessDenied")
-          .style.display =
-          "none";
+          .style.display = "none";
 
 
         document
           .getElementById("dashboard")
-          .style.display =
-          "block";
+          .style.display = "block";
 
 
         /*
-        Load products
+          6. Load products
         */
 
         await loadProducts();
@@ -1323,7 +1356,7 @@
       catch (error) {
 
         console.error(
-          "Admin verification error:",
+          "Admin verification failed:",
           error
         );
 
@@ -1337,13 +1370,29 @@
     }
 
 
-    /*
-    ============================================================
-    LOAD PRODUCTS
-    ============================================================
-    */
+    /* =========================================================
+       LOAD PRODUCTS
+       ========================================================= */
 
     async function loadProducts() {
+
+      const table =
+        document.getElementById(
+          "productTable"
+        );
+
+
+      table.innerHTML = `
+        <tr>
+          <td
+            colspan="6"
+            style="text-align:center;padding:40px;"
+          >
+            Loading products...
+          </td>
+        </tr>
+      `;
+
 
       try {
 
@@ -1371,7 +1420,6 @@
 
 
         renderProducts();
-
         updateStats();
 
       }
@@ -1384,46 +1432,34 @@
         );
 
 
-        document
-          .getElementById("productTable")
-          .innerHTML = `
-
-            <tr>
-
-              <td
-                colspan="6"
-                style="
-                  text-align:center;
-                  padding:40px;
-                  color:#d32f2f;
-                "
-              >
-
-                Unable to load products.
-
-                <br><br>
-
-                ${escapeHtml(
-                  error.message ||
-                  "Unknown database error."
-                )}
-
-              </td>
-
-            </tr>
-
-          `;
+        table.innerHTML = `
+          <tr>
+            <td
+              colspan="6"
+              style="
+                text-align:center;
+                padding:40px;
+                color:#d32f2f;
+              "
+            >
+              Unable to load products.
+              <br><br>
+              ${escapeHtml(
+                error.message ||
+                "Unknown database error."
+              )}
+            </td>
+          </tr>
+        `;
 
       }
 
     }
 
 
-    /*
-    ============================================================
-    RENDER PRODUCTS
-    ============================================================
-    */
+    /* =========================================================
+       RENDER PRODUCTS
+       ========================================================= */
 
     function renderProducts() {
 
@@ -1435,7 +1471,7 @@
           .toLowerCase();
 
 
-      const list =
+      const filtered =
         products.filter(function(product) {
 
           const name =
@@ -1462,12 +1498,10 @@
         );
 
 
-      if (!list.length) {
+      if (!filtered.length) {
 
         table.innerHTML = `
-
           <tr>
-
             <td
               colspan="6"
               style="
@@ -1478,9 +1512,7 @@
             >
               No products found.
             </td>
-
           </tr>
-
         `;
 
         return;
@@ -1489,10 +1521,12 @@
 
 
       table.innerHTML =
-        list.map(function(product) {
+        filtered.map(function(product) {
 
           const cost =
-            Number(product.cost || 0);
+            Number(
+              product.cost || 0
+            );
 
 
           const price =
@@ -1507,7 +1541,6 @@
 
 
           return `
-
             <tr>
 
               <td>
@@ -1545,7 +1578,9 @@
 
 
               <td>
-                ${escapeHtml(product.category)}
+                ${escapeHtml(
+                  product.category
+                )}
               </td>
 
 
@@ -1605,7 +1640,6 @@
               </td>
 
             </tr>
-
           `;
 
         }).join("");
@@ -1613,11 +1647,9 @@
     }
 
 
-    /*
-    ============================================================
-    STATS
-    ============================================================
-    */
+    /* =========================================================
+       STATS
+       ========================================================= */
 
     function updateStats() {
 
@@ -1630,7 +1662,10 @@
       const categories =
         new Set(
           products
-            .map(product => product.category)
+            .map(
+              product =>
+                product.category
+            )
             .filter(Boolean)
         );
 
@@ -1652,11 +1687,9 @@
     }
 
 
-    /*
-    ============================================================
-    OPEN ADD PRODUCT
-    ============================================================
-    */
+    /* =========================================================
+       ADD PRODUCT
+       ========================================================= */
 
     function openAddProduct() {
 
@@ -1701,11 +1734,9 @@
     }
 
 
-    /*
-    ============================================================
-    EDIT PRODUCT
-    ============================================================
-    */
+    /* =========================================================
+       EDIT PRODUCT
+       ========================================================= */
 
     function editProduct(id) {
 
@@ -1760,13 +1791,13 @@
       document
         .getElementById("productRating")
         .value =
-        product.rating ?? "4.5";
+        product.rating ?? 4.5;
 
 
       document
         .getElementById("productReviews")
         .value =
-        product.reviews ?? "0";
+        product.reviews ?? 0;
 
 
       document
@@ -1802,11 +1833,9 @@
     }
 
 
-    /*
-    ============================================================
-    CLOSE MODAL
-    ============================================================
-    */
+    /* =========================================================
+       CLOSE MODAL
+       ========================================================= */
 
     function closeModal() {
 
@@ -1817,11 +1846,9 @@
     }
 
 
-    /*
-    ============================================================
-    SAVE PRODUCT
-    ============================================================
-    */
+    /* =========================================================
+       SAVE PRODUCT
+       ========================================================= */
 
     document
       .getElementById("productForm")
@@ -1858,7 +1885,7 @@
             Number(
               document
                 .getElementById("productRating")
-                .value || 4.5
+                .value || 0
             );
 
 
@@ -1915,17 +1942,18 @@
 
           const productData = {
 
-            name: name,
+            name,
 
-            category: category,
+            category,
 
-            cost: cost,
+            cost,
 
-            price: sellingPrice(cost),
+            price:
+              sellingPrice(cost),
 
-            rating: rating,
+            rating,
 
-            reviews: reviews,
+            reviews,
 
             image_url:
               image || null,
@@ -1947,9 +1975,7 @@
 
           try {
 
-            /*
-            EDIT
-            */
+            /* EDIT */
 
             if (
               editingProductId !== null
@@ -1979,16 +2005,9 @@
             }
 
 
-            /*
-            ADD
-            */
+            /* ADD */
 
             else {
-
-              /*
-              Remove updated_at for insert
-              because created_at has DB default.
-              */
 
               const insertData = {
                 ...productData
@@ -2045,11 +2064,9 @@
       );
 
 
-    /*
-    ============================================================
-    DELETE PRODUCT
-    ============================================================
-    */
+    /* =========================================================
+       DELETE PRODUCT
+       ========================================================= */
 
     async function deleteProduct(id) {
 
@@ -2067,13 +2084,11 @@
       }
 
 
-      const confirmed =
-        confirm(
+      if (
+        !confirm(
           `Delete "${product.name}"?`
-        );
-
-
-      if (!confirmed) {
+        )
+      ) {
         return;
       }
 
@@ -2086,7 +2101,10 @@
           await supabaseClient
             .from("products")
             .delete()
-            .eq("id", id);
+            .eq(
+              "id",
+              id
+            );
 
 
         if (error) {
@@ -2122,11 +2140,9 @@
     }
 
 
-    /*
-    ============================================================
-    EVENTS
-    ============================================================
-    */
+    /* =========================================================
+       EVENTS
+       ========================================================= */
 
     document
       .getElementById("addProductButton")
@@ -2184,11 +2200,9 @@
       );
 
 
-    /*
-    ============================================================
-    LOGOUT
-    ============================================================
-    */
+    /* =========================================================
+       LOGOUT
+       ========================================================= */
 
     document
       .getElementById("logoutButton")
@@ -2207,11 +2221,9 @@
       );
 
 
-    /*
-    ============================================================
-    START ADMIN CHECK
-    ============================================================
-    */
+    /* =========================================================
+       START
+       ========================================================= */
 
     checkAdmin();
 
