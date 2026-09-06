@@ -1,2233 +1,2535 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Fashion_FUSSION — Admin</title>
-
-  <link rel="icon" href="data:,">
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f1f3f6;
-      color: #212121;
-    }
-
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    a {
-      text-decoration: none;
-      color: inherit;
-    }
-
-    /* ================= HEADER ================= */
-
-    .header {
-      background: #2874f0;
-      color: white;
-      box-shadow: 0 2px 8px rgba(0,0,0,.2);
-    }
-
-    .header-inner {
-      max-width: 1250px;
-      margin: auto;
-      padding: 12px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .logo {
-      font-size: 25px;
-      font-weight: 800;
-      font-style: italic;
-    }
-
-    .logo span {
-      color: #ffe500;
-    }
-
-    .admin-badge {
-      display: inline-block;
-      margin-top: 5px;
-      padding: 5px 12px;
-      border-radius: 4px;
-      background: rgba(255,255,255,.18);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .header-actions a,
-    .header-actions button {
-      border: 1px solid rgba(255,255,255,.5);
-      background: transparent;
-      color: white;
-      padding: 8px 13px;
-      border-radius: 4px;
-    }
-
-    .header-actions a:hover,
-    .header-actions button:hover {
-      background: rgba(255,255,255,.15);
-    }
-
-    /* ================= COMMON ================= */
-
-    .container {
-      max-width: 1250px;
-      margin: auto;
-      padding: 22px 16px;
-    }
-
-    /* ================= LOADING / ACCESS ================= */
-
-    #loadingScreen,
-    #accessDenied {
-      min-height: 70vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .message-card {
-      width: 100%;
-      max-width: 520px;
-      background: white;
-      padding: 35px;
-      border-radius: 8px;
-      text-align: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,.08);
-    }
-
-    .message-card h2 {
-      margin-top: 0;
-    }
-
-    .error {
-      color: #d32f2f;
-    }
-
-    .message-error {
-      margin: 15px 0;
-      padding: 12px;
-      border-radius: 5px;
-      background: #ffebee;
-      color: #c62828;
-      font-size: 13px;
-      word-break: break-word;
-    }
-
-    /* ================= DASHBOARD ================= */
-
-    #dashboard {
-      display: none;
-    }
-
-    .page-title {
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .page-title h1 {
-      margin: 0;
-      font-size: 26px;
-    }
-
-    .page-title p {
-      margin: 6px 0 0;
-      color: #777;
-      font-size: 13px;
-    }
-
-    /* ================= STATS ================= */
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-
-    .stat {
-      background: white;
-      border: 1px solid #e5e5e5;
-      border-radius: 7px;
-      padding: 20px;
-    }
-
-    .stat-label {
-      color: #777;
-      font-size: 12px;
-    }
-
-    .stat-value {
-      margin-top: 7px;
-      font-size: 25px;
-      font-weight: 700;
-    }
-
-    /* ================= CARDS ================= */
-
-    .card {
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 7px;
-      margin-bottom: 18px;
-    }
-
-    .card-header {
-      padding: 17px 20px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-    }
-
-    .card-header h2 {
-      margin: 0;
-      font-size: 19px;
-    }
-
-    .card-body {
-      padding: 20px;
-    }
-
-    /* ================= BUTTONS ================= */
-
-    .primary {
-      border: 0;
-      border-radius: 4px;
-      padding: 10px 17px;
-      background: #2874f0;
-      color: white;
-      font-weight: 700;
-    }
-
-    .primary:hover {
-      background: #125dd1;
-    }
-
-    .secondary {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 9px 14px;
-      background: white;
-    }
-
-    .secondary:hover {
-      background: #f5f5f5;
-    }
-
-    .danger {
-      border: 0;
-      border-radius: 4px;
-      padding: 8px 13px;
-      background: #e53935;
-      color: white;
-      font-weight: 700;
-    }
-
-    .danger:hover {
-      background: #c62828;
-    }
-
-    /* ================= SEARCH ================= */
-
-    .search {
-      width: 100%;
-      height: 42px;
-      padding: 0 14px;
-      border: 1px solid #bbb;
-      border-radius: 4px;
-      outline: none;
-    }
-
-    .search:focus {
-      border-color: #2874f0;
-    }
-
-    /* ================= TABLE ================= */
-
-    .table-wrapper {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      min-width: 850px;
-      border-collapse: collapse;
-    }
-
-    th {
-      padding: 12px;
-      background: #f7f7f7;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-      font-size: 12px;
-      color: #555;
-    }
-
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-      vertical-align: middle;
-      font-size: 13px;
-    }
-
-    .product-thumb {
-      width: 60px;
-      height: 60px;
-      object-fit: contain;
-      background: white;
-      border: 1px solid #eee;
-      border-radius: 4px;
-    }
-
-    .product-name {
-      margin-top: 6px;
-      font-weight: 700;
-    }
-
-    .active {
-      color: #388e3c;
-      font-weight: 700;
-    }
-
-    .hidden {
-      color: #d32f2f;
-      font-weight: 700;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 7px;
-    }
-
-    /* ================= STATUS ================= */
-
-    #status {
-      margin-bottom: 15px;
-    }
-
-    .alert {
-      padding: 11px 14px;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .success-alert {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
-
-    .error-alert {
-      background: #ffebee;
-      color: #c62828;
-    }
-
-    /* ================= MODAL ================= */
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 15px;
-      background: rgba(0,0,0,.55);
-    }
-
-    .modal.open {
-      display: flex;
-    }
-
-    .modal-box {
-      width: 680px;
-      max-width: 100%;
-      max-height: 92vh;
-      overflow-y: auto;
-      background: white;
-      border-radius: 8px;
-    }
-
-    .modal-header {
-      padding: 17px 20px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .modal-header h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .close {
-      border: 0;
-      background: transparent;
-      font-size: 28px;
-    }
-
-    .form {
-      padding: 20px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-
-    .form-group {
-      margin-bottom: 5px;
-    }
-
-    .full {
-      grid-column: 1 / -1;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #bbb;
-      border-radius: 4px;
-      outline: none;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      border-color: #2874f0;
-    }
-
-    textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
-
-    .form-actions {
-      margin-top: 15px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-
-    @media (max-width: 850px) {
-      .stats {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 600px) {
-      .header-inner {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .header-actions {
-        width: 100%;
-      }
-
-      .header-actions a,
-      .header-actions button {
-        flex: 1;
-        text-align: center;
-      }
-
-      .page-title {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .full {
-        grid-column: auto;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Fashion_FUSSION — Admin Panel</title>
+<link rel="icon" href="data:,">
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f1f3f6;
+  color: #212121;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ================= HEADER ================= */
+
+.header {
+  background: #2874f0;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,.20);
+}
+
+.header-inner {
+  max-width: 1250px;
+  margin: auto;
+  padding: 10px 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 25px;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.logo span {
+  color: #ffe500;
+}
+
+.admin-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: rgba(255,255,255,.18);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-actions a,
+.header-actions button {
+  border: 1px solid rgba(255,255,255,.45);
+  background: transparent;
+  color: white;
+  padding: 8px 13px;
+  border-radius: 4px;
+}
+
+.header-actions a:hover,
+.header-actions button:hover {
+  background: rgba(255,255,255,.12);
+}
+
+/* ================= COMMON ================= */
+
+.container {
+  max-width: 1250px;
+  margin: auto;
+  padding: 22px 16px;
+}
+
+/* ================= LOADING / ACCESS ================= */
+
+#loadingScreen,
+#accessDenied {
+  min-height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+}
+
+.message-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 35px;
+  background: white;
+  border-radius: 9px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,.10);
+}
+
+.message-card h2 {
+  margin-top: 0;
+}
+
+.message-card p {
+  line-height: 1.6;
+}
+
+.error-title {
+  color: #d32f2f;
+}
+
+.access-error {
+  margin: 18px 0;
+  padding: 12px 15px;
+  border-radius: 5px;
+  background: #ffebee;
+  color: #c62828;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* ================= DASHBOARD ================= */
+
+.dashboard {
+  display: none;
+}
+
+.page-title {
+  margin-bottom: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.page-title h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.page-title p {
+  margin: 6px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+/* ================= STATS ================= */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.stat {
+  padding: 20px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 7px;
+}
+
+.stat-label {
+  color: #777;
+  font-size: 12px;
+}
+
+.stat-value {
+  margin-top: 7px;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+/* ================= CARDS ================= */
+
+.card {
+  margin-bottom: 18px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+}
+
+.card-header {
+  padding: 17px 20px;
+  border-bottom: 1px solid #eee;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* ================= BUTTONS ================= */
+
+.primary {
+  border: 0;
+  border-radius: 4px;
+  padding: 10px 17px;
+  background: #2874f0;
+  color: white;
+  font-weight: 700;
+}
+
+.primary:hover {
+  background: #125dd1;
+}
+
+.success {
+  border: 0;
+  border-radius: 4px;
+  padding: 9px 15px;
+  background: #388e3c;
+  color: white;
+  font-weight: 700;
+}
+
+.danger {
+  border: 0;
+  border-radius: 4px;
+  padding: 8px 13px;
+  background: #e53935;
+  color: white;
+  font-weight: 700;
+}
+
+.secondary {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 9px 14px;
+  background: white;
+}
+
+.secondary:hover {
+  background: #f7f7f7;
+}
+
+/* ================= SEARCH ================= */
+
+.search-row {
+  display: flex;
+  gap: 10px;
+}
+
+.search {
+  flex: 1;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  outline: none;
+}
+
+.search:focus {
+  border-color: #2874f0;
+}
+
+/* ================= TABLE ================= */
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: #f7f7f7;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.product-cell {
+  min-width: 220px;
+}
+
+.product-thumb {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.no-image {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  font-size: 24px;
+  background: #fafafa;
+}
+
+.product-name {
+  margin-top: 7px;
+  font-weight: 700;
+}
+
+.product-category {
+  margin-top: 3px;
+  color: #777;
+  font-size: 11px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/* ================= STATUS ================= */
+
+#status {
+  margin-bottom: 15px;
+}
+
+.alert {
+  padding: 11px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.success-alert {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.error-alert {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* ================= MODAL ================= */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  padding: 15px;
+
+  background: rgba(0,0,0,.55);
+}
+
+.modal.open {
+  display: flex;
+}
+
+.modal-box {
+  width: 680px;
+  max-width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+
+  background: white;
+  border-radius: 8px;
+}
+
+.modal-header {
+  padding: 17px 20px;
+  border-bottom: 1px solid #eee;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.close {
+  border: 0;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.form {
+  padding: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group.full {
+  grid-column: 1 / -1;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #2874f0;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.price-preview {
+  margin-top: 7px;
+  color: #388e3c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.form-actions {
+  padding-top: 8px;
+
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 850px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .header-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions a,
+  .header-actions button {
+    flex: 1;
+    text-align: center;
+  }
+
+  .page-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group.full {
+    grid-column: auto;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+</style>
 </head>
 
 <body>
 
-  <!-- ================= HEADER ================= -->
+<!-- ================= HEADER ================= -->
 
-  <header class="header">
+<header class="header">
+  <div class="header-inner">
 
-    <div class="header-inner">
-
-      <div>
-        <div class="logo">
-          Fashion<span>_FUSSION</span>
-        </div>
-
-        <div class="admin-badge">
-          ADMIN PANEL
-        </div>
+    <div>
+      <div class="logo">
+        Fashion<span>_FUSSION</span>
       </div>
 
-      <div class="header-actions">
-
-        <a href="index.html">
-          Store
-        </a>
-
-        <a href="account.html">
-          My Account
-        </a>
-
-        <button
-          id="logoutButton"
-          type="button"
-        >
-          Sign Out
-        </button>
-
+      <div class="admin-badge">
+        ADMIN PANEL
       </div>
-
     </div>
 
-  </header>
+    <div class="header-actions">
 
-
-  <!-- ================= LOADING ================= -->
-
-  <section id="loadingScreen">
-
-    <div class="message-card">
-
-      <h2>
-        Checking administrator access...
-      </h2>
-
-      <p>
-        Please wait while we verify your account.
-      </p>
-
-    </div>
-
-  </section>
-
-
-  <!-- ================= ACCESS DENIED ================= -->
-
-  <section
-    id="accessDenied"
-    style="display:none;"
-  >
-
-    <div class="message-card">
-
-      <h2 class="error">
-        Access Denied
-      </h2>
-
-      <p>
-        Administrator privileges are required to access this page.
-      </p>
-
-      <div id="accessError"></div>
-
-      <a
-        class="primary"
-        href="login.html"
-      >
-        Go to Login
+      <a href="index.html">
+        Store
       </a>
 
-    </div>
-
-  </section>
-
-
-  <!-- ================= DASHBOARD ================= -->
-
-  <main id="dashboard">
-
-    <div class="container">
-
-      <div class="page-title">
-
-        <div>
-
-          <h1>
-            Admin Dashboard
-          </h1>
-
-          <p id="adminEmail">
-            Administrator
-          </p>
-
-        </div>
-
-        <button
-          class="primary"
-          id="addProductButton"
-          type="button"
-        >
-          + Add Product
-        </button>
-
-      </div>
-
-
-      <div id="status"></div>
-
-
-      <!-- ================= STATS ================= -->
-
-      <section class="stats">
-
-        <div class="stat">
-
-          <div class="stat-label">
-            TOTAL PRODUCTS
-          </div>
-
-          <div
-            class="stat-value"
-            id="totalProducts"
-          >
-            0
-          </div>
-
-        </div>
-
-
-        <div class="stat">
-
-          <div class="stat-label">
-            CATEGORIES
-          </div>
-
-          <div
-            class="stat-value"
-            id="totalCategories"
-          >
-            0
-          </div>
-
-        </div>
-
-
-        <div class="stat">
-
-          <div class="stat-label">
-            ACTIVE PRODUCTS
-          </div>
-
-          <div
-            class="stat-value"
-            id="activeProducts"
-          >
-            0
-          </div>
-
-        </div>
-
-
-        <div class="stat">
-
-          <div class="stat-label">
-            ADMIN
-          </div>
-
-          <div
-            class="stat-value"
-            style="font-size:16px;"
-          >
-            ✓ Verified
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- ================= PRODUCTS ================= -->
-
-      <section class="card">
-
-        <div class="card-header">
-
-          <h2>
-            Product Catalog
-          </h2>
-
-          <button
-            class="secondary"
-            id="refreshButton"
-            type="button"
-          >
-            ↻ Refresh
-          </button>
-
-        </div>
-
-
-        <div class="card-body">
-
-          <input
-            class="search"
-            id="productSearch"
-            type="search"
-            placeholder="Search products..."
-          >
-
-          <br>
-          <br>
-
-          <div class="table-wrapper">
-
-            <table>
-
-              <thead>
-
-                <tr>
-                  <th>PRODUCT</th>
-                  <th>CATEGORY</th>
-                  <th>COST</th>
-                  <th>SELLING PRICE</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
-                </tr>
-
-              </thead>
-
-              <tbody id="productTable">
-
-                <tr>
-
-                  <td
-                    colspan="6"
-                    style="text-align:center;padding:40px;"
-                  >
-                    Loading products...
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-      </section>
-
-    </div>
-
-  </main>
-
-
-  <!-- ================= PRODUCT MODAL ================= -->
-
-  <div
-    class="modal"
-    id="productModal"
-  >
-
-    <div class="modal-box">
-
-      <div class="modal-header">
-
-        <h2 id="modalTitle">
-          Add Product
-        </h2>
-
-        <button
-          class="close"
-          id="closeModal"
-          type="button"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <form
-        class="form"
-        id="productForm"
-      >
-
-        <input
-          type="hidden"
-          id="productId"
-        >
-
-
-        <div class="form-grid">
-
-          <!-- NAME -->
-
-          <div class="form-group full">
-
-            <label for="productName">
-              Product Name
-            </label>
-
-            <input
-              id="productName"
-              required
-              maxlength="150"
-              placeholder="Product name"
-            >
-
-          </div>
-
-
-          <!-- CATEGORY -->
-
-          <div class="form-group">
-
-            <label for="productCategory">
-              Category
-            </label>
-
-            <input
-              id="productCategory"
-              required
-              maxlength="100"
-              placeholder="Fashion"
-            >
-
-          </div>
-
-
-          <!-- COST -->
-
-          <div class="form-group">
-
-            <label for="productCost">
-              Cost Price ₹
-            </label>
-
-            <input
-              id="productCost"
-              type="number"
-              min="1"
-              step="0.01"
-              required
-              placeholder="100"
-            >
-
-          </div>
-
-
-          <!-- RATING -->
-
-          <div class="form-group">
-
-            <label for="productRating">
-              Rating
-            </label>
-
-            <input
-              id="productRating"
-              type="number"
-              min="0"
-              max="5"
-              step="0.1"
-              value="4.5"
-            >
-
-          </div>
-
-
-          <!-- REVIEWS -->
-
-          <div class="form-group">
-
-            <label for="productReviews">
-              Reviews
-            </label>
-
-            <input
-              id="productReviews"
-              type="number"
-              min="0"
-              step="1"
-              value="0"
-            >
-
-          </div>
-
-
-          <!-- IMAGE -->
-
-          <div class="form-group full">
-
-            <label for="productImage">
-              Product Image URL
-            </label>
-
-            <input
-              id="productImage"
-              type="url"
-              placeholder="https://example.com/image.jpg"
-            >
-
-          </div>
-
-
-          <!-- BADGE -->
-
-          <div class="form-group">
-
-            <label for="productBadge">
-              Badge
-            </label>
-
-            <select id="productBadge">
-
-              <option value="">
-                None
-              </option>
-
-              <option value="new">
-                New
-              </option>
-
-              <option value="bestseller">
-                Bestseller
-              </option>
-
-              <option value="sale">
-                Sale
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <!-- STATUS -->
-
-          <div class="form-group">
-
-            <label for="productActive">
-              Status
-            </label>
-
-            <select id="productActive">
-
-              <option value="true">
-                Active
-              </option>
-
-              <option value="false">
-                Hidden
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <!-- DESCRIPTION -->
-
-          <div class="form-group full">
-
-            <label for="productDescription">
-              Description
-            </label>
-
-            <textarea
-              id="productDescription"
-              placeholder="Product description..."
-            ></textarea>
-
-          </div>
-
-        </div>
-
-
-        <div class="form-actions">
-
-          <button
-            class="secondary"
-            id="cancelButton"
-            type="button"
-          >
-            Cancel
-          </button>
-
-          <button
-            class="primary"
-            type="submit"
-          >
-            Save Product
-          </button>
-
-        </div>
-
-      </form>
+      <a href="account.html">
+        My Account
+      </a>
+
+      <button id="logoutButton" type="button">
+        Sign Out
+      </button>
 
     </div>
 
   </div>
+</header>
+
+<!-- ================= LOADING ================= -->
+
+<section id="loadingScreen">
+
+  <div class="message-card">
+
+    <h2>Checking administrator access...</h2>
+
+    <p>
+      Please wait while Supabase verifies your account.
+    </p>
+
+  </div>
+
+</section>
+
+<!-- ================= ACCESS DENIED ================= -->
+
+<section id="accessDenied" style="display:none;">
+
+  <div class="message-card">
+
+    <h2 class="error-title">
+      Access Denied
+    </h2>
+
+    <p>
+      Administrator privileges are required to access this page.
+    </p>
+
+    <div
+      id="accessError"
+      class="access-error"
+    >
+      Unable to verify administrator access.
+    </div>
+
+    <button
+      class="primary"
+      type="button"
+      onclick="window.location.href='login.html'"
+    >
+      Go to Login
+    </button>
+
+  </div>
+
+</section>
+
+<!-- ================= DASHBOARD ================= -->
+
+<main
+  id="dashboard"
+  class="dashboard"
+>
+
+  <div class="container">
+
+    <!-- TITLE -->
+
+    <div class="page-title">
+
+      <div>
+
+        <h1>
+          Admin Dashboard
+        </h1>
+
+        <p id="adminEmail">
+          Administrator
+        </p>
+
+      </div>
+
+      <button
+        id="addProductButton"
+        class="primary"
+        type="button"
+      >
+        + Add Product
+      </button>
+
+    </div>
+
+    <!-- STATUS -->
+
+    <div id="status"></div>
+
+    <!-- STATS -->
+
+    <section class="stats">
+
+      <div class="stat">
+
+        <div class="stat-label">
+          TOTAL PRODUCTS
+        </div>
+
+        <div
+          id="totalProducts"
+          class="stat-value"
+        >
+          0
+        </div>
+
+      </div>
+
+      <div class="stat">
+
+        <div class="stat-label">
+          CATEGORIES
+        </div>
+
+        <div
+          id="totalCategories"
+          class="stat-value"
+        >
+          0
+        </div>
+
+      </div>
+
+      <div class="stat">
+
+        <div class="stat-label">
+          ACTIVE PRODUCTS
+        </div>
+
+        <div
+          id="activeProducts"
+          class="stat-value"
+        >
+          0
+        </div>
+
+      </div>
+
+      <div class="stat">
+
+        <div class="stat-label">
+          ADMIN
+        </div>
+
+        <div
+          class="stat-value"
+          style="font-size:16px;"
+        >
+          ✓ Verified
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- PRODUCT CATALOG -->
+
+    <section class="card">
+
+      <div class="card-header">
+
+        <h2>
+          Product Catalog
+        </h2>
+
+        <button
+          id="refreshButton"
+          class="secondary"
+          type="button"
+        >
+          ↻ Refresh
+        </button>
+
+      </div>
+
+      <div class="card-body">
+
+        <div class="search-row">
+
+          <input
+            id="productSearch"
+            class="search"
+            type="search"
+            placeholder="Search products..."
+          >
+
+        </div>
+
+        <br>
+
+        <div class="table-wrapper">
+
+          <table>
+
+            <thead>
+              <tr>
+                <th>PRODUCT</th>
+                <th>CATEGORY</th>
+                <th>COST</th>
+                <th>SELLING PRICE</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+
+            <tbody id="productTable">
+
+              <tr>
+                <td
+                  colspan="6"
+                  style="text-align:center;padding:40px;"
+                >
+                  Loading products...
+                </td>
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+</main>
+
+<!-- ================= PRODUCT MODAL ================= -->
+
+<div
+  id="productModal"
+  class="modal"
+>
+
+  <div class="modal-box">
+
+    <div class="modal-header">
+
+      <h2 id="modalTitle">
+        Add Product
+      </h2>
+
+      <button
+        id="closeModal"
+        class="close"
+        type="button"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <form
+      id="productForm"
+      class="form"
+    >
+
+      <input
+        id="productId"
+        type="hidden"
+      >
+
+      <div class="form-grid">
+
+        <!-- NAME -->
+
+        <div class="form-group full">
+
+          <label for="productName">
+            Product Name
+          </label>
+
+          <input
+            id="productName"
+            type="text"
+            required
+            maxlength="150"
+            placeholder="Example: Premium Stainless Steel Bottle"
+          >
+
+        </div>
+
+        <!-- CATEGORY -->
+
+        <div class="form-group">
+
+          <label for="productCategory">
+            Category
+          </label>
+
+          <select
+            id="productCategory"
+            required
+          >
+
+            <option value="">
+              Select category
+            </option>
+
+            <option value="Home & Kitchen">
+              Home & Kitchen
+            </option>
+
+            <option value="Beauty & Personal Care">
+              Beauty & Personal Care
+            </option>
+
+            <option value="Home Decor & Pooja">
+              Home Decor & Pooja
+            </option>
+
+            <option value="Toys & Stationery">
+              Toys & Stationery
+            </option>
+
+            <option value="Auto & Travel">
+              Auto & Travel
+            </option>
+
+            <option value="Home Improvement">
+              Home Improvement
+            </option>
+
+            <option value="Pet Care">
+              Pet Care
+            </option>
+
+            <option value="Sports & Fitness">
+              Sports & Fitness
+            </option>
+
+          </select>
+
+        </div>
+
+        <!-- COST -->
+
+        <div class="form-group">
+
+          <label for="productCost">
+            Cost Price ₹
+          </label>
+
+          <input
+            id="productCost"
+            type="number"
+            min="1"
+            step="1"
+            required
+            placeholder="100"
+          >
+
+          <div
+            id="pricePreview"
+            class="price-preview"
+          >
+            Selling Price: ₹0
+          </div>
+
+        </div>
+
+        <!-- RATING -->
+
+        <div class="form-group">
+
+          <label for="productRating">
+            Rating
+          </label>
+
+          <input
+            id="productRating"
+            type="number"
+            min="0"
+            max="5"
+            step="0.1"
+            value="4.5"
+          >
+
+        </div>
+
+        <!-- REVIEWS -->
+
+        <div class="form-group">
+
+          <label for="productReviews">
+            Reviews
+          </label>
+
+          <input
+            id="productReviews"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+
+        </div>
+
+        <!-- IMAGE -->
+
+        <div class="form-group full">
+
+          <label for="productImage">
+            Product Image URL
+          </label>
+
+          <input
+            id="productImage"
+            type="url"
+            placeholder="https://example.com/product-image.jpg"
+          >
+
+        </div>
+
+        <!-- BADGE -->
+
+        <div class="form-group">
+
+          <label for="productBadge">
+            Badge
+          </label>
+
+          <select id="productBadge">
+
+            <option value="">
+              None
+            </option>
+
+            <option value="new">
+              New
+            </option>
+
+            <option value="bestseller">
+              Bestseller
+            </option>
+
+          </select>
+
+        </div>
+
+        <!-- STATUS -->
+
+        <div class="form-group">
+
+          <label for="productActive">
+            Status
+          </label>
+
+          <select id="productActive">
+
+            <option value="true">
+              Active
+            </option>
+
+            <option value="false">
+              Hidden
+            </option>
+
+          </select>
+
+        </div>
+
+        <!-- DESCRIPTION -->
+
+        <div class="form-group full">
+
+          <label for="productDescription">
+            Description
+          </label>
+
+          <textarea
+            id="productDescription"
+            placeholder="Write product description..."
+          ></textarea>
+
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+
+        <button
+          id="cancelButton"
+          class="secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primary"
+          type="submit"
+        >
+          Save Product
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+<!-- ================= JAVASCRIPT ================= -->
+
+<script>
+
+/* =========================================================
+   ADMIN CONFIG
+   ========================================================= */
+
+const ADMIN_USER_ID =
+  "53165e6e-4e81-492e-9f9f-7a1611ee9801";
 
 
-  <script>
+/* =========================================================
+   STATE
+   ========================================================= */
 
-    /* =========================================================
-       VERIFIED ADMIN USER
-       ========================================================= */
-
-    const ADMIN_USER_ID =
-      "53165e6e-4e81-492e-9f9f-7a1611ee9801";
+let products = [];
+let editingProductId = null;
 
 
-    let products = [];
-    let editingProductId = null;
+/* =========================================================
+   ELEMENTS
+   ========================================================= */
+
+const loadingScreen =
+  document.getElementById("loadingScreen");
+
+const accessDenied =
+  document.getElementById("accessDenied");
+
+const accessError =
+  document.getElementById("accessError");
+
+const dashboard =
+  document.getElementById("dashboard");
+
+const statusBox =
+  document.getElementById("status");
 
 
-    /* =========================================================
-       PRICE
-       Cost + 2% + ₹12, then 50% margin
-       ========================================================= */
+/* =========================================================
+   PRICE CALCULATION
+   =========================================================
+   
+   Cost
+   + 2% cost
+   + ₹12
+   then × 1.50
+   
+   Example:
+   Cost ₹100
+   = (100 + 2 + 12) × 1.50
+   = ₹171
+   
+   ========================================================= */
 
-    function sellingPrice(cost) {
+function sellingPrice(cost) {
 
-      return Math.ceil(
-        (
-          Number(cost) +
-          Number(cost) * 0.02 +
-          12
-        ) * 1.50
-      );
+  const amount = Number(cost) || 0;
 
-    }
+  return Math.ceil(
+    (
+      amount +
+      (amount * 0.02) +
+      12
+    ) * 1.50
+  );
 
-
-    /* =========================================================
-       MONEY
-       ========================================================= */
-
-    function money(value) {
-
-      return "₹" +
-        Number(value || 0)
-          .toLocaleString("en-IN");
-
-    }
-
-
-    /* =========================================================
-       HTML ESCAPE
-       ========================================================= */
-
-    function escapeHtml(value) {
-
-      return String(value ?? "")
-        .replace(/[&<>"']/g, function(char) {
-
-          const map = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#039;"
-          };
-
-          return map[char];
-
-        });
-
-    }
+}
 
 
-    /* =========================================================
-       STATUS MESSAGE
-       ========================================================= */
+/* =========================================================
+   MONEY
+   ========================================================= */
 
-    function showStatus(
-      message,
-      type = "success"
+function money(value) {
+
+  return "₹" +
+    Number(value || 0).toLocaleString("en-IN");
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replace(/[&<>"']/g, function(match) {
+
+      const chars = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      };
+
+      return chars[match];
+
+    });
+
+}
+
+
+/* =========================================================
+   STATUS MESSAGE
+   ========================================================= */
+
+function showStatus(
+  message,
+  type = "success"
+) {
+
+  statusBox.innerHTML = `
+    <div class="alert ${
+      type === "error"
+        ? "error-alert"
+        : "success-alert"
+    }">
+      ${escapeHtml(message)}
+    </div>
+  `;
+
+  setTimeout(function() {
+
+    statusBox.innerHTML = "";
+
+  }, 4000);
+
+}
+
+
+/* =========================================================
+   ACCESS DENIED
+   ========================================================= */
+
+function denyAccess(reason) {
+
+  console.error("ADMIN ACCESS DENIED:", reason);
+
+  loadingScreen.style.display = "none";
+  dashboard.style.display = "none";
+  accessDenied.style.display = "flex";
+
+  accessError.textContent =
+    reason ||
+    "Administrator privileges are required.";
+
+}
+
+
+/* =========================================================
+   ADMIN AUTH CHECK
+   ========================================================= */
+
+async function checkAdmin() {
+
+  try {
+
+    /*
+     * Make sure supabase-config.js created
+     * the global supabaseClient.
+     */
+
+    if (
+      typeof supabaseClient === "undefined" ||
+      !supabaseClient
     ) {
 
-      const box =
-        document.getElementById("status");
+      denyAccess(
+        "supabaseClient is not available. Check that supabase-config.js is loading correctly."
+      );
 
-      box.innerHTML = `
-        <div class="alert ${
-          type === "error"
-            ? "error-alert"
-            : "success-alert"
-        }">
-          ${escapeHtml(message)}
-        </div>
-      `;
-
-      setTimeout(function() {
-        box.innerHTML = "";
-      }, 4000);
-
+      return;
     }
 
 
-    /* =========================================================
-       ACCESS DENIED
-       ========================================================= */
+    /*
+     * STEP 1:
+     * Check browser session.
+     */
 
-    function denyAccess(message) {
-
-      document
-        .getElementById("loadingScreen")
-        .style.display = "none";
-
-      document
-        .getElementById("dashboard")
-        .style.display = "none";
+    const {
+      data: sessionData,
+      error: sessionError
+    } =
+      await supabaseClient.auth.getSession();
 
 
-      if (message) {
+    if (sessionError) {
 
-        document
-          .getElementById("accessError")
-          .innerHTML = `
-            <div class="message-error">
-              ${escapeHtml(message)}
-            </div>
-          `;
+      console.error(
+        "getSession error:",
+        sessionError
+      );
 
-      }
+      denyAccess(
+        "Supabase session error: " +
+        (sessionError.message ||
+        "Unknown session error.")
+      );
 
-
-      document
-        .getElementById("accessDenied")
-        .style.display = "flex";
-
+      return;
     }
 
 
-    /* =========================================================
-       ADMIN CHECK
-       ========================================================= */
+    const session =
+      sessionData?.session;
 
-    async function checkAdmin() {
 
-      try {
+    if (!session || !session.user) {
 
-        console.log(
-          "Starting admin verification..."
-        );
+      denyAccess(
+        "No active Supabase login was found. Please log in again."
+      );
 
-
-        /*
-          1. Get authenticated user
-        */
-
-        const {
-          data: {
-            user
-          },
-          error: userError
-        } =
-          await supabaseClient
-            .auth
-            .getUser();
-
-
-        if (userError) {
-
-          console.error(
-            "User verification error:",
-            userError
-          );
-
-          denyAccess(
-            "Unable to verify your Supabase session."
-          );
-
-          return;
-
-        }
-
-
-        if (!user) {
-
-          console.warn(
-            "No authenticated user."
-          );
-
-          denyAccess(
-            "Please login first."
-          );
-
-          return;
-
-        }
-
-
-        console.log(
-          "Logged in user:",
-          user.id,
-          user.email
-        );
-
-
-        /*
-          2. Check exact admin UID
-
-          No email comparison is used.
-        */
-
-        if (
-          user.id !== ADMIN_USER_ID
-        ) {
-
-          console.warn(
-            "This user is not the authorized admin UID:",
-            user.id
-          );
-
-          denyAccess(
-            "This account is not the authorized administrator account."
-          );
-
-          return;
-
-        }
-
-
-        /*
-          3. Read profile
-        */
-
-        const {
-          data: profile,
-          error: profileError
-        } =
-          await supabaseClient
-            .from("profiles")
-            .select(
-              "id,is_admin"
-            )
-            .eq(
-              "id",
-              user.id
-            )
-            .maybeSingle();
-
-
-        console.log(
-          "Admin profile:",
-          profile
-        );
-
-
-        if (profileError) {
-
-          console.error(
-            "Profile query error:",
-            profileError
-          );
-
-          denyAccess(
-            "Could not read administrator profile: " +
-            profileError.message
-          );
-
-          return;
-
-        }
-
-
-        if (!profile) {
-
-          denyAccess(
-            "Administrator profile was not found."
-          );
-
-          return;
-
-        }
-
-
-        /*
-          4. Check is_admin
-        */
-
-        if (
-          profile.is_admin !== true
-        ) {
-
-          console.warn(
-            "is_admin is not true:",
-            profile.is_admin
-          );
-
-          denyAccess(
-            "Your administrator flag is not enabled."
-          );
-
-          return;
-
-        }
-
-
-        /*
-          5. SUCCESS
-        */
-
-        console.log(
-          "ADMIN VERIFIED SUCCESSFULLY"
-        );
-
-
-        document
-          .getElementById("adminEmail")
-          .textContent =
-          user.email || "Administrator";
-
-
-        document
-          .getElementById("loadingScreen")
-          .style.display = "none";
-
-
-        document
-          .getElementById("accessDenied")
-          .style.display = "none";
-
-
-        document
-          .getElementById("dashboard")
-          .style.display = "block";
-
-
-        /*
-          6. Load products
-        */
-
-        await loadProducts();
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Admin verification failed:",
-          error
-        );
-
-        denyAccess(
-          error.message ||
-          "Administrator verification failed."
-        );
-
-      }
-
+      return;
     }
 
 
-    /* =========================================================
-       LOAD PRODUCTS
-       ========================================================= */
+    console.log(
+      "Supabase session found:",
+      session.user.id,
+      session.user.email
+    );
 
-    async function loadProducts() {
 
-      const table =
-        document.getElementById(
-          "productTable"
+    /*
+     * STEP 2:
+     * Ask Supabase to verify the authenticated user.
+     */
+
+    const {
+      data: userData,
+      error: userError
+    } =
+      await supabaseClient.auth.getUser();
+
+
+    if (userError) {
+
+      console.error(
+        "getUser error:",
+        userError
+      );
+
+      denyAccess(
+        "Supabase user verification failed: " +
+        (userError.message ||
+        "Unable to verify user.")
+      );
+
+      return;
+    }
+
+
+    const user =
+      userData?.user;
+
+
+    if (!user) {
+
+      denyAccess(
+        "Supabase did not return an authenticated user. Please log in again."
+      );
+
+      return;
+    }
+
+
+    console.log(
+      "Authenticated user:",
+      user.id,
+      user.email
+    );
+
+
+    /*
+     * STEP 3:
+     * Exact Admin UID check.
+     */
+
+    if (
+      String(user.id) !==
+      String(ADMIN_USER_ID)
+    ) {
+
+      denyAccess(
+        "This account is not the configured administrator account."
+      );
+
+      return;
+    }
+
+
+    /*
+     * STEP 4:
+     * Database admin flag.
+     */
+
+    const {
+      data: profile,
+      error: profileError
+    } =
+      await supabaseClient
+        .from("profiles")
+        .select("id,is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
+
+    if (profileError) {
+
+      console.error(
+        "Profile query error:",
+        profileError
+      );
+
+      denyAccess(
+        "Could not verify administrator profile: " +
+        (profileError.message ||
+        "Profile query failed.")
+      );
+
+      return;
+    }
+
+
+    if (!profile) {
+
+      denyAccess(
+        "No profile was found for this administrator account."
+      );
+
+      return;
+    }
+
+
+    if (profile.is_admin !== true) {
+
+      denyAccess(
+        "Administrator access is not enabled for this account."
+      );
+
+      return;
+    }
+
+
+    /*
+     * STEP 5:
+     * ACCESS GRANTED.
+     */
+
+    console.log(
+      "ADMIN ACCESS GRANTED"
+    );
+
+
+    document.getElementById(
+      "adminEmail"
+    ).textContent =
+      user.email ||
+      "Administrator";
+
+
+    loadingScreen.style.display =
+      "none";
+
+    accessDenied.style.display =
+      "none";
+
+    dashboard.style.display =
+      "block";
+
+
+    /*
+     * Load products only after admin
+     * verification succeeds.
+     */
+
+    await loadProducts();
+
+  } catch (error) {
+
+    console.error(
+      "Unexpected admin authentication error:",
+      error
+    );
+
+    denyAccess(
+      error?.message ||
+      "Unexpected authentication error."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   LOAD PRODUCTS
+   ========================================================= */
+
+async function loadProducts() {
+
+  const table =
+    document.getElementById(
+      "productTable"
+    );
+
+  table.innerHTML = `
+    <tr>
+      <td
+        colspan="6"
+        style="text-align:center;padding:40px;"
+      >
+        Loading products...
+      </td>
+    </tr>
+  `;
+
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("products")
+        .select("*")
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
         );
 
 
-      table.innerHTML = `
+    if (error) {
+      throw error;
+    }
+
+
+    products =
+      Array.isArray(data)
+        ? data
+        : [];
+
+
+    renderProducts();
+    updateStats();
+
+  } catch (error) {
+
+    console.error(
+      "Product loading error:",
+      error
+    );
+
+
+    table.innerHTML = `
+      <tr>
+        <td
+          colspan="6"
+          style="
+            text-align:center;
+            padding:40px;
+            color:#d32f2f;
+          "
+        >
+          <b>Products could not be loaded.</b>
+          <br><br>
+          ${escapeHtml(
+            error.message ||
+            "Unknown Supabase error."
+          )}
+        </td>
+      </tr>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER PRODUCTS
+   ========================================================= */
+
+function renderProducts() {
+
+  const search =
+    document.getElementById(
+      "productSearch"
+    )
+    .value
+    .trim()
+    .toLowerCase();
+
+
+  const filtered =
+    products.filter(function(product) {
+
+      const name =
+        String(
+          product.name || ""
+        ).toLowerCase();
+
+      const category =
+        String(
+          product.category ||
+          product.cat ||
+          ""
+        ).toLowerCase();
+
+      return (
+        name.includes(search) ||
+        category.includes(search)
+      );
+
+    });
+
+
+  const table =
+    document.getElementById(
+      "productTable"
+    );
+
+
+  if (!filtered.length) {
+
+    table.innerHTML = `
+      <tr>
+        <td
+          colspan="6"
+          style="
+            text-align:center;
+            padding:45px;
+            color:#777;
+          "
+        >
+          No products found.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+
+  table.innerHTML =
+    filtered.map(function(product) {
+
+      const cost =
+        Number(
+          product.cost ||
+          product.cost_price ||
+          0
+        );
+
+
+      const price =
+        Number(
+          product.price ||
+          sellingPrice(cost)
+        );
+
+
+      const image =
+        product.image_url ||
+        product.img ||
+        "";
+
+
+      const category =
+        product.category ||
+        product.cat ||
+        "";
+
+
+      const active =
+        product.is_active !== false;
+
+
+      return `
         <tr>
-          <td
-            colspan="6"
-            style="text-align:center;padding:40px;"
-          >
-            Loading products...
+
+          <td class="product-cell">
+
+            ${
+              image
+                ? `
+                  <img
+                    class="product-thumb"
+                    src="${escapeHtml(image)}"
+                    alt="${escapeHtml(product.name)}"
+                    onerror="
+                      this.outerHTML='<div class=&quot;no-image&quot;>🛍️</div>'
+                    "
+                  >
+                `
+                : `
+                  <div class="no-image">
+                    🛍️
+                  </div>
+                `
+            }
+
+            <div class="product-name">
+              ${escapeHtml(product.name)}
+            </div>
+
+            <div class="product-category">
+              ${escapeHtml(category)}
+            </div>
+
           </td>
+
+
+          <td>
+            ${escapeHtml(category)}
+          </td>
+
+
+          <td>
+            ${money(cost)}
+          </td>
+
+
+          <td>
+            <b>
+              ${money(price)}
+            </b>
+          </td>
+
+
+          <td>
+
+            ${
+              active
+                ? `
+                  <span
+                    style="
+                      color:#388e3c;
+                      font-weight:700;
+                    "
+                  >
+                    ● Active
+                  </span>
+                `
+                : `
+                  <span
+                    style="
+                      color:#d32f2f;
+                      font-weight:700;
+                    "
+                  >
+                    ● Hidden
+                  </span>
+                `
+            }
+
+          </td>
+
+
+          <td>
+
+            <div class="action-buttons">
+
+              <button
+                class="secondary"
+                type="button"
+                onclick="editProduct('${escapeHtml(String(product.id))}')"
+              >
+                Edit
+              </button>
+
+              <button
+                class="danger"
+                type="button"
+                onclick="deleteProduct('${escapeHtml(String(product.id))}')"
+              >
+                Delete
+              </button>
+
+            </div>
+
+          </td>
+
         </tr>
       `;
 
+    }).join("");
 
-      try {
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .from("products")
-            .select("*")
-            .order(
-              "created_at",
-              {
-                ascending: false
-              }
-            );
+}
 
 
-        if (error) {
-          throw error;
-        }
+/* =========================================================
+   UPDATE STATS
+   ========================================================= */
+
+function updateStats() {
+
+  document.getElementById(
+    "totalProducts"
+  ).textContent =
+    products.length;
 
 
-        products = data || [];
-
-
-        renderProducts();
-        updateStats();
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Product loading error:",
-          error
-        );
-
-
-        table.innerHTML = `
-          <tr>
-            <td
-              colspan="6"
-              style="
-                text-align:center;
-                padding:40px;
-                color:#d32f2f;
-              "
-            >
-              Unable to load products.
-              <br><br>
-              ${escapeHtml(
-                error.message ||
-                "Unknown database error."
-              )}
-            </td>
-          </tr>
-        `;
-
-      }
-
-    }
-
-
-    /* =========================================================
-       RENDER PRODUCTS
-       ========================================================= */
-
-    function renderProducts() {
-
-      const search =
-        document
-          .getElementById("productSearch")
-          .value
-          .trim()
-          .toLowerCase();
-
-
-      const filtered =
-        products.filter(function(product) {
-
-          const name =
-            String(
-              product.name || ""
-            ).toLowerCase();
-
-          const category =
-            String(
-              product.category || ""
-            ).toLowerCase();
+  const categorySet =
+    new Set(
+      products
+        .map(function(product) {
 
           return (
-            name.includes(search) ||
-            category.includes(search)
+            product.category ||
+            product.cat ||
+            ""
           );
 
-        });
+        })
+        .filter(Boolean)
+    );
 
 
-      const table =
-        document.getElementById(
-          "productTable"
+  document.getElementById(
+    "totalCategories"
+  ).textContent =
+    categorySet.size;
+
+
+  const activeCount =
+    products.filter(function(product) {
+
+      return product.is_active !== false;
+
+    }).length;
+
+
+  document.getElementById(
+    "activeProducts"
+  ).textContent =
+    activeCount;
+
+}
+
+
+/* =========================================================
+   OPEN ADD PRODUCT
+   ========================================================= */
+
+function openAddProduct() {
+
+  editingProductId = null;
+
+
+  document.getElementById(
+    "modalTitle"
+  ).textContent =
+    "Add Product";
+
+
+  document.getElementById(
+    "productForm"
+  ).reset();
+
+
+  document.getElementById(
+    "productId"
+  ).value = "";
+
+
+  document.getElementById(
+    "productRating"
+  ).value =
+    "4.5";
+
+
+  document.getElementById(
+    "productReviews"
+  ).value =
+    "0";
+
+
+  document.getElementById(
+    "productActive"
+  ).value =
+    "true";
+
+
+  updatePricePreview();
+
+
+  document.getElementById(
+    "productModal"
+  ).classList.add("open");
+
+}
+
+
+/* =========================================================
+   EDIT PRODUCT
+   ========================================================= */
+
+function editProduct(id) {
+
+  const product =
+    products.find(function(item) {
+
+      return String(item.id) ===
+        String(id);
+
+    });
+
+
+  if (!product) {
+
+    showStatus(
+      "Product not found.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  editingProductId =
+    product.id;
+
+
+  document.getElementById(
+    "modalTitle"
+  ).textContent =
+    "Edit Product";
+
+
+  document.getElementById(
+    "productId"
+  ).value =
+    product.id;
+
+
+  document.getElementById(
+    "productName"
+  ).value =
+    product.name || "";
+
+
+  document.getElementById(
+    "productCategory"
+  ).value =
+    product.category ||
+    product.cat ||
+    "";
+
+
+  document.getElementById(
+    "productCost"
+  ).value =
+    product.cost ||
+    product.cost_price ||
+    "";
+
+
+  document.getElementById(
+    "productRating"
+  ).value =
+    product.rating ??
+    "4.5";
+
+
+  document.getElementById(
+    "productReviews"
+  ).value =
+    product.reviews ??
+    "0";
+
+
+  document.getElementById(
+    "productImage"
+  ).value =
+    product.image_url ||
+    product.img ||
+    "";
+
+
+  document.getElementById(
+    "productBadge"
+  ).value =
+    product.badge ||
+    "";
+
+
+  document.getElementById(
+    "productActive"
+  ).value =
+    product.is_active === false
+      ? "false"
+      : "true";
+
+
+  document.getElementById(
+    "productDescription"
+  ).value =
+    product.description ||
+    "";
+
+
+  updatePricePreview();
+
+
+  document.getElementById(
+    "productModal"
+  ).classList.add("open");
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL
+   ========================================================= */
+
+function closeModal() {
+
+  document.getElementById(
+    "productModal"
+  ).classList.remove("open");
+
+}
+
+
+/* =========================================================
+   PRICE PREVIEW
+   ========================================================= */
+
+function updatePricePreview() {
+
+  const cost =
+    Number(
+      document.getElementById(
+        "productCost"
+      ).value
+    ) || 0;
+
+
+  document.getElementById(
+    "pricePreview"
+  ).textContent =
+    "Selling Price: " +
+    money(sellingPrice(cost));
+
+}
+
+
+/* =========================================================
+   SAVE PRODUCT
+   ========================================================= */
+
+async function saveProduct(event) {
+
+  event.preventDefault();
+
+
+  const name =
+    document.getElementById(
+      "productName"
+    ).value.trim();
+
+
+  const category =
+    document.getElementById(
+      "productCategory"
+    ).value;
+
+
+  const cost =
+    Number(
+      document.getElementById(
+        "productCost"
+      ).value
+    );
+
+
+  const rating =
+    Number(
+      document.getElementById(
+        "productRating"
+      ).value
+    ) || 4.5;
+
+
+  const reviews =
+    Number(
+      document.getElementById(
+        "productReviews"
+      ).value
+    ) || 0;
+
+
+  const image =
+    document.getElementById(
+      "productImage"
+    ).value.trim();
+
+
+  const badge =
+    document.getElementById(
+      "productBadge"
+    ).value;
+
+
+  const active =
+    document.getElementById(
+      "productActive"
+    ).value ===
+    "true";
+
+
+  const description =
+    document.getElementById(
+      "productDescription"
+    ).value.trim();
+
+
+  if (!name) {
+
+    showStatus(
+      "Please enter product name.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  if (!category) {
+
+    showStatus(
+      "Please select a category.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  if (!cost || cost <= 0) {
+
+    showStatus(
+      "Please enter a valid cost price.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  if (
+    rating < 0 ||
+    rating > 5
+  ) {
+
+    showStatus(
+      "Rating must be between 0 and 5.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  const productData = {
+
+    name: name,
+
+    category: category,
+
+    cost: cost,
+
+    price: sellingPrice(cost),
+
+    rating: rating,
+
+    reviews: reviews,
+
+    image_url:
+      image ||
+      null,
+
+    badge:
+      badge ||
+      null,
+
+    is_active:
+      active,
+
+    description:
+      description ||
+      null
+
+  };
+
+
+  const saveButton =
+    document.querySelector(
+      '#productForm button[type="submit"]'
+    );
+
+
+  if (saveButton) {
+
+    saveButton.disabled = true;
+    saveButton.textContent =
+      "Saving...";
+
+  }
+
+
+  try {
+
+    if (
+      editingProductId !==
+      null
+    ) {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("products")
+          .update(productData)
+          .eq(
+            "id",
+            editingProductId
+          );
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      showStatus(
+        "Product updated successfully."
+      );
+
+    } else {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("products")
+          .insert(
+            productData
+          );
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      showStatus(
+        "Product added successfully."
+      );
+
+    }
+
+
+    closeModal();
+
+    editingProductId =
+      null;
+
+    await loadProducts();
+
+  } catch (error) {
+
+    console.error(
+      "Save product error:",
+      error
+    );
+
+
+    showStatus(
+      error.message ||
+      "Could not save product.",
+      "error"
+    );
+
+  } finally {
+
+    if (saveButton) {
+
+      saveButton.disabled = false;
+      saveButton.textContent =
+        "Save Product";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   DELETE PRODUCT
+   ========================================================= */
+
+async function deleteProduct(id) {
+
+  const product =
+    products.find(function(item) {
+
+      return String(item.id) ===
+        String(id);
+
+    });
+
+
+  if (!product) {
+
+    showStatus(
+      "Product not found.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    window.confirm(
+      'Delete "' +
+      product.name +
+      '"?'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from("products")
+        .delete()
+        .eq(
+          "id",
+          id
         );
 
 
-      if (!filtered.length) {
-
-        table.innerHTML = `
-          <tr>
-            <td
-              colspan="6"
-              style="
-                text-align:center;
-                padding:45px;
-                color:#777;
-              "
-            >
-              No products found.
-            </td>
-          </tr>
-        `;
-
-        return;
-
-      }
-
-
-      table.innerHTML =
-        filtered.map(function(product) {
-
-          const cost =
-            Number(
-              product.cost || 0
-            );
-
-
-          const price =
-            Number(
-              product.price ||
-              sellingPrice(cost)
-            );
-
-
-          const image =
-            product.image_url || "";
-
-
-          return `
-            <tr>
-
-              <td>
-
-                ${
-                  image
-                    ? `
-                      <img
-                        class="product-thumb"
-                        src="${escapeHtml(image)}"
-                        alt=""
-                        onerror="this.style.display='none'"
-                      >
-                    `
-                    : `
-                      <div
-                        class="product-thumb"
-                        style="
-                          display:flex;
-                          align-items:center;
-                          justify-content:center;
-                          font-size:25px;
-                        "
-                      >
-                        🛍️
-                      </div>
-                    `
-                }
-
-                <div class="product-name">
-                  ${escapeHtml(product.name)}
-                </div>
-
-              </td>
-
-
-              <td>
-                ${escapeHtml(
-                  product.category
-                )}
-              </td>
-
-
-              <td>
-                ${money(cost)}
-              </td>
-
-
-              <td>
-                <b>
-                  ${money(price)}
-                </b>
-              </td>
-
-
-              <td>
-
-                ${
-                  product.is_active
-                    ? `
-                      <span class="active">
-                        ● Active
-                      </span>
-                    `
-                    : `
-                      <span class="hidden">
-                        ● Hidden
-                      </span>
-                    `
-                }
-
-              </td>
-
-
-              <td>
-
-                <div class="action-buttons">
-
-                  <button
-                    class="secondary"
-                    type="button"
-                    onclick="editProduct('${String(product.id)}')"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    class="danger"
-                    type="button"
-                    onclick="deleteProduct('${String(product.id)}')"
-                  >
-                    Delete
-                  </button>
-
-                </div>
-
-              </td>
-
-            </tr>
-          `;
-
-        }).join("");
-
+    if (error) {
+      throw error;
     }
 
 
-    /* =========================================================
-       STATS
-       ========================================================= */
-
-    function updateStats() {
-
-      document
-        .getElementById("totalProducts")
-        .textContent =
-        products.length;
+    showStatus(
+      "Product deleted successfully."
+    );
 
 
-      const categories =
-        new Set(
-          products
-            .map(
-              product =>
-                product.category
-            )
-            .filter(Boolean)
-        );
+    await loadProducts();
+
+  } catch (error) {
+
+    console.error(
+      "Delete error:",
+      error
+    );
 
 
-      document
-        .getElementById("totalCategories")
-        .textContent =
-        categories.size;
+    showStatus(
+      error.message ||
+      "Could not delete product.",
+      "error"
+    );
+
+  }
+
+}
 
 
-      document
-        .getElementById("activeProducts")
-        .textContent =
-        products.filter(
-          product =>
-            product.is_active === true
-        ).length;
+/* =========================================================
+   EVENT LISTENERS
+   ========================================================= */
 
-    }
-
-
-    /* =========================================================
-       ADD PRODUCT
-       ========================================================= */
-
-    function openAddProduct() {
-
-      editingProductId = null;
+document.getElementById(
+  "addProductButton"
+).addEventListener(
+  "click",
+  openAddProduct
+);
 
 
-      document
-        .getElementById("modalTitle")
-        .textContent =
-        "Add Product";
+document.getElementById(
+  "refreshButton"
+).addEventListener(
+  "click",
+  loadProducts
+);
 
 
-      document
-        .getElementById("productForm")
-        .reset();
+document.getElementById(
+  "productSearch"
+).addEventListener(
+  "input",
+  renderProducts
+);
 
 
-      document
-        .getElementById("productId")
-        .value = "";
+document.getElementById(
+  "productCost"
+).addEventListener(
+  "input",
+  updatePricePreview
+);
 
 
-      document
-        .getElementById("productRating")
-        .value = "4.5";
+document.getElementById(
+  "productForm"
+).addEventListener(
+  "submit",
+  saveProduct
+);
 
 
-      document
-        .getElementById("productReviews")
-        .value = "0";
+document.getElementById(
+  "closeModal"
+).addEventListener(
+  "click",
+  closeModal
+);
 
 
-      document
-        .getElementById("productActive")
-        .value = "true";
+document.getElementById(
+  "cancelButton"
+).addEventListener(
+  "click",
+  closeModal
+);
 
 
-      document
-        .getElementById("productModal")
-        .classList.add("open");
+document.getElementById(
+  "productModal"
+).addEventListener(
+  "click",
+  function(event) {
 
-    }
+    if (
+      event.target ===
+      this
+    ) {
 
-
-    /* =========================================================
-       EDIT PRODUCT
-       ========================================================= */
-
-    function editProduct(id) {
-
-      const product =
-        products.find(function(item) {
-
-          return String(item.id) ===
-            String(id);
-
-        });
-
-
-      if (!product) {
-        return;
-      }
-
-
-      editingProductId =
-        product.id;
-
-
-      document
-        .getElementById("modalTitle")
-        .textContent =
-        "Edit Product";
-
-
-      document
-        .getElementById("productId")
-        .value =
-        product.id;
-
-
-      document
-        .getElementById("productName")
-        .value =
-        product.name || "";
-
-
-      document
-        .getElementById("productCategory")
-        .value =
-        product.category || "";
-
-
-      document
-        .getElementById("productCost")
-        .value =
-        product.cost || "";
-
-
-      document
-        .getElementById("productRating")
-        .value =
-        product.rating ?? 4.5;
-
-
-      document
-        .getElementById("productReviews")
-        .value =
-        product.reviews ?? 0;
-
-
-      document
-        .getElementById("productImage")
-        .value =
-        product.image_url || "";
-
-
-      document
-        .getElementById("productBadge")
-        .value =
-        product.badge || "";
-
-
-      document
-        .getElementById("productActive")
-        .value =
-        product.is_active
-          ? "true"
-          : "false";
-
-
-      document
-        .getElementById("productDescription")
-        .value =
-        product.description || "";
-
-
-      document
-        .getElementById("productModal")
-        .classList.add("open");
+      closeModal();
 
     }
 
+  }
+);
 
-    /* =========================================================
-       CLOSE MODAL
-       ========================================================= */
 
-    function closeModal() {
+/* =========================================================
+   SIGN OUT
+   ========================================================= */
 
-      document
-        .getElementById("productModal")
-        .classList.remove("open");
+document.getElementById(
+  "logoutButton"
+).addEventListener(
+  "click",
+  async function() {
+
+    try {
+
+      await supabaseClient
+        .auth
+        .signOut();
+
+    } finally {
+
+      window.location.href =
+        "login.html";
 
     }
 
+  }
+);
 
-    /* =========================================================
-       SAVE PRODUCT
-       ========================================================= */
 
-    document
-      .getElementById("productForm")
-      .addEventListener(
-        "submit",
-        async function(event) {
+/* =========================================================
+   AUTH STATE CHANGE
+   ========================================================= */
 
-          event.preventDefault();
+supabaseClient.auth.onAuthStateChange(
+  function(event, session) {
 
+    console.log(
+      "Auth state changed:",
+      event
+    );
 
-          const name =
-            document
-              .getElementById("productName")
-              .value
-              .trim();
+    /*
+     * Don't reload the page for TOKEN_REFRESHED.
+     * Supabase automatically maintains the session.
+     */
 
+    if (
+      event === "SIGNED_OUT"
+    ) {
 
-          const category =
-            document
-              .getElementById("productCategory")
-              .value
-              .trim();
-
-
-          const cost =
-            Number(
-              document
-                .getElementById("productCost")
-                .value
-            );
-
-
-          const rating =
-            Number(
-              document
-                .getElementById("productRating")
-                .value || 0
-            );
-
-
-          const reviews =
-            Number(
-              document
-                .getElementById("productReviews")
-                .value || 0
-            );
-
-
-          const image =
-            document
-              .getElementById("productImage")
-              .value
-              .trim();
-
-
-          const badge =
-            document
-              .getElementById("productBadge")
-              .value;
-
-
-          const isActive =
-            document
-              .getElementById("productActive")
-              .value === "true";
-
-
-          const description =
-            document
-              .getElementById("productDescription")
-              .value
-              .trim();
-
-
-          if (
-            !name ||
-            !category ||
-            !cost ||
-            cost <= 0
-          ) {
-
-            showStatus(
-              "Please enter valid product details.",
-              "error"
-            );
-
-            return;
-
-          }
-
-
-          const productData = {
-
-            name,
-
-            category,
-
-            cost,
-
-            price:
-              sellingPrice(cost),
-
-            rating,
-
-            reviews,
-
-            image_url:
-              image || null,
-
-            badge:
-              badge || null,
-
-            is_active:
-              isActive,
-
-            description:
-              description || null,
-
-            updated_at:
-              new Date().toISOString()
-
-          };
-
-
-          try {
-
-            /* EDIT */
-
-            if (
-              editingProductId !== null
-            ) {
-
-              const {
-                error
-              } =
-                await supabaseClient
-                  .from("products")
-                  .update(productData)
-                  .eq(
-                    "id",
-                    editingProductId
-                  );
-
-
-              if (error) {
-                throw error;
-              }
-
-
-              showStatus(
-                "Product updated successfully."
-              );
-
-            }
-
-
-            /* ADD */
-
-            else {
-
-              const insertData = {
-                ...productData
-              };
-
-              delete insertData.updated_at;
-
-
-              const {
-                error
-              } =
-                await supabaseClient
-                  .from("products")
-                  .insert(
-                    insertData
-                  );
-
-
-              if (error) {
-                throw error;
-              }
-
-
-              showStatus(
-                "Product added successfully."
-              );
-
-            }
-
-
-            closeModal();
-
-            await loadProducts();
-
-          }
-
-          catch (error) {
-
-            console.error(
-              "Save product error:",
-              error
-            );
-
-
-            showStatus(
-              error.message ||
-              "Could not save product.",
-              "error"
-            );
-
-          }
-
-        }
-      );
-
-
-    /* =========================================================
-       DELETE PRODUCT
-       ========================================================= */
-
-    async function deleteProduct(id) {
-
-      const product =
-        products.find(function(item) {
-
-          return String(item.id) ===
-            String(id);
-
-        });
-
-
-      if (!product) {
-        return;
-      }
-
-
-      if (
-        !confirm(
-          `Delete "${product.name}"?`
-        )
-      ) {
-        return;
-      }
-
-
-      try {
-
-        const {
-          error
-        } =
-          await supabaseClient
-            .from("products")
-            .delete()
-            .eq(
-              "id",
-              id
-            );
-
-
-        if (error) {
-          throw error;
-        }
-
-
-        showStatus(
-          "Product deleted successfully."
-        );
-
-
-        await loadProducts();
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Delete error:",
-          error
-        );
-
-
-        showStatus(
-          error.message ||
-          "Could not delete product.",
-          "error"
-        );
-
-      }
+      window.location.href =
+        "login.html";
 
     }
 
-
-    /* =========================================================
-       EVENTS
-       ========================================================= */
-
-    document
-      .getElementById("addProductButton")
-      .addEventListener(
-        "click",
-        openAddProduct
-      );
+  }
+);
 
 
-    document
-      .getElementById("refreshButton")
-      .addEventListener(
-        "click",
-        loadProducts
-      );
+/* =========================================================
+   START
+   ========================================================= */
 
+checkAdmin();
 
-    document
-      .getElementById("productSearch")
-      .addEventListener(
-        "input",
-        renderProducts
-      );
-
-
-    document
-      .getElementById("closeModal")
-      .addEventListener(
-        "click",
-        closeModal
-      );
-
-
-    document
-      .getElementById("cancelButton")
-      .addEventListener(
-        "click",
-        closeModal
-      );
-
-
-    document
-      .getElementById("productModal")
-      .addEventListener(
-        "click",
-        function(event) {
-
-          if (
-            event.target === this
-          ) {
-            closeModal();
-          }
-
-        }
-      );
-
-
-    /* =========================================================
-       LOGOUT
-       ========================================================= */
-
-    document
-      .getElementById("logoutButton")
-      .addEventListener(
-        "click",
-        async function() {
-
-          await supabaseClient
-            .auth
-            .signOut();
-
-          window.location.href =
-            "login.html";
-
-        }
-      );
-
-
-    /* =========================================================
-       START
-       ========================================================= */
-
-    checkAdmin();
-
-  </script>
+</script>
 
 </body>
 </html>
