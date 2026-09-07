@@ -16,4 +16,10 @@ const supabaseClient = window.supabase.createClient(
   script.defer = true;
   script.dataset.customerFeatures = 'true';
   document.head.appendChild(script);
+  if (page === 'account.html') {
+    const phoneScript = document.createElement('script');
+    phoneScript.src = 'customer-phone.js';
+    phoneScript.defer = true;
+    document.head.appendChild(phoneScript);
+  }
 })();
