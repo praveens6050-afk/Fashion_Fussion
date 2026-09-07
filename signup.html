@@ -3,455 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Create Account | Fashion Fusion</title>
-
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Supabase configuration -->
   <script src="supabase-config.js"></script>
-
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      color: #222;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 440px;
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 35px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-      text-align: center;
-      margin: 0 0 8px;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 28px;
-    }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin: 15px 0 7px;
-    }
-
-    input {
-      width: 100%;
-      padding: 13px;
-      border: 1px solid #ccc;
-      border-radius: 7px;
-      font-size: 15px;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #111;
-    }
-
-    button {
-      width: 100%;
-      padding: 13px;
-      margin-top: 22px;
-      border: 0;
-      border-radius: 7px;
-      background: #111;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .links {
-      text-align: center;
-      margin-top: 20px;
-      line-height: 1.8;
-    }
-
-    .links a {
-      color: #111;
-      text-decoration: none;
-    }
-
-    .links a:hover {
-      text-decoration: underline;
-    }
-
-    .message {
-      display: none;
-      margin-top: 18px;
-      padding: 12px;
-      border-radius: 7px;
-      font-size: 14px;
-    }
-
-    .error {
-      background: #ffebee;
-      color: #c62828;
-    }
-
-    .success {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: Arial, sans-serif; background: #f5f5f5; color: #222; }
+    .container { width: 100%; max-width: 440px; padding: 20px; }
+    .card { background: white; padding: 35px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
+    h1 { text-align: center; margin: 0 0 8px; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 28px; }
+    label { display: block; font-weight: bold; margin: 15px 0 7px; }
+    input { width: 100%; padding: 13px; border: 1px solid #ccc; border-radius: 7px; font-size: 15px; }
+    input:focus { outline: none; border-color: #111; }
+    button { width: 100%; padding: 13px; margin-top: 22px; border: 0; border-radius: 7px; background: #111; color: white; font-size: 16px; cursor: pointer; }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .links { text-align: center; margin-top: 20px; line-height: 1.8; }
+    .links a { color: #111; text-decoration: none; }
+    .links a:hover { text-decoration: underline; }
+    .message { display: none; margin-top: 18px; padding: 12px; border-radius: 7px; font-size: 14px; }
+    .error { background: #ffebee; color: #c62828; }
+    .success { background: #e8f5e9; color: #2e7d32; }
+    .hint { margin-top: 7px; color: #666; font-size: 12px; }
   </style>
 </head>
-
 <body>
-
   <div class="container">
-
     <div class="card">
-
       <h1>Fashion Fusion</h1>
-
-      <div class="subtitle">
-        Create your account
-      </div>
-
+      <div class="subtitle">Create your account</div>
       <form id="signupForm">
-
         <label for="fullName">Full Name</label>
-
-        <input
-          type="text"
-          id="fullName"
-          placeholder="Enter your full name"
-          required
-          autocomplete="name"
-        >
-
+        <input type="text" id="fullName" placeholder="Enter your full name" required autocomplete="name">
         <label for="phone">Phone</label>
-
-        <input
-          type="tel"
-          id="phone"
-          placeholder="Enter your phone number"
-          autocomplete="tel"
-        >
-
+        <input type="tel" id="phone" placeholder="Enter your phone number" autocomplete="tel">
         <label for="email">Email</label>
-
-        <input
-          type="email"
-          id="email"
-          placeholder="Enter your email"
-          required
-          autocomplete="email"
-        >
-
+        <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
         <label for="password">Password</label>
-
-        <input
-          type="password"
-          id="password"
-          placeholder="Create a password"
-          required
-          minlength="6"
-          autocomplete="new-password"
-        >
-
+        <input type="password" id="password" placeholder="Create a strong password" required minlength="10" autocomplete="new-password">
+        <div class="hint">Use at least 10 characters.</div>
         <label for="confirmPassword">Confirm Password</label>
-
-        <input
-          type="password"
-          id="confirmPassword"
-          placeholder="Confirm your password"
-          required
-          minlength="6"
-          autocomplete="new-password"
-        >
-
-        <button type="submit" id="signupButton">
-          Create Account
-        </button>
-
+        <input type="password" id="confirmPassword" placeholder="Confirm your password" required minlength="10" autocomplete="new-password">
+        <button type="submit" id="signupButton">Create Account</button>
       </form>
-
       <div id="message" class="message"></div>
-
       <div class="links">
-        <a href="login.html">
-          Already have an account? Login
-        </a>
-
-        <br>
-
-        <a href="index.html">
-          Continue shopping
-        </a>
+        <a href="login.html">Already have an account? Login</a><br>
+        <a href="index.html">Continue shopping</a>
       </div>
-
     </div>
-
   </div>
-
   <script>
-
-    const signupForm =
-      document.getElementById("signupForm");
-
-    const signupButton =
-      document.getElementById("signupButton");
-
-    const message =
-      document.getElementById("message");
-
+    const signupForm = document.getElementById("signupForm");
+    const signupButton = document.getElementById("signupButton");
+    const message = document.getElementById("message");
 
     function showMessage(text, type) {
-
       message.textContent = text;
-
-      message.className =
-        "message " + type;
-
+      message.className = "message " + type;
       message.style.display = "block";
     }
 
-
-    signupForm.addEventListener(
-      "submit",
-      async function(event) {
-
-        event.preventDefault();
-
-
-        const fullName =
-          document
-            .getElementById("fullName")
-            .value
-            .trim();
-
-
-        const phone =
-          document
-            .getElementById("phone")
-            .value
-            .trim();
-
-
-        const email =
-          document
-            .getElementById("email")
-            .value
-            .trim();
-
-
-        const password =
-          document
-            .getElementById("password")
-            .value;
-
-
-        const confirmPassword =
-          document
-            .getElementById("confirmPassword")
-            .value;
-
-
-        /*
-         * Check password match
-         */
-        if (password !== confirmPassword) {
-
-          showMessage(
-            "Passwords do not match.",
-            "error"
-          );
-
-          return;
-        }
-
-
-        /*
-         * Check minimum password length
-         */
-        if (password.length < 6) {
-
-          showMessage(
-            "Password must be at least 6 characters.",
-            "error"
-          );
-
-          return;
-        }
-
-
-        signupButton.disabled = true;
-
-        signupButton.textContent =
-          "Creating account...";
-
-        message.style.display = "none";
-
-
-        try {
-
-          /*
-           * IMPORTANT:
-           * Explicitly tell Supabase where the
-           * email confirmation should redirect.
-           */
-          const emailRedirectTo =
-            "https://praveens6050-afk.github.io/Fashion_Fussion/";
-
-
-          const { data, error } =
-            await supabaseClient.auth.signUp({
-
-              email: email,
-
-              password: password,
-
-              options: {
-
-                emailRedirectTo:
-                  emailRedirectTo,
-
-                data: {
-
-                  full_name:
-                    fullName,
-
-                  phone:
-                    phone
-
-                }
-
-              }
-
-            });
-
-
-          /*
-           * Supabase returned an error
-           */
-          if (error) {
-
-            console.error(
-              "Supabase signup error:",
-              error
-            );
-
-            showMessage(
-              error.message,
-              "error"
-            );
-
-            return;
-          }
-
-
-          /*
-           * No user returned
-           */
-          if (!data || !data.user) {
-
-            showMessage(
-              "Account could not be created. Please try again.",
-              "error"
-            );
-
-            return;
-          }
-
-
-          /*
-           * Email confirmation is enabled.
-           *
-           * Supabase creates the account but does not
-           * create a session until the email is confirmed.
-           */
-          if (!data.session) {
-
-            showMessage(
-              "Account created! Please check your email and click the confirmation link.",
-              "success"
-            );
-
-            signupForm.reset();
-
-          } else {
-
-            /*
-             * Email confirmation is disabled,
-             * so the user already has a session.
-             */
-            showMessage(
-              "Account created successfully. Redirecting...",
-              "success"
-            );
-
-
-            setTimeout(
-              function() {
-
-                window.location.href =
-                  "account.html";
-
-              },
-              1000
-            );
-
-          }
-
-
-        } catch (error) {
-
-          console.error(
-            "Unexpected signup error:",
-            error
-          );
-
-          showMessage(
-            "An unexpected error occurred. Please try again.",
-            "error"
-          );
-
-
-        } finally {
-
-          signupButton.disabled = false;
-
-          signupButton.textContent =
-            "Create Account";
-
-        }
-
+    signupForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const fullName = document.getElementById("fullName").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (password !== confirmPassword) {
+        showMessage("Passwords do not match.", "error");
+        return;
       }
-    );
 
+      if (password.length < 10) {
+        showMessage("Password must be at least 10 characters.", "error");
+        return;
+      }
+
+      signupButton.disabled = true;
+      signupButton.textContent = "Creating account...";
+      message.style.display = "none";
+
+      try {
+        const emailRedirectTo = "https://praveens6050-afk.github.io/Fashion_Fussion/";
+
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            emailRedirectTo: emailRedirectTo,
+            data: { full_name: fullName, phone: phone }
+          }
+        });
+
+        if (error) {
+          console.error("Supabase signup error:", error);
+          showMessage(error.message, "error");
+          return;
+        }
+
+        if (!data || !data.user) {
+          showMessage("Account could not be created. Please try again.", "error");
+          return;
+        }
+
+        if (!data.session) {
+          showMessage("Account created! Please check your email and click the confirmation link.", "success");
+          signupForm.reset();
+        } else {
+          showMessage("Account created successfully. Redirecting...", "success");
+          setTimeout(function() { window.location.href = "account.html"; }, 1000);
+        }
+      } catch (error) {
+        console.error("Unexpected signup error:", error);
+        showMessage("An unexpected error occurred. Please try again.", "error");
+      } finally {
+        signupButton.disabled = false;
+        signupButton.textContent = "Create Account";
+      }
+    });
   </script>
-
 </body>
 </html>
