@@ -5455,6 +5455,32 @@
 
       await loadProducts();
 
+      /* Resume checkout after login without auto-opening payment. */
+      const checkoutResume =
+        new URLSearchParams(window.location.search).get("checkout") === "1";
+
+      if(
+        checkoutResume &&
+        Object.keys(cart).length
+      ){
+
+        setTimeout(
+          function(){
+
+            openCart();
+
+            window.history.replaceState(
+              {},
+              document.title,
+              "index.html"
+            );
+
+          },
+          300
+        );
+
+      }
+
     }
 
 
