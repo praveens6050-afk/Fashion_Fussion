@@ -15,6 +15,10 @@ const {
 
 const DELIVERY_THRESHOLD = 599;
 const DELIVERY_BELOW_THRESHOLD = 49;
+const MAX_BODY_BYTES = 64 * 1024;
+const ALLOWED_ORIGIN =
+  process.env.ALLOWED_ORIGIN ||
+  "https://praveens6050-afk.github.io";
 
 /*
   Product-specific GST rates.
@@ -28,72 +32,25 @@ const DELIVERY_BELOW_THRESHOLD = 49;
   Product IDs 1-57 = 18% GST.
 */
 const GST_RATES = {
-  1: 18,
-  2: 18,
-  3: 18,
-  4: 18,
-  5: 18,
-  6: 18,
-  7: 18,
-  8: 18,
-  9: 18,
-  10: 18,
-  11: 18,
-  12: 18,
-  13: 18,
-  14: 18,
-  15: 18,
-  16: 18,
-  17: 18,
-  18: 18,
-  19: 18,
-  20: 18,
-  21: 18,
-  22: 18,
-  23: 18,
-  24: 18,
-  25: 18,
-  26: 18,
-  27: 18,
-  28: 18,
-  29: 18,
-  30: 18,
-  31: 18,
-  32: 18,
-  33: 18,
-  34: 18,
-  35: 18,
-  36: 18,
-  37: 18,
-  38: 18,
-  39: 18,
-  40: 18,
-  41: 18,
-  42: 18,
-  43: 18,
-  44: 18,
-  45: 18,
-  46: 18,
-  47: 18,
-  48: 18,
-  49: 18,
-  50: 18,
-  51: 18,
-  52: 18,
-  53: 18,
-  54: 18,
-  55: 18,
-  56: 18,
+  1: 18, 2: 18, 3: 18, 4: 18, 5: 18, 6: 18, 7: 18, 8: 18,
+  9: 18, 10: 18, 11: 18, 12: 18, 13: 18, 14: 18, 15: 18, 16: 18,
+  17: 18, 18: 18, 19: 18, 20: 18, 21: 18, 22: 18, 23: 18, 24: 18,
+  25: 18, 26: 18, 27: 18, 28: 18, 29: 18, 30: 18, 31: 18, 32: 18,
+  33: 18, 34: 18, 35: 18, 36: 18, 37: 18, 38: 18, 39: 18, 40: 18,
+  41: 18, 42: 18, 43: 18, 44: 18, 45: 18, 46: 18, 47: 18, 48: 18,
+  49: 18, 50: 18, 51: 18, 52: 18, 53: 18, 54: 18, 55: 18, 56: 18,
   57: 18
 };
 
 function cors(res) {
-  const origin =
-    process.env.ALLOWED_ORIGIN || "*";
-
   res.setHeader(
     "Access-Control-Allow-Origin",
-    origin
+    ALLOWED_ORIGIN
+  );
+
+  res.setHeader(
+    "Vary",
+    "Origin"
   );
 
   res.setHeader(
@@ -104,6 +61,11 @@ function cors(res) {
   res.setHeader(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization"
+  );
+
+  res.setHeader(
+    "Access-Control-Max-Age",
+    "600"
   );
 }
 
@@ -123,20 +85,41 @@ function json(res, status, body) {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
+    let size = 0;
+    let settled = false;
+
+    function fail(error) {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    }
 
     req.on("data", chunk => {
+      if (settled) return;
+
+      size += Buffer.byteLength(chunk);
+
+      if (size > MAX_BODY_BYTES) {
+        fail(new Error("Request body is too large"));
+        req.destroy();
+        return;
+      }
+
       body += chunk;
     });
 
     req.on("end", () => {
+      if (settled) return;
+
       try {
+        settled = true;
         resolve(JSON.parse(body || "{}"));
       } catch (error) {
-        reject(error);
+        fail(error);
       }
     });
 
-    req.on("error", reject);
+    req.on("error", fail);
   });
 }
 
@@ -253,7 +236,6 @@ async function getProductsByIds(ids) {
       headers: {
         apikey:
           SUPABASE_SERVICE_ROLE_KEY,
-
         Authorization:
           "Bearer " +
           SUPABASE_SERVICE_ROLE_KEY
@@ -355,12 +337,6 @@ async function calculate(items) {
         );
       }
 
-      /*
-        No MRP/discount field currently exists
-        in the products table.
-
-        Therefore current discount = 0.
-      */
       const mrp = price;
       const discount = 0;
 
@@ -387,9 +363,6 @@ async function calculate(items) {
         );
       }
 
-      /*
-        Calculate GST in paise-safe precision.
-      */
       const gstAmount =
         Math.round(
           taxableAmount *
@@ -413,52 +386,25 @@ async function calculate(items) {
 
       return {
         id: product.id,
-
         qty,
-
-        name:
-          product.name,
-
-        category:
-          product.category,
-
-        image_url:
-          product.image_url,
-
+        name: product.name,
+        category: product.category,
+        image_url: product.image_url,
         mrp,
-
         discount,
-
-        unit_price:
-          price,
-
-        gst_rate:
-          gstRate,
-
-        gst_amount:
-          gstAmount,
-
-        taxable_amount:
-          taxableAmount,
-
-        line_total:
-          lineTotal
+        unit_price: price,
+        gst_rate: gstRate,
+        gst_amount: gstAmount,
+        taxable_amount: taxableAmount,
+        line_total: lineTotal
       };
     });
 
-  /*
-    Free delivery at/above ₹599.
-    Otherwise delivery = ₹49.
-  */
   const delivery =
     subtotal >= DELIVERY_THRESHOLD
       ? 0
       : DELIVERY_BELOW_THRESHOLD;
 
-  /*
-    No additional miscellaneous charge
-    is currently configured.
-  */
   const otherCharges = 0;
 
   const finalAmount =
@@ -477,9 +423,6 @@ async function calculate(items) {
     );
   }
 
-  /*
-    Round all monetary values to two decimals.
-  */
   const roundMoney =
     value =>
       Math.round(
@@ -487,26 +430,13 @@ async function calculate(items) {
       ) / 100;
 
   return {
-    items:
-      normalized,
-
-    subtotal:
-      roundMoney(subtotal),
-
-    discount:
-      roundMoney(totalDiscount),
-
-    gst:
-      roundMoney(totalGst),
-
-    delivery:
-      roundMoney(delivery),
-
-    other_charges:
-      roundMoney(otherCharges),
-
-    total:
-      roundMoney(finalAmount)
+    items: normalized,
+    subtotal: roundMoney(subtotal),
+    discount: roundMoney(totalDiscount),
+    gst: roundMoney(totalGst),
+    delivery: roundMoney(delivery),
+    other_charges: roundMoney(otherCharges),
+    total: roundMoney(finalAmount)
   };
 }
 
@@ -515,7 +445,6 @@ module.exports = {
   KEY_SECRET,
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
-
   cors,
   json,
   readBody,
