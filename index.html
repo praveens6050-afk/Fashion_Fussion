@@ -376,6 +376,27 @@
       background:#eee;
     }
 
+
+    .stall-placeholder{
+      border-radius:4px;
+      aspect-ratio:1/1;
+      border:1px solid var(--line);
+      background:var(--paper-dim);
+      color:var(--ink-soft);
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding:12px;
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .stall-placeholder strong{
+      font-family:var(--serif);
+      color:var(--indigo);
+      font-size:14px;
+    }
+
     .stall-badge{
       position:absolute;
       top:-14px;
@@ -1206,11 +1227,7 @@
         href="#top"
         class="logo"
       >
-        Fashion
-
-        <small>
-          _FUSSION
-        </small>
+        Fashion_Fussion
       </a>
 
       <nav class="nav-links">
@@ -1345,7 +1362,7 @@
           <div class="stat">
 
             <b>
-              ₹599
+              ₹299
             </b>
 
             <span>
@@ -1369,7 +1386,12 @@
           <div
             class="stall-grid"
             id="heroThumbs"
-          ></div>
+          >
+            <div class="stall-placeholder" aria-hidden="true"><strong>Fashion_Fussion</strong></div>
+            <div class="stall-placeholder" aria-hidden="true"><strong>Fashion_Fussion</strong></div>
+            <div class="stall-placeholder" aria-hidden="true"><strong>Fashion_Fussion</strong></div>
+            <div class="stall-placeholder" aria-hidden="true"><strong>Fashion_Fussion</strong></div>
+          </div>
 
         </div>
 
@@ -1387,7 +1409,7 @@
 
       <div class="trust-item">
         <span class="trust-ico">🚚</span>
-        Free delivery above ₹599
+        Free delivery above ₹299
       </div>
 
       <div class="trust-item">
@@ -1402,7 +1424,7 @@
 
       <div class="trust-item">
         <span class="trust-ico">💬</span>
-        Real support, 9am–7pm
+        Real support, 24×7
       </div>
 
     </div>
@@ -1503,7 +1525,7 @@
       </span>
 
       <h2>
-        This week: free delivery on every order above ₹599
+        This week: free delivery on every order above ₹299
       </h2>
 
       <p>
@@ -1566,7 +1588,7 @@
         <div>
 
           <h3>
-            Same-week dispatch
+            Dispatch within 3 days
           </h3>
 
           <p>
@@ -1912,7 +1934,7 @@
        ========================================================= */
 
     const DELIVERY_THRESHOLD =
-      599;
+      299;
 
     const DELIVERY_BELOW_THRESHOLD =
       49;
@@ -2178,7 +2200,7 @@
 
         "Secure Razorpay checkout",
 
-        "Free delivery above ₹599",
+        "Free delivery above ₹299",
 
         "Quality-checked before dispatch",
 
@@ -2371,11 +2393,21 @@
         );
 
 
+      if(!container){
+
+        return;
+
+      }
+
+
       const picks =
         PRODUCTS
           .filter(
             product =>
-              product.image_url
+              String(
+                product?.image_url ||
+                ""
+              ).trim()
           )
           .slice(
             0,
@@ -2383,58 +2415,48 @@
           );
 
 
-      if(!picks.length){
+      const slots =
+        picks.map(
+          product => `
 
-        container.innerHTML = `
+            <img
+              src="${escapeHtml(
+                product.image_url
+              )}"
+              alt="${escapeHtml(
+                product.name ||
+                "Fashion_Fussion product"
+              )}"
+              decoding="async"
+              onerror="
+                this.onerror=null;
+                this.src='${placeholderImage()}'
+              "
+            >
+
+          `
+        );
+
+
+      while(
+        slots.length < 4
+      ){
+
+        slots.push(`
 
           <img
             src="${placeholderImage()}"
             alt="Fashion_Fussion"
+            decoding="async"
           >
 
-          <img
-            src="${placeholderImage()}"
-            alt="Fashion_Fussion"
-          >
-
-          <img
-            src="${placeholderImage()}"
-            alt="Fashion_Fussion"
-          >
-
-          <img
-            src="${placeholderImage()}"
-            alt="Fashion_Fussion"
-          >
-
-        `;
-
-        return;
+        `);
 
       }
 
 
       container.innerHTML =
-        picks
-          .map(
-            product => `
-
-              <img
-                src="${escapeHtml(
-                  product.image_url
-                )}"
-                alt="${escapeHtml(
-                  product.name
-                )}"
-                loading="lazy"
-                onerror="
-                  this.src='${placeholderImage()}'
-                "
-              >
-
-            `
-          )
-          .join("");
+        slots.join("");
 
     }
 
@@ -5406,11 +5428,28 @@
 
       renderReviews();
 
+      /* Paint a stable hero immediately, before any network request finishes. */
+      renderHeroProducts();
+
       updateCartUI();
 
-      await updateAccountLink();
 
-      await loadProducts();
+      /*
+        Product loading and account/session lookup are independent.
+        Run them concurrently so a slow auth lookup can never hold the
+        storefront product/hero render hostage.
+      */
+      const productLoad =
+        loadProducts();
+
+      const accountLoad =
+        updateAccountLink();
+
+      await Promise.allSettled([
+        productLoad,
+        accountLoad
+      ]);
+
 
       /* Resume checkout after login without auto-opening payment. */
       const checkoutResume =
@@ -5466,14 +5505,58 @@
        START
        ========================================================= */
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      function(){
+    let storeInitializationStarted =
+      false;
 
-        initializeStore();
+
+    function startStore(){
+
+      if(storeInitializationStarted){
+
+        return;
 
       }
-    );
+
+
+      storeInitializationStarted =
+        true;
+
+
+      initializeStore().catch(
+        function(error){
+
+          console.error(
+            "Store initialization error:",
+            error
+          );
+
+          /* Keep the hero visually complete even on an unexpected init error. */
+          renderHeroProducts();
+
+        }
+      );
+
+    }
+
+
+    if(
+      document.readyState ===
+      "loading"
+    ){
+
+      document.addEventListener(
+        "DOMContentLoaded",
+        startStore,
+        {
+          once:true
+        }
+      );
+
+    }else{
+
+      startStore();
+
+    }
 
   </script>
 
