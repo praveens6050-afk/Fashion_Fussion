@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Account | Fashion_FUSSION</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f3f6;color:#212121}.header{background:#2874f0;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}.header-inner{max-width:1150px;margin:auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px}.logo{font-size:25px;font-weight:800;font-style:italic}.logo span{color:#ffe500}.actions{display:flex;gap:10px}.actions a,.actions button{border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff;padding:8px 12px;border-radius:4px;text-decoration:none;cursor:pointer}.container{max-width:900px;margin:24px auto;padding:0 16px}.card{background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:18px}.card-head{padding:18px 20px;border-bottom:1px solid #eee}.card-head h1,.card-head h2{margin:0}.card-head p{margin:6px 0 0;color:#777;font-size:13px}.card-body{padding:20px}.admin-chip{display:inline-block;background:#2874f0;color:#fff;font-size:11px;font-weight:700;padding:5px 8px;border-radius:4px;margin-bottom:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:#555}.field input{width:100%;padding:11px;border:1px solid #ccc;border-radius:4px;background:#f7f7f7}.full{grid-column:1/-1}.status{padding:12px 14px;border-radius:6px;background:#e8f5e9;color:#2e7d32;font-weight:700}.loading{padding:50px;text-align:center}.error{padding:18px;background:#ffebee;color:#c62828;border-radius:6px}@media(max-width:650px){.header-inner{align-items:flex-start;flex-direction:column}.actions{width:100%;flex-wrap:wrap}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<header class="header"><div class="header-inner"><div class="logo">Fashion<span>_FUSSION</span></div><div class="actions"><a href="admin.html">Admin Dashboard</a><a href="index.html?admin_preview=1">Store</a><button id="logoutBtn" type="button">Sign Out</button></div></div></header>
+<main class="container"><div id="loading" class="card loading">Loading admin account...</div><div id="content" style="display:none"><section class="card"><div class="card-head"><h1>Admin Account</h1><p>Your administrator profile and account details.</p></div><div class="card-body"><span class="admin-chip">ADMIN</span><div class="grid"><div class="field"><label>Full Name</label><input id="fullName" readonly></div><div class="field"><label>Phone</label><input id="phone" readonly></div><div class="field full"><label>Email</label><input id="email" readonly></div></div></div></section><section class="card"><div class="card-head"><h2>Account Status</h2></div><div class="card-body"><div class="status">Administrator access active</div></div></section></div><div id="errorBox" style="display:none" class="error"></div></main>
+<script>
+(async function(){
+  const loading=document.getElementById('loading'),content=document.getElementById('content'),errorBox=document.getElementById('errorBox');
+  function fail(msg){loading.style.display='none';content.style.display='none';errorBox.style.display='block';errorBox.textContent=msg;}
+  try{
+    const {data:{user},error:userError}=await window.supabaseClient.auth.getUser();
+    if(userError||!user){location.replace('login.html');return;}
+    const {data:profile,error:profileError}=await window.supabaseClient.from('profiles').select('full_name,phone,is_admin').eq('id',user.id).maybeSingle();
+    if(profileError)throw profileError;
+    if(!profile?.is_admin){location.replace('account.html');return;}
+    document.getElementById('fullName').value=profile.full_name||'';
+    document.getElementById('phone').value=profile.phone||'';
+    document.getElementById('email').value=user.email||'';
+    loading.style.display='none';content.style.display='block';
+  }catch(e){fail(e.message||'Unable to load admin account.');}
+  document.getElementById('logoutBtn').onclick=async()=>{await window.supabaseClient.auth.signOut();location.href='index.html';};
+})();
+</script>
+</body>
+</html>
