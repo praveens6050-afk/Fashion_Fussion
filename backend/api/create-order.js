@@ -1,34 +1,323 @@
 const {
-  KEY_ID, KEY_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
-  cors, json, readBody, basicAuth, getSupabaseUser, calculate
-} = require("../lib");
-const { getDiscounts } = require("./quote-order");
-const serverHeaders={apikey:SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+SUPABASE_SERVICE_ROLE_KEY};
+  KEY_ID,
+  KEY_SECRET,
+  SUPABASE_URL,
+  serverHeaders,
+  cors,
+  json,
+  readBody,
+  basicAuth,
+  getSupabaseUser,
+  calculate,
+  normalizePaymentMethod,
+  paymentPricing
+} = require('../lib');
+const { getDiscounts } = require('./quote-order');
 
-async function getDefaultAddress(userId) {
-  const response = await fetch(SUPABASE_URL + "/rest/v1/customer_addresses?user_id=eq." + encodeURIComponent(userId) + "&is_default=eq.true&select=id,label,full_name,phone,address_line1,address_line2,city,state,postal_code,country&limit=1", { headers: serverHeaders });
-  const data = await response.json();
-  if (!response.ok) throw new Error("Could not load your delivery address");
+async function rest(path, options = {}) {
+  const response = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    ...options,
+    headers: { ...serverHeaders, ...(options.headers || {}) }
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Store database request failed');
+  }
+  return data;
+}
+
+async function rpc(name, args) {
+  const response = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, {
+    method: 'POST',
+    headers: { ...serverHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.message || data?.error || 'Checkout operation failed');
+  return data;
+}
+
+async function getAddress(userId, requestedId) {
+  const filter = requestedId && /^\d+$/.test(String(requestedId))
+    ? 'id=eq.' + encodeURIComponent(requestedId)
+    : 'is_default=eq.true';
+  const data = await rest(
+    'customer_addresses?user_id=eq.' + encodeURIComponent(userId) +
+    '&' + filter +
+    '&select=id,label,full_name,phone,address_line1,address_line2,city,state,postal_code,country&limit=1'
+  );
   return data?.[0] || null;
 }
-async function rpc(name,args){const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+name,{method:"POST",headers:{...serverHeaders,"Content-Type":"application/json"},body:JSON.stringify(args)});if(!r.ok){let d={};try{d=await r.json()}catch{}throw new Error(d?.message||"Promotion reservation failed")}return r}
 
-module.exports = async function (req, res) {
-  cors(res); if(req.method==="OPTIONS"){res.statusCode=204;return res.end()} if(req.method!=="POST")return json(res,405,{error:"Method not allowed"});
-  if(!KEY_ID||!KEY_SECRET)return json(res,500,{error:"Razorpay server keys are not configured"});
+function cleanAddress(address) {
+  if (!address) throw new Error('Please add a delivery address before checkout.');
+  const required = [
+    address.full_name,
+    address.phone,
+    address.address_line1,
+    address.city,
+    address.state,
+    address.postal_code,
+    address.country
+  ];
+  if (required.some(value => !String(value || '').trim())) {
+    throw new Error('Please complete your delivery address before checkout.');
+  }
+  if (!/^\d{6}$/.test(String(address.postal_code).trim())) {
+    throw new Error('Please use a valid 6-digit delivery PIN code.');
+  }
+  return {
+    id: address.id || null,
+    label: String(address.label || 'Home').trim(),
+    full_name: String(address.full_name).trim(),
+    phone: String(address.phone).trim(),
+    address_line1: String(address.address_line1).trim(),
+    address_line2: address.address_line2 ? String(address.address_line2).trim() : null,
+    city: String(address.city).trim(),
+    state: String(address.state).trim(),
+    postal_code: String(address.postal_code).trim(),
+    country: String(address.country || 'India').trim()
+  };
+}
+
+function validateCheckoutKey(value) {
+  const key = String(value || '').trim();
+  if (!/^[A-Za-z0-9_-]{16,100}$/.test(key)) {
+    throw new Error('Checkout session is invalid. Please refresh checkout and try again.');
+  }
+  return key;
+}
+
+async function findExisting(userId, checkoutKey) {
+  const rows = await rest(
+    'orders?user_id=eq.' + encodeURIComponent(userId) +
+    '&checkout_key=eq.' + encodeURIComponent(checkoutKey) +
+    '&select=id,display_order_id,razorpay_order_id,total_amount,currency,status,payment_method,payment_handling_fee,prepaid_discount,cod_fee_non_refundable&limit=1'
+  );
+  return rows?.[0] || null;
+}
+
+async function enforceRateLimit(userId) {
+  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const response = await fetch(
+    SUPABASE_URL + '/rest/v1/orders?user_id=eq.' + encodeURIComponent(userId) +
+    '&created_at=gte.' + encodeURIComponent(since) +
+    '&status=in.(creating,created,cod_pending)&select=id',
+    { method: 'HEAD', headers: { ...serverHeaders, Prefer: 'count=exact' } }
+  );
+  if (!response.ok) throw new Error('Could not validate checkout rate limit');
+  const range = response.headers.get('content-range') || '0/0';
+  const count = Number(range.split('/')[1] || 0);
+  if (count >= 5) {
+    throw new Error('Too many checkout attempts. Please wait a few minutes before trying again.');
+  }
+}
+
+function pricingPayload(calc, promo, payment) {
+  return {
+    ...calc,
+    coupon_discount: promo.couponDiscount,
+    gift_card_discount: promo.giftDiscount,
+    payment_handling_fee: payment.payment_handling_fee,
+    prepaid_discount: payment.prepaid_discount,
+    cod_fee: payment.cod_fee,
+    cod_fee_non_refundable: payment.cod_fee_non_refundable,
+    payment_method: payment.payment_method,
+    total: payment.total
+  };
+}
+
+function existingResponse(existing) {
+  return {
+    idempotent: true,
+    store_order_id: existing.id,
+    display_order_id: existing.display_order_id,
+    payment_method: existing.payment_method,
+    status: existing.status,
+    total: Number(existing.total_amount),
+    completed: ['paid', 'cod_pending'].includes(existing.status),
+    order: existing.razorpay_order_id ? {
+      id: existing.razorpay_order_id,
+      amount: Math.round(Number(existing.total_amount) * 100),
+      currency: existing.currency || 'INR'
+    } : null,
+    key_id: existing.razorpay_order_id ? KEY_ID : null
+  };
+}
+
+module.exports = async function createOrder(req, res) {
+  cors(req, res);
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (req.method !== 'POST') return json(req, res, 405, { error: 'Method not allowed' });
+
   try {
-    const user=await getSupabaseUser(req),body=await readBody(req),calc=await calculate(body.items),promo=await getDiscounts(body,calc);
-    if(promo.payable<1) throw new Error("Gift card covers the full order. Zero-value orders are not supported yet.");
-    const customerName=String(body.customer_name||"").trim(); if(!customerName)throw new Error("Customer name is required");
-    const address=body.shipping_address&&typeof body.shipping_address==="object"?body.shipping_address:await getDefaultAddress(user.id); if(!address)throw new Error("Please add a delivery address before checkout.");
-    const customerPhone=String(body.customer_phone||address.phone||"").trim(); if(!customerPhone)throw new Error("Customer mobile number is required");
-    const required=[address.full_name,address.phone,address.address_line1,address.city,address.state,address.postal_code,address.country]; if(required.some(v=>!String(v||"").trim()))throw new Error("Please complete your delivery address before checkout.");
-    const receipt="FF_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
-    const rr=await fetch("https://api.razorpay.com/v1/orders",{method:"POST",headers:{Authorization:basicAuth(),"Content-Type":"application/json"},body:JSON.stringify({amount:Math.round(promo.payable*100),currency:"INR",receipt,notes:{store:"Fashion_Fussion",user_id:user.id},partial_payment:false})});
-    const razorpayOrder=await rr.json(); if(!rr.ok)return json(res,502,{error:razorpayOrder?.error?.description||"Razorpay order creation failed"});
-    const sr=await fetch(SUPABASE_URL+"/rest/v1/orders",{method:"POST",headers:{...serverHeaders,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({user_id:user.id,razorpay_order_id:razorpayOrder.id,total_amount:promo.payable,currency:"INR",status:"created",customer_name:customerName,customer_email:user.email||null,customer_phone:customerPhone,items:calc.items,coupon_code:promo.coupon?.code||null,coupon_discount:promo.couponDiscount,gift_card_code:promo.gift?.code||null,gift_card_discount:promo.giftDiscount,shipping_address:{id:address.id||null,label:String(address.label||"Home").trim(),full_name:String(address.full_name).trim(),phone:String(address.phone).trim(),address_line1:String(address.address_line1).trim(),address_line2:address.address_line2?String(address.address_line2).trim():null,city:String(address.city).trim(),state:String(address.state).trim(),postal_code:String(address.postal_code).trim(),country:String(address.country).trim()}})});
-    const saved=await sr.json(); if(!sr.ok||!saved?.[0]?.id){console.error("Supabase order insert failed:",saved);return json(res,500,{error:"Payment order was created, but the store could not save the order. Please contact support before retrying."})}
-    try{await rpc("reserve_order_promotions",{p_order_id:saved[0].id,p_user_id:user.id})}catch(e){console.error("Promotion reservation failed:",e);return json(res,409,{error:e.message||"Offer could not be reserved. Please retry."})}
-    return json(res,200,{key_id:KEY_ID,store_order_id:saved[0].id,order:{id:razorpayOrder.id,amount:razorpayOrder.amount,currency:razorpayOrder.currency},items:calc.items,pricing:{...calc,coupon_discount:promo.couponDiscount,gift_card_discount:promo.giftDiscount,total:promo.payable},coupon_code:promo.coupon?.code||null,gift_card_code:promo.gift?.code||null,total:promo.payable});
-  } catch(error){console.error("create-order error:",error);return json(res,400,{error:error.message||"Unable to create order"})}
+    const user = await getSupabaseUser(req);
+    const body = await readBody(req);
+    const checkoutKey = validateCheckoutKey(body.checkout_key);
+    const paymentMethod = normalizePaymentMethod(body.payment_method);
+
+    const existing = await findExisting(user.id, checkoutKey);
+    if (existing) return json(req, res, 200, existingResponse(existing));
+
+    await enforceRateLimit(user.id);
+
+    const calc = await calculate(body.items);
+    const promo = await getDiscounts(body, calc);
+    const payment = paymentPricing(promo.payable, paymentMethod);
+
+    if (paymentMethod === 'prepaid' && payment.total > 0 && (!KEY_ID || !KEY_SECRET)) {
+      return json(req, res, 500, { error: 'Razorpay server keys are not configured' });
+    }
+
+    const customerName = String(body.customer_name || '').trim();
+    if (!customerName) throw new Error('Customer name is required');
+
+    const address = cleanAddress(await getAddress(user.id, body.shipping_address?.id));
+    const customerPhone = String(body.customer_phone || address.phone || '').trim();
+    if (!customerPhone) throw new Error('Customer mobile number is required');
+
+    const orderInsert = {
+      user_id: user.id,
+      razorpay_order_id: null,
+      total_amount: payment.total,
+      currency: 'INR',
+      status: 'creating',
+      payment_method: paymentMethod,
+      payment_handling_fee: payment.payment_handling_fee,
+      prepaid_discount: payment.prepaid_discount,
+      cod_fee_non_refundable: payment.cod_fee_non_refundable,
+      checkout_key: checkoutKey,
+      customer_name: customerName,
+      customer_email: user.email || null,
+      customer_phone: customerPhone,
+      items: calc.items,
+      coupon_code: promo.coupon?.code || null,
+      coupon_discount: promo.couponDiscount,
+      gift_card_code: promo.gift?.code || null,
+      gift_card_discount: promo.giftDiscount,
+      shipping_address: address
+    };
+
+    const savedRows = await rest('orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify(orderInsert)
+    });
+    const saved = savedRows?.[0];
+    if (!saved?.id) throw new Error('The store could not create your order. Please try again.');
+
+    try {
+      await rpc('reserve_order_promotions', { p_order_id: saved.id, p_user_id: user.id });
+    } catch (error) {
+      await rest('orders?id=eq.' + encodeURIComponent(saved.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'payment_failed' })
+      }).catch(() => null);
+      throw error;
+    }
+
+    if (paymentMethod === 'cod') {
+      await rpc('finalize_checkout_order', {
+        p_order_id: saved.id,
+        p_user_id: user.id,
+        p_payment_id: null,
+        p_payment_signature: null,
+        p_target_status: 'cod_pending',
+        p_source: 'cod'
+      });
+
+      return json(req, res, 200, {
+        store_order_id: saved.id,
+        display_order_id: saved.display_order_id,
+        payment_method: 'cod',
+        status: 'cod_pending',
+        completed: true,
+        cod_fee_non_refundable: true,
+        items: calc.items,
+        pricing: pricingPayload(calc, promo, payment),
+        coupon_code: promo.coupon?.code || null,
+        gift_card_code: promo.gift?.code || null,
+        total: payment.total
+      });
+    }
+
+    if (payment.total === 0) {
+      await rpc('finalize_checkout_order', {
+        p_order_id: saved.id,
+        p_user_id: user.id,
+        p_payment_id: null,
+        p_payment_signature: null,
+        p_target_status: 'paid',
+        p_source: 'gift_card'
+      });
+
+      return json(req, res, 200, {
+        store_order_id: saved.id,
+        display_order_id: saved.display_order_id,
+        payment_method: 'prepaid',
+        status: 'paid',
+        completed: true,
+        zero_value: true,
+        items: calc.items,
+        pricing: pricingPayload(calc, promo, payment),
+        total: 0
+      });
+    }
+
+    const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: { Authorization: basicAuth(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: Math.round(payment.total * 100),
+        currency: 'INR',
+        receipt: 'FF_' + saved.id,
+        notes: { store: 'Fashion_Fussion', user_id: user.id, store_order_id: String(saved.id) },
+        partial_payment: false
+      })
+    });
+    const razorpayOrder = await razorpayResponse.json().catch(() => ({}));
+
+    if (!razorpayResponse.ok || !razorpayOrder?.id) {
+      await rpc('release_order_promotions', { p_order_id: saved.id, p_user_id: user.id }).catch(() => null);
+      await rest('orders?id=eq.' + encodeURIComponent(saved.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'payment_failed' })
+      }).catch(() => null);
+      return json(req, res, 502, {
+        error: razorpayOrder?.error?.description || 'Razorpay order creation failed'
+      });
+    }
+
+    await rest('orders?id=eq.' + encodeURIComponent(saved.id) + '&user_id=eq.' + encodeURIComponent(user.id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ razorpay_order_id: razorpayOrder.id, status: 'created' })
+    });
+
+    return json(req, res, 200, {
+      key_id: KEY_ID,
+      store_order_id: saved.id,
+      display_order_id: saved.display_order_id,
+      payment_method: 'prepaid',
+      status: 'created',
+      order: {
+        id: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency
+      },
+      items: calc.items,
+      pricing: pricingPayload(calc, promo, payment),
+      coupon_code: promo.coupon?.code || null,
+      gift_card_code: promo.gift?.code || null,
+      total: payment.total
+    });
+  } catch (error) {
+    console.error('create-order error:', error);
+    return json(req, res, 400, { error: error.message || 'Unable to create order' });
+  }
 };
