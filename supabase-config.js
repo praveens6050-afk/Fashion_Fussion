@@ -16,6 +16,7 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
     const page=window.location.pathname.split('/').pop()||'index.html';
     if(new Set(['index.html','account.html','admin.html']).has(page)) add('support-chat.js?v=4','data-support-chat');
     if(page==='account.html') add('customer-addresses.js?v=1','data-customer-addresses');
+    if(page==='index.html') add('checkout-address.js?v=1','data-checkout-address');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
 })();
