@@ -1,0 +1,46 @@
+name: Fix login branding
+
+on:
+  push:
+    branches:
+      - login-branding-20260909
+    paths:
+      - .github/workflows/fix-login-branding.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: login-branding-20260909
+          fetch-depth: 0
+
+      - name: Normalize visible login logo
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('login.html')
+          s = p.read_text(encoding='utf-8')
+          old = 'Fashion<small>_FUSSION</small>'
+          new = 'Fashion<small>_Fussion</small>'
+          if old not in s:
+              raise SystemExit('expected old login logo not found')
+          s = s.replace(old, new, 1)
+          if old in s:
+              raise SystemExit('old login logo still present')
+          if '<title>Sign In — Fashion_Fussion</title>' not in s:
+              raise SystemExit('approved login title missing')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit login branding
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add login.html
+          git commit -m 'Normalize login header branding'
+          git push origin HEAD:login-branding-20260909
