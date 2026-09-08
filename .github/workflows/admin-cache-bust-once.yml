@@ -1,0 +1,45 @@
+name: Admin cache bust one-shot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/admin-cache-bust-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Version Supabase config on admin page
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('admin.html')
+          text = path.read_text(encoding='utf-8')
+          old = 'src="supabase-config.js"'
+          new = 'src="supabase-config.js?v=20260909-admin2"'
+          if new in text:
+              print('Admin cache-bust already applied.')
+          elif old in text:
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+              print('Applied admin cache-bust.')
+          else:
+              raise SystemExit('Expected Supabase config script tag not found.')
+          PY
+      - name: Commit patch when needed
+        run: |
+          if git diff --quiet -- admin.html; then
+            echo "No patch needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin.html
+          git commit -m "Bust admin config cache"
+          git push origin HEAD:main
