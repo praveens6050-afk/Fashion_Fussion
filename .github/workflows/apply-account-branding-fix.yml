@@ -1,0 +1,44 @@
+name: Apply account branding fix
+
+on:
+  push:
+    branches:
+      - account-branding-20260909
+    paths:
+      - .github/workflows/apply-account-branding-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout account branding branch
+        uses: actions/checkout@v4
+        with:
+          ref: account-branding-20260909
+          fetch-depth: 0
+
+      - name: Apply guarded branding patch
+        run: python scripts/apply_account_branding_fix.py
+
+      - name: Validate branding
+        run: |
+          grep -q 'My Account | Fashion_Fussion' account.html
+          grep -q 'Fashion<span>_Fussion</span>' account.html
+          ! grep -q 'Fashion_FUSSION' account.html
+          ! grep -q 'Fashion_FUSSION account' account-dashboard.js
+          grep -q 'Fashion_Fussion account' account-dashboard.js
+
+      - name: Commit branding changes
+        run: |
+          if git diff --quiet -- account.html account-dashboard.js; then
+            echo 'No branding changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add account.html account-dashboard.js
+          git commit -m 'Normalize customer account branding'
+          git push origin HEAD:account-branding-20260909
