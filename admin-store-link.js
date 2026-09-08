@@ -9,6 +9,10 @@
         a.setAttribute('href','index.html?admin_preview=1');
         a.setAttribute('title','Preview customer storefront');
       }
+      if(text==='my account' || href==='account.html'){
+        a.setAttribute('href','admin-account.html');
+        a.setAttribute('title','Open admin account');
+      }
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
