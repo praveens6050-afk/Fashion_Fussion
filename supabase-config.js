@@ -17,7 +17,7 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
     if(new Set(['index.html','account.html','admin.html']).has(page)) add('support-chat.js?v=4','data-support-chat');
     if(page==='account.html'){
       add('customer-addresses.js?v=2','data-customer-addresses');
-      add('account-dashboard.js?v=2','data-account-dashboard');
+      add('account-dashboard.js?v=3','data-account-dashboard');
     }
     if(page==='index.html') add('checkout-address.js?v=3','data-checkout-address');
   }
