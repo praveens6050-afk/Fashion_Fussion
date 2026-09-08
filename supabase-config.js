@@ -3,18 +3,19 @@ const SUPABASE_ANON_KEY = 'sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
 
 window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-(function loadSupportChat(){
-  function start(){
-    const page = window.location.pathname.split('/').pop() || 'index.html';
-    const supportedPages = new Set(['index.html','account.html','admin.html']);
-    if (!supportedPages.has(page)) return;
-    if (document.querySelector('script[data-support-chat]')) return;
-    const script = document.createElement('script');
-    script.src = 'support-chat.js?v=3';
-    script.defer = false;
-    script.dataset.supportChat = 'true';
+(function loadCustomerScripts(){
+  function add(src, marker){
+    if(document.querySelector('script['+marker+']')) return;
+    const script=document.createElement('script');
+    script.src=src;
+    script.defer=false;
+    script.setAttribute(marker,'true');
     document.head.appendChild(script);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
-  else start();
+  function start(){
+    const page=window.location.pathname.split('/').pop()||'index.html';
+    if(new Set(['index.html','account.html','admin.html']).has(page)) add('support-chat.js?v=4','data-support-chat');
+    if(page==='account.html') add('customer-addresses.js?v=1','data-customer-addresses');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
 })();
