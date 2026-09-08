@@ -20,10 +20,13 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
       add('account-dashboard.js?v=5','data-account-dashboard');
       add('order-tracking.js?v=1','data-order-tracking');
     }
-    if(page==='admin.html') add('admin-orders.js?v=1','data-admin-orders');
+    if(page==='admin.html'){
+      add('admin-orders.js?v=1','data-admin-orders');
+      add('admin-promotions.js?v=1','data-admin-promotions');
+    }
     if(page==='index.html'){
       add('checkout-address.js?v=3','data-checkout-address');
-      add('customer-account-menu.js?v=1','data-customer-account-menu');
+      add('customer-account-menu.js?v=2','data-customer-account-menu');
     }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
