@@ -44,13 +44,7 @@ function readRawBody(req) {
     const chunks = [];
     let size = 0;
     let settled = false;
-
-    const fail = error => {
-      if (settled) return;
-      settled = true;
-      reject(error);
-    };
-
+    const fail = error => { if (!settled) { settled = true; reject(error); } };
     req.on("data", chunk => {
       if (settled) return;
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
@@ -62,24 +56,19 @@ function readRawBody(req) {
       }
       chunks.push(buffer);
     });
-
     req.on("end", () => {
       if (settled) return;
       settled = true;
       resolve(Buffer.concat(chunks));
     });
-
     req.on("error", fail);
   });
 }
 
 async function readBody(req) {
   const raw = await readRawBody(req);
-  try {
-    return JSON.parse(raw.toString("utf8") || "{}");
-  } catch {
-    throw new Error("Invalid JSON body");
-  }
+  try { return JSON.parse(raw.toString("utf8") || "{}"); }
+  catch { throw new Error("Invalid JSON body"); }
 }
 
 function basicAuth() {
@@ -108,7 +97,6 @@ function paymentPricing(basePayable, paymentMethod) {
   const prepaidDiscount = method === "prepaid" ? PREPAID_DISCOUNT : 0;
   const codFee = method === "cod" ? PAYMENT_HANDLING_FEE : 0;
   const total = roundMoney(Math.max(0, Number(basePayable || 0) + handlingFee - prepaidDiscount));
-
   return {
     payment_method: method,
     payment_handling_fee: roundMoney(handlingFee),
@@ -131,13 +119,9 @@ async function getSupabaseUser(req) {
   if (!authHeader || !String(authHeader).startsWith("Bearer ")) {
     throw new Error("Please log in before checkout");
   }
-
   const accessToken = String(authHeader).substring(7).trim();
   const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
-    headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: "Bearer " + accessToken
-    }
+    headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + accessToken }
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data?.id) {
@@ -146,21 +130,33 @@ async function getSupabaseUser(req) {
   return data;
 }
 
+async function requireAdminUser(req) {
+  const user = await getSupabaseUser(req);
+  const response = await fetch(
+    SUPABASE_URL + "/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=id,is_admin&limit=1",
+    { headers: serverHeaders }
+  );
+  const rows = await response.json().catch(() => []);
+  if (!response.ok || !rows?.[0]?.is_admin) {
+    const error = new Error("Administrator access is required");
+    error.status = 403;
+    throw error;
+  }
+  return user;
+}
+
 async function getProductsByIds(ids) {
   assertServerConfig();
   if (!Array.isArray(ids) || !ids.length) throw new Error("Cart is empty");
-
   const cleanIds = ids.map(id => {
     const value = String(id).trim();
     if (!/^\d+$/.test(value)) throw new Error("Invalid product ID");
     return value;
   });
-
   const uniqueIds = [...new Set(cleanIds)];
   const url = SUPABASE_URL +
     "/rest/v1/products?id=in.(" + uniqueIds.join(",") + ")" +
     "&is_active=eq.true&select=id,name,category,price,image_url,gst_rate";
-
   const response = await fetch(url, { headers: serverHeaders });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.message || "Could not load products from Supabase");
@@ -169,66 +165,41 @@ async function getProductsByIds(ids) {
 
 async function calculate(items) {
   if (!Array.isArray(items) || !items.length) throw new Error("Cart is empty");
-
   const ids = items.map(item => item?.id);
   const products = await getProductsByIds(ids);
   const productMap = new Map(products.map(product => [String(product.id), product]));
-
   let subtotal = 0;
   let totalDiscount = 0;
   let totalGst = 0;
-
   const normalized = items.map(item => {
     const id = String(item?.id ?? "").trim();
     const qty = Number(item?.qty);
     if (!/^\d+$/.test(id)) throw new Error("Invalid product ID");
-    if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
-      throw new Error("Invalid quantity for product " + id);
-    }
-
+    if (!Number.isInteger(qty) || qty < 1 || qty > 20) throw new Error("Invalid quantity for product " + id);
     const product = productMap.get(id);
     if (!product) throw new Error("Product is unavailable or inactive: " + id);
-
     const price = Number(product.price);
     const gstRate = Number(product.gst_rate);
-    if (!Number.isFinite(price) || price <= 0) {
-      throw new Error("Invalid price for product " + product.name);
-    }
-    if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
-      throw new Error("GST rate is not configured for product " + product.id);
-    }
-
+    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid price for product " + product.name);
+    if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) throw new Error("GST rate is not configured for product " + product.id);
     const mrp = price;
     const discount = 0;
     const taxableAmount = roundMoney(Math.max(0, mrp - discount) * qty);
     const gstAmount = roundMoney(taxableAmount * gstRate / 100);
     const lineTotal = roundMoney(taxableAmount + gstAmount);
-
     subtotal += taxableAmount;
     totalDiscount += discount * qty;
     totalGst += gstAmount;
-
     return {
-      id: product.id,
-      qty,
-      name: product.name,
-      category: product.category,
-      image_url: product.image_url,
-      mrp,
-      discount,
-      unit_price: price,
-      gst_rate: gstRate,
-      gst_amount: gstAmount,
-      taxable_amount: taxableAmount,
-      line_total: lineTotal
+      id: product.id, qty, name: product.name, category: product.category, image_url: product.image_url,
+      mrp, discount, unit_price: price, gst_rate: gstRate, gst_amount: gstAmount,
+      taxable_amount: taxableAmount, line_total: lineTotal
     };
   });
-
   const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_BELOW_THRESHOLD;
   const otherCharges = 0;
   const baseTotal = roundMoney(subtotal - totalDiscount + totalGst + delivery + otherCharges);
   if (!Number.isFinite(baseTotal) || baseTotal < 0) throw new Error("Invalid order amount");
-
   return {
     items: normalized,
     subtotal: roundMoney(subtotal),
@@ -241,26 +212,8 @@ async function calculate(items) {
 }
 
 module.exports = {
-  KEY_ID,
-  KEY_SECRET,
-  WEBHOOK_SECRET,
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-  DELIVERY_THRESHOLD,
-  DELIVERY_BELOW_THRESHOLD,
-  PAYMENT_HANDLING_FEE,
-  PREPAID_DISCOUNT,
-  serverHeaders,
-  cors,
-  json,
-  readRawBody,
-  readBody,
-  basicAuth,
-  safeEqualText,
-  roundMoney,
-  normalizePaymentMethod,
-  paymentPricing,
-  getSupabaseUser,
-  getProductsByIds,
-  calculate
+  KEY_ID, KEY_SECRET, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+  DELIVERY_THRESHOLD, DELIVERY_BELOW_THRESHOLD, PAYMENT_HANDLING_FEE, PREPAID_DISCOUNT,
+  serverHeaders, cors, json, readRawBody, readBody, basicAuth, safeEqualText, roundMoney,
+  normalizePaymentMethod, paymentPricing, getSupabaseUser, requireAdminUser, getProductsByIds, calculate
 };
