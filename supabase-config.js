@@ -25,6 +25,7 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
   function start(){
     const page=window.location.pathname.split('/').pop()||'index.html';
     if(page==='account.html'){
+      add('account-role-guard.js?v=1','data-account-role-guard');
       add('support-chat.js?v=7','data-support-chat');
       add('customer-addresses.js?v=2','data-customer-addresses');
       add('account-dashboard.js?v=5','data-account-dashboard');
