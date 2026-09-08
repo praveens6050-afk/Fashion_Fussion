@@ -1,0 +1,48 @@
+name: Apply audit source fixes
+
+on:
+  push:
+    branches:
+      - audit-fixes-1-7-20260909
+    paths:
+      - .github/workflows/apply-audit-source-fixes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit-fixes-1-7-20260909
+          fetch-depth: 0
+
+      - name: Apply guarded source patches
+        run: python scripts/apply_source_fixes.py
+
+      - name: Validate changed files
+        run: |
+          grep -q '₹299' index.html
+          ! grep -q '₹599' index.html
+          ! grep -q 'Same-week dispatch' index.html
+          grep -q 'checkout.html' login.html
+          ! grep -q 'index.html?checkout=1' login.html
+          grep -q 'productGstRate' admin.html
+          ! grep -q 'GST_MAX_SUPPORTED_ID' admin.html
+          grep -q 'index.html?admin_preview=1' admin.html
+          grep -q 'admin-account.html' admin.html
+
+      - name: Commit source fixes
+        run: |
+          if git diff --quiet -- index.html login.html admin.html; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html login.html admin.html
+          git commit -m 'Apply permanent storefront and admin source fixes'
+          git push origin HEAD:audit-fixes-1-7-20260909
