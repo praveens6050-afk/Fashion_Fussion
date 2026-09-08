@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Account | Fashion_FUSSION</title>
+<title>Admin Account | Fashion_Fussion</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <style>
@@ -11,7 +11,7 @@
 </style>
 </head>
 <body>
-<header class="header"><div class="header-inner"><div class="logo">Fashion<span>_FUSSION</span></div><div class="actions"><a href="admin.html">Admin Dashboard</a><a href="index.html?admin_preview=1">Store</a><button id="logoutBtn" type="button">Sign Out</button></div></div></header>
+<header class="header"><div class="header-inner"><div class="logo">Fashion<span>_Fussion</span></div><div class="actions"><a href="admin.html">Admin Dashboard</a><a href="index.html?admin_preview=1">Store</a><button id="logoutBtn" type="button">Sign Out</button></div></div></header>
 <main class="container"><div id="loading" class="card loading">Loading admin account...</div><div id="content" style="display:none"><section class="card"><div class="card-head"><h1>Admin Account</h1><p>Your administrator profile and account details.</p></div><div class="card-body"><span class="admin-chip">ADMIN</span><div class="grid"><div class="field"><label>Full Name</label><input id="fullName" readonly></div><div class="field"><label>Phone</label><input id="phone" readonly></div><div class="field full"><label>Email</label><input id="email" readonly></div></div></div></section><section class="card"><div class="card-head"><h2>Account Status</h2></div><div class="card-body"><div class="status">Administrator access active</div></div></section></div><div id="errorBox" style="display:none" class="error"></div></main>
 <script>
 (async function(){
