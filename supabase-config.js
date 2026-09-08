@@ -41,7 +41,7 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
       add('cart-navigation.js?v=1','data-cart-navigation');
     }
     if(page==='admin.html'){
-      add('admin-store-link.js?v=1','data-admin-store-link');
+      add('admin-store-link.js?v=2','data-admin-store-link');
       add('support-chat.js?v=7','data-support-chat');
       add('admin-orders.js?v=1','data-admin-orders');
       add('admin-promotions.js?v=1','data-admin-promotions');
