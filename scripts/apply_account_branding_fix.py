@@ -7,6 +7,7 @@ for path in FILES:
     before = text
 
     text = text.replace('Fashion_FUSSION', 'Fashion_Fussion')
+    text = text.replace('Fashion<span>_FUSSION</span>', 'Fashion<span>_Fussion</span>')
 
     if path.name == 'account.html':
         if '<title>My Account | Fashion_Fussion</title>' not in text:
