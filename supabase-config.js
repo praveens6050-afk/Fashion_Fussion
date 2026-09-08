@@ -15,8 +15,11 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
   function start(){
     const page=window.location.pathname.split('/').pop()||'index.html';
     if(new Set(['index.html','account.html','admin.html']).has(page)) add('support-chat.js?v=4','data-support-chat');
-    if(page==='account.html') add('customer-addresses.js?v=1','data-customer-addresses');
-    if(page==='index.html') add('checkout-address.js?v=1','data-checkout-address');
+    if(page==='account.html'){
+      add('customer-addresses.js?v=1','data-customer-addresses');
+      add('account-dashboard.js?v=1','data-account-dashboard');
+    }
+    if(page==='index.html') add('checkout-address.js?v=3','data-checkout-address');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
 })();
