@@ -5,7 +5,8 @@
   const replacements=[
     [/₹599/g,'₹299'],
     [/above ₹599/gi,'above ₹299'],
-    [/9am\s*[–-]\s*7pm/gi,'24/7']
+    [/9am\s*[–-]\s*7pm/gi,'24/7'],
+    [/Same-week dispatch/gi,'Dispatch within 3 days']
   ];
 
   function fixText(root=document.body){
