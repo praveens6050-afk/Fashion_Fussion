@@ -1,9 +1,11 @@
 {
-  "name": "fashion-fussion-payment-api",
-  "version": "1.0.0",
-  "private": true,
-  "engines": {
-    "node": ">=18"
+  "name":"fashion-fussion-payment-api",
+  "version":"1.1.0",
+  "private":true,
+  "engines":{"node":">=18"},
+  "scripts":{
+    "test":"node test.js",
+    "check":"node --check lib.js && node --check api/quote-order.js && node --check api/create-order.js && node --check api/verify-payment.js && node --check api/reconcile-payment.js && node --check api/razorpay-webhook.js && node --check api/admin-product-costs.js && node --check api/admin-order-action.js"
   },
-  "dependencies": {}
+  "dependencies":{}
 }
