@@ -22,13 +22,9 @@ module.exports = async function (req, res) {
 
   try {
     const user = await getSupabaseUser(req);
-
-    if (!user.phone || !user.phone_confirmed_at) {
-      throw new Error("Please verify your mobile number with OTP before checkout.");
-    }
-
     const body = await readBody(req);
     const calc = await calculate(body.items);
+
     const customerName = String(body.customer_name || "").trim();
     if (!customerName) throw new Error("Customer name is required");
 
@@ -38,10 +34,11 @@ module.exports = async function (req, res) {
 
     if (!address) throw new Error("Please add a delivery address before checkout.");
 
-    const customerPhone = String(user.phone).trim();
+    const customerPhone = String(body.customer_phone || address.phone || "").trim();
+    if (!customerPhone) throw new Error("Customer mobile number is required");
+
     const requiredAddress = [address.full_name, address.phone, address.address_line1, address.city, address.state, address.postal_code, address.country];
     if (requiredAddress.some(v => !String(v || "").trim())) throw new Error("Please complete your delivery address before checkout.");
-    if (String(address.phone).trim() !== customerPhone) throw new Error("Your delivery address mobile number must match your verified account mobile number.");
 
     const receipt = "FF_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
     const razorpayResponse = await fetch("https://api.razorpay.com/v1/orders", {
@@ -77,7 +74,7 @@ module.exports = async function (req, res) {
           id: address.id || null,
           label: String(address.label || "Home").trim(),
           full_name: String(address.full_name).trim(),
-          phone: customerPhone,
+          phone: String(address.phone).trim(),
           address_line1: String(address.address_line1).trim(),
           address_line2: address.address_line2 ? String(address.address_line2).trim() : null,
           city: String(address.city).trim(),
@@ -99,7 +96,7 @@ module.exports = async function (req, res) {
       items: calc.items,
       pricing: { subtotal: calc.subtotal, discount: calc.discount, gst: calc.gst, delivery: calc.delivery, other_charges: calc.other_charges, total: calc.total },
       shipping_address: {
-        label: address.label || "Home", full_name: address.full_name, phone: customerPhone,
+        label: address.label || "Home", full_name: address.full_name, phone: String(address.phone).trim(),
         address_line1: address.address_line1, address_line2: address.address_line2 || null,
         city: address.city, state: address.state, postal_code: address.postal_code, country: address.country
       },
