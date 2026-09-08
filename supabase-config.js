@@ -36,7 +36,7 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
       add('storefront-consistency.js?v=3','data-storefront-consistency');
       add('support-chat.js?v=7','data-support-chat');
       add('checkout-address.js?v=3','data-checkout-address');
-      add('customer-account-menu.js?v=3','data-customer-account-menu');
+      add('customer-account-menu.js?v=4','data-customer-account-menu');
       add('cart-navigation.js?v=1','data-cart-navigation');
     }
     if(page==='admin.html'){
