@@ -23,6 +23,7 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
       add('order-tracking.js?v=3','data-order-tracking');
     }
     if(page==='index.html'){
+      add('storefront-consistency.js?v=1','data-storefront-consistency');
       add('support-chat.js?v=5','data-support-chat');
       add('checkout-address.js?v=3','data-checkout-address');
       add('customer-account-menu.js?v=3','data-customer-account-menu');
