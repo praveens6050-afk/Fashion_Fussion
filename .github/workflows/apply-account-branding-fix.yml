@@ -42,3 +42,5 @@ jobs:
           git add account.html account-dashboard.js
           git commit -m 'Normalize customer account branding'
           git push origin HEAD:account-branding-20260909
+
+# rerun: tagged-logo-fix
