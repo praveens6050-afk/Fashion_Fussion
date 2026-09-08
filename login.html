@@ -373,7 +373,7 @@ header.site{
       href="index.html"
       class="logo"
     >
-      Fashion<small>_FUSSION</small>
+      Fashion_Fussion
     </a>
 
   </div>
@@ -862,8 +862,7 @@ async function redirectUser(user){
          * IMPORTANT:
          *
          * If customer came from checkout,
-         * return to index.html with a checkout
-         * flag.
+         * return directly to checkout.html.
          */
 
         if(
@@ -872,7 +871,7 @@ async function redirectUser(user){
         ){
 
           window.location.href =
-            "index.html?checkout=1";
+            "checkout.html";
 
           return;
         }

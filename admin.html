@@ -10,7 +10,7 @@
   content="width=device-width, initial-scale=1.0"
 >
 
-<title>Fashion_FUSSION — Admin</title>
+<title>Fashion_Fussion — Admin</title>
 
 <link rel="icon" href="data:,">
 
@@ -828,7 +828,7 @@ textarea:focus{
     <div>
 
       <div class="logo">
-        Fashion<span>_FUSSION</span>
+        Fashion<span>_Fussion</span>
       </div>
 
       <div class="admin-badge">
@@ -840,11 +840,11 @@ textarea:focus{
 
     <div class="header-actions">
 
-      <a href="index.html">
+      <a href="index.html?admin_preview=1">
         Store
       </a>
 
-      <a href="account.html">
+      <a href="admin-account.html">
         My Account
       </a>
 
@@ -1305,6 +1305,31 @@ textarea:focus{
         </div>
 
 
+        <!-- GST RATE -->
+
+        <div class="form-group">
+
+          <label for="productGstRate">
+            GST Rate %
+          </label>
+
+          <input
+            id="productGstRate"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value="18"
+            required
+          >
+
+          <div class="form-help">
+            Stored with the product and used by secure server pricing.
+          </div>
+
+        </div>
+
+
 
         <!-- RATING -->
 
@@ -1476,29 +1501,9 @@ const ADMIN_USER_ID =
 
 
 /*
- * IMPORTANT GST CONFIGURATION
- *
- * This mirrors the currently deployed backend GST coverage.
- *
- * Backend currently contains GST mappings for product IDs
- * 1 through 57.
- *
- * We intentionally DO NOT create a fake database gst_rate
- * field here because the existing products schema has not
- * been confirmed to contain such a column.
+ * GST is stored per product in public.products.gst_rate.
+ * The backend and admin panel both use the same database value.
  */
-
-const GST_RATES = {};
-
-for(
-  let productId = 1;
-  productId <= 57;
-  productId++
-){
-  GST_RATES[productId] = 18;
-}
-
-const GST_MAX_SUPPORTED_ID = 57;
 
 
 /* =========================================================
@@ -1631,80 +1636,46 @@ function escapeHtml(value){
    GST STATUS
    ========================================================= */
 
-function getGSTRate(productId){
+function getGSTRate(product){
 
-  const id =
-    Number(productId);
+  const rate =
+    Number(product?.gst_rate);
 
-  return GST_RATES[id] ?? null;
+  return (
+    Number.isFinite(rate) &&
+    rate >= 0 &&
+    rate <= 100
+  )
+    ? rate
+    : null;
 
 }
 
 
 function updateGSTStatus(){
 
-  const notice =
-    $("gstNotice");
+  const notice = $("gstNotice");
+  const coverage = $("gstCoverage");
+  const invalid = products.filter(product => getGSTRate(product) === null);
 
-  const coverage =
-    $("gstCoverage");
-
-
-  const unsupported =
-    products.filter(
-      function(product){
-
-        return (
-          getGSTRate(product.id) ===
-          null
-        );
-
-      }
-    );
-
-
-  if(!unsupported.length){
-
-    notice.className =
-      "gst-notice gst-ok";
-
+  if(!invalid.length){
+    notice.className = "gst-notice gst-ok";
     notice.innerHTML = `
       <strong>GST coverage OK:</strong>
-      All current product IDs are covered by the
-      backend GST configuration.
+      Every current product has a valid database GST rate.
     `;
-
-
-    coverage.textContent =
-      "✓ Covered";
-
-    coverage.style.color =
-      "#2e7d32";
-
+    coverage.textContent = "✓ Configured";
+    coverage.style.color = "#2e7d32";
     return;
-
   }
 
-
-  notice.className =
-    "gst-notice gst-warning";
-
+  notice.className = "gst-notice gst-warning";
   notice.innerHTML = `
     <strong>GST configuration warning:</strong>
-    ${unsupported.length}
-    product(s) have IDs above the currently supported
-    GST range (1–${GST_MAX_SUPPORTED_ID}).
-    These products must not be used for checkout until
-    the backend GST configuration is updated.
+    ${invalid.length} product(s) need a valid GST rate between 0% and 100%.
   `;
-
-
-  coverage.textContent =
-    unsupported.length +
-    " Missing";
-
-  coverage.style.color =
-    "#e65100";
+  coverage.textContent = invalid.length + " Invalid";
+  coverage.style.color = "#e65100";
 
 }
 
@@ -2094,7 +2065,7 @@ function renderProducts(){
 
 
         const gstRate =
-          getGSTRate(product.id);
+          getGSTRate(product);
 
 
         const gstHtml =
@@ -2371,6 +2342,10 @@ function openAddProduct(){
     "true";
 
 
+  $("productGstRate").value =
+    "18";
+
+
   $("saveProductButton").disabled =
     false;
 
@@ -2477,6 +2452,11 @@ function editProduct(id){
     "";
 
 
+  $("productGstRate").value =
+    product.gst_rate ??
+    "18";
+
+
   $("saveProductButton").disabled =
     false;
 
@@ -2570,6 +2550,13 @@ async function saveProduct(event){
       .trim();
 
 
+  const gstRate =
+    Number(
+      $("productGstRate")
+        .value
+    );
+
+
   /*
    * Validation
    */
@@ -2620,63 +2607,18 @@ async function saveProduct(event){
   }
 
 
-  /*
-   * IMPORTANT:
-   *
-   * New Supabase products receive a new database ID.
-   * The current backend GST configuration supports IDs
-   * only through 57.
-   *
-   * Therefore we prevent creation of an additional product
-   * if the next generated ID is expected to exceed 57.
-   *
-   * This avoids creating a product that can later break
-   * checkout.
-   */
-
   if(
-    editingProductId === null
+    !Number.isFinite(gstRate) ||
+    gstRate < 0 ||
+    gstRate > 100
   ){
 
-    const numericIds =
-      products
-        .map(
-          function(product){
-            return Number(product.id);
-          }
-        )
-        .filter(
-          function(id){
-            return Number.isFinite(id);
-          }
-        );
+    showStatus(
+      "GST rate must be between 0 and 100.",
+      "error"
+    );
 
-
-    const highestId =
-      numericIds.length
-        ? Math.max(...numericIds)
-        : 0;
-
-
-    const expectedNextId =
-      highestId + 1;
-
-
-    if(
-      expectedNextId >
-      GST_MAX_SUPPORTED_ID
-    ){
-
-      showStatus(
-        "Product was not added. The current backend GST configuration supports product IDs only through " +
-        GST_MAX_SUPPORTED_ID +
-        ". The backend GST configuration must be extended before adding another product.",
-        "warning"
-      );
-
-      return;
-
-    }
+    return;
 
   }
 
@@ -2709,7 +2651,10 @@ async function saveProduct(event){
       active,
 
     description:
-      description
+      description,
+
+    gst_rate:
+      gstRate
 
   };
 
