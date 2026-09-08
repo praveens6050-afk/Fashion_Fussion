@@ -17,17 +17,6 @@ const DELIVERY_BELOW_THRESHOLD = 49;
 const MAX_BODY_BYTES = 64 * 1024;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://praveens6050-afk.github.io";
 
-const GST_RATES = {
-  1: 18, 2: 18, 3: 18, 4: 18, 5: 18, 6: 18, 7: 18, 8: 18,
-  9: 18, 10: 18, 11: 18, 12: 18, 13: 18, 14: 18, 15: 18, 16: 18,
-  17: 18, 18: 18, 19: 18, 20: 18, 21: 18, 22: 18, 23: 18, 24: 18,
-  25: 18, 26: 18, 27: 18, 28: 18, 29: 18, 30: 18, 31: 18, 32: 18,
-  33: 18, 34: 18, 35: 18, 36: 18, 37: 18, 38: 18, 39: 18, 40: 18,
-  41: 18, 42: 18, 43: 18, 44: 18, 45: 18, 46: 18, 47: 18, 48: 18,
-  49: 18, 50: 18, 51: 18, 52: 18, 53: 18, 54: 18, 55: 18, 56: 18,
-  57: 18
-};
-
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
   res.setHeader("Vary", "Origin");
@@ -90,7 +79,7 @@ async function getProductsByIds(ids) {
     return value;
   });
   const uniqueIds = [...new Set(cleanIds)];
-  const url = SUPABASE_URL + "/rest/v1/products?id=in.(" + uniqueIds.join(",") + ")&is_active=eq.true&select=id,name,category,price,image_url";
+  const url = SUPABASE_URL + "/rest/v1/products?id=in.(" + uniqueIds.join(",") + ")&is_active=eq.true&select=id,name,category,price,image_url,gst_rate";
   const response = await fetch(url, { headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + SUPABASE_SERVICE_ROLE_KEY } });
   const data = await response.json();
   if (!response.ok) throw new Error(data?.message || "Could not load products from Supabase");
@@ -114,11 +103,11 @@ async function calculate(items) {
     if (!product) throw new Error("Product is unavailable or inactive: " + id);
     const price = Number(product.price);
     if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid price for product " + product.name);
+    const gstRate = Number(product.gst_rate);
+    if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) throw new Error("Invalid GST rate for product " + product.id);
     const mrp = price;
     const discount = 0;
     const taxableAmount = Math.max(0, mrp - discount) * qty;
-    const gstRate = Number(GST_RATES[Number(product.id)]);
-    if (!Number.isFinite(gstRate) || gstRate < 0) throw new Error("GST rate is not configured for product " + product.id);
     const gstAmount = Math.round(taxableAmount * gstRate / 100 * 100) / 100;
     const lineTotal = taxableAmount + gstAmount;
     subtotal += taxableAmount;
