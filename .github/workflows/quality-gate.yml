@@ -1,0 +1,25 @@
+name: Quality Gate
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, production-hardening-cod-20260909]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Source checks
+        run: node scripts/check_source.js
+      - name: Backend syntax
+        working-directory: backend
+        run: npm run check
+      - name: Backend pricing tests
+        working-directory: backend
+        run: npm test
