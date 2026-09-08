@@ -21,7 +21,10 @@ async function rest(path, options = {}) {
   });
   const data = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Store database request failed');
+    const error = new Error(data?.message || data?.error || 'Store database request failed');
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
   return data;
 }
@@ -135,13 +138,91 @@ function existingResponse(existing) {
     payment_method: existing.payment_method,
     status: existing.status,
     total: Number(existing.total_amount),
-    completed: ['paid', 'cod_pending'].includes(existing.status),
+    completed: ['paid', 'cod_pending', 'cod_collected'].includes(existing.status),
     order: existing.razorpay_order_id ? {
       id: existing.razorpay_order_id,
       amount: Math.round(Number(existing.total_amount) * 100),
       currency: existing.currency || 'INR'
     } : null,
     key_id: existing.razorpay_order_id ? KEY_ID : null
+  };
+}
+
+async function createRazorpayOrder(storeOrder, userId) {
+  if (!KEY_ID || !KEY_SECRET) throw new Error('Razorpay server keys are not configured');
+  const response = await fetch('https://api.razorpay.com/v1/orders', {
+    method: 'POST',
+    headers: { Authorization: basicAuth(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      amount: Math.round(Number(storeOrder.total_amount) * 100),
+      currency: storeOrder.currency || 'INR',
+      receipt: 'FF_' + storeOrder.id,
+      notes: { store: 'Fashion_Fussion', user_id: userId, store_order_id: String(storeOrder.id) },
+      partial_payment: false
+    })
+  });
+  const order = await response.json().catch(() => ({}));
+  if (!response.ok || !order?.id) {
+    const error = new Error(order?.error?.description || 'Razorpay order creation failed');
+    error.isRazorpay = true;
+    throw error;
+  }
+  return order;
+}
+
+async function resumeExisting(existing, userId) {
+  if (['paid', 'cod_pending', 'cod_collected'].includes(existing.status)) {
+    return existingResponse(existing);
+  }
+  if (['payment_failed', 'expired', 'cancelled', 'cod_cancelled', 'refunded'].includes(existing.status)) {
+    const error = new Error('This checkout attempt is no longer active. Please try again.');
+    error.retryWithNewCheckout = true;
+    throw error;
+  }
+  if (existing.status === 'created' && existing.razorpay_order_id) {
+    return existingResponse(existing);
+  }
+  if (!['creating', 'created'].includes(existing.status)) {
+    throw new Error('This checkout attempt cannot be resumed.');
+  }
+
+  await rpc('reserve_order_promotions', { p_order_id: existing.id, p_user_id: userId });
+
+  if (existing.payment_method === 'cod') {
+    await rpc('finalize_checkout_order', {
+      p_order_id: existing.id,
+      p_user_id: userId,
+      p_payment_id: null,
+      p_payment_signature: null,
+      p_target_status: 'cod_pending',
+      p_source: 'cod_resume'
+    });
+    return { ...existingResponse({ ...existing, status: 'cod_pending' }), completed: true };
+  }
+
+  if (Number(existing.total_amount) === 0) {
+    await rpc('finalize_checkout_order', {
+      p_order_id: existing.id,
+      p_user_id: userId,
+      p_payment_id: null,
+      p_payment_signature: null,
+      p_target_status: 'paid',
+      p_source: 'gift_card_resume'
+    });
+    return { ...existingResponse({ ...existing, status: 'paid' }), completed: true, zero_value: true };
+  }
+
+  const razorpayOrder = await createRazorpayOrder(existing, userId);
+  await rest('orders?id=eq.' + encodeURIComponent(existing.id) + '&user_id=eq.' + encodeURIComponent(userId) + '&status=in.(creating,created)', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ razorpay_order_id: razorpayOrder.id, status: 'created' })
+  });
+
+  return {
+    ...existingResponse({ ...existing, razorpay_order_id: razorpayOrder.id, status: 'created' }),
+    key_id: KEY_ID,
+    order: { id: razorpayOrder.id, amount: razorpayOrder.amount, currency: razorpayOrder.currency }
   };
 }
 
@@ -160,7 +241,19 @@ module.exports = async function createOrder(req, res) {
     const paymentMethod = normalizePaymentMethod(body.payment_method);
 
     const existing = await findExisting(user.id, checkoutKey);
-    if (existing) return json(req, res, 200, existingResponse(existing));
+    if (existing) {
+      if (existing.payment_method !== paymentMethod) {
+        return json(req, res, 409, { error: 'Payment method changed. Please start a new checkout attempt.', retry_with_new_checkout: true });
+      }
+      try {
+        return json(req, res, 200, await resumeExisting(existing, user.id));
+      } catch (error) {
+        return json(req, res, error.retryWithNewCheckout ? 409 : 400, {
+          error: error.message || 'Checkout could not be resumed',
+          retry_with_new_checkout: Boolean(error.retryWithNewCheckout)
+        });
+      }
+    }
 
     await enforceRateLimit(user.id);
 
@@ -201,12 +294,19 @@ module.exports = async function createOrder(req, res) {
       shipping_address: address
     };
 
-    const savedRows = await rest('orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify(orderInsert)
-    });
-    const saved = savedRows?.[0];
+    let saved;
+    try {
+      const savedRows = await rest('orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(orderInsert)
+      });
+      saved = savedRows?.[0];
+    } catch (error) {
+      const raced = await findExisting(user.id, checkoutKey).catch(() => null);
+      if (raced) return json(req, res, 200, await resumeExisting(raced, user.id));
+      throw error;
+    }
     if (!saved?.id) throw new Error('The store could not create your order. Please try again.');
 
     try {
@@ -229,7 +329,6 @@ module.exports = async function createOrder(req, res) {
         p_target_status: 'cod_pending',
         p_source: 'cod'
       });
-
       return json(req, res, 200, {
         store_order_id: saved.id,
         display_order_id: saved.display_order_id,
@@ -254,7 +353,6 @@ module.exports = async function createOrder(req, res) {
         p_target_status: 'paid',
         p_source: 'gift_card'
       });
-
       return json(req, res, 200, {
         store_order_id: saved.id,
         display_order_id: saved.display_order_id,
@@ -268,29 +366,17 @@ module.exports = async function createOrder(req, res) {
       });
     }
 
-    const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: { Authorization: basicAuth(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: Math.round(payment.total * 100),
-        currency: 'INR',
-        receipt: 'FF_' + saved.id,
-        notes: { store: 'Fashion_Fussion', user_id: user.id, store_order_id: String(saved.id) },
-        partial_payment: false
-      })
-    });
-    const razorpayOrder = await razorpayResponse.json().catch(() => ({}));
-
-    if (!razorpayResponse.ok || !razorpayOrder?.id) {
+    let razorpayOrder;
+    try {
+      razorpayOrder = await createRazorpayOrder(saved, user.id);
+    } catch (error) {
       await rpc('release_order_promotions', { p_order_id: saved.id, p_user_id: user.id }).catch(() => null);
       await rest('orders?id=eq.' + encodeURIComponent(saved.id), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'payment_failed' })
       }).catch(() => null);
-      return json(req, res, 502, {
-        error: razorpayOrder?.error?.description || 'Razorpay order creation failed'
-      });
+      return json(req, res, 502, { error: error.message || 'Razorpay order creation failed', retry_with_new_checkout: true });
     }
 
     await rest('orders?id=eq.' + encodeURIComponent(saved.id) + '&user_id=eq.' + encodeURIComponent(user.id), {
