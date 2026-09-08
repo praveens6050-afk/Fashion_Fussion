@@ -6,7 +6,8 @@
   async function init(){const link=document.getElementById('accountLink');if(!link||!window.supabaseClient)return;injectStyles();const {data:{user}}=await window.supabaseClient.auth.getUser();if(!user){link.textContent='Login';link.href='login.html';return;}let profile=null;try{const r=await window.supabaseClient.from('profiles').select('full_name,is_admin').eq('id',user.id).maybeSingle();profile=r.data}catch{}const isAdmin=profile?.is_admin===true;
     if(isAdmin){
       const page=window.location.pathname.split('/').pop()||'index.html';
-      if(page==='index.html'||page===''){
+      const adminPreview=new URLSearchParams(window.location.search).get('admin_preview')==='1';
+      if((page==='index.html'||page==='')&&!adminPreview){
         window.location.replace('admin.html');
         return;
       }
