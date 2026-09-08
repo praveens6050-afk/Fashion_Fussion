@@ -18,7 +18,7 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
     if(page==='account.html'){
       add('customer-addresses.js?v=2','data-customer-addresses');
       add('account-dashboard.js?v=5','data-account-dashboard');
-      add('order-tracking.js?v=2','data-order-tracking');
+      add('order-tracking.js?v=3','data-order-tracking');
     }
     if(page==='admin.html'){
       add('admin-orders.js?v=1','data-admin-orders');
