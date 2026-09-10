@@ -18,95 +18,14 @@ jobs:
         with:
           ref: security-hardening-20260910
           fetch-depth: 0
-      - name: Apply remaining hardening
-        shell: bash
+      - name: Pin Supabase browser SDK
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          api_files = [
-            'backend/api/create-order.js',
-            'backend/api/quote-order.js',
-            'backend/api/verify-payment.js',
-            'backend/api/reconcile-payment.js',
-            'backend/api/admin-product-costs.js',
-            'backend/api/admin-order-action.js',
-          ]
-          for name in api_files:
-              p=Path(name); t=p.read_text(encoding='utf-8')
-              if '  cors(req, res);\n' in t:
-                  t=t.replace('  cors(req, res);\n', "  if (!cors(req, res)) return json(req, res, 403, { error: 'Origin not allowed' });\n", 1)
-              elif '  cors(req,res);\n' in t:
-                  t=t.replace('  cors(req,res);\n', "  if(!cors(req,res))return json(req,res,403,{error:'Origin not allowed'});\n", 1)
-              p.write_text(t,encoding='utf-8')
-
-          p=Path('backend/test.js'); t=p.read_text(encoding='utf-8')
-          if 'normalizeCartRequest' not in t:
-              t=t.replace("const {paymentPricing,normalizePaymentMethod,roundMoney}=require('./lib');", "const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors}=require('./lib');")
-              t=t.replace("console.log('Fashion_Fussion backend pricing tests passed');", """assert.deepStrictEqual(normalizeCartRequest([{id:9,qty:2}]),[{id:'9',qty:2}]);
-assert.throws(()=>normalizeCartRequest([{id:9,qty:20},{id:9,qty:1}]),/Duplicate product ID/);
-assert.throws(()=>normalizeCartRequest(Array.from({length:51},(_,i)=>({id:i+1,qty:1}))),/Too many cart items/);
-assert.throws(()=>normalizeCartRequest([{id:9,qty:21}]),/Invalid quantity/);
-function fakeRes(){return{headers:{},setHeader(name,value){this.headers[name]=value}}}
-const goodRes=fakeRes();
-assert.strictEqual(cors({headers:{origin:'https://praveens6050-afk.github.io'}},goodRes),true);
-assert.strictEqual(goodRes.headers['Access-Control-Allow-Origin'],'https://praveens6050-afk.github.io');
-assert.strictEqual(goodRes.headers['Cache-Control'],'no-store');
-assert.strictEqual(goodRes.headers['X-Content-Type-Options'],'nosniff');
-const badRes=fakeRes();
-assert.strictEqual(cors({headers:{origin:'https://evil.example'}},badRes),false);
-assert.strictEqual(badRes.headers['Access-Control-Allow-Origin'],undefined);
-console.log('Fashion_Fussion backend pricing/security tests passed');""")
-              p.write_text(t,encoding='utf-8')
-
-          old='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
-          new='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0'
-          for p in Path('.').glob('*.html'):
-              t=p.read_text(encoding='utf-8')
-              if old in t:
-                  p.write_text(t.replace(old,new),encoding='utf-8')
-
-          m=Path('supabase/migrations/20260910054500_security_input_limits_and_support_abuse_guard.sql')
-          m.write_text("""create unique index if not exists customer_support_one_open_request_per_user_idx
-on public.customer_support_requests(user_id)
-where user_id is not null and status in ('pending','accepted');
-
-alter table public.customer_support_requests
-  add constraint customer_support_requests_length_check check (
-    char_length(btrim(customer_name)) between 1 and 100 and
-    char_length(btrim(customer_phone)) between 6 and 20 and
-    (customer_email is null or char_length(customer_email) <= 254) and
-    char_length(btrim(issue)) between 1 and 2000
-  );
-
-alter table public.customer_support_messages
-  add constraint customer_support_messages_length_check check (
-    char_length(btrim(message)) between 1 and 4000
-  );
-
-alter table public.customer_addresses
-  add constraint customer_addresses_length_check check (
-    char_length(btrim(label)) between 1 and 50 and
-    char_length(btrim(full_name)) between 1 and 100 and
-    char_length(btrim(phone)) between 6 and 20 and
-    char_length(btrim(address_line1)) between 1 and 200 and
-    (address_line2 is null or char_length(address_line2) <= 200) and
-    char_length(btrim(city)) between 1 and 100 and
-    char_length(btrim(state)) between 1 and 100 and
-    char_length(btrim(postal_code)) between 3 and 20 and
-    char_length(btrim(country)) between 2 and 100
-  );
-
-alter table public.profiles
-  add constraint profiles_user_input_length_check check (
-    (full_name is null or char_length(full_name) <= 100) and
-    (phone is null or char_length(phone) <= 20)
-  );
-""",encoding='utf-8')
-          PY
+          find . -maxdepth 1 -name '*.html' -print0 | xargs -0 sed -i 's#https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2#https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0#g'
+      - name: Commit pinned dependency
+        run: |
           rm -f .github/workflows/security-hardening-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Complete security hardening"
+          git commit -m "Pin Supabase browser SDK"
           git push origin HEAD:security-hardening-20260910
