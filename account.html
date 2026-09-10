@@ -1420,12 +1420,13 @@
            localStorage fallback
            ----------------------------------------------- */
 
+        /* Remove legacy browser-stored PII before rendering the signed-in profile. */
+        localStorage.removeItem("customer_name");
+        localStorage.removeItem("customer_phone");
+
         const savedName =
           String(
             profile?.full_name ||
-            localStorage.getItem(
-              "customer_name"
-            ) ||
             ""
           ).trim();
 
@@ -1433,9 +1434,6 @@
         const savedPhone =
           String(
             profile?.phone ||
-            localStorage.getItem(
-              "customer_phone"
-            ) ||
             ""
           ).trim();
 
@@ -1457,30 +1455,6 @@
           "";
 
 
-        /* -----------------------------------------------
-           Keep localStorage synchronized
-           ----------------------------------------------- */
-
-        if (savedName) {
-
-          localStorage.setItem(
-            "customer_name",
-            savedName
-          );
-
-        }
-
-
-        if (savedPhone) {
-
-          localStorage.setItem(
-            "customer_phone",
-            savedPhone
-          );
-
-        }
-
-
       } catch (error) {
 
         console.error(
@@ -1489,21 +1463,16 @@
         );
 
 
-        /*
-         * Even if Supabase profile
-         * cannot be loaded, use localStorage.
-         */
+        /* Never fall back to another browser user's locally stored profile data. */
+        localStorage.removeItem("customer_name");
+        localStorage.removeItem("customer_phone");
 
         $("fullName").value =
-          localStorage.getItem(
-            "customer_name"
-          ) || "";
+          "";
 
 
         $("phone").value =
-          localStorage.getItem(
-            "customer_phone"
-          ) || "";
+          "";
 
 
         $("email").value =
@@ -1659,22 +1628,6 @@
         console.log(
           "Profile saved successfully:",
           data
-        );
-
-
-        /* -----------------------------------------------
-           Save localStorage
-           ----------------------------------------------- */
-
-        localStorage.setItem(
-          "customer_name",
-          fullName
-        );
-
-
-        localStorage.setItem(
-          "customer_phone",
-          phone
         );
 
 
@@ -2246,6 +2199,10 @@
 
       } finally {
 
+
+        /* Clear legacy browser-stored profile PII on sign-out. */
+        localStorage.removeItem("customer_name");
+        localStorage.removeItem("customer_phone");
 
         /*
          * Always return to homepage.
