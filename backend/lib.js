@@ -8,10 +8,13 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 const DELIVERY_THRESHOLD = 299;
 const DELIVERY_BELOW_THRESHOLD = 49;
-const PAYMENT_HANDLING_FEE = 49;
-const PREPAID_DISCOUNT = 49;
+// Legacy fields are kept at zero so existing order/database integrations remain compatible
+// while customers are no longer charged a separate payment-handling/COD fee.
+const PAYMENT_HANDLING_FEE = 0;
+const PREPAID_DISCOUNT = 0;
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_CART_LINES = 50;
+const MAX_ITEM_QUANTITY = 500;
 const DEFAULT_ORIGIN = "https://praveens6050-afk.github.io";
 const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGIN || DEFAULT_ORIGIN)
   .split(",")
@@ -103,16 +106,13 @@ function normalizePaymentMethod(value) {
 
 function paymentPricing(basePayable, paymentMethod) {
   const method = normalizePaymentMethod(paymentMethod);
-  const handlingFee = PAYMENT_HANDLING_FEE;
-  const prepaidDiscount = method === "prepaid" ? PREPAID_DISCOUNT : 0;
-  const codFee = method === "cod" ? PAYMENT_HANDLING_FEE : 0;
-  const total = roundMoney(Math.max(0, Number(basePayable || 0) + handlingFee - prepaidDiscount));
+  const total = roundMoney(Math.max(0, Number(basePayable || 0)));
   return {
     payment_method: method,
-    payment_handling_fee: roundMoney(handlingFee),
-    prepaid_discount: roundMoney(prepaidDiscount),
-    cod_fee: roundMoney(codFee),
-    cod_fee_non_refundable: method === "cod",
+    payment_handling_fee: 0,
+    prepaid_discount: 0,
+    cod_fee: 0,
+    cod_fee_non_refundable: false,
     total
   };
 }
@@ -187,7 +187,9 @@ function normalizeCartRequest(items) {
     const id = String(item?.id ?? "").trim();
     const qty = Number(item?.qty);
     if (!/^\d+$/.test(id)) throw new Error("Invalid product ID");
-    if (!Number.isInteger(qty) || qty < 1 || qty > 20) throw new Error("Invalid quantity for product " + id);
+    if (!Number.isInteger(qty) || qty < 1 || qty > MAX_ITEM_QUANTITY) {
+      throw new Error("Invalid quantity for product " + id);
+    }
     if (seen.has(id)) throw new Error("Duplicate product ID: " + id);
     seen.add(id);
     return { id, qty };
@@ -235,6 +237,9 @@ async function calculate(items) {
     discount: roundMoney(totalDiscount),
     gst: roundMoney(totalGst),
     delivery: roundMoney(delivery),
+    delivery_threshold: DELIVERY_THRESHOLD,
+    delivery_non_refundable: delivery > 0,
+    amount_to_delivery_benefit: roundMoney(Math.max(0, DELIVERY_THRESHOLD - subtotal)),
     other_charges: roundMoney(otherCharges),
     total: baseTotal
   };
@@ -243,7 +248,7 @@ async function calculate(items) {
 module.exports = {
   KEY_ID, KEY_SECRET, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
   DELIVERY_THRESHOLD, DELIVERY_BELOW_THRESHOLD, PAYMENT_HANDLING_FEE, PREPAID_DISCOUNT,
-  MAX_BODY_BYTES, MAX_CART_LINES, serverHeaders, applySecurityHeaders, cors, json,
+  MAX_BODY_BYTES, MAX_CART_LINES, MAX_ITEM_QUANTITY, serverHeaders, applySecurityHeaders, cors, json,
   readRawBody, readBody, basicAuth, safeEqualText, roundMoney, normalizePaymentMethod,
   paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds, calculate
 };
