@@ -11,6 +11,7 @@ const DELIVERY_BELOW_THRESHOLD = 49;
 const PAYMENT_HANDLING_FEE = 49;
 const PREPAID_DISCOUNT = 49;
 const MAX_BODY_BYTES = 64 * 1024;
+const MAX_CART_LINES = 50;
 const DEFAULT_ORIGIN = "https://praveens6050-afk.github.io";
 const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGIN || DEFAULT_ORIGIN)
   .split(",")
@@ -22,14 +23,23 @@ const serverHeaders = {
   Authorization: "Bearer " + SUPABASE_SERVICE_ROLE_KEY
 };
 
+function applySecurityHeaders(res) {
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+}
+
 function cors(req, res) {
-  const origin = String(req?.headers?.origin || "");
-  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] || DEFAULT_ORIGIN;
-  res.setHeader("Access-Control-Allow-Origin", allowed);
+  applySecurityHeaders(res);
+  const origin = String(req?.headers?.origin || "").trim();
+  const allowed = !origin || ALLOWED_ORIGINS.includes(origin);
+  if (origin && allowed) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Razorpay-Signature");
   res.setHeader("Access-Control-Max-Age", "600");
+  return allowed;
 }
 
 function json(req, res, status, body) {
@@ -115,6 +125,12 @@ function assertServerConfig() {
 
 async function getSupabaseUser(req) {
   assertServerConfig();
+  const origin = String(req?.headers?.origin || "").trim();
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    const error = new Error("Origin not allowed");
+    error.status = 403;
+    throw error;
+  }
   const authHeader = req.headers.authorization || req.headers.Authorization;
   if (!authHeader || !String(authHeader).startsWith("Bearer ")) {
     throw new Error("Please log in before checkout");
@@ -163,19 +179,32 @@ async function getProductsByIds(ids) {
   return Array.isArray(data) ? data : [];
 }
 
-async function calculate(items) {
+function normalizeCartRequest(items) {
   if (!Array.isArray(items) || !items.length) throw new Error("Cart is empty");
-  const ids = items.map(item => item?.id);
+  if (items.length > MAX_CART_LINES) throw new Error("Too many cart items");
+  const seen = new Set();
+  return items.map(item => {
+    const id = String(item?.id ?? "").trim();
+    const qty = Number(item?.qty);
+    if (!/^\d+$/.test(id)) throw new Error("Invalid product ID");
+    if (!Number.isInteger(qty) || qty < 1 || qty > 20) throw new Error("Invalid quantity for product " + id);
+    if (seen.has(id)) throw new Error("Duplicate product ID: " + id);
+    seen.add(id);
+    return { id, qty };
+  });
+}
+
+async function calculate(items) {
+  const requested = normalizeCartRequest(items);
+  const ids = requested.map(item => item.id);
   const products = await getProductsByIds(ids);
   const productMap = new Map(products.map(product => [String(product.id), product]));
   let subtotal = 0;
   let totalDiscount = 0;
   let totalGst = 0;
-  const normalized = items.map(item => {
-    const id = String(item?.id ?? "").trim();
-    const qty = Number(item?.qty);
-    if (!/^\d+$/.test(id)) throw new Error("Invalid product ID");
-    if (!Number.isInteger(qty) || qty < 1 || qty > 20) throw new Error("Invalid quantity for product " + id);
+  const normalized = requested.map(item => {
+    const id = item.id;
+    const qty = item.qty;
     const product = productMap.get(id);
     if (!product) throw new Error("Product is unavailable or inactive: " + id);
     const price = Number(product.price);
@@ -214,6 +243,7 @@ async function calculate(items) {
 module.exports = {
   KEY_ID, KEY_SECRET, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
   DELIVERY_THRESHOLD, DELIVERY_BELOW_THRESHOLD, PAYMENT_HANDLING_FEE, PREPAID_DISCOUNT,
-  serverHeaders, cors, json, readRawBody, readBody, basicAuth, safeEqualText, roundMoney,
-  normalizePaymentMethod, paymentPricing, getSupabaseUser, requireAdminUser, getProductsByIds, calculate
+  MAX_BODY_BYTES, MAX_CART_LINES, serverHeaders, applySecurityHeaders, cors, json,
+  readRawBody, readBody, basicAuth, safeEqualText, roundMoney, normalizePaymentMethod,
+  paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds, calculate
 };
