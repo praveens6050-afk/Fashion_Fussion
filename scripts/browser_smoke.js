@@ -19,8 +19,15 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
 
   await visit('/index.html', [
     ['.brand', 'store brand'],
-    ['.search input', 'desktop search'],
+    ['#searchBox', 'desktop search'],
+    ['#searchBtn', 'search action'],
     ['#products', 'product section']
+  ]);
+
+  await page.locator('#searchBox').fill('smoke-query');
+  await Promise.all([
+    page.waitForURL(url => url.pathname.endsWith('/search.html') && url.searchParams.get('q') === 'smoke-query'),
+    page.locator('#searchBtn').click()
   ]);
 
   await visit('/search.html?q=test', [
