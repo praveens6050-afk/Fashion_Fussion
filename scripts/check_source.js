@@ -32,5 +32,7 @@ if(!/cod_fee_non_refundable:\s*false/.test(lib))errors.push('backend/lib.js: COD
 const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
 for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
 if(/Payment ID:\s*["']?\s*\+\s*esc\(o\.razorpay_payment_id\)/.test(orderDetails))errors.push('order-details.html: raw Razorpay payment ID must not be shown to customers');
+const supabaseConfig=fs.readFileSync(path.join(root,'supabase-config.js'),'utf8');
+for(const legacy of ['account-dashboard.js','customer-addresses.js','order-tracking.js'])if(supabaseConfig.includes(`add('${legacy}`))errors.push(`supabase-config.js: premium account must not load legacy ${legacy} runtime injector`);
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
 console.log(`Source quality checks passed (${htmlFiles.length} HTML, ${jsFiles.length} JS)`);
