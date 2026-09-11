@@ -4,7 +4,7 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const htmlFiles=fs.readdirSync(root).filter(f=>f.endsWith('.html')&&!f.startsWith('google'));
 const jsFiles=fs.readdirSync(root).filter(f=>f.endsWith('.js'));
-const customerCommerceFiles=new Set(['index.html','search.html','product.html','cart.html','checkout.html','wishlist.html','account.html','order-details.html']);
+const customerCommerceFiles=new Set(['index.html','search.html','product.html','cart.html','checkout.html','order-confirmation.html','wishlist.html','account.html','order-details.html']);
 let errors=[];
 const localRef=/\b(?:src|href)=["']([^"']+)["']/gi;
 for(const file of htmlFiles){
@@ -32,6 +32,9 @@ if(!/cod_fee_non_refundable:\s*false/.test(lib))errors.push('backend/lib.js: COD
 const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
 for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
 if(/Payment ID:\s*["']?\s*\+\s*esc\(o\.razorpay_payment_id\)/.test(orderDetails))errors.push('order-details.html: raw Razorpay payment ID must not be shown to customers');
+const confirmation=fs.readFileSync(path.join(root,'order-confirmation.html'),'utf8');
+for(const required of ['id="orderRef"','id="items"','id="address"','id="payment"','id="detailsLink"'])if(!confirmation.includes(required))errors.push(`order-confirmation.html: missing ${required}`);
+if(/razorpay_payment_id|razorpay_order_id/.test(confirmation))errors.push('order-confirmation.html: raw Razorpay identifiers must not be exposed');
 const supabaseConfig=fs.readFileSync(path.join(root,'supabase-config.js'),'utf8');
 const legacyInjectors=['account-dashboard.js','customer-addresses.js','order-tracking.js'];
 for(const legacy of legacyInjectors){if(supabaseConfig.includes(`add('${legacy}`))errors.push(`supabase-config.js: premium account must not load legacy ${legacy} runtime injector`);if(fs.existsSync(path.join(root,legacy)))errors.push(`${legacy}: obsolete runtime injector must stay removed`)}
