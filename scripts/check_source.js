@@ -33,7 +33,8 @@ const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
 for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
 if(/Payment ID:\s*["']?\s*\+\s*esc\(o\.razorpay_payment_id\)/.test(orderDetails))errors.push('order-details.html: raw Razorpay payment ID must not be shown to customers');
 const supabaseConfig=fs.readFileSync(path.join(root,'supabase-config.js'),'utf8');
-for(const legacy of ['account-dashboard.js','customer-addresses.js','order-tracking.js'])if(supabaseConfig.includes(`add('${legacy}`))errors.push(`supabase-config.js: premium account must not load legacy ${legacy} runtime injector`);
+const legacyInjectors=['account-dashboard.js','customer-addresses.js','order-tracking.js'];
+for(const legacy of legacyInjectors){if(supabaseConfig.includes(`add('${legacy}`))errors.push(`supabase-config.js: premium account must not load legacy ${legacy} runtime injector`);if(fs.existsSync(path.join(root,legacy)))errors.push(`${legacy}: obsolete runtime injector must stay removed`)}
 const account=fs.readFileSync(path.join(root,'account.html'),'utf8');
 for(const required of ['data-view="addresses"','id="addressesView"','id="addressForm"','customer_addresses','set_default_customer_address'])if(!account.includes(required))errors.push(`account.html: integrated address management missing ${required}`);
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
