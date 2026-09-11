@@ -29,6 +29,9 @@ if(/\.select\(["'](?:[^"']*,)?cost(?:,|["'])/.test(fs.readFileSync(path.join(roo
 if(!/PAYMENT_HANDLING_FEE\s*=\s*0/.test(lib))errors.push('backend/lib.js: payment handling fee must remain zero');
 if(!/PREPAID_DISCOUNT\s*=\s*0/.test(lib))errors.push('backend/lib.js: prepaid discount compatibility field must remain zero');
 if(!/cod_fee_non_refundable:\s*false/.test(lib))errors.push('backend/lib.js: COD non-refundable fee flag must remain false');
+const checkout=fs.readFileSync(path.join(root,'checkout.html'),'utf8');
+for(const required of ['id="addressSection"','id="addressState"','name="deliveryAddress"','customer_addresses','shipping_address:{id:address.id}','order-confirmation.html?id='])if(!checkout.includes(required))errors.push(`checkout.html: inline address/confirmation flow missing ${required}`);
+if(/\.eq\(['"]is_default['"],true\)\.limit\(1\)\.maybeSingle\(\)/.test(checkout))errors.push('checkout.html: checkout must load selectable saved addresses, not only the default address');
 const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
 for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
 if(/Payment ID:\s*["']?\s*\+\s*esc\(o\.razorpay_payment_id\)/.test(orderDetails))errors.push('order-details.html: raw Razorpay payment ID must not be shown to customers');
