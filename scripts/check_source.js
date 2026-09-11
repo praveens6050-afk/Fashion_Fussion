@@ -4,7 +4,7 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const htmlFiles=fs.readdirSync(root).filter(f=>f.endsWith('.html')&&!f.startsWith('google'));
 const jsFiles=fs.readdirSync(root).filter(f=>f.endsWith('.js'));
-const customerCommerceFiles=new Set(['index.html','search.html','product.html','cart.html','checkout.html','wishlist.html']);
+const customerCommerceFiles=new Set(['index.html','search.html','product.html','cart.html','checkout.html','wishlist.html','account.html','order-details.html']);
 let errors=[];
 const localRef=/\b(?:src|href)=["']([^"']+)["']/gi;
 for(const file of htmlFiles){
@@ -29,5 +29,8 @@ if(/\.select\(["'](?:[^"']*,)?cost(?:,|["'])/.test(fs.readFileSync(path.join(roo
 if(!/PAYMENT_HANDLING_FEE\s*=\s*0/.test(lib))errors.push('backend/lib.js: payment handling fee must remain zero');
 if(!/PREPAID_DISCOUNT\s*=\s*0/.test(lib))errors.push('backend/lib.js: prepaid discount compatibility field must remain zero');
 if(!/cod_fee_non_refundable:\s*false/.test(lib))errors.push('backend/lib.js: COD non-refundable fee flag must remain false');
+const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
+for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
+if(/Payment ID:\s*["']?\s*\+\s*esc\(o\.razorpay_payment_id\)/.test(orderDetails))errors.push('order-details.html: raw Razorpay payment ID must not be shown to customers');
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
 console.log(`Source quality checks passed (${htmlFiles.length} HTML, ${jsFiles.length} JS)`);
