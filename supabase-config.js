@@ -5,7 +5,7 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
   function start(){
     const page=location.pathname.split('/').pop()||'index.html';
-    if(page==='account.html'){add('account-role-guard.js?v=2','data-account-role-guard');add('support-chat.js?v=8','data-support-chat');add('customer-addresses.js?v=3','data-customer-addresses');add('account-dashboard.js?v=6','data-account-dashboard');add('order-tracking.js?v=4','data-order-tracking')}
+    if(page==='account.html'){add('account-role-guard.js?v=2','data-account-role-guard');add('support-chat.js?v=8','data-support-chat')}
     if(page==='index.html'){add('support-chat.js?v=8','data-support-chat')}
     if(page==='admin.html'){add('admin-notifications.js?v=2','data-admin-notifications');add('support-chat.js?v=8','data-support-chat');add('admin-orders.js?v=2','data-admin-orders');add('admin-promotions.js?v=2','data-admin-promotions')}
   }
