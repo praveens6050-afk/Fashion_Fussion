@@ -49,17 +49,23 @@ if(/razorpay_payment_id|razorpay_order_id/.test(orderDetails))errors.push('order
 const refundTracker=fs.readFileSync(path.join(root,'order-refund-tracker.js'),'utf8');
 for(const required of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','Original payment method'])if(!refundTracker.includes(required))errors.push(`order-refund-tracker.js: persisted customer refund tracker missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(refundTracker))errors.push('order-refund-tracker.js: raw Razorpay identifiers must not be selected or exposed');
+const returnExchange=fs.readFileSync(path.join(root,'order-return-exchange.js'),'utf8');
+for(const required of ['create_return_request','return_requests','exchange_size','return_refund','report_issue','p_item_index','p_quantity','p_reason','p_requested_size','Requested size is not a stock promise'])if(!returnExchange.includes(required))errors.push(`order-return-exchange.js: customer return/exchange flow missing ${required}`);
+if(/razorpay_payment_id|razorpay_order_id/.test(returnExchange))errors.push('order-return-exchange.js: raw Razorpay identifiers must not be selected or exposed');
 const confirmation=fs.readFileSync(path.join(root,'order-confirmation.html'),'utf8');
 for(const required of ['id="orderRef"','id="items"','id="address"','id="payment"','id="detailsLink"'])if(!confirmation.includes(required))errors.push(`order-confirmation.html: missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(confirmation))errors.push('order-confirmation.html: raw Razorpay identifiers must not be exposed');
 const supabaseConfig=fs.readFileSync(path.join(root,'supabase-config.js'),'utf8');
 const legacyInjectors=['account-dashboard.js','customer-addresses.js','order-tracking.js'];
 for(const legacy of legacyInjectors){if(supabaseConfig.includes(`add('${legacy}`))errors.push(`supabase-config.js: premium account must not load legacy ${legacy} runtime injector`);if(fs.existsSync(path.join(root,legacy)))errors.push(`${legacy}: obsolete runtime injector must stay removed`)}
-for(const required of ["add('order-refund-tracker.js", "add('account-refunds.js"])if(!supabaseConfig.includes(required))errors.push(`supabase-config.js: customer refund surface injector missing ${required}`);
+for(const required of ["order-refund-tracker.js?v=1','data-order-refund-tracker", "account-refunds.js?v=1','data-account-refunds", "order-return-exchange.js?v=1','data-order-return-exchange", "account-returns.js?v=1','data-account-returns"])if(!supabaseConfig.includes(required))errors.push(`supabase-config.js: customer commerce runtime injector missing ${required}`);
 const account=fs.readFileSync(path.join(root,'account.html'),'utf8');
 for(const required of ['data-view="addresses"','id="addressesView"','id="addressForm"','customer_addresses','set_default_customer_address'])if(!account.includes(required))errors.push(`account.html: integrated address management missing ${required}`);
 const accountRefunds=fs.readFileSync(path.join(root,'account-refunds.js'),'utf8');
-for(const required of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','cancellation_reason','Original payment method','order-details.html?id='])if(!accountRefunds.includes(required))errors.push(`account-refunds.js: persisted account refund view missing ${required}`);
+for(const required of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','cancellation_reason','Original payment method','order-details.html?id=','hydrateAudit(','mergeAudit('])if(!accountRefunds.includes(required))errors.push(`account-refunds.js: persisted account refund view missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(accountRefunds))errors.push('account-refunds.js: raw Razorpay identifiers must not be selected or exposed');
+const accountReturns=fs.readFileSync(path.join(root,'account-returns.js'),'utf8');
+for(const required of ['Returns & Exchanges','return_requests','requested_size','admin_note','order-details.html?id=','#returns','exchange_size','return_refund','report_issue'])if(!accountReturns.includes(required))errors.push(`account-returns.js: account returns/exchanges view missing ${required}`);
+if(/razorpay_payment_id|razorpay_order_id/.test(accountReturns))errors.push('account-returns.js: raw Razorpay identifiers must not be selected or exposed');
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
 console.log(`Source quality checks passed (${htmlFiles.length} HTML, ${jsFiles.length} JS)`);
