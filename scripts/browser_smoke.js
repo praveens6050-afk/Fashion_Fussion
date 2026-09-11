@@ -54,7 +54,9 @@ const CHECKOUT_KEY = 'fashion_fussion_checkout_key';
   const staticPage = await staticContext.newPage();
   await visit('/checkout.html', [
     ['.logo', 'store brand'],
-    ['#addressBox', 'delivery address section'],
+    ['#addressSection', 'saved-address checkout step'],
+    ['#addressState', 'address selection state'],
+    ['#addressBox', 'delivery address region'],
     ['#itemsBox', 'order summary section'],
     ['#continueBtn', 'place order button']
   ], staticPage);
