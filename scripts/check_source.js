@@ -34,7 +34,9 @@ for(const required of ['id="addressSection"','id="addressState"','name="delivery
 if(/\.eq\(['"]is_default['"],true\)\.limit\(1\)\.maybeSingle\(\)/.test(checkout))errors.push('checkout.html: checkout must load selectable saved addresses, not only the default address');
 const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
 for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
-if(/Payment ID:\s*["']?\s*\+\s*esc\(o\.razorpay_payment_id\)/.test(orderDetails))errors.push('order-details.html: raw Razorpay payment ID must not be shown to customers');
+for(const required of ['id="refundFeedback"','aria-live="polite"','setRefundFeedback(','/api/refund-status'])if(!orderDetails.includes(required))errors.push(`order-details.html: inline refund feedback missing ${required}`);
+if(/\balert\s*\(/.test(orderDetails))errors.push('order-details.html: refund/order status must use inline feedback, not browser alerts');
+if(/razorpay_payment_id|razorpay_order_id/.test(orderDetails))errors.push('order-details.html: raw Razorpay identifiers must not be selected or exposed');
 const confirmation=fs.readFileSync(path.join(root,'order-confirmation.html'),'utf8');
 for(const required of ['id="orderRef"','id="items"','id="address"','id="payment"','id="detailsLink"'])if(!confirmation.includes(required))errors.push(`order-confirmation.html: missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(confirmation))errors.push('order-confirmation.html: raw Razorpay identifiers must not be exposed');
