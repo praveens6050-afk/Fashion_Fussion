@@ -63,7 +63,9 @@ function expectedRefundAmount(order) {
 async function updateRefundStatus(order, nextStatus) {
   const allowed = nextStatus === 'refunded'
     ? 'in.(refund_initiated,refund_pending,refunded)'
-    : 'in.(refund_initiated,refund_pending,refund_failed)';
+    : nextStatus === 'refund_pending'
+      ? 'in.(paid,refund_initiated,refund_pending)'
+      : 'in.(refund_initiated,refund_pending,refund_failed)';
   const updated = await rest(
     'orders?id=eq.' + encodeURIComponent(order.id) + '&status=' + allowed,
     {
@@ -120,7 +122,25 @@ async function handleRefundEvent(event) {
     return { received: true, ignored: true, reason: 'refund_amount_mismatch' };
   }
 
+  if (event.event === 'refund.created') {
+    if (!['pending', 'processed'].includes(String(refund.status || '').toLowerCase())) {
+      return { received: true, ignored: true, reason: 'unexpected_refund_status' };
+    }
+    if (String(refund.status).toLowerCase() === 'processed') {
+      const updated = await updateRefundStatus(order, 'refunded');
+      if (!updated && order.status !== 'refunded') return { received: true, ignored: true, reason: 'order_not_waiting_for_refund' };
+      return { received: true, refund_processed: true, store_order_id: order.id };
+    }
+    if (order.status === 'refund_pending') return { received: true, already_processed: true };
+    const updated = await updateRefundStatus(order, 'refund_pending');
+    if (!updated) return { received: true, ignored: true, reason: 'order_not_waiting_for_refund' };
+    return { received: true, refund_pending: true, store_order_id: order.id };
+  }
+
   if (event.event === 'refund.processed') {
+    if (String(refund.status || '').toLowerCase() !== 'processed') {
+      return { received: true, ignored: true, reason: 'unexpected_refund_status' };
+    }
     if (order.status === 'refunded') return { received: true, already_processed: true };
     const updated = await updateRefundStatus(order, 'refunded');
     if (!updated) return { received: true, ignored: true, reason: 'order_not_waiting_for_refund' };
@@ -128,6 +148,9 @@ async function handleRefundEvent(event) {
   }
 
   if (event.event === 'refund.failed') {
+    if (String(refund.status || '').toLowerCase() !== 'failed') {
+      return { received: true, ignored: true, reason: 'unexpected_refund_status' };
+    }
     const updated = await updateRefundStatus(order, 'refund_failed');
     if (!updated) return { received: true, ignored: true, reason: 'order_not_waiting_for_refund' };
     return { received: true, refund_failed: true, store_order_id: order.id };
@@ -153,7 +176,7 @@ module.exports = async function razorpayWebhook(req, res) {
     const event = JSON.parse(raw.toString('utf8') || '{}');
     let result;
     if (event.event === 'payment.captured') result = await handlePaymentCaptured(event);
-    else if (event.event === 'refund.processed' || event.event === 'refund.failed') result = await handleRefundEvent(event);
+    else if (['refund.created', 'refund.processed', 'refund.failed'].includes(event.event)) result = await handleRefundEvent(event);
     else result = { received: true, ignored: true };
 
     return json(req, res, 200, result);
