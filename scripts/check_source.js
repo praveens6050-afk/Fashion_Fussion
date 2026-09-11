@@ -65,7 +65,8 @@ const accountRefunds=fs.readFileSync(path.join(root,'account-refunds.js'),'utf8'
 for(const required of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','cancellation_reason','Original payment method','order-details.html?id=','hydrateAudit(','mergeAudit('])if(!accountRefunds.includes(required))errors.push(`account-refunds.js: persisted account refund view missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(accountRefunds))errors.push('account-refunds.js: raw Razorpay identifiers must not be selected or exposed');
 const accountReturns=fs.readFileSync(path.join(root,'account-returns.js'),'utf8');
-for(const required of ['Returns & Exchanges','return_requests','requested_size','admin_note','order-details.html?id=','#returns','exchange_size','return_refund','report_issue'])if(!accountReturns.includes(required))errors.push(`account-returns.js: account returns/exchanges view missing ${required}`);
+for(const required of ['Returns & Exchanges','return_requests','requested_size','admin_note','order-details.html?id=','#returns','exchange_size','return_refund'])if(!accountReturns.includes(required))errors.push(`account-returns.js: account returns/exchanges view missing ${required}`);
+if(!/Report an Issue/.test(accountReturns))errors.push('account-returns.js: account return history must label report-issue requests for customers');
 if(/razorpay_payment_id|razorpay_order_id/.test(accountReturns))errors.push('account-returns.js: raw Razorpay identifiers must not be selected or exposed');
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
 console.log(`Source quality checks passed (${htmlFiles.length} HTML, ${jsFiles.length} JS)`);
