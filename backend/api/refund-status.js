@@ -48,7 +48,7 @@ async function loadOrder(userId, orderId) {
   const rows = await rest(
     'orders?id=eq.' + encodeURIComponent(orderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,display_order_id,user_id,status,payment_method,fulfillment_status,total_amount,items,coupon_discount,gift_card_discount,razorpay_payment_id&limit=1'
+    '&select=id,display_order_id,user_id,status,payment_method,fulfillment_status,total_amount,items,coupon_discount,gift_card_discount,razorpay_payment_id,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -79,6 +79,7 @@ function findStoreRefund(refunds, order, expectedPaise) {
       String(refund?.payment_id || '') === String(order.razorpay_payment_id || '') &&
       Number(refund?.amount) === expectedPaise &&
       (
+        String(refund?.id || '') === String(order.refund_id || '') ||
         String(refund?.receipt || '') === receipt ||
         String(refund?.notes?.store_order_id || '') === String(order.id)
       )
@@ -92,12 +93,12 @@ async function reconcileOrder(order, refund) {
   if (refundStatus === 'processed') nextStatus = 'refunded';
   else if (refundStatus === 'failed') nextStatus = 'refund_failed';
   else if (refundStatus === 'pending') nextStatus = 'refund_pending';
-
-  if (!nextStatus || String(order.status || '').toLowerCase() === nextStatus) return order.status;
+  if (!nextStatus) return order.status;
 
   const allowedCurrent = ['paid', 'refund_pending', 'refund_initiated', 'refund_failed', 'refunded'];
   if (!allowedCurrent.includes(String(order.status || '').toLowerCase())) return order.status;
 
+  const now = new Date().toISOString();
   const updated = await rest(
     'orders?id=eq.' + encodeURIComponent(order.id) +
     '&user_id=eq.' + encodeURIComponent(order.user_id) +
@@ -108,7 +109,12 @@ async function reconcileOrder(order, refund) {
       body: JSON.stringify({
         status: nextStatus,
         fulfillment_status: 'cancelled',
-        fulfillment_updated_at: new Date().toISOString()
+        fulfillment_updated_at: now,
+        refund_id: refund.id || order.refund_id || null,
+        refund_status: refund.status || null,
+        refund_reference: refundReference(refund),
+        refund_amount: roundMoney(Number(refund.amount || 0) / 100),
+        refund_updated_at: now
       })
     }
   );
@@ -157,7 +163,14 @@ module.exports = async function refundStatus(req, res) {
       return json(req, res, 200, {
         reconciled: false,
         status: order.status,
-        refund: null,
+        refund: order.refund_id ? {
+          id: order.refund_id,
+          status: order.refund_status || null,
+          amount: order.refund_amount == null ? null : roundMoney(order.refund_amount),
+          destination: 'original_payment_method',
+          reference: order.refund_reference || null,
+          updated_at: order.refund_updated_at || null
+        } : null,
         refundable_amount: breakdown.refundable,
         non_refundable_delivery: breakdown.delivery
       });
