@@ -47,6 +47,10 @@ function pricing(order) {
   return { subtotal, gst, coupon, gift, delivery, total, refundable };
 }
 
+function refundReference(refund) {
+  return refund?.acquirer_data?.arn || refund?.acquirer_data?.rrn || refund?.acquirer_data?.utr || null;
+}
+
 async function createRazorpayRefund(order, amount) {
   if (!KEY_ID || !KEY_SECRET) {
     const error = new Error('Refund service is not configured');
@@ -89,8 +93,23 @@ async function createRazorpayRefund(order, amount) {
   return refund;
 }
 
-async function patchCancelledOrder(order, nextStatus) {
+async function patchCancelledOrder(order, nextStatus, audit = {}) {
   const expected = String(order.status || '').toLowerCase();
+  const now = new Date().toISOString();
+  const patch = {
+    status: nextStatus,
+    fulfillment_status: 'cancelled',
+    fulfillment_updated_at: now,
+    cancellation_reason: audit.reason || null,
+    cancelled_at: now
+  };
+  if (audit.refund) {
+    patch.refund_id = audit.refund.id || null;
+    patch.refund_status = audit.refund.status || null;
+    patch.refund_reference = refundReference(audit.refund);
+    patch.refund_amount = roundMoney(Number(audit.refund.amount || 0) / 100);
+    patch.refund_updated_at = now;
+  }
   const updated = await rest(
     'orders?id=eq.' + encodeURIComponent(order.id) +
     '&user_id=eq.' + encodeURIComponent(order.user_id) +
@@ -99,11 +118,7 @@ async function patchCancelledOrder(order, nextStatus) {
     {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({
-        status: nextStatus,
-        fulfillment_status: 'cancelled',
-        fulfillment_updated_at: new Date().toISOString()
-      })
+      body: JSON.stringify(patch)
     }
   );
   if (!updated?.length) {
@@ -158,7 +173,7 @@ module.exports = async function cancelOrder(req, res) {
       if (status !== 'cod_pending') {
         return json(req, res, 409, { error: 'This COD order is not in a cancellable payment state' });
       }
-      await patchCancelledOrder(order, 'cod_cancelled');
+      await patchCancelledOrder(order, 'cod_cancelled', { reason });
       return json(req, res, 200, {
         ok: true,
         order_id: orderId,
@@ -188,7 +203,7 @@ module.exports = async function cancelOrder(req, res) {
     }
 
     if (breakdown.refundable <= 0) {
-      await patchCancelledOrder(order, 'cancelled');
+      await patchCancelledOrder(order, 'cancelled', { reason });
       return json(req, res, 200, {
         ok: true,
         order_id: orderId,
@@ -209,7 +224,7 @@ module.exports = async function cancelOrder(req, res) {
     const refund = await createRazorpayRefund(order, breakdown.refundable);
     const processed = String(refund.status || '').toLowerCase() === 'processed';
     const nextStatus = processed ? 'refunded' : 'refund_initiated';
-    await patchCancelledOrder(order, nextStatus);
+    await patchCancelledOrder(order, nextStatus, { reason, refund });
 
     return json(req, res, 200, {
       ok: true,
@@ -225,7 +240,7 @@ module.exports = async function cancelOrder(req, res) {
         amount: roundMoney(Number(refund.amount || 0) / 100),
         delivery_non_refundable: breakdown.delivery,
         destination: 'original_payment_method',
-        reference: refund?.acquirer_data?.arn || refund?.acquirer_data?.rrn || refund?.acquirer_data?.utr || null,
+        reference: refundReference(refund),
         speed: refund.speed_processed || refund.speed_requested || 'normal',
         message: processed
           ? 'Refund processed to the original payment method.'
