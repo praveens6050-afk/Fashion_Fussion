@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,3 +23,14 @@ jobs:
       - name: Backend pricing tests
         working-directory: backend
         run: npm test
+      - name: Install Chromium smoke-test runtime
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Desktop browser smoke test
+        run: |
+          python3 -m http.server 4173 >/tmp/fashion-fussion-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          node scripts/browser_smoke.js
