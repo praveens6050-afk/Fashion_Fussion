@@ -29,9 +29,14 @@ if(/\.select\(["'](?:[^"']*,)?cost(?:,|["'])/.test(fs.readFileSync(path.join(roo
 if(!/PAYMENT_HANDLING_FEE\s*=\s*0/.test(lib))errors.push('backend/lib.js: payment handling fee must remain zero');
 if(!/PREPAID_DISCOUNT\s*=\s*0/.test(lib))errors.push('backend/lib.js: prepaid discount compatibility field must remain zero');
 if(!/cod_fee_non_refundable:\s*false/.test(lib))errors.push('backend/lib.js: COD non-refundable fee flag must remain false');
+const cancelOrder=fs.readFileSync(path.join(root,'backend/api/cancel-order.js'),'utf8');
+for(const required of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])if(!cancelOrder.includes(required))errors.push(`backend/api/cancel-order.js: cancellation/refund audit persistence missing ${required}`);
+const refundStatus=fs.readFileSync(path.join(root,'backend/api/refund-status.js'),'utf8');
+for(const required of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])if(!refundStatus.includes(required))errors.push(`backend/api/refund-status.js: refund reconciliation audit persistence missing ${required}`);
 const webhook=fs.readFileSync(path.join(root,'backend/api/razorpay-webhook.js'),'utf8');
-for(const required of ['refund.created','refund.processed','refund.failed','x-razorpay-signature','expectedRefundAmount(','refund_pending'])if(!webhook.includes(required))errors.push(`backend/api/razorpay-webhook.js: refund lifecycle guard missing ${required}`);
+for(const required of ['refund.created','refund.processed','refund.failed','x-razorpay-signature','expectedRefundAmount(','refund_pending','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])if(!webhook.includes(required))errors.push(`backend/api/razorpay-webhook.js: refund lifecycle/audit guard missing ${required}`);
 if(!/String\(refund\.status\s*\|\|\s*['"]{2}\)\.toLowerCase\(\)/.test(webhook))errors.push('backend/api/razorpay-webhook.js: refund webhook must validate processor refund status');
+if(!/different_refund_reference/.test(webhook))errors.push('backend/api/razorpay-webhook.js: webhook must reject a different refund reference once an order refund is persisted');
 const checkout=fs.readFileSync(path.join(root,'checkout.html'),'utf8');
 for(const required of ['id="addressSection"','id="addressState"','name="deliveryAddress"','customer_addresses','shipping_address:{id:address.id}','order-confirmation.html?id='])if(!checkout.includes(required))errors.push(`checkout.html: inline address/confirmation flow missing ${required}`);
 if(/\.eq\(['"]is_default['"],true\)\.limit\(1\)\.maybeSingle\(\)/.test(checkout))errors.push('checkout.html: checkout must load selectable saved addresses, not only the default address');
