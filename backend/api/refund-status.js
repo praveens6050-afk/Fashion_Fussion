@@ -112,7 +112,7 @@ async function reconcileOrder(order, refund) {
         fulfillment_updated_at: now,
         refund_id: refund.id || order.refund_id || null,
         refund_status: refund.status || null,
-        refund_reference: refundReference(refund),
+        refund_reference: refundReference(refund) || order.refund_reference || null,
         refund_amount: roundMoney(Number(refund.amount || 0) / 100),
         refund_updated_at: now
       })
@@ -187,7 +187,7 @@ module.exports = async function refundStatus(req, res) {
         status: refund.status || null,
         amount: roundMoney(Number(refund.amount || 0) / 100),
         destination: 'original_payment_method',
-        reference: refundReference(refund),
+        reference: refundReference(refund) || order.refund_reference || null,
         created_at: refund.created_at || null,
         speed: refund.speed_processed || refund.speed_requested || null
       },
