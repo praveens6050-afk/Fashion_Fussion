@@ -2,6 +2,7 @@ const { chromium } = require('playwright');
 
 const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
 const CART_KEY = 'fashion_fussion_cart';
+const CHECKOUT_KEY = 'fashion_fussion_checkout_key';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -46,9 +47,9 @@ const CART_KEY = 'fashion_fussion_cart';
     ['#place', 'checkout button']
   ]);
 
-  // Checkout can redirect signed-out visitors before smoke assertions run.
-  // Validate its desktop structure with JavaScript disabled, then keep normal
-  // JavaScript-enabled checks for the other public pages.
+  // Auth-only pages can redirect signed-out visitors before smoke assertions run.
+  // Validate their desktop structure with JavaScript disabled, then keep normal
+  // JavaScript-enabled checks for public/stateful commerce pages.
   const staticContext = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1440, height: 1000 } });
   const staticPage = await staticContext.newPage();
   await visit('/checkout.html', [
@@ -56,6 +57,13 @@ const CART_KEY = 'fashion_fussion_cart';
     ['#addressBox', 'delivery address section'],
     ['#itemsBox', 'order summary section'],
     ['#continueBtn', 'place order button']
+  ], staticPage);
+  await visit('/order-confirmation.html?id=1', [
+    ['.logo', 'confirmation store brand'],
+    ['#orderRef', 'order reference'],
+    ['#items', 'confirmed items region'],
+    ['#payment', 'payment summary'],
+    ['#detailsLink', 'order details action']
   ], staticPage);
   await staticContext.close();
 
@@ -132,19 +140,40 @@ const CART_KEY = 'fashion_fussion_cart';
     if (!priceText.includes(expected)) throw new Error(`journey cart missing expected price component ${expected}`);
   }
 
+  // A cart mutation must invalidate any stale checkout quote/idempotency key and
+  // immediately recalculate the local desktop summary.
+  await journeyPage.evaluate(key => sessionStorage.setItem(key, 'smoke-stale-checkout-key'), CHECKOUT_KEY);
+  const qtyInput = journeyPage.locator('[data-qty="900001"]');
+  await qtyInput.fill('2');
+  await qtyInput.dispatchEvent('change');
+  await journeyPage.waitForFunction(() => document.querySelector('#prices')?.textContent?.includes('₹590'));
+
+  const cartAfterQuantityChange = await journeyPage.evaluate(key => JSON.parse(localStorage.getItem(key) || '{}'), CART_KEY);
+  if (Number(cartAfterQuantityChange['900001']) !== 2) {
+    throw new Error('journey cart quantity change did not persist quantity 2');
+  }
+  const checkoutKeyAfterMutation = await journeyPage.evaluate(key => sessionStorage.getItem(key), CHECKOUT_KEY);
+  if (checkoutKeyAfterMutation !== null) {
+    throw new Error('journey cart mutation did not invalidate stale checkout key');
+  }
+  const updatedPriceText = await journeyPage.locator('#prices').textContent();
+  for (const expected of ['₹500', '₹90', 'FREE', '₹590']) {
+    if (!updatedPriceText.includes(expected)) throw new Error(`journey cart recalculation missing ${expected}`);
+  }
+
   await Promise.all([
     journeyPage.waitForURL(url => url.pathname.endsWith('/login.html') && url.searchParams.get('redirect') === 'checkout'),
     journeyPage.locator('#place').click()
   ]);
   const cartAfterLoginRedirect = await journeyPage.evaluate(key => JSON.parse(localStorage.getItem(key) || '{}'), CART_KEY);
-  if (Number(cartAfterLoginRedirect['900001']) !== 1) {
+  if (Number(cartAfterLoginRedirect['900001']) !== 2) {
     throw new Error('journey cart state was lost while redirecting signed-out checkout to login');
   }
   await journeyContext.close();
 
   if (failures.length) throw new Error(failures.join('\n'));
   await browser.close();
-  console.log('Desktop Chromium smoke checks passed. Stateful commerce journey passed.');
+  console.log('Desktop Chromium smoke checks passed. Stateful commerce journey passed with cart quote invalidation.');
 })().catch(err => {
   console.error(err.stack || err);
   process.exit(1);
