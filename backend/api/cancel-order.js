@@ -1,10 +1,14 @@
 const {
+  KEY_ID,
+  KEY_SECRET,
   SUPABASE_URL,
   serverHeaders,
   cors,
   json,
   readBody,
-  getSupabaseUser
+  basicAuth,
+  getSupabaseUser,
+  roundMoney
 } = require('../lib');
 
 async function rest(path, options = {}) {
@@ -28,6 +32,88 @@ function cleanReason(value) {
   return reason;
 }
 
+function pricing(order) {
+  const items = Array.isArray(order.items) ? order.items : [];
+  const subtotal = roundMoney(items.reduce((sum, item) => {
+    const value = item?.taxable_amount ?? (Number(item?.unit_price || 0) * Number(item?.qty || 1));
+    return sum + Number(value || 0);
+  }, 0));
+  const gst = roundMoney(items.reduce((sum, item) => sum + Number(item?.gst_amount || 0), 0));
+  const coupon = roundMoney(order.coupon_discount || 0);
+  const gift = roundMoney(order.gift_card_discount || 0);
+  const total = roundMoney(order.total_amount || 0);
+  const delivery = roundMoney(Math.max(0, total - subtotal - gst + coupon + gift));
+  const refundable = roundMoney(Math.max(0, total - delivery));
+  return { subtotal, gst, coupon, gift, delivery, total, refundable };
+}
+
+async function createRazorpayRefund(order, amount) {
+  if (!KEY_ID || !KEY_SECRET) {
+    const error = new Error('Refund service is not configured');
+    error.status = 503;
+    throw error;
+  }
+  if (!order.razorpay_payment_id) {
+    const error = new Error('Payment reference is missing for this order');
+    error.status = 409;
+    throw error;
+  }
+
+  const amountPaise = Math.round(Number(amount) * 100);
+  const idempotencyKey = 'ff_cancel_' + String(order.id) + '_refund';
+  const payload = {
+    amount: amountPaise,
+    speed: 'normal',
+    receipt: 'FF_CANCEL_' + String(order.id),
+    notes: { store_order_id: String(order.id), source: 'customer_cancellation' }
+  };
+
+  const response = await fetch(
+    'https://api.razorpay.com/v1/payments/' + encodeURIComponent(order.razorpay_payment_id) + '/refund',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: basicAuth(),
+        'Content-Type': 'application/json',
+        'X-Refund-Idempotency': idempotencyKey
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+  const refund = await response.json().catch(() => ({}));
+  if (!response.ok || !refund?.id) {
+    const error = new Error(refund?.error?.description || 'Refund could not be initiated');
+    error.status = response.status === 409 ? 409 : 502;
+    throw error;
+  }
+  return refund;
+}
+
+async function patchCancelledOrder(order, nextStatus) {
+  const expected = String(order.status || '').toLowerCase();
+  const updated = await rest(
+    'orders?id=eq.' + encodeURIComponent(order.id) +
+    '&user_id=eq.' + encodeURIComponent(order.user_id) +
+    '&status=eq.' + encodeURIComponent(expected) +
+    '&fulfillment_status=in.(ordered,packed)',
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({
+        status: nextStatus,
+        fulfillment_status: 'cancelled',
+        fulfillment_updated_at: new Date().toISOString()
+      })
+    }
+  );
+  if (!updated?.length) {
+    const error = new Error('Order status changed before cancellation. Please refresh and try again.');
+    error.status = 409;
+    throw error;
+  }
+  return updated[0];
+}
+
 module.exports = async function cancelOrder(req, res) {
   cors(req, res);
   if (req.method === 'OPTIONS') {
@@ -49,12 +135,13 @@ module.exports = async function cancelOrder(req, res) {
     const rows = await rest(
       'orders?id=eq.' + encodeURIComponent(orderId) +
       '&user_id=eq.' + encodeURIComponent(user.id) +
-      '&select=id,display_order_id,status,payment_method,fulfillment_status,total_amount,items&limit=1'
+      '&select=id,display_order_id,user_id,status,payment_method,fulfillment_status,total_amount,items,coupon_discount,gift_card_discount,razorpay_payment_id&limit=1'
     );
     const order = rows?.[0];
     if (!order) return json(req, res, 404, { error: 'Order not found' });
 
     const status = String(order.status || '').toLowerCase();
+    const paymentMethod = String(order.payment_method || '').toLowerCase();
     const fulfillment = String(order.fulfillment_status || 'ordered').toLowerCase();
     const terminal = ['cancelled', 'cod_cancelled', 'refunded', 'payment_failed', 'expired'];
 
@@ -65,50 +152,84 @@ module.exports = async function cancelOrder(req, res) {
       return json(req, res, 409, { error: 'This order can no longer be cancelled because fulfilment has progressed' });
     }
 
-    // Prepaid cancellation requires a gateway refund. Keep it blocked until the
-    // Razorpay refund path and refund ledger are enabled so money cannot be lost.
-    if (String(order.payment_method || '').toLowerCase() !== 'cod') {
-      return json(req, res, 409, {
-        error: 'Prepaid cancellation needs refund processing and is not enabled yet',
-        code: 'REFUND_REQUIRED'
+    const breakdown = pricing(order);
+
+    if (paymentMethod === 'cod') {
+      if (status !== 'cod_pending') {
+        return json(req, res, 409, { error: 'This COD order is not in a cancellable payment state' });
+      }
+      await patchCancelledOrder(order, 'cod_cancelled');
+      return json(req, res, 200, {
+        ok: true,
+        order_id: orderId,
+        display_order_id: order.display_order_id,
+        status: 'cod_cancelled',
+        fulfillment_status: 'cancelled',
+        reason,
+        refund: {
+          required: false,
+          amount: 0,
+          delivery_non_refundable: breakdown.delivery,
+          destination: null,
+          message: 'No refund is required because payment was not collected for this COD order.'
+        }
       });
     }
 
-    if (status !== 'cod_pending') {
-      return json(req, res, 409, { error: 'This COD order is not in a cancellable payment state' });
+    if (paymentMethod !== 'prepaid' || status !== 'paid') {
+      return json(req, res, 409, { error: 'This prepaid order is not in a cancellable payment state' });
     }
 
-    const updated = await rest(
-      'orders?id=eq.' + encodeURIComponent(orderId) +
-      '&user_id=eq.' + encodeURIComponent(user.id) +
-      '&status=eq.cod_pending&fulfillment_status=in.(ordered,packed)',
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify({
-          status: 'cod_cancelled',
-          fulfillment_status: 'cancelled',
-          fulfillment_updated_at: new Date().toISOString()
-        })
-      }
-    );
-
-    if (!updated?.length) {
-      return json(req, res, 409, { error: 'Order status changed before cancellation. Please refresh and try again.' });
+    if (breakdown.gift > 0) {
+      return json(req, res, 409, {
+        error: 'Orders paid partly with a gift card need support-assisted cancellation so the gift-card balance can be restored safely.',
+        code: 'GIFT_CARD_RESTORE_REQUIRED'
+      });
     }
+
+    if (breakdown.refundable <= 0) {
+      await patchCancelledOrder(order, 'cancelled');
+      return json(req, res, 200, {
+        ok: true,
+        order_id: orderId,
+        display_order_id: order.display_order_id,
+        status: 'cancelled',
+        fulfillment_status: 'cancelled',
+        reason,
+        refund: {
+          required: false,
+          amount: 0,
+          delivery_non_refundable: breakdown.delivery,
+          destination: 'original_payment_method',
+          message: 'There is no refundable payment amount after the non-refundable delivery charge.'
+        }
+      });
+    }
+
+    const refund = await createRazorpayRefund(order, breakdown.refundable);
+    const processed = String(refund.status || '').toLowerCase() === 'processed';
+    const nextStatus = processed ? 'refunded' : 'refund_initiated';
+    await patchCancelledOrder(order, nextStatus);
 
     return json(req, res, 200, {
       ok: true,
       order_id: orderId,
       display_order_id: order.display_order_id,
-      status: 'cod_cancelled',
+      status: nextStatus,
       fulfillment_status: 'cancelled',
       reason,
       refund: {
-        required: false,
-        amount: 0,
-        destination: null,
-        message: 'No refund is required because payment was not collected for this COD order.'
+        required: true,
+        id: refund.id,
+        status: refund.status || 'pending',
+        amount: roundMoney(Number(refund.amount || 0) / 100),
+        delivery_non_refundable: breakdown.delivery,
+        destination: 'original_payment_method',
+        reference: refund?.acquirer_data?.arn || refund?.acquirer_data?.rrn || refund?.acquirer_data?.utr || null,
+        speed: refund.speed_processed || refund.speed_requested || 'normal',
+        message: processed
+          ? 'Refund processed to the original payment method.'
+          : 'Refund initiated to the original payment method.'
       }
     });
   } catch (error) {
