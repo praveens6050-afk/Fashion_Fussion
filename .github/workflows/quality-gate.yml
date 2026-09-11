@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, production-hardening-cod-20260909]
+    branches: [main, production-hardening-cod-20260909, ux/desktop-commerce-v1]
 permissions:
   contents: read
 jobs:
