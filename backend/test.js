@@ -1,4 +1,6 @@
 const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
 const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors}=require('./lib');
 
 assert.deepStrictEqual(paymentPricing(100,'prepaid'),{
@@ -39,4 +41,15 @@ const badRes=fakeRes();
 assert.strictEqual(cors({headers:{origin:'https://evil.example'}},badRes),false);
 assert.strictEqual(badRes.headers['Access-Control-Allow-Origin'],undefined);
 
-console.log('Fashion_Fussion backend pricing/security tests passed');
+const webhook=fs.readFileSync(path.join(__dirname,'api/razorpay-webhook.js'),'utf8');
+assert.ok(webhook.includes("refund_reference: refundReference(refund) || order.refund_reference || null"),'Webhook must preserve an existing refund reference when a later event omits acquirer data');
+assert.ok(webhook.includes("reason: 'different_refund_reference'"),'Webhook must reject a different refund ID once one is persisted');
+for(const eventName of ['refund.created','refund.processed','refund.failed'])assert.ok(webhook.includes(eventName),`Webhook must handle ${eventName}`);
+
+const cancelOrder=fs.readFileSync(path.join(__dirname,'api/cancel-order.js'),'utf8');
+for(const field of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(cancelOrder.includes(field),`Cancellation must persist ${field}`);
+
+const refundStatus=fs.readFileSync(path.join(__dirname,'api/refund-status.js'),'utf8');
+for(const field of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(refundStatus.includes(field),`Refund reconciliation must persist ${field}`);
+
+console.log('Fashion_Fussion backend pricing/security/refund audit tests passed');
