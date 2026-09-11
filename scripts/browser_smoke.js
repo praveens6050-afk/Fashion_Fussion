@@ -23,14 +23,17 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
   ]);
 
   await visit('/cart.html', [
-    ['.brand', 'store brand'],
+    ['.logo', 'store brand'],
     ['#cart', 'cart region'],
     ['#prices', 'price summary'],
     ['#place', 'checkout button']
   ]);
 
   await visit('/checkout.html', [
-    ['body', 'checkout document']
+    ['.logo', 'store brand'],
+    ['#addressBox', 'delivery address section'],
+    ['#itemsBox', 'order summary section'],
+    ['#continueBtn', 'place order button']
   ]);
 
   await visit('/product.html', [
