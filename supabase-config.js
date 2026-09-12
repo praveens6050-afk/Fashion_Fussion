@@ -10,7 +10,7 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
     if(page==='cart.html'){add('commerce-bulk-display.js?v=1','data-commerce-bulk-display')}
     if(page==='checkout.html'){add('commerce-bulk-display.js?v=1','data-commerce-bulk-display');add('checkout-business.js?v=1','data-checkout-business')}
     if(page==='index.html'){add('support-chat.js?v=8','data-support-chat')}
-    if(page==='admin.html'){add('admin-notifications.js?v=2','data-admin-notifications');add('support-chat.js?v=8','data-support-chat');add('admin-orders.js?v=2','data-admin-orders');add('admin-promotions.js?v=2','data-admin-promotions');add('admin-returns.js?v=1','data-admin-returns');add('admin-business-quotes.js?v=1','data-admin-business-quotes')}
+    if(page==='admin.html'){add('admin-notifications.js?v=2','data-admin-notifications');add('support-chat.js?v=8','data-support-chat');add('admin-orders.js?v=2','data-admin-orders');add('admin-promotions.js?v=2','data-admin-promotions');add('admin-returns.js?v=1','data-admin-returns');add('admin-business-quotes.js?v=2','data-admin-business-quotes')}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start()
 })();
