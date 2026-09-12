@@ -60,12 +60,32 @@ const CHECKOUT_KEY = 'fashion_fussion_checkout_key';
     ['#itemsBox', 'order summary section'],
     ['#continueBtn', 'place order button']
   ], staticPage);
+  await visit('/quote-checkout.html?quote=1', [
+    ['.logo', 'business checkout store brand'],
+    ['#businessBox', 'business snapshot region'],
+    ['#addressBox', 'business delivery address region'],
+    ['#itemsBox', 'quoted item summary'],
+    ['#priceBox', 'authoritative quote price summary'],
+    ['#poNo', 'purchase order field'],
+    ['input[name="payment"][value="prepaid"]', 'business prepaid payment option'],
+    ['input[name="payment"][value="cod"]', 'business COD payment option'],
+    ['#payBtn', 'business quote checkout action']
+  ], staticPage);
+  if (await staticPage.locator('#couponCode,#giftCode,#applyCoupon,#applyGift').count()) {
+    throw new Error('quote-checkout.html: negotiated quote checkout must not expose coupon/gift-card controls');
+  }
   await visit('/order-confirmation.html?id=1', [
     ['.logo', 'confirmation store brand'],
     ['#orderRef', 'order reference'],
     ['#items', 'confirmed items region'],
     ['#payment', 'payment summary'],
     ['#detailsLink', 'order details action']
+  ], staticPage);
+  await visit('/order-details.html?id=1', [
+    ['.logo', 'order details store brand'],
+    ['#root', 'order details root'],
+    ['#cancelModal', 'cancellation modal'],
+    ['#cancelReason', 'cancellation reason selector']
   ], staticPage);
   await staticContext.close();
 
@@ -175,7 +195,7 @@ const CHECKOUT_KEY = 'fashion_fussion_checkout_key';
 
   if (failures.length) throw new Error(failures.join('\n'));
   await browser.close();
-  console.log('Desktop Chromium smoke checks passed. Stateful commerce journey passed with cart quote invalidation.');
+  console.log('Desktop Chromium smoke checks passed. Retail journey and business quote checkout structure are covered.');
 })().catch(err => {
   console.error(err.stack || err);
   process.exit(1);
