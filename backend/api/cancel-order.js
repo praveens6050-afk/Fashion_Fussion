@@ -28,13 +28,14 @@ async function rest(path, options = {}) {
 async function rpc(name,args){
   const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverHeaders,'Content-Type':'application/json'},body:JSON.stringify(args)});
   const data=await response.json().catch(()=>null);
-  if(!response.ok)throw new Error(data?.message||data?.error||'Inventory update failed');
+  if(!response.ok)throw new Error(data?.message||data?.error||'Order reconciliation failed');
   return data;
 }
 
-async function restoreCancelledInventory(orderId){
-  await rpc('release_order_inventory',{p_order_id:orderId});
-  await rpc('restock_cancelled_order_inventory',{p_order_id:orderId});
+async function restoreCancelledOrder(order){
+  await rpc('release_order_inventory',{p_order_id:order.id});
+  await rpc('restock_cancelled_order_inventory',{p_order_id:order.id});
+  await rpc('restore_cancelled_order_promotions',{p_order_id:order.id,p_user_id:order.user_id});
 }
 
 function cleanReason(value) {
@@ -138,7 +139,7 @@ async function patchCancelledOrder(order, nextStatus, audit = {}) {
     error.status = 409;
     throw error;
   }
-  await restoreCancelledInventory(order.id);
+  await restoreCancelledOrder(updated[0]);
   return updated[0];
 }
 
@@ -156,9 +157,7 @@ module.exports = async function cancelOrder(req, res) {
     const orderId = Number(body.order_id);
     const reason = cleanReason(body.reason);
 
-    if (!Number.isInteger(orderId) || orderId < 1) {
-      return json(req, res, 400, { error: 'Invalid order ID' });
-    }
+    if (!Number.isInteger(orderId) || orderId < 1) return json(req, res, 400, { error: 'Invalid order ID' });
 
     const rows = await rest(
       'orders?id=eq.' + encodeURIComponent(orderId) +
@@ -174,7 +173,7 @@ module.exports = async function cancelOrder(req, res) {
     const terminal = ['cancelled', 'cod_cancelled', 'refunded', 'payment_failed', 'expired'];
 
     if (terminal.includes(status) || fulfillment === 'cancelled') {
-      await restoreCancelledInventory(order.id).catch(error=>console.error('Cancellation inventory reconciliation failed:',error));
+      await restoreCancelledOrder(order).catch(error=>console.error('Cancellation reconciliation failed:',error));
       return json(req, res, 409, { error: 'This order is already closed' });
     }
     if (!['ordered', 'packed'].includes(fulfillment)) {
@@ -184,9 +183,7 @@ module.exports = async function cancelOrder(req, res) {
     const breakdown = pricing(order);
 
     if (paymentMethod === 'cod') {
-      if (status !== 'cod_pending') {
-        return json(req, res, 409, { error: 'This COD order is not in a cancellable payment state' });
-      }
+      if (status !== 'cod_pending') return json(req, res, 409, { error: 'This COD order is not in a cancellable payment state' });
       await patchCancelledOrder(order, 'cod_cancelled', { reason });
       return json(req, res, 200, {
         ok: true,
@@ -195,26 +192,11 @@ module.exports = async function cancelOrder(req, res) {
         status: 'cod_cancelled',
         fulfillment_status: 'cancelled',
         reason,
-        refund: {
-          required: false,
-          amount: 0,
-          delivery_non_refundable: breakdown.delivery,
-          destination: null,
-          message: 'No refund is required because payment was not collected for this COD order.'
-        }
+        refund: { required: false, amount: 0, delivery_non_refundable: breakdown.delivery, destination: null, message: 'No refund is required because payment was not collected for this COD order. Any coupon or gift-card value used on the order has been restored.' }
       });
     }
 
-    if (paymentMethod !== 'prepaid' || status !== 'paid') {
-      return json(req, res, 409, { error: 'This prepaid order is not in a cancellable payment state' });
-    }
-
-    if (breakdown.gift > 0) {
-      return json(req, res, 409, {
-        error: 'Orders paid partly with a gift card need support-assisted cancellation so the gift-card balance can be restored safely.',
-        code: 'GIFT_CARD_RESTORE_REQUIRED'
-      });
-    }
+    if (paymentMethod !== 'prepaid' || status !== 'paid') return json(req, res, 409, { error: 'This prepaid order is not in a cancellable payment state' });
 
     if (breakdown.refundable <= 0) {
       await patchCancelledOrder(order, 'cancelled', { reason });
@@ -225,13 +207,7 @@ module.exports = async function cancelOrder(req, res) {
         status: 'cancelled',
         fulfillment_status: 'cancelled',
         reason,
-        refund: {
-          required: false,
-          amount: 0,
-          delivery_non_refundable: breakdown.delivery,
-          destination: 'original_payment_method',
-          message: 'There is no refundable payment amount after the non-refundable delivery charge.'
-        }
+        refund: { required: false, amount: 0, delivery_non_refundable: breakdown.delivery, destination: 'original_payment_method', gift_card_restored: breakdown.gift, message: breakdown.gift > 0 ? 'No payment refund is due. Gift-card value used on this order has been restored.' : 'There is no refundable payment amount after the non-refundable delivery charge.' }
       });
     }
 
@@ -256,9 +232,8 @@ module.exports = async function cancelOrder(req, res) {
         destination: 'original_payment_method',
         reference: refundReference(refund),
         speed: refund.speed_processed || refund.speed_requested || 'normal',
-        message: processed
-          ? 'Refund processed to the original payment method.'
-          : 'Refund initiated to the original payment method.'
+        gift_card_restored: breakdown.gift,
+        message: (processed ? 'Refund processed to the original payment method.' : 'Refund initiated to the original payment method.') + (breakdown.gift > 0 ? ' Gift-card value used on the order has also been restored.' : '')
       }
     });
   } catch (error) {
