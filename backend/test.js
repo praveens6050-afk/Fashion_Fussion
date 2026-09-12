@@ -39,7 +39,7 @@ for(const required of ['reserve_order_inventory','commit_order_inventory','relea
 assert.ok(createOrder.includes("await rpc('commit_order_inventory'"),'COD and zero-value finalization must commit reserved inventory');
 
 const verifyPayment=fs.readFileSync(path.join(__dirname,'api/verify-payment.js'),'utf8');
-for(const required of ['commit_order_inventory','commitInventory','inventory finalization is being reconciled'])assert.ok(verifyPayment.includes(required),`Verified payment inventory lifecycle must enforce ${required}`);
+for(const required of ['commit_order_inventory','commitInventory','Inventory finalization is being reconciled'])assert.ok(verifyPayment.includes(required),`Verified payment inventory lifecycle must enforce ${required}`);
 
 const webhook=fs.readFileSync(path.join(__dirname,'api/razorpay-webhook.js'),'utf8');
 assert.ok(webhook.includes("refund_reference: refundReference(refund) || order.refund_reference || null"),'Webhook must preserve an existing refund reference when a later event omits acquirer data');
