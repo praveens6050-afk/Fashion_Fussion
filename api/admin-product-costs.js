@@ -1,0 +1,1 @@
+module.exports = require('../backend/api/admin-product-costs.js');
