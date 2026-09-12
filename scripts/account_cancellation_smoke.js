@@ -24,7 +24,8 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
   await page.route('**/supabase-config.js*', async route => {
     const stub = `
       (() => {
-        const session={access_token:'smoke-access-token',user:{id:'smoke-user',email:'smoke@example.test'}};
+        const user={id:'smoke-user',email:'smoke@example.test'};
+        const session={access_token:'smoke-access-token',user};
         const order=${JSON.stringify(order)};
         function query(table){
           const q={
@@ -34,7 +35,7 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
           };
           return q;
         }
-        window.supabaseClient={auth:{async getSession(){return {data:{session},error:null}},async signOut(){return {error:null}}},from:query};
+        window.supabaseClient={auth:{async getUser(){return {data:{user},error:null}},async getSession(){return {data:{session},error:null}},async signOut(){return {error:null}}},from:query};
         document.addEventListener('DOMContentLoaded',()=>{
           const s=document.createElement('script');s.src='account-cancel-promotion.js?v=1';s.async=false;document.head.appendChild(s);
         },{once:true});
