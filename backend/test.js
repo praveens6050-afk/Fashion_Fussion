@@ -35,8 +35,10 @@ assert.ok(lib.includes("variant_id: variant ? variant.id : null"),'Order item sn
 for(const required of ['sku: variant?.sku','size: variant?.size','color: variant?.color','variant_title: variant?.title'])assert.ok(lib.includes(required),`Order item snapshot must persist ${required}`);
 
 const createOrder=fs.readFileSync(path.join(__dirname,'api/create-order.js'),'utf8');
-for(const required of ['reserve_order_inventory','commit_order_inventory','release_order_inventory','reserveCheckout','failCheckout'])assert.ok(createOrder.includes(required),`Checkout inventory lifecycle must enforce ${required}`);
-assert.ok(createOrder.includes("await rpc('commit_order_inventory'"),'COD and zero-value finalization must commit reserved inventory');
+for(const required of ['reserve_order_inventory','release_order_inventory','reserveCheckout','failCheckout','finalize_cod_order_inventory','finalize_zero_value_order_inventory','finalizeCod','finalizeZeroValue'])assert.ok(createOrder.includes(required),`Checkout inventory lifecycle must enforce ${required}`);
+assert.ok(createOrder.includes("await rpc('finalize_cod_order_inventory'"),'COD checkout must finalize order and reserved inventory atomically');
+assert.ok(createOrder.includes("await rpc('finalize_zero_value_order_inventory'"),'Zero-value checkout must finalize order and reserved inventory atomically');
+assert.ok(!createOrder.includes("await rpc('finalize_checkout_order',{p_order_id:saved.id")&&!createOrder.includes("await rpc('commit_order_inventory',{p_order_id:saved.id"),'New zero-value checkout must not split order and inventory finalization across RPC calls');
 
 const verifyPayment=fs.readFileSync(path.join(__dirname,'api/verify-payment.js'),'utf8');
 for(const required of ['commit_order_inventory','commitInventory','Inventory finalization is being reconciled'])assert.ok(verifyPayment.includes(required),`Verified payment inventory lifecycle must enforce ${required}`);
