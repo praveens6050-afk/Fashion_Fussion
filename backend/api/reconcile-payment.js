@@ -19,6 +19,10 @@ async function rpc(name, args) {
   return data;
 }
 
+async function commitInventory(orderId) {
+  return rpc('commit_order_inventory', { p_order_id: orderId });
+}
+
 async function loadOrder(userId, storeOrderId) {
   const response = await fetch(
     SUPABASE_URL + '/rest/v1/orders?id=eq.' + encodeURIComponent(storeOrderId) +
@@ -53,9 +57,26 @@ module.exports = async function reconcilePayment(req, res) {
       return json(req, res, 200, { reconciled: false, status: order.status, store_order_id: order.id });
     }
     if (order.status === 'paid') {
+      try {
+        await commitInventory(order.id);
+      } catch (inventoryError) {
+        console.error('reconcile-payment inventory repair error:', inventoryError);
+        return json(req, res, 202, {
+          reconciled: true,
+          already_processed: true,
+          captured: true,
+          recoverable: true,
+          inventory_pending: true,
+          status: 'paid',
+          store_order_id: order.id,
+          display_order_id: order.display_order_id,
+          message: 'Payment is confirmed. Inventory finalization is being reconciled. Do not pay again.'
+        });
+      }
       return json(req, res, 200, {
         reconciled: true,
         already_processed: true,
+        inventory_reconciled: true,
         status: 'paid',
         store_order_id: order.id,
         display_order_id: order.display_order_id
@@ -93,8 +114,27 @@ module.exports = async function reconcilePayment(req, res) {
       p_source: 'authenticated_reconcile'
     });
 
+    try {
+      await commitInventory(order.id);
+    } catch (inventoryError) {
+      console.error('reconcile-payment inventory commit error:', inventoryError);
+      return json(req, res, 202, {
+        reconciled: true,
+        captured: true,
+        recoverable: true,
+        inventory_pending: true,
+        payment_id: captured.id,
+        status: 'paid',
+        store_order_id: order.id,
+        display_order_id: order.display_order_id,
+        message: 'Payment is confirmed. Inventory finalization is being reconciled. Do not pay again.'
+      });
+    }
+
     return json(req, res, 200, {
       reconciled: true,
+      captured: true,
+      inventory_reconciled: true,
       payment_id: captured.id,
       status: 'paid',
       store_order_id: order.id,

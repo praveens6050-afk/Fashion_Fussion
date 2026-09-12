@@ -8,10 +8,13 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 const DELIVERY_THRESHOLD = 299;
 const DELIVERY_BELOW_THRESHOLD = 49;
-const PAYMENT_HANDLING_FEE = 49;
-const PREPAID_DISCOUNT = 49;
+// Legacy fields are kept at zero so existing order/database integrations remain compatible
+// while customers are no longer charged a separate payment-handling/COD fee.
+const PAYMENT_HANDLING_FEE = 0;
+const PREPAID_DISCOUNT = 0;
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_CART_LINES = 50;
+const MAX_ITEM_QUANTITY = 500;
 const DEFAULT_ORIGIN = "https://praveens6050-afk.github.io";
 const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGIN || DEFAULT_ORIGIN)
   .split(",")
@@ -103,16 +106,13 @@ function normalizePaymentMethod(value) {
 
 function paymentPricing(basePayable, paymentMethod) {
   const method = normalizePaymentMethod(paymentMethod);
-  const handlingFee = PAYMENT_HANDLING_FEE;
-  const prepaidDiscount = method === "prepaid" ? PREPAID_DISCOUNT : 0;
-  const codFee = method === "cod" ? PAYMENT_HANDLING_FEE : 0;
-  const total = roundMoney(Math.max(0, Number(basePayable || 0) + handlingFee - prepaidDiscount));
+  const total = roundMoney(Math.max(0, Number(basePayable || 0)));
   return {
     payment_method: method,
-    payment_handling_fee: roundMoney(handlingFee),
-    prepaid_discount: roundMoney(prepaidDiscount),
-    cod_fee: roundMoney(codFee),
-    cod_fee_non_refundable: method === "cod",
+    payment_handling_fee: 0,
+    prepaid_discount: 0,
+    cod_fee: 0,
+    cod_fee_non_refundable: false,
     total
   };
 }
@@ -172,10 +172,52 @@ async function getProductsByIds(ids) {
   const uniqueIds = [...new Set(cleanIds)];
   const url = SUPABASE_URL +
     "/rest/v1/products?id=in.(" + uniqueIds.join(",") + ")" +
-    "&is_active=eq.true&select=id,name,category,price,image_url,gst_rate";
+    "&is_active=eq.true&select=id,name,category,price,image_url,gst_rate,bulk_enabled,bulk_min_qty,has_variants";
   const response = await fetch(url, { headers: serverHeaders });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.message || "Could not load products from Supabase");
+  return Array.isArray(data) ? data : [];
+}
+
+async function getVariantsByIds(ids) {
+  assertServerConfig();
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const cleanIds = [...new Set(ids.map(id => String(id).trim()).filter(id => /^\d+$/.test(id)))];
+  if (!cleanIds.length) return [];
+  const url = SUPABASE_URL +
+    "/rest/v1/product_variants?id=in.(" + cleanIds.join(",") + ")" +
+    "&is_active=eq.true&select=id,product_id,sku,title,size,color,price_override,image_url,is_active";
+  const response = await fetch(url, { headers: serverHeaders });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.message || "Could not load product variants");
+  return Array.isArray(data) ? data : [];
+}
+
+async function getInventoryByVariantIds(ids) {
+  assertServerConfig();
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const cleanIds = [...new Set(ids.map(id => String(id).trim()).filter(id => /^\d+$/.test(id)))];
+  if (!cleanIds.length) return [];
+  const url = SUPABASE_URL +
+    "/rest/v1/inventory_levels?variant_id=in.(" + cleanIds.join(",") + ")" +
+    "&select=variant_id,on_hand,reserved";
+  const response = await fetch(url, { headers: serverHeaders });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.message || "Could not validate inventory");
+  return Array.isArray(data) ? data : [];
+}
+
+async function getBulkTiersByProductIds(ids) {
+  assertServerConfig();
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const cleanIds = [...new Set(ids.map(id => String(id).trim()).filter(id => /^\d+$/.test(id)))];
+  if (!cleanIds.length) return [];
+  const url = SUPABASE_URL +
+    "/rest/v1/product_bulk_tiers?product_id=in.(" + cleanIds.join(",") + ")" +
+    "&select=product_id,min_qty,unit_price&order=product_id.asc,min_qty.asc";
+  const response = await fetch(url, { headers: serverHeaders });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.message || "Could not load bulk pricing");
   return Array.isArray(data) ? data : [];
 }
 
@@ -185,20 +227,40 @@ function normalizeCartRequest(items) {
   const seen = new Set();
   return items.map(item => {
     const id = String(item?.id ?? "").trim();
+    const variantRaw = item?.variant_id;
+    const variantId = variantRaw == null || variantRaw === '' ? null : String(variantRaw).trim();
     const qty = Number(item?.qty);
     if (!/^\d+$/.test(id)) throw new Error("Invalid product ID");
-    if (!Number.isInteger(qty) || qty < 1 || qty > 20) throw new Error("Invalid quantity for product " + id);
-    if (seen.has(id)) throw new Error("Duplicate product ID: " + id);
-    seen.add(id);
-    return { id, qty };
+    if (variantId !== null && !/^\d+$/.test(variantId)) throw new Error("Invalid variant ID for product " + id);
+    if (!Number.isInteger(qty) || qty < 1 || qty > MAX_ITEM_QUANTITY) {
+      throw new Error("Invalid quantity for product " + id);
+    }
+    const lineKey = id + ':' + (variantId || 'base');
+    if (seen.has(lineKey)) throw new Error("Duplicate cart line: " + lineKey);
+    seen.add(lineKey);
+    return { id, variant_id: variantId, qty };
   });
 }
 
 async function calculate(items) {
   const requested = normalizeCartRequest(items);
   const ids = requested.map(item => item.id);
-  const products = await getProductsByIds(ids);
+  const variantIds = requested.map(item => item.variant_id).filter(Boolean);
+  const [products, bulkTiers, variants, inventory] = await Promise.all([
+    getProductsByIds(ids),
+    getBulkTiersByProductIds(ids),
+    getVariantsByIds(variantIds),
+    getInventoryByVariantIds(variantIds)
+  ]);
   const productMap = new Map(products.map(product => [String(product.id), product]));
+  const variantMap = new Map(variants.map(variant => [String(variant.id), variant]));
+  const inventoryMap = new Map(inventory.map(row => [String(row.variant_id), row]));
+  const tierMap = new Map();
+  for (const tier of bulkTiers) {
+    const key = String(tier.product_id);
+    if (!tierMap.has(key)) tierMap.set(key, []);
+    tierMap.get(key).push(tier);
+  }
   let subtotal = 0;
   let totalDiscount = 0;
   let totalGst = 0;
@@ -207,27 +269,70 @@ async function calculate(items) {
     const qty = item.qty;
     const product = productMap.get(id);
     if (!product) throw new Error("Product is unavailable or inactive: " + id);
-    const price = Number(product.price);
+    const hasVariants = product.has_variants === true;
+    let variant = null;
+    if (hasVariants && !item.variant_id) throw new Error("Please select a product variant for " + product.name);
+    if (!hasVariants && item.variant_id) throw new Error("This product does not use variants: " + product.name);
+    if (item.variant_id) {
+      variant = variantMap.get(String(item.variant_id));
+      if (!variant || String(variant.product_id) !== id) throw new Error("Selected variant is unavailable for " + product.name);
+      const stock = inventoryMap.get(String(variant.id));
+      const available = Math.max(0, Number(stock?.on_hand || 0) - Number(stock?.reserved || 0));
+      if (!Number.isInteger(available) || available < qty) throw new Error("Selected variant does not have enough stock for " + product.name);
+    }
+    const productPrice = Number(product.price);
+    const override = variant?.price_override == null ? null : Number(variant.price_override);
+    const basePrice = override != null ? override : productPrice;
     const gstRate = Number(product.gst_rate);
-    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid price for product " + product.name);
+    if (!Number.isFinite(basePrice) || basePrice <= 0) throw new Error("Invalid price for product " + product.name);
     if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) throw new Error("GST rate is not configured for product " + product.id);
-    const mrp = price;
-    const discount = 0;
-    const taxableAmount = roundMoney(Math.max(0, mrp - discount) * qty);
+    const minBulkQty = Number(product.bulk_min_qty || 0);
+    const eligibleForBulk = product.bulk_enabled === true && minBulkQty >= 2 && qty >= minBulkQty;
+    let unitPrice = basePrice;
+    let appliedBulkTier = null;
+    if (eligibleForBulk) {
+      for (const tier of tierMap.get(id) || []) {
+        const minQty = Number(tier.min_qty);
+        const tierPrice = Number(tier.unit_price);
+        if (Number.isInteger(minQty) && minQty <= qty && Number.isFinite(tierPrice) && tierPrice > 0 && tierPrice <= basePrice) {
+          unitPrice = tierPrice;
+          appliedBulkTier = minQty;
+        }
+      }
+    }
+    const mrp = basePrice;
+    const discount = roundMoney(Math.max(0, mrp - unitPrice));
+    const taxableAmount = roundMoney(unitPrice * qty);
     const gstAmount = roundMoney(taxableAmount * gstRate / 100);
     const lineTotal = roundMoney(taxableAmount + gstAmount);
     subtotal += taxableAmount;
     totalDiscount += discount * qty;
     totalGst += gstAmount;
     return {
-      id: product.id, qty, name: product.name, category: product.category, image_url: product.image_url,
-      mrp, discount, unit_price: price, gst_rate: gstRate, gst_amount: gstAmount,
-      taxable_amount: taxableAmount, line_total: lineTotal
+      id: product.id,
+      variant_id: variant ? variant.id : null,
+      sku: variant?.sku || null,
+      variant_title: variant?.title || null,
+      size: variant?.size || null,
+      color: variant?.color || null,
+      qty,
+      name: product.name,
+      category: product.category,
+      image_url: variant?.image_url || product.image_url,
+      mrp,
+      discount,
+      unit_price: unitPrice,
+      gst_rate: gstRate,
+      gst_amount: gstAmount,
+      taxable_amount: taxableAmount,
+      line_total: lineTotal,
+      bulk_pricing_applied: Boolean(appliedBulkTier),
+      bulk_tier_min_qty: appliedBulkTier
     };
   });
   const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_BELOW_THRESHOLD;
   const otherCharges = 0;
-  const baseTotal = roundMoney(subtotal - totalDiscount + totalGst + delivery + otherCharges);
+  const baseTotal = roundMoney(subtotal + totalGst + delivery + otherCharges);
   if (!Number.isFinite(baseTotal) || baseTotal < 0) throw new Error("Invalid order amount");
   return {
     items: normalized,
@@ -235,6 +340,9 @@ async function calculate(items) {
     discount: roundMoney(totalDiscount),
     gst: roundMoney(totalGst),
     delivery: roundMoney(delivery),
+    delivery_threshold: DELIVERY_THRESHOLD,
+    delivery_non_refundable: delivery > 0,
+    amount_to_delivery_benefit: roundMoney(Math.max(0, DELIVERY_THRESHOLD - subtotal)),
     other_charges: roundMoney(otherCharges),
     total: baseTotal
   };
@@ -243,7 +351,8 @@ async function calculate(items) {
 module.exports = {
   KEY_ID, KEY_SECRET, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
   DELIVERY_THRESHOLD, DELIVERY_BELOW_THRESHOLD, PAYMENT_HANDLING_FEE, PREPAID_DISCOUNT,
-  MAX_BODY_BYTES, MAX_CART_LINES, serverHeaders, applySecurityHeaders, cors, json,
+  MAX_BODY_BYTES, MAX_CART_LINES, MAX_ITEM_QUANTITY, serverHeaders, applySecurityHeaders, cors, json,
   readRawBody, readBody, basicAuth, safeEqualText, roundMoney, normalizePaymentMethod,
-  paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds, calculate
+  paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds,
+  getVariantsByIds, getInventoryByVariantIds, getBulkTiersByProductIds, calculate
 };
