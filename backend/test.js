@@ -52,7 +52,8 @@ for(const required of ['commit_order_inventory','commitOrderInventory','inventor
 
 const cancelOrder=fs.readFileSync(path.join(__dirname,'api/cancel-order.js'),'utf8');
 for(const field of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(cancelOrder.includes(field),`Cancellation must persist ${field}`);
-for(const required of ['release_order_inventory','restock_cancelled_order_inventory'])assert.ok(cancelOrder.includes(required),`Cancellation must reconcile inventory with ${required}`);
+for(const required of ['release_order_inventory','restock_cancelled_order_inventory','restore_cancelled_order_promotions','gift_card_restored'])assert.ok(cancelOrder.includes(required),`Cancellation must reconcile inventory/promotions with ${required}`);
+assert.ok(!cancelOrder.includes('GIFT_CARD_RESTORE_REQUIRED'),'Gift-card cancellation must not require manual support once restoration is transactional');
 
 const refundStatus=fs.readFileSync(path.join(__dirname,'api/refund-status.js'),'utf8');
 for(const field of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(refundStatus.includes(field),`Refund reconciliation must persist ${field}`);
