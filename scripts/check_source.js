@@ -4,7 +4,7 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const htmlFiles=fs.readdirSync(root).filter(f=>f.endsWith('.html')&&!f.startsWith('google'));
 const jsFiles=fs.readdirSync(root).filter(f=>f.endsWith('.js'));
-const customerCommerceFiles=new Set(['index.html','search.html','product.html','cart.html','checkout.html','order-confirmation.html','wishlist.html','account.html','order-details.html']);
+const customerCommerceFiles=new Set(['index.html','search.html','product.html','cart.html','checkout.html','quote-checkout.html','order-confirmation.html','wishlist.html','account.html','order-details.html']);
 let errors=[];
 const localRef=/\b(?:src|href)=["']([^"']+)["']/gi;
 for(const file of htmlFiles){
@@ -41,6 +41,19 @@ if(!/refund_reference:\s*refundReference\(refund\)\s*\|\|\s*order\.refund_refere
 const checkout=fs.readFileSync(path.join(root,'checkout.html'),'utf8');
 for(const required of ['id="addressSection"','id="addressState"','name="deliveryAddress"','customer_addresses','shipping_address:{id:address.id}','order-confirmation.html?id='])if(!checkout.includes(required))errors.push(`checkout.html: inline address/confirmation flow missing ${required}`);
 if(/\.eq\(['"]is_default['"],true\)\.limit\(1\)\.maybeSingle\(\)/.test(checkout))errors.push('checkout.html: checkout must load selectable saved addresses, not only the default address');
+const quoteCheckout=fs.readFileSync(path.join(root,'quote-checkout.html'),'utf8');
+for(const required of ['Business quote checkout','bulk_quotes','bulk_quote_items','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','/api/create-quote-order','/api/verify-payment','purchase_order_no','Coupons and gift cards are not applied'])if(!quoteCheckout.includes(required))errors.push(`quote-checkout.html: secure accepted quote checkout missing ${required}`);
+if(/coupon_code|gift_card_code/.test(quoteCheckout))errors.push('quote-checkout.html: negotiated quote checkout must not submit coupon or gift-card pricing');
+const quoteOrder=fs.readFileSync(path.join(root,'backend/api/create-quote-order.js'),'utf8');
+for(const required of ['bulk_quote_id','status!==\'accepted\'','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','business_billing_address:quote.business_billing_address','createRazorpayOrder','findExistingQuoteOrder'])if(!quoteOrder.includes(required))errors.push(`backend/api/create-quote-order.js: authoritative quote order guard missing ${required}`);
+if(/calculate\(body\.items\)|getDiscounts\(/.test(quoteOrder))errors.push('backend/api/create-quote-order.js: accepted quote checkout must not reprice through retail cart/coupon logic');
+const accountBusiness=fs.readFileSync(path.join(root,'account-business.js'),'utf8');
+for(const required of ['create_bulk_quote_request','accept_bulk_quote','quote-checkout.html?quote=','data-accept-quote'])if(!accountBusiness.includes(required))errors.push(`account-business.js: business quote lifecycle missing ${required}`);
+const adminQuotes=fs.readFileSync(path.join(root,'admin-business-quotes.js'),'utf8');
+for(const required of ['finalize_bulk_quote','quoted_unit_price','quoted_subtotal','quoted_gst','quoted_delivery'])if(!adminQuotes.includes(required))errors.push(`admin-business-quotes.js: authoritative admin quote finalization missing ${required}`);
+if(/['"]accepted['"]/.test(adminQuotes.match(/const MANUAL_STATUS=[^;]+/)?.[0]||''))errors.push('admin-business-quotes.js: admin manual status list must not allow customer acceptance');
+const orderBusiness=fs.readFileSync(path.join(root,'order-business-details.js'),'utf8');
+for(const required of ['business_name','business_gstin','business_billing_address','purchase_order_no','bulk_quote_id','does not claim that a statutory GST invoice'])if(!orderBusiness.includes(required))errors.push(`order-business-details.js: business order snapshot display missing ${required}`);
 const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
 for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
 for(const required of ['id="refundFeedback"','aria-live="polite"','setRefundFeedback(','/api/refund-status'])if(!orderDetails.includes(required))errors.push(`order-details.html: inline refund feedback missing ${required}`);
@@ -58,14 +71,15 @@ if(/razorpay_payment_id|razorpay_order_id/.test(confirmation))errors.push('order
 const supabaseConfig=fs.readFileSync(path.join(root,'supabase-config.js'),'utf8');
 const legacyInjectors=['account-dashboard.js','customer-addresses.js','order-tracking.js'];
 for(const legacy of legacyInjectors){if(supabaseConfig.includes(`add('${legacy}`))errors.push(`supabase-config.js: premium account must not load legacy ${legacy} runtime injector`);if(fs.existsSync(path.join(root,legacy)))errors.push(`${legacy}: obsolete runtime injector must stay removed`)}
-for(const required of ["order-refund-tracker.js?v=1','data-order-refund-tracker", "account-refunds.js?v=1','data-account-refunds", "order-return-exchange.js?v=1','data-order-return-exchange", "account-returns.js?v=1','data-account-returns"])if(!supabaseConfig.includes(required))errors.push(`supabase-config.js: customer commerce runtime injector missing ${required}`);
+for(const required of ["order-refund-tracker.js?v=1','data-order-refund-tracker", "account-refunds.js?v=1','data-account-refunds", "order-return-exchange.js?v=1','data-order-return-exchange", "account-returns.js?v=1','data-account-returns", "account-business.js?v=3','data-account-business", "order-business-details.js?v=1','data-order-business-details"])if(!supabaseConfig.includes(required))errors.push(`supabase-config.js: customer commerce runtime injector missing ${required}`);
 const account=fs.readFileSync(path.join(root,'account.html'),'utf8');
 for(const required of ['data-view="addresses"','id="addressesView"','id="addressForm"','customer_addresses','set_default_customer_address'])if(!account.includes(required))errors.push(`account.html: integrated address management missing ${required}`);
 const accountRefunds=fs.readFileSync(path.join(root,'account-refunds.js'),'utf8');
 for(const required of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','cancellation_reason','Original payment method','order-details.html?id=','hydrateAudit(','mergeAudit('])if(!accountRefunds.includes(required))errors.push(`account-refunds.js: persisted account refund view missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(accountRefunds))errors.push('account-refunds.js: raw Razorpay identifiers must not be selected or exposed');
 const accountReturns=fs.readFileSync(path.join(root,'account-returns.js'),'utf8');
-for(const required of ['Returns & Exchanges','return_requests','requested_size','admin_note','order-details.html?id=','#returns','exchange_size','return_refund'])if(!accountReturns.includes(required))errors.push(`account-returns.js: account returns/exchanges view missing ${required}`);
+for(const required of ['Returns & Exchanges','return_requests','requested_size','order-details.html?id=','#returns','exchange_size','return_refund'])if(!accountReturns.includes(required))errors.push(`account-returns.js: account returns/exchanges view missing ${required}`);
+if(/admin_note/.test(accountReturns))errors.push('account-returns.js: internal admin notes must not be exposed in customer return history');
 if(!/Report an Issue/.test(accountReturns))errors.push('account-returns.js: account return history must label report-issue requests for customers');
 if(/razorpay_payment_id|razorpay_order_id/.test(accountReturns))errors.push('account-returns.js: raw Razorpay identifiers must not be selected or exposed');
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
