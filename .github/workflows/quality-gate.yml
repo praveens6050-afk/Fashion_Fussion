@@ -38,3 +38,4 @@ jobs:
           node scripts/browser_smoke.js
           node scripts/order_details_smoke.js
           node scripts/return_exchange_smoke.js
+          node scripts/account_cancellation_smoke.js
