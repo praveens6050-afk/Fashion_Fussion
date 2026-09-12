@@ -193,9 +193,146 @@ const CHECKOUT_KEY = 'fashion_fussion_checkout_key';
   }
   await journeyContext.close();
 
+  // Deterministic authenticated checkout runtime coverage. This replaces only
+  // remote auth/data/payment dependencies while exercising the real checkout
+  // page JavaScript, address selection, authoritative quote rendering and COD
+  // order completion/redirect behavior.
+  const checkoutContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const checkoutPage = await checkoutContext.newPage();
+  const checkoutProduct = {
+    id: 900002,
+    name: 'Authenticated Checkout Product',
+    category: 'Smoke Department',
+    price: 250,
+    image_url: null,
+    is_active: true
+  };
+  const checkoutAddress = {
+    id: 77,
+    label: 'Home',
+    full_name: 'Smoke Customer',
+    phone: '9999999999',
+    address_line1: '1 Test Street',
+    address_line2: null,
+    city: 'Jaipur',
+    state: 'Rajasthan',
+    postal_code: '302001',
+    country: 'India',
+    is_default: true,
+    created_at: '2026-01-01T00:00:00.000Z'
+  };
+
+  await checkoutContext.addInitScript(({ cartKey }) => {
+    localStorage.setItem(cartKey, JSON.stringify({ '900002': 1 }));
+  }, { cartKey: CART_KEY });
+
+  await checkoutPage.route('**/supabase-config.js*', async route => {
+    const stub = `
+      (() => {
+        const session={access_token:'smoke-access-token',user:{id:'smoke-user',email:'smoke@example.test'}};
+        const product=${JSON.stringify(checkoutProduct)};
+        const address=${JSON.stringify(checkoutAddress)};
+        function query(table){
+          const q={
+            select(){return q},in(){return q},eq(){return q},order(){return q},
+            async maybeSingle(){
+              if(table==='profiles')return {data:{full_name:'Smoke Customer',phone:'9999999999'},error:null};
+              return {data:null,error:null};
+            },
+            then(resolve,reject){
+              const data=table==='products'?[product]:table==='customer_addresses'?[address]:[];
+              return Promise.resolve({data,error:null}).then(resolve,reject);
+            }
+          };
+          return q;
+        }
+        window.supabaseClient={auth:{async getSession(){return {data:{session},error:null}}},from:query};
+      })();`;
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: stub });
+  });
+
+  await checkoutPage.route('https://fashion-fussion-olive.vercel.app/api/**', async route => {
+    const request = route.request();
+    if (request.headers()['authorization'] !== 'Bearer smoke-access-token') {
+      throw new Error('authenticated checkout API call did not include the current bearer session');
+    }
+    const url = new URL(request.url());
+    const payload = JSON.parse(request.postData() || '{}');
+    if (url.pathname.endsWith('/quote-order')) {
+      if (payload.items?.[0]?.id !== 900002 || payload.items?.[0]?.qty !== 1) {
+        throw new Error('authenticated checkout quote did not preserve cart items');
+      }
+      const paymentMethod = payload.payment_method || 'prepaid';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          pricing: {
+            subtotal: 250,
+            gst: 45,
+            delivery: 49,
+            coupon_discount: 0,
+            gift_card_discount: 0,
+            total: 344,
+            payment_method: paymentMethod
+          }
+        })
+      });
+      return;
+    }
+    if (url.pathname.endsWith('/create-order')) {
+      if (payload.payment_method !== 'cod') throw new Error('authenticated smoke checkout must submit COD');
+      if (Number(payload.shipping_address?.id) !== 77) throw new Error('authenticated checkout did not submit selected address');
+      if (!payload.checkout_key || String(payload.checkout_key).length < 16) throw new Error('authenticated checkout did not submit an idempotency key');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          store_order_id: 880001,
+          display_order_id: 'FF-SMOKE-880001',
+          payment_method: 'cod',
+          status: 'cod_pending',
+          completed: true,
+          total: 344
+        })
+      });
+      return;
+    }
+    await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Unexpected smoke API route' }) });
+  });
+
+  const checkoutResponse = await checkoutPage.goto(BASE + '/checkout.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  if (!checkoutResponse || !checkoutResponse.ok()) throw new Error('authenticated checkout page failed to load');
+  await checkoutPage.locator('.address-option.selected').waitFor({ state: 'visible', timeout: 10000 });
+  if (!(await checkoutPage.locator('#addressBox').textContent()).includes('Smoke Customer')) {
+    throw new Error('authenticated checkout did not render the saved delivery address');
+  }
+  await checkoutPage.waitForFunction(() => !document.querySelector('#continueBtn')?.disabled);
+  const authenticatedPriceText = await checkoutPage.locator('#priceBox').textContent();
+  for (const expected of ['₹250', '₹45', '₹49', '₹344']) {
+    if (!authenticatedPriceText.includes(expected)) throw new Error(`authenticated checkout price summary missing ${expected}`);
+  }
+  const deliveryNote = await checkoutPage.locator('.delivery-note').textContent();
+  if (!deliveryNote.includes('non-refundable')) throw new Error('authenticated checkout did not disclose non-refundable sub-₹299 delivery');
+
+  await checkoutPage.locator('input[name="paymentMethod"][value="cod"]').check();
+  await checkoutPage.waitForFunction(() => !document.querySelector('#continueBtn')?.disabled && document.querySelector('#continueBtn')?.textContent?.includes('COD'));
+  await Promise.all([
+    checkoutPage.waitForURL(url => url.pathname.endsWith('/order-confirmation.html') && url.searchParams.get('id') === '880001'),
+    checkoutPage.locator('#continueBtn').click()
+  ]);
+  const completedState = await checkoutPage.evaluate(({ cartKey, checkoutKey }) => ({
+    cart: localStorage.getItem(cartKey),
+    checkout: sessionStorage.getItem(checkoutKey)
+  }), { cartKey: CART_KEY, checkoutKey: CHECKOUT_KEY });
+  if (completedState.cart !== null || completedState.checkout !== null) {
+    throw new Error('completed authenticated checkout did not clear cart/idempotency state');
+  }
+  await checkoutContext.close();
+
   if (failures.length) throw new Error(failures.join('\n'));
   await browser.close();
-  console.log('Desktop Chromium smoke checks passed. Retail journey and business quote checkout structure are covered.');
+  console.log('Desktop Chromium smoke checks passed. Retail journey, authenticated COD checkout and business quote checkout structure are covered.');
 })().catch(err => {
   console.error(err.stack || err);
   process.exit(1);
