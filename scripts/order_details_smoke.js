@@ -41,7 +41,8 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
         const session={access_token:'smoke-access-token',user:{id:'smoke-user',email:'smoke@example.test'}};
         const order=${JSON.stringify(activeOrder)};
         function currentOrder(){
-          return window.__smokeCancelled?{...order,status:'refund_initiated',fulfillment_status:'cancelled',cancellation_reason:'Ordered by mistake',cancelled_at:'2026-09-12T11:00:00.000Z',refund_id:'internal-smoke-refund',refund_status:'pending',refund_reference:'RF-SMOKE-001',refund_amount:245,refund_updated_at:'2026-09-12T11:00:00.000Z'}:order;
+          const wasCancelled=sessionStorage.getItem('smoke_order_cancelled')==='1';
+          return wasCancelled?{...order,status:'refund_initiated',fulfillment_status:'cancelled',cancellation_reason:'Ordered by mistake',cancelled_at:'2026-09-12T11:00:00.000Z',refund_id:'internal-smoke-refund',refund_status:'pending',refund_reference:'RF-SMOKE-001',refund_amount:245,refund_updated_at:'2026-09-12T11:00:00.000Z'}:order;
         }
         function query(table){
           const q={select(){return q},eq(){return q},async maybeSingle(){return table==='orders'?{data:currentOrder(),error:null}:{data:null,error:null}}};
@@ -69,7 +70,7 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
     if (Number(cancelPayload.order_id) !== 880002) throw new Error('order cancellation submitted the wrong order ID');
     if (cancelPayload.reason !== 'Ordered by mistake') throw new Error('order cancellation did not submit the selected reason');
     cancelled = true;
-    await page.evaluate(() => { window.__smokeCancelled = true; }).catch(() => null);
+    await page.evaluate(() => sessionStorage.setItem('smoke_order_cancelled','1')).catch(() => null);
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok:true,order_id:880002,display_order_id:'FF-SMOKE-880002',status:'refund_initiated',fulfillment_status:'cancelled',reason:'Ordered by mistake',promotions_restored:true,refund:{required:true,status:'pending',amount:245,delivery_non_refundable:49,destination:'original_payment_method'} }) });
   });
 
