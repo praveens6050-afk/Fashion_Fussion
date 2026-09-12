@@ -29,8 +29,14 @@ if(/\.select\(["'](?:[^"']*,)?cost(?:,|["'])/.test(fs.readFileSync(path.join(roo
 if(!/PAYMENT_HANDLING_FEE\s*=\s*0/.test(lib))errors.push('backend/lib.js: payment handling fee must remain zero');
 if(!/PREPAID_DISCOUNT\s*=\s*0/.test(lib))errors.push('backend/lib.js: prepaid discount compatibility field must remain zero');
 if(!/cod_fee_non_refundable:\s*false/.test(lib))errors.push('backend/lib.js: COD non-refundable fee flag must remain false');
+for(const required of ['has_variants','getVariantsByIds','getInventoryByVariantIds','variant_id','product_variants','inventory_levels','Selected variant does not have enough stock'])if(!lib.includes(required))errors.push(`backend/lib.js: variant/inventory pricing guard missing ${required}`);
+const createOrder=fs.readFileSync(path.join(root,'backend/api/create-order.js'),'utf8');
+for(const required of ['reserve_order_inventory','commit_order_inventory','release_order_inventory','reserveCheckout','failCheckout'])if(!createOrder.includes(required))errors.push(`backend/api/create-order.js: inventory lifecycle missing ${required}`);
+const verifyPayment=fs.readFileSync(path.join(root,'backend/api/verify-payment.js'),'utf8');
+for(const required of ['commit_order_inventory','commitInventory','Inventory finalization is being reconciled'])if(!verifyPayment.includes(required))errors.push(`backend/api/verify-payment.js: captured-payment inventory reconciliation missing ${required}`);
 const cancelOrder=fs.readFileSync(path.join(root,'backend/api/cancel-order.js'),'utf8');
 for(const required of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])if(!cancelOrder.includes(required))errors.push(`backend/api/cancel-order.js: cancellation/refund audit persistence missing ${required}`);
+for(const required of ['release_order_inventory','restock_cancelled_order_inventory'])if(!cancelOrder.includes(required))errors.push(`backend/api/cancel-order.js: cancellation inventory reconciliation missing ${required}`);
 const refundStatus=fs.readFileSync(path.join(root,'backend/api/refund-status.js'),'utf8');
 for(const required of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])if(!refundStatus.includes(required))errors.push(`backend/api/refund-status.js: refund reconciliation audit persistence missing ${required}`);
 const processReturnRefund=fs.readFileSync(path.join(root,'backend/api/process-return-refund.js'),'utf8');
@@ -39,6 +45,7 @@ const returnRefundStatus=fs.readFileSync(path.join(root,'backend/api/return-refu
 for(const required of ['getSupabaseUser','return_request_id','user_id=eq.','/v1/refunds/','Refund reference mismatch','Refund amount mismatch','return_processing','completed','approved','original_payment_method'])if(!returnRefundStatus.includes(required))errors.push(`backend/api/return-refund-status.js: customer return-refund reconciliation guard missing ${required}`);
 const webhook=fs.readFileSync(path.join(root,'backend/api/razorpay-webhook.js'),'utf8');
 for(const required of ['refund.created','refund.processed','refund.failed','x-razorpay-signature','expectedRefundAmount(','refund_pending','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','loadReturnRequestByRefund','updateReturnRefundStatus','return_refund_updated'])if(!webhook.includes(required))errors.push(`backend/api/razorpay-webhook.js: refund lifecycle/audit guard missing ${required}`);
+for(const required of ['commit_order_inventory','commitOrderInventory','inventory_reconciled','inventory_committed'])if(!webhook.includes(required))errors.push(`backend/api/razorpay-webhook.js: payment inventory reconciliation missing ${required}`);
 if(!/String\(refund\.status\s*\|\|\s*['"]{2}\)\.toLowerCase\(\)/.test(webhook))errors.push('backend/api/razorpay-webhook.js: refund webhook must validate processor refund status');
 if(!/different_refund_reference/.test(webhook))errors.push('backend/api/razorpay-webhook.js: webhook must reject a different refund reference once an order refund is persisted');
 if(!/refund_reference:\s*refundReference\(refund\)\s*\|\|\s*order\.refund_reference\s*\|\|\s*null/.test(webhook))errors.push('backend/api/razorpay-webhook.js: webhook must preserve an existing refund reference when later events omit acquirer data');
@@ -78,7 +85,12 @@ if(/razorpay_payment_id|razorpay_order_id/.test(confirmation))errors.push('order
 const supabaseConfig=fs.readFileSync(path.join(root,'supabase-config.js'),'utf8');
 const legacyInjectors=['account-dashboard.js','customer-addresses.js','order-tracking.js'];
 for(const legacy of legacyInjectors){if(supabaseConfig.includes(`add('${legacy}`))errors.push(`supabase-config.js: premium account must not load legacy ${legacy} runtime injector`);if(fs.existsSync(path.join(root,legacy)))errors.push(`${legacy}: obsolete runtime injector must stay removed`)}
-for(const required of ["order-refund-tracker.js?v=1','data-order-refund-tracker", "account-refunds.js?v=1','data-account-refunds", "order-return-exchange.js?v=1','data-order-return-exchange", "account-returns.js?v=2','data-account-returns", "account-business.js?v=4','data-account-business", "order-business-details.js?v=1','data-order-business-details", "admin-business-quotes.js?v=3','data-admin-business-quotes"])if(!supabaseConfig.includes(required))errors.push(`supabase-config.js: customer/admin commerce runtime injector missing ${required}`);
+for(const required of ["variant-commerce.js?v=1','data-variant-commerce", "product-variants.js?v=1','data-product-variants", "order-refund-tracker.js?v=1','data-order-refund-tracker", "account-refunds.js?v=1','data-account-refunds", "order-return-exchange.js?v=1','data-order-return-exchange", "account-returns.js?v=2','data-account-returns", "account-business.js?v=4','data-account-business", "order-business-details.js?v=1','data-order-business-details", "admin-business-quotes.js?v=3','data-admin-business-quotes"])if(!supabaseConfig.includes(required))errors.push(`supabase-config.js: customer/admin commerce runtime injector missing ${required}`);
+for(const file of ['variant-commerce.js','product-variants.js'])if(!fs.existsSync(path.join(root,file)))errors.push(`${file}: variant commerce runtime is missing`);
+const variantCommerce=fs.readFileSync(path.join(root,'variant-commerce.js'),'utf8');
+for(const required of ['variant_id','/api/quote-order','/api/create-order'])if(!variantCommerce.includes(required))errors.push(`variant-commerce.js: variant checkout propagation missing ${required}`);
+const productVariants=fs.readFileSync(path.join(root,'product-variants.js'),'utf8');
+for(const required of ['product_variants','get_variant_availability','variant-option','currently unavailable','FashionVariantCart'])if(!productVariants.includes(required))errors.push(`product-variants.js: inventory-backed product selector missing ${required}`);
 const account=fs.readFileSync(path.join(root,'account.html'),'utf8');
 for(const required of ['data-view="addresses"','id="addressesView"','id="addressForm"','customer_addresses','set_default_customer_address'])if(!account.includes(required))errors.push(`account.html: integrated address management missing ${required}`);
 const accountRefunds=fs.readFileSync(path.join(root,'account-refunds.js'),'utf8');
