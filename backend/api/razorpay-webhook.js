@@ -46,6 +46,21 @@ async function loadOrderByPayment(paymentId) {
   return rows?.[0] || null;
 }
 
+async function loadReturnRequestByRefund(refund) {
+  if (!refund?.id) return null;
+  const noteId = Number(refund?.notes?.return_request_id);
+  let path = 'return_requests?refund_id=eq.' + encodeURIComponent(refund.id) +
+    '&select=id,order_id,request_type,status,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1';
+  let rows = await rest(path);
+  if (rows?.[0]) return rows[0];
+  if (Number.isInteger(noteId) && noteId > 0) {
+    rows = await rest('return_requests?id=eq.' + encodeURIComponent(noteId) +
+      '&select=id,order_id,request_type,status,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1');
+    return rows?.[0] || null;
+  }
+  return null;
+}
+
 function expectedRefundAmount(order) {
   const items = Array.isArray(order.items) ? order.items : [];
   const subtotal = roundMoney(items.reduce((sum, item) => {
@@ -62,6 +77,40 @@ function expectedRefundAmount(order) {
 
 function refundReference(refund) {
   return refund?.acquirer_data?.arn || refund?.acquirer_data?.rrn || refund?.acquirer_data?.utr || null;
+}
+
+async function updateReturnRefundStatus(request, refund) {
+  if (!request || request.request_type !== 'return_refund') return null;
+  if (request.refund_id && String(request.refund_id) !== String(refund.id)) return null;
+  const processorStatus = String(refund?.status || '').toLowerCase();
+  if (!['pending','processed','failed'].includes(processorStatus)) return null;
+  const expectedPaise = Math.round(Number(request.refund_amount || 0) * 100);
+  if (!(expectedPaise > 0) || Number(refund.amount) !== expectedPaise) return null;
+  const now = new Date().toISOString();
+  const nextStatus = processorStatus === 'processed'
+    ? 'completed'
+    : processorStatus === 'failed'
+      ? 'approved'
+      : 'return_processing';
+  const updated = await rest(
+    'return_requests?id=eq.' + encodeURIComponent(request.id) +
+    '&request_type=eq.return_refund&status=in.(approved,return_processing,completed)',
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({
+        status: nextStatus,
+        resolved_at: processorStatus === 'processed' ? now : null,
+        updated_at: now,
+        refund_id: refund.id,
+        refund_status: refund.status || null,
+        refund_reference: refundReference(refund) || request.refund_reference || null,
+        refund_amount: roundMoney(Number(refund.amount || 0) / 100),
+        refund_updated_at: now
+      })
+    }
+  );
+  return updated?.[0] || null;
 }
 
 async function updateRefundStatus(order, nextStatus, refund) {
@@ -126,6 +175,23 @@ async function handlePaymentCaptured(event) {
 async function handleRefundEvent(event) {
   const refund = event?.payload?.refund?.entity;
   if (!refund?.id || !refund?.payment_id) return { received: true, ignored: true };
+
+  const returnRequest = await loadReturnRequestByRefund(refund);
+  if (returnRequest) {
+    const processorStatus = String(refund.status || '').toLowerCase();
+    if (!['pending','processed','failed'].includes(processorStatus)) {
+      return { received: true, ignored: true, reason: 'unexpected_return_refund_status' };
+    }
+    const updatedReturn = await updateReturnRefundStatus(returnRequest, refund);
+    if (!updatedReturn) return { received: true, ignored: true, reason: 'return_refund_mismatch' };
+    return {
+      received: true,
+      return_refund_updated: true,
+      return_request_id: returnRequest.id,
+      status: updatedReturn.status,
+      refund_status: updatedReturn.refund_status
+    };
+  }
 
   const order = await loadOrderByPayment(refund.payment_id);
   if (!order || order.payment_method !== 'prepaid') return { received: true, ignored: true };
