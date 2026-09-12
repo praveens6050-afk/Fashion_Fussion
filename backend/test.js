@@ -30,10 +30,19 @@ const webhook=fs.readFileSync(path.join(__dirname,'api/razorpay-webhook.js'),'ut
 assert.ok(webhook.includes("refund_reference: refundReference(refund) || order.refund_reference || null"),'Webhook must preserve an existing refund reference when a later event omits acquirer data');
 assert.ok(webhook.includes("reason: 'different_refund_reference'"),'Webhook must reject a different refund ID once one is persisted');
 for(const eventName of ['refund.created','refund.processed','refund.failed'])assert.ok(webhook.includes(eventName),`Webhook must handle ${eventName}`);
+for(const required of ['loadReturnRequestByRefund','updateReturnRefundStatus','return_refund_updated','return_refund_mismatch'])assert.ok(webhook.includes(required),`Webhook must reconcile return refunds with ${required}`);
 const cancelOrder=fs.readFileSync(path.join(__dirname,'api/cancel-order.js'),'utf8');
 for(const field of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(cancelOrder.includes(field),`Cancellation must persist ${field}`);
 const refundStatus=fs.readFileSync(path.join(__dirname,'api/refund-status.js'),'utf8');
 for(const field of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(refundStatus.includes(field),`Refund reconciliation must persist ${field}`);
+
+const processReturnRefund=fs.readFileSync(path.join(__dirname,'api/process-return-refund.js'),'utf8');
+for(const required of ['requireAdmin','return_refund','X-Refund-Idempotency','FF_RETURN_','COD_PAYOUT_REQUIRED','DISCOUNT_ALLOCATION_REQUIRED','refund_id=is.null','original_payment_method'])assert.ok(processReturnRefund.includes(required),`Return refund processing must enforce ${required}`);
+assert.ok(processReturnRefund.includes("['approved','return_processing']"),'Return refund must require an approved processing state');
+assert.ok(processReturnRefund.includes("payment_method || '').toLowerCase() !== 'prepaid'"),'Automated return refunds must be prepaid-only');
+const returnRefundStatus=fs.readFileSync(path.join(__dirname,'api/return-refund-status.js'),'utf8');
+for(const required of ['getSupabaseUser','user_id=eq.','return_refund','refund_id','refund_amount','pending','processed','failed','original_payment_method'])assert.ok(returnRefundStatus.includes(required),`Return refund reconciliation fallback must enforce ${required}`);
+assert.ok(returnRefundStatus.includes("fetch('https://api.razorpay.com/v1/refunds/"),'Return refund reconciliation must query Razorpay by persisted refund ID');
 
 const quoteOrder=fs.readFileSync(path.join(__dirname,'api/create-quote-order.js'),'utf8');
 for(const field of ['bulk_quote_id','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','accepted_at','business_billing_address:quote.business_billing_address','findExistingQuoteOrder','createRazorpayOrder'])assert.ok(quoteOrder.includes(field),`Accepted quote order must enforce ${field}`);
@@ -48,4 +57,4 @@ assert.ok(!quoteOrder.includes('gift_card_code:body'),'Quote order must not acce
 assert.ok(quoteOrder.includes('coupon_code:null'),'Negotiated quote orders must disable coupons');
 assert.ok(quoteOrder.includes('gift_card_code:null'),'Negotiated quote orders must disable gift cards');
 
-console.log('Fashion_Fussion backend pricing/security/refund/quote audit tests passed');
+console.log('Fashion_Fussion backend pricing/security/refund/return-refund/quote audit tests passed');
