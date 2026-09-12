@@ -3,28 +3,13 @@ const fs=require('fs');
 const path=require('path');
 const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors}=require('./lib');
 
-assert.deepStrictEqual(paymentPricing(100,'prepaid'),{
-  payment_method:'prepaid',
-  payment_handling_fee:0,
-  prepaid_discount:0,
-  cod_fee:0,
-  cod_fee_non_refundable:false,
-  total:100
-});
-assert.deepStrictEqual(paymentPricing(100,'cod'),{
-  payment_method:'cod',
-  payment_handling_fee:0,
-  prepaid_discount:0,
-  cod_fee:0,
-  cod_fee_non_refundable:false,
-  total:100
-});
+assert.deepStrictEqual(paymentPricing(100,'prepaid'),{payment_method:'prepaid',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
+assert.deepStrictEqual(paymentPricing(100,'cod'),{payment_method:'cod',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
 assert.strictEqual(paymentPricing(0,'prepaid').total,0);
 assert.strictEqual(paymentPricing(0,'cod').total,0);
 assert.strictEqual(normalizePaymentMethod(undefined),'prepaid');
 assert.throws(()=>normalizePaymentMethod('upi'),/Invalid payment method/);
 assert.strictEqual(roundMoney(10.005),10.01);
-
 assert.deepStrictEqual(normalizeCartRequest([{id:9,qty:2}]),[{id:'9',qty:2}]);
 assert.deepStrictEqual(normalizeCartRequest([{id:9,qty:500}]),[{id:'9',qty:500}]);
 assert.throws(()=>normalizeCartRequest([{id:9,qty:20},{id:9,qty:1}]),/Duplicate product ID/);
@@ -45,11 +30,22 @@ const webhook=fs.readFileSync(path.join(__dirname,'api/razorpay-webhook.js'),'ut
 assert.ok(webhook.includes("refund_reference: refundReference(refund) || order.refund_reference || null"),'Webhook must preserve an existing refund reference when a later event omits acquirer data');
 assert.ok(webhook.includes("reason: 'different_refund_reference'"),'Webhook must reject a different refund ID once one is persisted');
 for(const eventName of ['refund.created','refund.processed','refund.failed'])assert.ok(webhook.includes(eventName),`Webhook must handle ${eventName}`);
-
 const cancelOrder=fs.readFileSync(path.join(__dirname,'api/cancel-order.js'),'utf8');
 for(const field of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(cancelOrder.includes(field),`Cancellation must persist ${field}`);
-
 const refundStatus=fs.readFileSync(path.join(__dirname,'api/refund-status.js'),'utf8');
 for(const field of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(refundStatus.includes(field),`Refund reconciliation must persist ${field}`);
 
-console.log('Fashion_Fussion backend pricing/security/refund audit tests passed');
+const quoteOrder=fs.readFileSync(path.join(__dirname,'api/create-quote-order.js'),'utf8');
+for(const field of ['bulk_quote_id','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','accepted_at','business_billing_address:quote.business_billing_address','findExistingQuoteOrder','createRazorpayOrder'])assert.ok(quoteOrder.includes(field),`Accepted quote order must enforce ${field}`);
+assert.ok(quoteOrder.includes("quote.status!=='accepted'"),'Only accepted quotes may create quote orders');
+assert.ok(quoteOrder.includes("new Date(quote.valid_until).getTime()<Date.now()"),'Quote checkout must reject expired quotes');
+assert.ok(quoteOrder.includes('Math.abs(normalized.subtotal-quotedSubtotal)>0.01'),'Quote subtotal must be independently verified');
+assert.ok(quoteOrder.includes('Math.abs(normalized.gst-quotedGst)>0.01'),'Quote GST must be independently verified');
+assert.ok(quoteOrder.includes('roundMoney(normalized.subtotal+normalized.gst+quotedDelivery)-quotedTotal'),'Quote total must be independently verified');
+assert.ok(!quoteOrder.includes('calculate(body.items'),'Quote order must not use retail cart repricing');
+assert.ok(!quoteOrder.includes('coupon_code:body'),'Quote order must not accept browser coupon pricing');
+assert.ok(!quoteOrder.includes('gift_card_code:body'),'Quote order must not accept browser gift-card pricing');
+assert.ok(quoteOrder.includes('coupon_code:null'),'Negotiated quote orders must disable coupons');
+assert.ok(quoteOrder.includes('gift_card_code:null'),'Negotiated quote orders must disable gift cards');
+
+console.log('Fashion_Fussion backend pricing/security/refund/quote audit tests passed');
