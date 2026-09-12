@@ -172,10 +172,24 @@ async function getProductsByIds(ids) {
   const uniqueIds = [...new Set(cleanIds)];
   const url = SUPABASE_URL +
     "/rest/v1/products?id=in.(" + uniqueIds.join(",") + ")" +
-    "&is_active=eq.true&select=id,name,category,price,image_url,gst_rate";
+    "&is_active=eq.true&select=id,name,category,price,image_url,gst_rate,bulk_enabled,bulk_min_qty";
   const response = await fetch(url, { headers: serverHeaders });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.message || "Could not load products from Supabase");
+  return Array.isArray(data) ? data : [];
+}
+
+async function getBulkTiersByProductIds(ids) {
+  assertServerConfig();
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const cleanIds = [...new Set(ids.map(id => String(id).trim()).filter(id => /^\d+$/.test(id)))];
+  if (!cleanIds.length) return [];
+  const url = SUPABASE_URL +
+    "/rest/v1/product_bulk_tiers?product_id=in.(" + cleanIds.join(",") + ")" +
+    "&select=product_id,min_qty,unit_price&order=product_id.asc,min_qty.asc";
+  const response = await fetch(url, { headers: serverHeaders });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.message || "Could not load bulk pricing");
   return Array.isArray(data) ? data : [];
 }
 
@@ -199,8 +213,14 @@ function normalizeCartRequest(items) {
 async function calculate(items) {
   const requested = normalizeCartRequest(items);
   const ids = requested.map(item => item.id);
-  const products = await getProductsByIds(ids);
+  const [products, bulkTiers] = await Promise.all([getProductsByIds(ids), getBulkTiersByProductIds(ids)]);
   const productMap = new Map(products.map(product => [String(product.id), product]));
+  const tierMap = new Map();
+  for (const tier of bulkTiers) {
+    const key = String(tier.product_id);
+    if (!tierMap.has(key)) tierMap.set(key, []);
+    tierMap.get(key).push(tier);
+  }
   let subtotal = 0;
   let totalDiscount = 0;
   let totalGst = 0;
@@ -209,13 +229,27 @@ async function calculate(items) {
     const qty = item.qty;
     const product = productMap.get(id);
     if (!product) throw new Error("Product is unavailable or inactive: " + id);
-    const price = Number(product.price);
+    const basePrice = Number(product.price);
     const gstRate = Number(product.gst_rate);
-    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid price for product " + product.name);
+    if (!Number.isFinite(basePrice) || basePrice <= 0) throw new Error("Invalid price for product " + product.name);
     if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) throw new Error("GST rate is not configured for product " + product.id);
-    const mrp = price;
-    const discount = 0;
-    const taxableAmount = roundMoney(Math.max(0, mrp - discount) * qty);
+    const minBulkQty = Number(product.bulk_min_qty || 0);
+    const eligibleForBulk = product.bulk_enabled === true && minBulkQty >= 2 && qty >= minBulkQty;
+    let unitPrice = basePrice;
+    let appliedBulkTier = null;
+    if (eligibleForBulk) {
+      for (const tier of tierMap.get(id) || []) {
+        const minQty = Number(tier.min_qty);
+        const tierPrice = Number(tier.unit_price);
+        if (Number.isInteger(minQty) && minQty <= qty && Number.isFinite(tierPrice) && tierPrice > 0 && tierPrice <= basePrice) {
+          unitPrice = tierPrice;
+          appliedBulkTier = minQty;
+        }
+      }
+    }
+    const mrp = basePrice;
+    const discount = roundMoney(Math.max(0, mrp - unitPrice));
+    const taxableAmount = roundMoney(unitPrice * qty);
     const gstAmount = roundMoney(taxableAmount * gstRate / 100);
     const lineTotal = roundMoney(taxableAmount + gstAmount);
     subtotal += taxableAmount;
@@ -223,13 +257,14 @@ async function calculate(items) {
     totalGst += gstAmount;
     return {
       id: product.id, qty, name: product.name, category: product.category, image_url: product.image_url,
-      mrp, discount, unit_price: price, gst_rate: gstRate, gst_amount: gstAmount,
-      taxable_amount: taxableAmount, line_total: lineTotal
+      mrp, discount, unit_price: unitPrice, gst_rate: gstRate, gst_amount: gstAmount,
+      taxable_amount: taxableAmount, line_total: lineTotal,
+      bulk_pricing_applied: Boolean(appliedBulkTier), bulk_tier_min_qty: appliedBulkTier
     };
   });
   const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_BELOW_THRESHOLD;
   const otherCharges = 0;
-  const baseTotal = roundMoney(subtotal - totalDiscount + totalGst + delivery + otherCharges);
+  const baseTotal = roundMoney(subtotal + totalGst + delivery + otherCharges);
   if (!Number.isFinite(baseTotal) || baseTotal < 0) throw new Error("Invalid order amount");
   return {
     items: normalized,
@@ -250,5 +285,6 @@ module.exports = {
   DELIVERY_THRESHOLD, DELIVERY_BELOW_THRESHOLD, PAYMENT_HANDLING_FEE, PREPAID_DISCOUNT,
   MAX_BODY_BYTES, MAX_CART_LINES, MAX_ITEM_QUANTITY, serverHeaders, applySecurityHeaders, cors, json,
   readRawBody, readBody, basicAuth, safeEqualText, roundMoney, normalizePaymentMethod,
-  paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds, calculate
+  paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds,
+  getBulkTiersByProductIds, calculate
 };
