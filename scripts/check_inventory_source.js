@@ -16,7 +16,8 @@ requireMarkers('product-variants.js',['product_variants','get_variant_availabili
 requireMarkers('variant-cart-ui.js',['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox']);
 requireMarkers('admin-inventory.js',['product_variants','inventory_levels','admin_set_variant_inventory','reserved','reorder_level','has_variants']);
 requireMarkers('backend/lib.js',['has_variants','getVariantsByIds','getInventoryByVariantIds','Selected variant does not have enough stock','variant_id']);
-requireMarkers('backend/api/create-order.js',['reserve_order_inventory','commit_order_inventory','release_order_inventory','reserveCheckout','failCheckout']);
+const createOrder=requireMarkers('backend/api/create-order.js',['reserve_order_inventory','release_order_inventory','reserveCheckout','failCheckout','finalize_cod_order_inventory','finalize_zero_value_order_inventory','finalizeCod','finalizeZeroValue']);
+if(createOrder.includes("await rpc('finalize_checkout_order',{p_order_id:saved.id")&&createOrder.includes("await rpc('commit_order_inventory',{p_order_id:saved.id"))errors.push('backend/api/create-order.js: new COD/zero-value checkout must not finalize order and inventory in separate RPC calls');
 requireMarkers('backend/api/verify-payment.js',['commit_order_inventory','commitInventory','Inventory finalization is being reconciled']);
 requireMarkers('backend/api/razorpay-webhook.js',['commit_order_inventory','commitOrderInventory','inventory_reconciled','inventory_committed']);
 requireMarkers('backend/api/reconcile-payment.js',['commit_order_inventory','commitInventory','inventory_reconciled','Inventory finalization is being reconciled','Do not pay again']);
