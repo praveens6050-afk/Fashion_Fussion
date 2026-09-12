@@ -140,6 +140,10 @@ async function updateRefundStatus(order, nextStatus, refund) {
   return updated?.[0] || null;
 }
 
+async function commitOrderInventory(orderId) {
+  await rpc('commit_order_inventory', { p_order_id: orderId });
+}
+
 async function handlePaymentCaptured(event) {
   const payment = event?.payload?.payment?.entity;
   if (!payment?.id || !payment?.order_id || payment.status !== 'captured') {
@@ -157,7 +161,8 @@ async function handlePaymentCaptured(event) {
     throw error;
   }
   if (order.status === 'paid') {
-    return { received: true, already_processed: true };
+    await commitOrderInventory(order.id);
+    return { received: true, already_processed: true, inventory_reconciled: true };
   }
 
   await rpc('finalize_checkout_order', {
@@ -168,8 +173,9 @@ async function handlePaymentCaptured(event) {
     p_target_status: 'paid',
     p_source: 'razorpay_webhook'
   });
+  await commitOrderInventory(order.id);
 
-  return { received: true, finalized: true, store_order_id: order.id };
+  return { received: true, finalized: true, inventory_committed: true, store_order_id: order.id };
 }
 
 async function handleRefundEvent(event) {
