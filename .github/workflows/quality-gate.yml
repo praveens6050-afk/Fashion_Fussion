@@ -17,6 +17,8 @@ jobs:
           node-version: 24
       - name: Source checks
         run: node scripts/check_source.js
+      - name: Variant and inventory source checks
+        run: node scripts/check_inventory_source.js
       - name: Backend syntax
         working-directory: backend
         run: npm run check
