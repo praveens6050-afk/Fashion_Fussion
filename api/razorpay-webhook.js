@@ -1,0 +1,1 @@
+module.exports = require('../backend/api/razorpay-webhook.js');
