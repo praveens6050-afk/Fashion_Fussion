@@ -36,3 +36,4 @@ jobs:
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
           node scripts/browser_smoke.js
+          node scripts/order_details_smoke.js
