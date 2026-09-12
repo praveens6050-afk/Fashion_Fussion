@@ -10,9 +10,12 @@ assert.strictEqual(paymentPricing(0,'cod').total,0);
 assert.strictEqual(normalizePaymentMethod(undefined),'prepaid');
 assert.throws(()=>normalizePaymentMethod('upi'),/Invalid payment method/);
 assert.strictEqual(roundMoney(10.005),10.01);
-assert.deepStrictEqual(normalizeCartRequest([{id:9,qty:2}]),[{id:'9',qty:2}]);
-assert.deepStrictEqual(normalizeCartRequest([{id:9,qty:500}]),[{id:'9',qty:500}]);
-assert.throws(()=>normalizeCartRequest([{id:9,qty:20},{id:9,qty:1}]),/Duplicate product ID/);
+assert.deepStrictEqual(normalizeCartRequest([{id:9,qty:2}]),[{id:'9',variant_id:null,qty:2}]);
+assert.deepStrictEqual(normalizeCartRequest([{id:9,variant_id:15,qty:2}]),[{id:'9',variant_id:'15',qty:2}]);
+assert.deepStrictEqual(normalizeCartRequest([{id:9,variant_id:15,qty:500}]),[{id:'9',variant_id:'15',qty:500}]);
+assert.deepStrictEqual(normalizeCartRequest([{id:9,variant_id:15,qty:1},{id:9,variant_id:16,qty:1}]),[{id:'9',variant_id:'15',qty:1},{id:'9',variant_id:'16',qty:1}]);
+assert.throws(()=>normalizeCartRequest([{id:9,variant_id:15,qty:1},{id:9,variant_id:15,qty:1}]),/Duplicate cart line/);
+assert.throws(()=>normalizeCartRequest([{id:9,variant_id:'bad',qty:1}]),/Invalid variant ID/);
 assert.throws(()=>normalizeCartRequest(Array.from({length:51},(_,i)=>({id:i+1,qty:1}))),/Too many cart items/);
 assert.throws(()=>normalizeCartRequest([{id:9,qty:501}]),/Invalid quantity/);
 
@@ -26,13 +29,29 @@ const badRes=fakeRes();
 assert.strictEqual(cors({headers:{origin:'https://evil.example'}},badRes),false);
 assert.strictEqual(badRes.headers['Access-Control-Allow-Origin'],undefined);
 
+const lib=fs.readFileSync(path.join(__dirname,'lib.js'),'utf8');
+for(const required of ['has_variants','getVariantsByIds','getInventoryByVariantIds','variant_id','product_variants','inventory_levels','Selected variant does not have enough stock','Please select a product variant'])assert.ok(lib.includes(required),`Variant pricing must enforce ${required}`);
+assert.ok(lib.includes("variant_id: variant ? variant.id : null"),'Order item snapshot must persist variant ID');
+for(const required of ['sku: variant?.sku','size: variant?.size','color: variant?.color','variant_title: variant?.title'])assert.ok(lib.includes(required),`Order item snapshot must persist ${required}`);
+
+const createOrder=fs.readFileSync(path.join(__dirname,'api/create-order.js'),'utf8');
+for(const required of ['reserve_order_inventory','commit_order_inventory','release_order_inventory','reserveCheckout','failCheckout'])assert.ok(createOrder.includes(required),`Checkout inventory lifecycle must enforce ${required}`);
+assert.ok(createOrder.includes("await rpc('commit_order_inventory'"),'COD and zero-value finalization must commit reserved inventory');
+
+const verifyPayment=fs.readFileSync(path.join(__dirname,'api/verify-payment.js'),'utf8');
+for(const required of ['commit_order_inventory','commitInventory','inventory finalization is being reconciled'])assert.ok(verifyPayment.includes(required),`Verified payment inventory lifecycle must enforce ${required}`);
+
 const webhook=fs.readFileSync(path.join(__dirname,'api/razorpay-webhook.js'),'utf8');
 assert.ok(webhook.includes("refund_reference: refundReference(refund) || order.refund_reference || null"),'Webhook must preserve an existing refund reference when a later event omits acquirer data');
 assert.ok(webhook.includes("reason: 'different_refund_reference'"),'Webhook must reject a different refund ID once one is persisted');
 for(const eventName of ['refund.created','refund.processed','refund.failed'])assert.ok(webhook.includes(eventName),`Webhook must handle ${eventName}`);
 for(const required of ['loadReturnRequestByRefund','updateReturnRefundStatus','return_refund_updated','return_refund_mismatch'])assert.ok(webhook.includes(required),`Webhook must reconcile return refunds with ${required}`);
+for(const required of ['commit_order_inventory','commitOrderInventory','inventory_reconciled','inventory_committed'])assert.ok(webhook.includes(required),`Payment webhook must reconcile inventory with ${required}`);
+
 const cancelOrder=fs.readFileSync(path.join(__dirname,'api/cancel-order.js'),'utf8');
 for(const field of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(cancelOrder.includes(field),`Cancellation must persist ${field}`);
+for(const required of ['release_order_inventory','restock_cancelled_order_inventory'])assert.ok(cancelOrder.includes(required),`Cancellation must reconcile inventory with ${required}`);
+
 const refundStatus=fs.readFileSync(path.join(__dirname,'api/refund-status.js'),'utf8');
 for(const field of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at'])assert.ok(refundStatus.includes(field),`Refund reconciliation must persist ${field}`);
 
@@ -57,4 +76,4 @@ assert.ok(!quoteOrder.includes('gift_card_code:body'),'Quote order must not acce
 assert.ok(quoteOrder.includes('coupon_code:null'),'Negotiated quote orders must disable coupons');
 assert.ok(quoteOrder.includes('gift_card_code:null'),'Negotiated quote orders must disable gift cards');
 
-console.log('Fashion_Fussion backend pricing/security/refund/return-refund/quote audit tests passed');
+console.log('Fashion_Fussion backend pricing/security/refund/return-refund/quote/variant-inventory audit tests passed');
