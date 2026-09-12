@@ -25,6 +25,18 @@ async function rest(path, options = {}) {
   return data;
 }
 
+async function rpc(name,args){
+  const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverHeaders,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  const data=await response.json().catch(()=>null);
+  if(!response.ok)throw new Error(data?.message||data?.error||'Inventory update failed');
+  return data;
+}
+
+async function restoreCancelledInventory(orderId){
+  await rpc('release_order_inventory',{p_order_id:orderId});
+  await rpc('restock_cancelled_order_inventory',{p_order_id:orderId});
+}
+
 function cleanReason(value) {
   const reason = String(value || '').trim();
   if (!reason) throw new Error('Please select a cancellation reason');
@@ -126,6 +138,7 @@ async function patchCancelledOrder(order, nextStatus, audit = {}) {
     error.status = 409;
     throw error;
   }
+  await restoreCancelledInventory(order.id);
   return updated[0];
 }
 
@@ -161,6 +174,7 @@ module.exports = async function cancelOrder(req, res) {
     const terminal = ['cancelled', 'cod_cancelled', 'refunded', 'payment_failed', 'expired'];
 
     if (terminal.includes(status) || fulfillment === 'cancelled') {
+      await restoreCancelledInventory(order.id).catch(error=>console.error('Cancellation inventory reconciliation failed:',error));
       return json(req, res, 409, { error: 'This order is already closed' });
     }
     if (!['ordered', 'packed'].includes(fulfillment)) {
