@@ -1,4 +1,5 @@
 (function(){'use strict';
+if((location.pathname.split('/').pop()||'index.html')==='order-details.html'&&!document.querySelector('script[data-desktop-account-loader]')){const s=document.createElement('script');s.src='desktop-account-loader.js?v=1';s.async=false;s.setAttribute('data-desktop-account-loader','true');document.head.appendChild(s)}
 const refundStates=new Set(['refund_pending','refund_initiated','refund_failed','refunded']);
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
 const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
