@@ -8,6 +8,8 @@ const {
   getSupabaseUser
 } = require('../lib');
 
+const ACTIVE_CHECKOUT_STATUSES = new Set(['creating', 'created']);
+
 async function rpc(name, args) {
   const response = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, {
     method: 'POST',
@@ -103,6 +105,33 @@ module.exports = async function reconcilePayment(req, res) {
 
     if (!captured) {
       return json(req, res, 200, { reconciled: false, status: order.status, store_order_id: order.id });
+    }
+
+    if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(captured.id)) {
+      console.error('Captured payment conflicts with existing payment link', { store_order_id: order.id, payment_id: captured.id });
+      return json(req, res, 409, {
+        reconciled: false,
+        captured: true,
+        manual_review: true,
+        status: order.status,
+        store_order_id: order.id,
+        display_order_id: order.display_order_id,
+        message: 'A captured payment was found, but this order is linked to a different payment. Support review is required. Do not pay again.'
+      });
+    }
+
+    if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
+      console.error('Captured payment found for inactive order during reconciliation', { store_order_id: order.id, status: order.status, payment_id: captured.id });
+      return json(req, res, 409, {
+        reconciled: false,
+        captured: true,
+        manual_review: true,
+        payment_id: captured.id,
+        status: order.status,
+        store_order_id: order.id,
+        display_order_id: order.display_order_id,
+        message: 'Payment is captured, but this order is no longer in an active checkout state. Support review is required. Do not pay again.'
+      });
     }
 
     await rpc('finalize_checkout_order', {
