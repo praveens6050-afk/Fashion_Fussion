@@ -1,5 +1,6 @@
 (function(){
 'use strict';
+if(!document.querySelector('script[data-desktop-business-loader]')){const s=document.createElement('script');s.src='desktop-business-loader.js?v=1';s.async=false;s.setAttribute('data-desktop-business-loader','true');document.head.appendChild(s)}
 const DRAFT_KEY='fashion_fussion_bulk_quote_draft';
 const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
 const fmt=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})};
