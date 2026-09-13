@@ -1,5 +1,6 @@
 (function(){
 'use strict';
+if(!document.querySelector('script[data-desktop-checkout-loader]')){const s=document.createElement('script');s.src='desktop-checkout-loader.js?v=1';s.async=false;s.setAttribute('data-desktop-checkout-loader','true');document.head.appendChild(s)}
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
 const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function api(){return window.FashionVariantCart}
