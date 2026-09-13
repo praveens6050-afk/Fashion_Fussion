@@ -9,6 +9,8 @@ const {
   roundMoney
 } = require('../lib');
 
+const ACTIVE_CHECKOUT_STATUSES = new Set(['creating', 'created']);
+
 async function rest(path, options = {}) {
   const response = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
     ...options,
@@ -160,9 +162,17 @@ async function handlePaymentCaptured(event) {
     error.status = 409;
     throw error;
   }
+  if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(payment.id)) {
+    console.error('Webhook captured payment conflicts with existing payment link', { store_order_id: order.id, payment_id: payment.id });
+    return { received: true, captured: true, manual_review: true, reason: 'different_payment_reference', store_order_id: order.id, status: order.status };
+  }
   if (order.status === 'paid') {
     await commitOrderInventory(order.id);
     return { received: true, already_processed: true, inventory_reconciled: true };
+  }
+  if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
+    console.error('Webhook captured payment requires manual review for inactive order', { store_order_id: order.id, status: order.status, payment_id: payment.id });
+    return { received: true, captured: true, manual_review: true, reason: 'inactive_order', store_order_id: order.id, status: order.status };
   }
 
   await rpc('finalize_checkout_order', {
