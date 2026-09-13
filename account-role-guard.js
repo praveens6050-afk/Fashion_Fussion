@@ -1,5 +1,12 @@
 (function(){
   'use strict';
+  if((location.pathname.split('/').pop()||'index.html')==='account.html'&&!document.querySelector('script[data-desktop-account-loader]')){
+    const s=document.createElement('script');
+    s.src='desktop-account-loader.js?v=1';
+    s.async=false;
+    s.setAttribute('data-desktop-account-loader','true');
+    document.head.appendChild(s);
+  }
   if(!window.supabaseClient)return;
 
   async function guard(){
