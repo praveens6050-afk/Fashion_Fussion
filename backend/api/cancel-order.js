@@ -28,7 +28,11 @@ async function rest(path, options = {}) {
 async function rpc(name,args){
   const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverHeaders,'Content-Type':'application/json'},body:JSON.stringify(args)});
   const data=await response.json().catch(()=>null);
-  if(!response.ok)throw new Error(data?.message||data?.error||'Order reconciliation failed');
+  if(!response.ok){
+    const error=new Error(data?.message||data?.error||'Order reconciliation failed');
+    error.status=response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -144,33 +148,20 @@ async function patchCancelledOrder(order, nextStatus, audit = {}) {
 }
 
 async function claimPrepaidCancellation(order, reason, refundAmount) {
-  const now = new Date().toISOString();
-  const updated = await rest(
-    'orders?id=eq.' + encodeURIComponent(order.id) +
-    '&user_id=eq.' + encodeURIComponent(order.user_id) +
-    '&status=eq.paid&payment_method=eq.prepaid&fulfillment_status=in.(ordered,packed)',
-    {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({
-        status: 'refund_initiated',
-        fulfillment_status: 'cancelled',
-        fulfillment_updated_at: now,
-        cancellation_reason: reason,
-        cancelled_at: now,
-        refund_amount: refundAmount,
-        refund_status: 'requested',
-        refund_updated_at: now
-      })
-    }
-  );
-  if (!updated?.length) {
-    const error = new Error('Order status changed before the refund could be reserved. Please refresh and try again.');
+  const claimed = await rpc('claim_prepaid_order_cancellation', {
+    p_order_id: order.id,
+    p_user_id: order.user_id,
+    p_reason: reason,
+    p_refund_amount: refundAmount
+  });
+  const claimedOrder = Array.isArray(claimed) ? claimed[0] : claimed;
+  if (!claimedOrder?.id) {
+    const error = new Error('Order cancellation could not be reserved. Please refresh and try again.');
     error.status = 409;
     throw error;
   }
-  await restoreCancelledOrder(updated[0]);
-  return updated[0];
+  await restoreCancelledOrder(claimedOrder);
+  return claimedOrder;
 }
 
 async function recordRefundResult(order, nextStatus, refund, fallbackStatus) {
