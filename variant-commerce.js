@@ -1,5 +1,6 @@
 (function(){
 'use strict';
+if((location.pathname.split('/').pop()||'index.html')==='product.html'&&!document.querySelector('script[data-desktop-commerce-loader]')){const s=document.createElement('script');s.src='desktop-commerce-loader.js?v=1';s.async=false;s.setAttribute('data-desktop-commerce-loader','true');document.head.appendChild(s)}
 const LEGACY_KEY='fashion_fussion_cart';
 const LINE_KEY='fashion_fussion_cart_lines_v2';
 const VARIANT_KEY='fashion_fussion_cart_variants';
@@ -23,18 +24,5 @@ const originalFetch=window.fetch.bind(window);
 window.fetch=async function(input,init){try{const url=typeof input==='string'?input:String(input?.url||'');const checkoutRequest=url.includes(API_QUOTE)||url.includes(API_CREATE);if(init?.method==='POST'&&checkoutRequest&&typeof init.body==='string'){const parsed=JSON.parse(init.body);injectVariants(parsed);init={...init,body:JSON.stringify(parsed)}}}catch(e){console.warn('Variant checkout adapter skipped request enrichment',e)}return originalFetch(input,init)};
 const originalRemoveItem=Storage.prototype.removeItem;
 Storage.prototype.removeItem=function(key){const result=originalRemoveItem.call(this,key);if(this===localStorage&&key===LEGACY_KEY){originalRemoveItem.call(this,LINE_KEY);originalRemoveItem.call(this,VARIANT_KEY)}return result};
-window.FashionVariantCart={
-  key:VARIANT_KEY,
-  lineKey:LINE_KEY,
-  get(productId){const id=Number(readVariantMap()[String(productId)]);return Number.isInteger(id)&&id>0?id:null},
-  set(productId,variantId){const map=readVariantMap(),pid=String(productId),vid=Number(variantId);if(Number.isInteger(vid)&&vid>0)map[pid]=vid;else delete map[pid];localStorage.setItem(VARIANT_KEY,JSON.stringify(map));return map[pid]||null},
-  remove(productId){const map=readVariantMap();delete map[String(productId)];localStorage.setItem(VARIANT_KEY,JSON.stringify(map))},
-  clear,
-  readLines,
-  writeLines,
-  addLine,
-  updateLine,
-  removeLine,
-  injectVariants
-};
+window.FashionVariantCart={key:VARIANT_KEY,lineKey:LINE_KEY,get(productId){const id=Number(readVariantMap()[String(productId)]);return Number.isInteger(id)&&id>0?id:null},set(productId,variantId){const map=readVariantMap(),pid=String(productId),vid=Number(variantId);if(Number.isInteger(vid)&&vid>0)map[pid]=vid;else delete map[pid];localStorage.setItem(VARIANT_KEY,JSON.stringify(map));return map[pid]||null},remove(productId){const map=readVariantMap();delete map[String(productId)];localStorage.setItem(VARIANT_KEY,JSON.stringify(map))},clear,readLines,writeLines,addLine,updateLine,removeLine,injectVariants};
 })();
