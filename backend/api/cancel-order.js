@@ -28,7 +28,11 @@ async function rest(path, options = {}) {
 async function rpc(name,args){
   const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverHeaders,'Content-Type':'application/json'},body:JSON.stringify(args)});
   const data=await response.json().catch(()=>null);
-  if(!response.ok)throw new Error(data?.message||data?.error||'Order reconciliation failed');
+  if(!response.ok){
+    const error=new Error(data?.message||data?.error||'Order reconciliation failed');
+    error.status=response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -143,6 +147,51 @@ async function patchCancelledOrder(order, nextStatus, audit = {}) {
   return updated[0];
 }
 
+async function claimPrepaidCancellation(order, reason, refundAmount) {
+  const claimed = await rpc('claim_prepaid_order_cancellation', {
+    p_order_id: order.id,
+    p_user_id: order.user_id,
+    p_reason: reason,
+    p_refund_amount: refundAmount
+  });
+  const claimedOrder = Array.isArray(claimed) ? claimed[0] : claimed;
+  if (!claimedOrder?.id) {
+    const error = new Error('Order cancellation could not be reserved. Please refresh and try again.');
+    error.status = 409;
+    throw error;
+  }
+  await restoreCancelledOrder(claimedOrder);
+  return claimedOrder;
+}
+
+async function recordRefundResult(order, nextStatus, refund, fallbackStatus) {
+  const now = new Date().toISOString();
+  const patch = {
+    status: nextStatus,
+    refund_status: refund?.status || fallbackStatus || null,
+    refund_updated_at: now
+  };
+  if (refund?.id) {
+    patch.refund_id = refund.id;
+    patch.refund_reference = refundReference(refund);
+    patch.refund_amount = roundMoney(Number(refund.amount || 0) / 100);
+  }
+  const updated = await rest(
+    'orders?id=eq.' + encodeURIComponent(order.id) + '&status=eq.refund_initiated&fulfillment_status=eq.cancelled',
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify(patch)
+    }
+  );
+  if (!updated?.length) {
+    const error = new Error('Cancellation was reserved, but the refund audit state changed unexpectedly. Support review is required.');
+    error.status = 409;
+    throw error;
+  }
+  return updated[0];
+}
+
 module.exports = async function cancelOrder(req, res) {
   cors(req, res);
   if (req.method === 'OPTIONS') {
@@ -170,7 +219,7 @@ module.exports = async function cancelOrder(req, res) {
     const status = String(order.status || '').toLowerCase();
     const paymentMethod = String(order.payment_method || '').toLowerCase();
     const fulfillment = String(order.fulfillment_status || 'ordered').toLowerCase();
-    const terminal = ['cancelled', 'cod_cancelled', 'refunded', 'payment_failed', 'expired'];
+    const terminal = ['cancelled', 'cod_cancelled', 'refunded', 'payment_failed', 'expired', 'refund_initiated', 'refund_pending', 'refund_failed'];
 
     if (terminal.includes(status) || fulfillment === 'cancelled') {
       await restoreCancelledOrder(order).catch(error=>console.error('Cancellation reconciliation failed:',error));
@@ -211,10 +260,22 @@ module.exports = async function cancelOrder(req, res) {
       });
     }
 
-    const refund = await createRazorpayRefund(order, breakdown.refundable);
+    const claimedOrder = await claimPrepaidCancellation(order, reason, breakdown.refundable);
+    let refund;
+    try {
+      refund = await createRazorpayRefund(order, breakdown.refundable);
+    } catch (refundError) {
+      await recordRefundResult(claimedOrder, 'refund_failed', null, 'failed').catch(auditError => {
+        console.error('Failed to persist refund failure state:', auditError);
+      });
+      refundError.status = refundError.status || 502;
+      throw refundError;
+    }
+
     const processed = String(refund.status || '').toLowerCase() === 'processed';
     const nextStatus = processed ? 'refunded' : 'refund_initiated';
-    await patchCancelledOrder(order, nextStatus, { reason, refund });
+    if (processed) await recordRefundResult(claimedOrder, 'refunded', refund, refund.status || 'processed');
+    else await recordRefundResult(claimedOrder, 'refund_initiated', refund, refund.status || 'pending');
 
     return json(req, res, 200, {
       ok: true,
