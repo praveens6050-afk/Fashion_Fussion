@@ -21,6 +21,22 @@ async function rpc(name, args) {
   return data;
 }
 
+async function recordPaymentException(order, type, paymentId, details = {}) {
+  try {
+    await rpc('record_payment_exception', {
+      p_order_id: order.id,
+      p_user_id: order.user_id,
+      p_exception_type: type,
+      p_source: 'authenticated_reconcile',
+      p_payment_id: paymentId ? String(paymentId) : null,
+      p_order_status: order.status || null,
+      p_details: details
+    });
+  } catch (error) {
+    console.error('Could not persist payment exception', { store_order_id: order.id, type, error: error.message });
+  }
+}
+
 async function commitInventory(orderId) {
   return rpc('commit_order_inventory', { p_order_id: orderId });
 }
@@ -109,6 +125,10 @@ module.exports = async function reconcilePayment(req, res) {
 
     if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(captured.id)) {
       console.error('Captured payment conflicts with existing payment link', { store_order_id: order.id, payment_id: captured.id });
+      await recordPaymentException(order, 'different_payment_reference', captured.id, {
+        existing_payment_id: String(order.razorpay_payment_id),
+        razorpay_order_id: String(order.razorpay_order_id)
+      });
       return json(req, res, 409, {
         reconciled: false,
         captured: true,
@@ -122,6 +142,9 @@ module.exports = async function reconcilePayment(req, res) {
 
     if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
       console.error('Captured payment found for inactive order during reconciliation', { store_order_id: order.id, status: order.status, payment_id: captured.id });
+      await recordPaymentException(order, 'inactive_order_capture', captured.id, {
+        razorpay_order_id: String(order.razorpay_order_id)
+      });
       return json(req, res, 409, {
         reconciled: false,
         captured: true,
