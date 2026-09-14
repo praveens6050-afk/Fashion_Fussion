@@ -32,6 +32,26 @@ async function rpc(name, args) {
   return data;
 }
 
+async function recordPaymentException(order, type, paymentId, details = {}) {
+  try {
+    await rpc('record_payment_exception', {
+      p_order_id: order.id,
+      p_user_id: order.user_id,
+      p_exception_type: type,
+      p_source: 'razorpay_webhook',
+      p_payment_id: paymentId ? String(paymentId) : null,
+      p_order_status: order.status || null,
+      p_details: details
+    });
+  } catch (error) {
+    console.error('Could not persist webhook payment exception', {
+      store_order_id: order.id,
+      type,
+      error: error.message
+    });
+  }
+}
+
 async function loadOrderByRazorpayOrder(razorpayOrderId) {
   const rows = await rest(
     'orders?razorpay_order_id=eq.' + encodeURIComponent(razorpayOrderId) +
@@ -51,9 +71,8 @@ async function loadOrderByPayment(paymentId) {
 async function loadReturnRequestByRefund(refund) {
   if (!refund?.id) return null;
   const noteId = Number(refund?.notes?.return_request_id);
-  let path = 'return_requests?refund_id=eq.' + encodeURIComponent(refund.id) +
-    '&select=id,order_id,request_type,status,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1';
-  let rows = await rest(path);
+  let rows = await rest('return_requests?refund_id=eq.' + encodeURIComponent(refund.id) +
+    '&select=id,order_id,request_type,status,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1');
   if (rows?.[0]) return rows[0];
   if (Number.isInteger(noteId) && noteId > 0) {
     rows = await rest('return_requests?id=eq.' + encodeURIComponent(noteId) +
@@ -89,14 +108,9 @@ async function updateReturnRefundStatus(request, refund) {
   const expectedPaise = Math.round(Number(request.refund_amount || 0) * 100);
   if (!(expectedPaise > 0) || Number(refund.amount) !== expectedPaise) return null;
   const now = new Date().toISOString();
-  const nextStatus = processorStatus === 'processed'
-    ? 'completed'
-    : processorStatus === 'failed'
-      ? 'approved'
-      : 'return_processing';
+  const nextStatus = processorStatus === 'processed' ? 'completed' : processorStatus === 'failed' ? 'approved' : 'return_processing';
   const updated = await rest(
-    'return_requests?id=eq.' + encodeURIComponent(request.id) +
-    '&request_type=eq.return_refund&status=in.(approved,return_processing,completed)',
+    'return_requests?id=eq.' + encodeURIComponent(request.id) + '&request_type=eq.return_refund&status=in.(approved,return_processing,completed)',
     {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
@@ -148,30 +162,37 @@ async function commitOrderInventory(orderId) {
 
 async function handlePaymentCaptured(event) {
   const payment = event?.payload?.payment?.entity;
-  if (!payment?.id || !payment?.order_id || payment.status !== 'captured') {
-    return { received: true, ignored: true };
-  }
+  if (!payment?.id || !payment?.order_id || payment.status !== 'captured') return { received: true, ignored: true };
 
   const order = await loadOrderByRazorpayOrder(payment.order_id);
-  if (!order || order.payment_method !== 'prepaid') {
-    return { received: true, ignored: true };
-  }
+  if (!order || order.payment_method !== 'prepaid') return { received: true, ignored: true };
+
   if (Math.round(Number(order.total_amount) * 100) !== Number(payment.amount)) {
     console.error('Webhook amount mismatch for store order', order.id);
     const error = new Error('Payment amount mismatch');
     error.status = 409;
     throw error;
   }
+
   if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(payment.id)) {
     console.error('Webhook captured payment conflicts with existing payment link', { store_order_id: order.id, payment_id: payment.id });
+    await recordPaymentException(order, 'different_payment_reference', payment.id, {
+      existing_payment_id: String(order.razorpay_payment_id),
+      razorpay_order_id: String(payment.order_id)
+    });
     return { received: true, captured: true, manual_review: true, reason: 'different_payment_reference', store_order_id: order.id, status: order.status };
   }
+
   if (order.status === 'paid') {
     await commitOrderInventory(order.id);
     return { received: true, already_processed: true, inventory_reconciled: true };
   }
+
   if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
     console.error('Webhook captured payment requires manual review for inactive order', { store_order_id: order.id, status: order.status, payment_id: payment.id });
+    await recordPaymentException(order, 'inactive_order_capture', payment.id, {
+      razorpay_order_id: String(payment.order_id)
+    });
     return { received: true, captured: true, manual_review: true, reason: 'inactive_order', store_order_id: order.id, status: order.status };
   }
 
@@ -184,7 +205,6 @@ async function handlePaymentCaptured(event) {
     p_source: 'razorpay_webhook'
   });
   await commitOrderInventory(order.id);
-
   return { received: true, finalized: true, inventory_committed: true, store_order_id: order.id };
 }
 
@@ -195,25 +215,15 @@ async function handleRefundEvent(event) {
   const returnRequest = await loadReturnRequestByRefund(refund);
   if (returnRequest) {
     const processorStatus = String(refund.status || '').toLowerCase();
-    if (!['pending','processed','failed'].includes(processorStatus)) {
-      return { received: true, ignored: true, reason: 'unexpected_return_refund_status' };
-    }
+    if (!['pending','processed','failed'].includes(processorStatus)) return { received: true, ignored: true, reason: 'unexpected_return_refund_status' };
     const updatedReturn = await updateReturnRefundStatus(returnRequest, refund);
     if (!updatedReturn) return { received: true, ignored: true, reason: 'return_refund_mismatch' };
-    return {
-      received: true,
-      return_refund_updated: true,
-      return_request_id: returnRequest.id,
-      status: updatedReturn.status,
-      refund_status: updatedReturn.refund_status
-    };
+    return { received: true, return_refund_updated: true, return_request_id: returnRequest.id, status: updatedReturn.status, refund_status: updatedReturn.refund_status };
   }
 
   const order = await loadOrderByPayment(refund.payment_id);
   if (!order || order.payment_method !== 'prepaid') return { received: true, ignored: true };
-  if (order.refund_id && String(order.refund_id) !== String(refund.id)) {
-    return { received: true, ignored: true, reason: 'different_refund_reference' };
-  }
+  if (order.refund_id && String(order.refund_id) !== String(refund.id)) return { received: true, ignored: true, reason: 'different_refund_reference' };
 
   const expectedPaise = Math.round(expectedRefundAmount(order) * 100);
   if (Number(refund.amount) !== expectedPaise) {
@@ -222,9 +232,7 @@ async function handleRefundEvent(event) {
   }
 
   if (event.event === 'refund.created') {
-    if (!['pending', 'processed'].includes(String(refund.status || '').toLowerCase())) {
-      return { received: true, ignored: true, reason: 'unexpected_refund_status' };
-    }
+    if (!['pending', 'processed'].includes(String(refund.status || '').toLowerCase())) return { received: true, ignored: true, reason: 'unexpected_refund_status' };
     if (String(refund.status).toLowerCase() === 'processed') {
       const updated = await updateRefundStatus(order, 'refunded', refund);
       if (!updated && order.status !== 'refunded') return { received: true, ignored: true, reason: 'order_not_waiting_for_refund' };
@@ -236,18 +244,14 @@ async function handleRefundEvent(event) {
   }
 
   if (event.event === 'refund.processed') {
-    if (String(refund.status || '').toLowerCase() !== 'processed') {
-      return { received: true, ignored: true, reason: 'unexpected_refund_status' };
-    }
+    if (String(refund.status || '').toLowerCase() !== 'processed') return { received: true, ignored: true, reason: 'unexpected_refund_status' };
     const updated = await updateRefundStatus(order, 'refunded', refund);
     if (!updated && order.status !== 'refunded') return { received: true, ignored: true, reason: 'order_not_waiting_for_refund' };
     return { received: true, refund_processed: true, store_order_id: order.id };
   }
 
   if (event.event === 'refund.failed') {
-    if (String(refund.status || '').toLowerCase() !== 'failed') {
-      return { received: true, ignored: true, reason: 'unexpected_refund_status' };
-    }
+    if (String(refund.status || '').toLowerCase() !== 'failed') return { received: true, ignored: true, reason: 'unexpected_refund_status' };
     const updated = await updateRefundStatus(order, 'refund_failed', refund);
     if (!updated && order.status !== 'refund_failed') return { received: true, ignored: true, reason: 'order_not_waiting_for_refund' };
     return { received: true, refund_failed: true, store_order_id: order.id };
@@ -258,24 +262,19 @@ async function handleRefundEvent(event) {
 
 module.exports = async function razorpayWebhook(req, res) {
   if (req.method !== 'POST') return json(req, res, 405, { error: 'Method not allowed' });
-  if (!WEBHOOK_SECRET) {
-    return json(req, res, 503, { error: 'Razorpay webhook secret is not configured' });
-  }
+  if (!WEBHOOK_SECRET) return json(req, res, 503, { error: 'Razorpay webhook secret is not configured' });
 
   try {
     const raw = await readRawBody(req);
     const received = String(req.headers['x-razorpay-signature'] || '');
     const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(raw).digest('hex');
-    if (!received || !safeEqualText(expected, received)) {
-      return json(req, res, 401, { error: 'Invalid webhook signature' });
-    }
+    if (!received || !safeEqualText(expected, received)) return json(req, res, 401, { error: 'Invalid webhook signature' });
 
     const event = JSON.parse(raw.toString('utf8') || '{}');
     let result;
     if (event.event === 'payment.captured') result = await handlePaymentCaptured(event);
     else if (['refund.created', 'refund.processed', 'refund.failed'].includes(event.event)) result = await handleRefundEvent(event);
     else result = { received: true, ignored: true };
-
     return json(req, res, 200, result);
   } catch (error) {
     console.error('razorpay-webhook error:', error);
