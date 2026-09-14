@@ -1,6 +1,6 @@
 (function(){'use strict';
 var page=location.pathname.split('/').pop()||'';if(page!=='admin.html')return;var attentionRows=[],activeFilter='all';
-function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]})}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function fmt(v){return v?new Date(v).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
 function label(v){return String(v||'unknown').replaceAll('_',' ')}
 function classify(o){var s=String(o.status||''),f=String(o.fulfillment_status||'');if(s==='refund_failed')return{rank:0,key:'failed',tone:'Needs attention',guide:'Review the failed refund state in the established admin/support workflow.'};if(s==='refund_initiated'||s==='refund_pending')return{rank:1,key:'follow',tone:'Follow up',guide:'Confirm the expected refund follow-up in the established admin/support workflow.'};if(f==='cancelled')return{rank:2,key:'cancelled',tone:'Cancelled',guide:'Review cancellation records and confirm expected follow-up in the established admin/support workflow.'};return null}
