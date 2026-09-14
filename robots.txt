@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin-account.html
+Disallow: /admin-login.html
+Disallow: /account.html
+Disallow: /checkout.html
+Disallow: /quote-checkout.html
+Disallow: /login.html
+Disallow: /signup.html
+Disallow: /reset-password.html
+Disallow: /order-details.html
+Disallow: /order-status.html
+Disallow: /order-tracking.html
