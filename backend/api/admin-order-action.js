@@ -1,125 +1,14 @@
 const {SUPABASE_URL,serverHeaders,cors,json,readBody,requireAdminUser}=require('../lib');
 
-const FULFILLMENT_NEXT={
-  ordered:['packed'],
-  packed:['shipped'],
-  shipped:['out_for_delivery'],
-  out_for_delivery:['delivered'],
-  delivered:[],
-  cancelled:[]
-};
+const FULFILLMENT_NEXT={ordered:['packed'],packed:['shipped'],shipped:['out_for_delivery'],out_for_delivery:['delivered'],delivered:[],cancelled:[]};
 const PAYMENT_EXCEPTION_RESOLUTIONS=new Set(['processor_refund_confirmed','duplicate_or_false_positive','support_review_completed']);
 
-async function rest(path,options={}){
-  const response=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers:{...serverHeaders,...(options.headers||{})}});
-  const data=await response.json().catch(()=>null);
-  if(!response.ok){const error=new Error(data?.message||data?.error||'Admin database request failed');error.status=response.status;throw error}
-  return data;
-}
+async function rest(path,options={}){const response=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers:{...serverHeaders,...(options.headers||{})}});const data=await response.json().catch(()=>null);if(!response.ok){const error=new Error(data?.message||data?.error||'Admin database request failed');error.status=response.status;throw error}return data}
+async function rpc(name,args){const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverHeaders,'Content-Type':'application/json'},body:JSON.stringify(args)});const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||data?.error||'Order action failed');return data}
+async function getOrder(id){const rows=await rest('orders?id=eq.'+encodeURIComponent(id)+'&select=id,status,payment_method,fulfillment_status&limit=1');if(!rows?.[0]){const error=new Error('Order not found');error.status=404;throw error}return rows[0]}
+function validatePaymentState(order){const method=String(order.payment_method||'').toLowerCase(),status=String(order.status||'').toLowerCase();if(method==='prepaid'&&status!=='paid')throw new Error('Only paid prepaid orders can advance fulfillment');if(method==='cod'&&!['cod_pending','cod_collected'].includes(status))throw new Error('This COD order cannot advance fulfillment');if(!['prepaid','cod'].includes(method))throw new Error('Unsupported payment method')}
+async function updateFulfillment(id,nextStatus){const next=String(nextStatus||'').trim().toLowerCase();if(!Object.prototype.hasOwnProperty.call(FULFILLMENT_NEXT,next))throw new Error('Invalid fulfillment status');if(next==='cancelled')throw new Error('Use the dedicated cancellation action for cancellations');const order=await getOrder(id);validatePaymentState(order);const current=String(order.fulfillment_status||'ordered').trim().toLowerCase();if(!Object.prototype.hasOwnProperty.call(FULFILLMENT_NEXT,current))throw new Error('Current fulfillment status is invalid');if(current===next)return {order_id:id,fulfillment_status:current,unchanged:true};if(!FULFILLMENT_NEXT[current].includes(next))throw new Error('Invalid fulfillment transition from '+current+' to '+next);const rows=await rest('orders?id=eq.'+encodeURIComponent(id)+'&fulfillment_status=eq.'+encodeURIComponent(current),{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({fulfillment_status:next,fulfillment_updated_at:new Date().toISOString()})});if(!rows?.length)throw new Error('Order changed before this update. Refresh and try again.');return {order_id:id,fulfillment_status:next}}
+async function listPaymentExceptions(){return rest('payment_exceptions?status=eq.open&select=id,order_id,exception_type,source,payment_id,order_status,occurrence_count,first_seen_at,last_seen_at&order=last_seen_at.desc&limit=100')}
+async function resolvePaymentException(admin,body){const exceptionId=Number(body.exception_id),resolutionCode=String(body.resolution_code||'').trim(),note=String(body.resolution_note||'').trim();if(!Number.isInteger(exceptionId)||exceptionId<1)throw new Error('Invalid payment exception ID');if(!PAYMENT_EXCEPTION_RESOLUTIONS.has(resolutionCode))throw new Error('Invalid resolution code');if(note.length<8||note.length>500)throw new Error('Resolution note must be 8 to 500 characters');const rows=await rest('payment_exceptions?id=eq.'+encodeURIComponent(exceptionId)+'&status=eq.open&select=id,order_id,details&limit=1'),exception=rows?.[0];if(!exception){const error=new Error('Open payment exception not found');error.status=404;throw error}const updated=await rest('payment_exceptions?id=eq.'+encodeURIComponent(exceptionId)+'&status=eq.open',{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({status:'resolved',resolved_at:new Date().toISOString(),resolution_note:'['+resolutionCode+'] '+note,details:{...(exception.details||{}),resolved_by_admin_id:admin.id,resolution_code:resolutionCode}})});if(!updated?.length)throw new Error('Payment exception changed before this update. Refresh and try again.');return {exception_id:exceptionId,order_id:exception.order_id,status:'resolved',payment_state_changed:false}}
 
-async function rpc(name,args){
-  const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverHeaders,'Content-Type':'application/json'},body:JSON.stringify(args)});
-  const data=await response.json().catch(()=>null);
-  if(!response.ok)throw new Error(data?.message||data?.error||'Order action failed');
-  return data;
-}
-
-async function getOrder(id){
-  const rows=await rest('orders?id=eq.'+encodeURIComponent(id)+'&select=id,status,payment_method,fulfillment_status&limit=1');
-  if(!rows?.[0]){const error=new Error('Order not found');error.status=404;throw error}
-  return rows[0];
-}
-
-function validatePaymentState(order){
-  const method=String(order.payment_method||'').toLowerCase();
-  const status=String(order.status||'').toLowerCase();
-  if(method==='prepaid'&&status!=='paid')throw new Error('Only paid prepaid orders can advance fulfillment');
-  if(method==='cod'&&!['cod_pending','cod_collected'].includes(status))throw new Error('This COD order cannot advance fulfillment');
-  if(!['prepaid','cod'].includes(method))throw new Error('Unsupported payment method');
-}
-
-async function updateFulfillment(id,nextStatus){
-  const next=String(nextStatus||'').trim().toLowerCase();
-  if(!Object.prototype.hasOwnProperty.call(FULFILLMENT_NEXT,next))throw new Error('Invalid fulfillment status');
-  if(next==='cancelled')throw new Error('Use the dedicated cancellation action for cancellations');
-
-  const order=await getOrder(id);
-  validatePaymentState(order);
-  const current=String(order.fulfillment_status||'ordered').trim().toLowerCase();
-  if(!Object.prototype.hasOwnProperty.call(FULFILLMENT_NEXT,current))throw new Error('Current fulfillment status is invalid');
-  if(current===next)return {order_id:id,fulfillment_status:current,unchanged:true};
-  if(!FULFILLMENT_NEXT[current].includes(next))throw new Error('Invalid fulfillment transition from '+current+' to '+next);
-
-  const rows=await rest('orders?id=eq.'+encodeURIComponent(id)+'&fulfillment_status=eq.'+encodeURIComponent(current),{
-    method:'PATCH',
-    headers:{'Content-Type':'application/json','Prefer':'return=representation'},
-    body:JSON.stringify({fulfillment_status:next,fulfillment_updated_at:new Date().toISOString()})
-  });
-  if(!rows?.length)throw new Error('Order changed before this update. Refresh and try again.');
-  return {order_id:id,fulfillment_status:next};
-}
-
-async function listPaymentExceptions(){
-  return rest('payment_exceptions?status=eq.open&select=id,order_id,exception_type,source,payment_id,order_status,occurrence_count,first_seen_at,last_seen_at,details&order=last_seen_at.desc&limit=100');
-}
-
-async function resolvePaymentException(admin,body){
-  const exceptionId=Number(body.exception_id);
-  if(!Number.isInteger(exceptionId)||exceptionId<1)throw new Error('Invalid payment exception ID');
-  const resolutionCode=String(body.resolution_code||'').trim();
-  const note=String(body.resolution_note||'').trim();
-  if(!PAYMENT_EXCEPTION_RESOLUTIONS.has(resolutionCode))throw new Error('Invalid resolution code');
-  if(note.length<8||note.length>500)throw new Error('Resolution note must be 8 to 500 characters');
-
-  const rows=await rest('payment_exceptions?id=eq.'+encodeURIComponent(exceptionId)+'&status=eq.open&limit=1');
-  const exception=rows?.[0];
-  if(!exception){const error=new Error('Open payment exception not found');error.status=404;throw error}
-
-  const updated=await rest('payment_exceptions?id=eq.'+encodeURIComponent(exceptionId)+'&status=eq.open',{
-    method:'PATCH',
-    headers:{'Content-Type':'application/json','Prefer':'return=representation'},
-    body:JSON.stringify({
-      status:'resolved',
-      resolved_at:new Date().toISOString(),
-      resolution_note:'['+resolutionCode+'] '+note,
-      details:{...(exception.details||{}),resolved_by_admin_id:admin.id,resolution_code:resolutionCode}
-    })
-  });
-  if(!updated?.length)throw new Error('Payment exception changed before this update. Refresh and try again.');
-  return {exception_id:exceptionId,order_id:exception.order_id,status:'resolved',payment_state_changed:false};
-}
-
-module.exports=async function adminOrderAction(req,res){
-  cors(req,res);
-  if(req.method==='OPTIONS'){res.statusCode=204;return res.end()}
-  if(req.method!=='POST')return json(req,res,405,{error:'Method not allowed'});
-  try{
-    const admin=await requireAdminUser(req);
-    const body=await readBody(req);
-    const action=String(body.action||'').trim();
-
-    if(action==='list_payment_exceptions'){
-      const exceptions=await listPaymentExceptions();
-      return json(req,res,200,{ok:true,action,exceptions});
-    }
-    if(action==='resolve_payment_exception'){
-      const result=await resolvePaymentException(admin,body);
-      return json(req,res,200,{ok:true,action,...result});
-    }
-
-    const id=Number(body.order_id);
-    if(!Number.isInteger(id)||id<1)return json(req,res,400,{error:'Invalid order ID'});
-    if(!['collect_cod','cancel_cod','update_fulfillment'].includes(action))return json(req,res,400,{error:'Invalid order action'});
-
-    if(action==='update_fulfillment'){
-      const result=await updateFulfillment(id,body.fulfillment_status);
-      return json(req,res,200,{ok:true,action,...result});
-    }
-
-    const fn=action==='collect_cod'?'complete_cod_order_service':'cancel_cod_order_service';
-    await rpc(fn,{p_order_id:id,p_admin_id:admin.id});
-    return json(req,res,200,{ok:true,order_id:id,action});
-  }catch(error){
-    return json(req,res,error.status||400,{error:error.message||'Unable to update order'});
-  }
-};
+module.exports=async function adminOrderAction(req,res){cors(req,res);if(req.method==='OPTIONS'){res.statusCode=204;return res.end()}if(req.method!=='POST')return json(req,res,405,{error:'Method not allowed'});try{const admin=await requireAdminUser(req),body=await readBody(req),action=String(body.action||'').trim();if(action==='list_payment_exceptions')return json(req,res,200,{ok:true,action,exceptions:await listPaymentExceptions()});if(action==='resolve_payment_exception')return json(req,res,200,{ok:true,action,...await resolvePaymentException(admin,body)});const id=Number(body.order_id);if(!Number.isInteger(id)||id<1)return json(req,res,400,{error:'Invalid order ID'});if(!['collect_cod','cancel_cod','update_fulfillment'].includes(action))return json(req,res,400,{error:'Invalid order action'});if(action==='update_fulfillment')return json(req,res,200,{ok:true,action,...await updateFulfillment(id,body.fulfillment_status)});await rpc(action==='collect_cod'?'complete_cod_order_service':'cancel_cod_order_service',{p_order_id:id,p_admin_id:admin.id});return json(req,res,200,{ok:true,order_id:id,action})}catch(error){return json(req,res,error.status||400,{error:error.message||'Unable to update order'})}}
