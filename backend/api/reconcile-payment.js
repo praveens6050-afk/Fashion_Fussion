@@ -22,19 +22,15 @@ async function rpc(name, args) {
 }
 
 async function recordPaymentException(order, type, paymentId, details = {}) {
-  try {
-    await rpc('record_payment_exception', {
-      p_order_id: order.id,
-      p_user_id: order.user_id,
-      p_exception_type: type,
-      p_source: 'authenticated_reconcile',
-      p_payment_id: paymentId ? String(paymentId) : null,
-      p_order_status: order.status || null,
-      p_details: details
-    });
-  } catch (error) {
-    console.error('Could not persist payment exception', { store_order_id: order.id, type, error: error.message });
-  }
+  await rpc('record_payment_exception', {
+    p_order_id: order.id,
+    p_user_id: order.user_id,
+    p_exception_type: type,
+    p_source: 'authenticated_reconcile',
+    p_payment_id: paymentId ? String(paymentId) : null,
+    p_order_status: order.status || null,
+    p_details: details
+  });
 }
 
 async function commitInventory(orderId) {
@@ -124,15 +120,31 @@ module.exports = async function reconcilePayment(req, res) {
     }
 
     if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(captured.id)) {
-      console.error('Captured payment conflicts with existing payment link', { store_order_id: order.id, payment_id: captured.id });
-      await recordPaymentException(order, 'different_payment_reference', captured.id, {
-        existing_payment_id: String(order.razorpay_payment_id),
-        razorpay_order_id: String(order.razorpay_order_id)
-      });
+      console.error('Captured payment conflicts with existing payment link', { store_order_id: order.id });
+      try {
+        await recordPaymentException(order, 'different_payment_reference', captured.id, {
+          existing_payment_id: String(order.razorpay_payment_id),
+          razorpay_order_id: String(order.razorpay_order_id)
+        });
+      } catch (recordError) {
+        console.error('Could not durably queue payment review', { store_order_id: order.id, type: 'different_payment_reference', error: recordError.message });
+        return json(req, res, 503, {
+          reconciled: false,
+          captured: true,
+          manual_review: true,
+          review_queued: false,
+          recoverable: true,
+          status: order.status,
+          store_order_id: order.id,
+          display_order_id: order.display_order_id,
+          message: 'Payment is captured, but support review could not be queued yet. Do not pay again; please retry this status check or contact support.'
+        });
+      }
       return json(req, res, 409, {
         reconciled: false,
         captured: true,
         manual_review: true,
+        review_queued: true,
         status: order.status,
         store_order_id: order.id,
         display_order_id: order.display_order_id,
@@ -141,15 +153,30 @@ module.exports = async function reconcilePayment(req, res) {
     }
 
     if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
-      console.error('Captured payment found for inactive order during reconciliation', { store_order_id: order.id, status: order.status, payment_id: captured.id });
-      await recordPaymentException(order, 'inactive_order_capture', captured.id, {
-        razorpay_order_id: String(order.razorpay_order_id)
-      });
+      console.error('Captured payment found for inactive order during reconciliation', { store_order_id: order.id, status: order.status });
+      try {
+        await recordPaymentException(order, 'inactive_order_capture', captured.id, {
+          razorpay_order_id: String(order.razorpay_order_id)
+        });
+      } catch (recordError) {
+        console.error('Could not durably queue payment review', { store_order_id: order.id, type: 'inactive_order_capture', error: recordError.message });
+        return json(req, res, 503, {
+          reconciled: false,
+          captured: true,
+          manual_review: true,
+          review_queued: false,
+          recoverable: true,
+          status: order.status,
+          store_order_id: order.id,
+          display_order_id: order.display_order_id,
+          message: 'Payment is captured, but support review could not be queued yet. Do not pay again; please retry this status check or contact support.'
+        });
+      }
       return json(req, res, 409, {
         reconciled: false,
         captured: true,
         manual_review: true,
-        payment_id: captured.id,
+        review_queued: true,
         status: order.status,
         store_order_id: order.id,
         display_order_id: order.display_order_id,
@@ -175,7 +202,6 @@ module.exports = async function reconcilePayment(req, res) {
         captured: true,
         recoverable: true,
         inventory_pending: true,
-        payment_id: captured.id,
         status: 'paid',
         store_order_id: order.id,
         display_order_id: order.display_order_id,
@@ -187,7 +213,6 @@ module.exports = async function reconcilePayment(req, res) {
       reconciled: true,
       captured: true,
       inventory_reconciled: true,
-      payment_id: captured.id,
       status: 'paid',
       store_order_id: order.id,
       display_order_id: order.display_order_id

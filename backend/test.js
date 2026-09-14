@@ -44,8 +44,9 @@ const verifyPayment=fs.readFileSync(path.join(__dirname,'api/verify-payment.js')
 for(const required of ['commit_order_inventory','commitInventory','Inventory finalization is being reconciled'])assert.ok(verifyPayment.includes(required),`Verified payment inventory lifecycle must enforce ${required}`);
 
 const webhook=fs.readFileSync(path.join(__dirname,'api/razorpay-webhook.js'),'utf8');
-assert.ok(webhook.includes("refund_reference: refundReference(refund) || order.refund_reference || null"),'Webhook must preserve an existing refund reference when a later event omits acquirer data');
-assert.ok(webhook.includes("reason: 'different_refund_reference'"),'Webhook must reject a different refund ID once one is persisted');
+const compactWebhook=webhook.replace(/\s+/g,'');
+assert.ok(compactWebhook.includes("refund_reference:refundReference(refund)||order.refund_reference||null"),'Webhook must preserve an existing refund reference when a later event omits acquirer data');
+assert.ok(compactWebhook.includes("reason:'different_refund_reference'"),'Webhook must reject a different refund ID once one is persisted');
 for(const eventName of ['refund.created','refund.processed','refund.failed'])assert.ok(webhook.includes(eventName),`Webhook must handle ${eventName}`);
 for(const required of ['loadReturnRequestByRefund','updateReturnRefundStatus','return_refund_updated','return_refund_mismatch'])assert.ok(webhook.includes(required),`Webhook must reconcile return refunds with ${required}`);
 for(const required of ['commit_order_inventory','commitOrderInventory','inventory_reconciled','inventory_committed'])assert.ok(webhook.includes(required),`Payment webhook must reconcile inventory with ${required}`);
