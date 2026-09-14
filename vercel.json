@@ -12,6 +12,12 @@
       ]
     },
     {
+      "source": "/search.html",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
       "source": "/(admin|admin-account|account|cart|checkout|quote-checkout|login|signup|reset-password|wishlist|notifications|coupons|gift-cards|order-confirmation|order-details|order-status|order-tracking).html",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
