@@ -57,7 +57,6 @@ begin
   if current_user not in ('service_role','postgres') then
     raise exception 'service role required';
   end if;
-
   if p_exception_type not in ('inactive_order_capture','different_payment_reference') then
     raise exception 'Unsupported payment exception type';
   end if;
@@ -68,21 +67,43 @@ begin
   perform 1 from public.orders where id=p_order_id and user_id=p_user_id;
   if not found then raise exception 'Order not found'; end if;
 
-  insert into public.payment_exceptions(
-    order_id,user_id,exception_type,source,payment_id,order_status,details
-  ) values (
-    p_order_id,p_user_id,p_exception_type,p_source,v_payment_id,nullif(trim(coalesce(p_order_status,'')),''),coalesce(p_details,'{}'::jsonb)
-  )
-  on conflict (order_id, exception_type, coalesce(payment_id,'')) where status='open'
-  do update set
-    source=excluded.source,
-    order_status=excluded.order_status,
-    details=public.payment_exceptions.details || excluded.details,
-    occurrence_count=public.payment_exceptions.occurrence_count + 1,
-    last_seen_at=now()
+  update public.payment_exceptions
+  set source=p_source,
+      order_status=nullif(trim(coalesce(p_order_status,'')),''),
+      details=details || coalesce(p_details,'{}'::jsonb),
+      occurrence_count=occurrence_count + 1,
+      last_seen_at=now()
+  where order_id=p_order_id
+    and exception_type=p_exception_type
+    and coalesce(payment_id,'')=coalesce(v_payment_id,'')
+    and status='open'
   returning * into e;
 
-  return e;
+  if found then return e; end if;
+
+  begin
+    insert into public.payment_exceptions(
+      order_id,user_id,exception_type,source,payment_id,order_status,details
+    ) values (
+      p_order_id,p_user_id,p_exception_type,p_source,v_payment_id,
+      nullif(trim(coalesce(p_order_status,'')),''),coalesce(p_details,'{}'::jsonb)
+    ) returning * into e;
+    return e;
+  exception when unique_violation then
+    update public.payment_exceptions
+    set source=p_source,
+        order_status=nullif(trim(coalesce(p_order_status,'')),''),
+        details=details || coalesce(p_details,'{}'::jsonb),
+        occurrence_count=occurrence_count + 1,
+        last_seen_at=now()
+    where order_id=p_order_id
+      and exception_type=p_exception_type
+      and coalesce(payment_id,'')=coalesce(v_payment_id,'')
+      and status='open'
+    returning * into e;
+    if not found then raise; end if;
+    return e;
+  end;
 end;
 $function$;
 
