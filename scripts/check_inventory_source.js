@@ -15,6 +15,8 @@ requireMarkers('variant-commerce.js',['fashion_fussion_cart_lines_v2','variant_i
 requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable']);
 requireMarkers('variant-cart-ui.js',['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox']);
 requireMarkers('admin-inventory.js',['product_variants','inventory_levels','admin_set_variant_inventory','reserved','reorder_level','has_variants']);
+const productGrantMigration=requireMarkers('supabase/migrations/20260915171000_restore_product_feature_column_select.sql',['bulk_enabled','bulk_min_qty','has_variants','to anon, authenticated']);
+if(/grant\s+select\s*\([^)]*\bcost\b/i.test(productGrantMigration)||/grant\s+select\s+on\s+table\s+public\.products/i.test(productGrantMigration))errors.push('product feature grant migration must not expose products.cost');
 requireMarkers('backend/lib.js',['has_variants','getVariantsByIds','getInventoryByVariantIds','Selected variant does not have enough stock','variant_id']);
 const createOrder=requireMarkers('backend/api/create-order.js',['reserve_order_inventory','release_order_inventory','reserveCheckout','failCheckout','finalize_cod_order_inventory','finalize_zero_value_order_inventory','finalizeCod','finalizeZeroValue']);
 if(createOrder.includes("await rpc('finalize_checkout_order',{p_order_id:saved.id")&&createOrder.includes("await rpc('commit_order_inventory',{p_order_id:saved.id"))errors.push('backend/api/create-order.js: new COD/zero-value checkout must not finalize order and inventory in separate RPC calls');
