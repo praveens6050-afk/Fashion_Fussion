@@ -30,6 +30,12 @@
       ]
     },
     {
+      "source": "/shipping-delivery.html",
+      "headers": [
+        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/shipping-delivery.html>; rel=\"canonical\"" }
+      ]
+    },
+    {
       "source": "/returns-refunds.html",
       "headers": [
         { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/returns-refunds.html>; rel=\"canonical\"" }
