@@ -1,0 +1,13 @@
+create index if not exists coupon_redemptions_coupon_id_idx on public.coupon_redemptions(coupon_id);
+create index if not exists coupon_redemptions_order_id_idx on public.coupon_redemptions(order_id);
+create index if not exists coupon_redemptions_user_id_idx on public.coupon_redemptions(user_id);
+create index if not exists customer_support_messages_sender_user_id_idx on public.customer_support_messages(sender_user_id);
+create index if not exists customer_support_requests_assigned_admin_id_idx on public.customer_support_requests(assigned_admin_id);
+create index if not exists gift_card_codes_created_by_idx on public.gift_card_codes(created_by);
+create index if not exists gift_card_codes_gift_card_id_idx on public.gift_card_codes(gift_card_id);
+create index if not exists gift_card_redemptions_gift_card_code_id_idx on public.gift_card_redemptions(gift_card_code_id);
+create index if not exists gift_card_redemptions_order_id_idx on public.gift_card_redemptions(order_id);
+create index if not exists gift_card_redemptions_user_id_idx on public.gift_card_redemptions(user_id);
+create index if not exists promotion_reservations_coupon_id_idx on public.promotion_reservations(coupon_id);
+create index if not exists promotion_reservations_gift_card_code_id_idx on public.promotion_reservations(gift_card_code_id);
+create index if not exists promotion_reservations_user_id_idx on public.promotion_reservations(user_id);
