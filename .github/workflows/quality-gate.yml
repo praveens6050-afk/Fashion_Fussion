@@ -23,6 +23,8 @@ jobs:
         run: node scripts/check_checkout_readiness_source.js
       - name: Production release source checks
         run: node scripts/check_release_source.js
+      - name: Database hardening source checks
+        run: node scripts/check_database_hardening_source.js
       - name: Backend syntax
         working-directory: backend
         run: npm run check
