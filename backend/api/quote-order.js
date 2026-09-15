@@ -32,6 +32,7 @@ async function discounts(body, calc) {
   let giftDiscount = 0;
   let coupon = null;
   let gift = null;
+  const merchandiseTotal = roundMoney(Number(calc?.merchandise_total ?? 0));
 
   const couponCode = String(body?.coupon_code || '').trim().toUpperCase();
   const giftCode = String(body?.gift_card_code || '').trim().toUpperCase();
@@ -50,7 +51,7 @@ async function discounts(body, calc) {
       throw new Error('Coupon is not currently valid');
     }
 
-    if (calc.subtotal < Number(coupon.min_order_amount || 0)) {
+    if (merchandiseTotal < Number(coupon.min_order_amount || 0)) {
       throw new Error('Minimum order for this coupon is ₹' + Number(coupon.min_order_amount || 0));
     }
 
@@ -60,13 +61,13 @@ async function discounts(body, calc) {
     }
 
     couponDiscount = coupon.discount_type === 'percent'
-      ? calc.subtotal * Number(coupon.discount_value) / 100
+      ? merchandiseTotal * Number(coupon.discount_value) / 100
       : Number(coupon.discount_value);
 
     if (coupon.max_discount != null) {
       couponDiscount = Math.min(couponDiscount, Number(coupon.max_discount));
     }
-    couponDiscount = Math.min(couponDiscount, calc.subtotal);
+    couponDiscount = Math.min(couponDiscount, merchandiseTotal);
   }
 
   const afterCoupon = Math.max(0, calc.total - couponDiscount);
