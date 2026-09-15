@@ -98,6 +98,19 @@ function roundMoney(value) {
   return Math.round(Number(value || 0) * 100) / 100;
 }
 
+function splitInclusiveGst(grossAmount, gstRate) {
+  const gross = roundMoney(grossAmount);
+  const rate = Number(gstRate);
+  if (!Number.isFinite(gross) || gross < 0) throw new Error("Invalid GST-inclusive amount");
+  if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new Error("Invalid GST rate");
+  const gstAmount = rate === 0 ? 0 : roundMoney(gross * rate / (100 + rate));
+  return {
+    taxable_amount: roundMoney(gross - gstAmount),
+    gst_amount: gstAmount,
+    line_total: gross
+  };
+}
+
 function normalizePaymentMethod(value) {
   const method = String(value || "prepaid").trim().toLowerCase();
   if (!['prepaid', 'cod'].includes(method)) throw new Error("Invalid payment method");
@@ -262,6 +275,7 @@ async function calculate(items) {
     tierMap.get(key).push(tier);
   }
   let subtotal = 0;
+  let merchandiseTotal = 0;
   let totalDiscount = 0;
   let totalGst = 0;
   const normalized = requested.map(item => {
@@ -302,10 +316,13 @@ async function calculate(items) {
     }
     const mrp = basePrice;
     const discount = roundMoney(Math.max(0, mrp - unitPrice));
-    const taxableAmount = roundMoney(unitPrice * qty);
-    const gstAmount = roundMoney(taxableAmount * gstRate / 100);
-    const lineTotal = roundMoney(taxableAmount + gstAmount);
+    const grossAmount = roundMoney(unitPrice * qty);
+    const tax = splitInclusiveGst(grossAmount, gstRate);
+    const taxableAmount = tax.taxable_amount;
+    const gstAmount = tax.gst_amount;
+    const lineTotal = tax.line_total;
     subtotal += taxableAmount;
+    merchandiseTotal += lineTotal;
     totalDiscount += discount * qty;
     totalGst += gstAmount;
     return {
@@ -330,19 +347,20 @@ async function calculate(items) {
       bulk_tier_min_qty: appliedBulkTier
     };
   });
-  const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_BELOW_THRESHOLD;
+  const delivery = merchandiseTotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_BELOW_THRESHOLD;
   const otherCharges = 0;
-  const baseTotal = roundMoney(subtotal + totalGst + delivery + otherCharges);
+  const baseTotal = roundMoney(merchandiseTotal + delivery + otherCharges);
   if (!Number.isFinite(baseTotal) || baseTotal < 0) throw new Error("Invalid order amount");
   return {
     items: normalized,
     subtotal: roundMoney(subtotal),
+    merchandise_total: roundMoney(merchandiseTotal),
     discount: roundMoney(totalDiscount),
     gst: roundMoney(totalGst),
     delivery: roundMoney(delivery),
     delivery_threshold: DELIVERY_THRESHOLD,
     delivery_non_refundable: delivery > 0,
-    amount_to_delivery_benefit: roundMoney(Math.max(0, DELIVERY_THRESHOLD - subtotal)),
+    amount_to_delivery_benefit: roundMoney(Math.max(0, DELIVERY_THRESHOLD - merchandiseTotal)),
     other_charges: roundMoney(otherCharges),
     total: baseTotal
   };
@@ -352,7 +370,7 @@ module.exports = {
   KEY_ID, KEY_SECRET, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
   DELIVERY_THRESHOLD, DELIVERY_BELOW_THRESHOLD, PAYMENT_HANDLING_FEE, PREPAID_DISCOUNT,
   MAX_BODY_BYTES, MAX_CART_LINES, MAX_ITEM_QUANTITY, serverHeaders, applySecurityHeaders, cors, json,
-  readRawBody, readBody, basicAuth, safeEqualText, roundMoney, normalizePaymentMethod,
+  readRawBody, readBody, basicAuth, safeEqualText, roundMoney, splitInclusiveGst, normalizePaymentMethod,
   paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds,
   getVariantsByIds, getInventoryByVariantIds, getBulkTiersByProductIds, calculate
 };
