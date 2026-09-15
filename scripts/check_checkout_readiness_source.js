@@ -21,3 +21,4 @@ if(!dispatcher.includes('return checkoutHealth(req,res)'))errors.push('api/admin
 if(!loader.includes("page==='admin.html'"))errors.push('supabase-config.js: checkout/launch readiness UI must remain admin-only');
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
 console.log('Checkout and first-order readiness source guards passed');
+require('./check_public_launch_source.js');
