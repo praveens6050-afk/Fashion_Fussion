@@ -6,12 +6,12 @@ Fashion_Fussion uses Shiprocket as the first shipping-provider integration becau
 
 ## What this batch adds
 
-- Server-only `/api/shipping` endpoint.
+- Server-only shipping actions multiplexed through the existing `/api/admin-order-action` Vercel function so the Hobby deployment remains within its 12-function limit.
 - Admin-only configuration status and shipment creation actions.
 - Shiprocket authentication and custom-order creation call.
 - Admin-entered package weight and dimensions; product catalogue dimensions are not invented.
 - Separate `order_shipments` persistence for provider order/shipment IDs, courier, AWB, provider status and tracking URL when available.
-- Customer courier information on Order Details through an authenticated ownership-checked backend call.
+- Customer courier information on Order Details through an authenticated ownership-checked backend action.
 - Admin Shipping / Shiprocket panel with recent shipment records.
 - RLS-enabled shipment table with direct `anon` and `authenticated` access revoked.
 
