@@ -8,6 +8,7 @@ const sitemap=read('sitemap.xml');
 const robots=read('robots.txt');
 const homepageDiscovery=read('index.html')+'\n'+read('business-registration-trust.js');
 const vercel=read('vercel.json');
+const checkout=read('checkout.html');
 for(const page of publicPages){
   if(!fs.existsSync(path.join(root,page)))errors.push(`missing public page ${page}`);
   const absolute=`https://fashion-fussion-olive.vercel.app/${page}`;
@@ -17,7 +18,13 @@ for(const page of publicPages){
   if(!vercel.includes(`\"source\": \"/${page}\"`)||!vercel.includes(`<${absolute}>; rel=\\\"canonical\\\"`))errors.push(`canonical header missing for ${page}`);
 }
 for(const page of ['admin.html','account.html','cart.html','checkout.html','login.html','wishlist.html','order-details.html'])if(!robots.includes(`Disallow: /${page}`))errors.push(`robots missing private-route block ${page}`);
-for(const marker of ['X-Content-Type-Options','X-Frame-Options','Referrer-Policy','Permissions-Policy'])if(!vercel.includes(marker))errors.push(`vercel security headers missing ${marker}`);
+for(const marker of ['X-Content-Type-Options','X-Frame-Options','Referrer-Policy','Permissions-Policy','Content-Security-Policy'])if(!vercel.includes(marker))errors.push(`vercel security headers missing ${marker}`);
+for(const directive of ["default-src 'self'","object-src 'none'","frame-ancestors 'none'","base-uri 'self'","upgrade-insecure-requests"])if(!vercel.includes(directive))errors.push(`CSP missing ${directive}`);
+if(checkout.includes('https://checkout.razorpay.com/v1/checkout.js')){
+  if(!vercel.includes("script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://checkout.razorpay.com"))errors.push('CSP script-src does not allow Razorpay Checkout');
+  if(!vercel.includes("connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com"))errors.push('CSP connect-src does not allow Razorpay endpoints');
+  if(!vercel.includes('frame-src https://*.razorpay.com'))errors.push('CSP frame-src does not allow Razorpay frames');
+}
 if(!vercel.includes('noindex, nofollow, noarchive'))errors.push('private-route noindex policy missing');
 if(!read('index.html').includes('<meta name="description"'))errors.push('homepage meta description missing');
 if(!sitemap.includes('<loc>https://fashion-fussion-olive.vercel.app/</loc>'))errors.push('sitemap missing homepage');

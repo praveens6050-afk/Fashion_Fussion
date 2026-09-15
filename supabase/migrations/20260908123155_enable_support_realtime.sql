@@ -1,0 +1,2 @@
+alter publication supabase_realtime add table public.customer_support_requests;
+alter publication supabase_realtime add table public.customer_support_messages;
