@@ -19,6 +19,8 @@ jobs:
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
         run: node scripts/check_inventory_source.js
+      - name: Checkout readiness source checks
+        run: node scripts/check_checkout_readiness_source.js
       - name: Backend syntax
         working-directory: backend
         run: npm run check
