@@ -30,6 +30,12 @@
       ]
     },
     {
+      "source": "/returns-refunds.html",
+      "headers": [
+        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/returns-refunds.html>; rel=\"canonical\"" }
+      ]
+    },
+    {
       "source": "/security-policy.html",
       "headers": [
         { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/security-policy.html>; rel=\"canonical\"" }
