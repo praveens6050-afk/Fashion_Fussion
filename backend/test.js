@@ -1,7 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
-const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors}=require('./lib');
+const {paymentPricing,normalizePaymentMethod,roundMoney,splitInclusiveGst,normalizeCartRequest,cors}=require('./lib');
 
 assert.deepStrictEqual(paymentPricing(100,'prepaid'),{payment_method:'prepaid',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
 assert.deepStrictEqual(paymentPricing(100,'cod'),{payment_method:'cod',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
@@ -10,6 +10,8 @@ assert.strictEqual(paymentPricing(0,'cod').total,0);
 assert.strictEqual(normalizePaymentMethod(undefined),'prepaid');
 assert.throws(()=>normalizePaymentMethod('upi'),/Invalid payment method/);
 assert.strictEqual(roundMoney(10.005),10.01);
+assert.deepStrictEqual(splitInclusiveGst(334,18),{taxable_amount:283.05,gst_amount:50.95,line_total:334});
+assert.deepStrictEqual(splitInclusiveGst(299,0),{taxable_amount:299,gst_amount:0,line_total:299});
 assert.deepStrictEqual(normalizeCartRequest([{id:9,qty:2}]),[{id:'9',variant_id:null,qty:2}]);
 assert.deepStrictEqual(normalizeCartRequest([{id:9,variant_id:15,qty:2}]),[{id:'9',variant_id:'15',qty:2}]);
 assert.deepStrictEqual(normalizeCartRequest([{id:9,variant_id:15,qty:500}]),[{id:'9',variant_id:'15',qty:500}]);
@@ -33,6 +35,9 @@ const lib=fs.readFileSync(path.join(__dirname,'lib.js'),'utf8');
 for(const required of ['has_variants','getVariantsByIds','getInventoryByVariantIds','variant_id','product_variants','inventory_levels','Selected variant does not have enough stock','Please select a product variant'])assert.ok(lib.includes(required),`Variant pricing must enforce ${required}`);
 assert.ok(lib.includes("variant_id: variant ? variant.id : null"),'Order item snapshot must persist variant ID');
 for(const required of ['sku: variant?.sku','size: variant?.size','color: variant?.color','variant_title: variant?.title'])assert.ok(lib.includes(required),`Order item snapshot must persist ${required}`);
+for(const required of ['splitInclusiveGst','merchandiseTotal','merchandise_total','grossAmount','100 + rate'])assert.ok(lib.includes(required),`GST-inclusive pricing must enforce ${required}`);
+assert.ok(lib.includes('const delivery = merchandiseTotal >= DELIVERY_THRESHOLD'),'Delivery threshold must use GST-inclusive merchandise value');
+assert.ok(lib.includes('const baseTotal = roundMoney(merchandiseTotal + delivery + otherCharges)'),'GST must not be added a second time to an inclusive catalogue price');
 
 const createOrder=fs.readFileSync(path.join(__dirname,'api/create-order.js'),'utf8');
 for(const required of ['reserve_order_inventory','release_order_inventory','reserveCheckout','failCheckout','finalize_cod_order_inventory','finalize_zero_value_order_inventory','finalizeCod','finalizeZeroValue'])assert.ok(createOrder.includes(required),`Checkout inventory lifecycle must enforce ${required}`);
@@ -79,5 +84,8 @@ assert.ok(!quoteOrder.includes('coupon_code:body'),'Quote order must not accept 
 assert.ok(!quoteOrder.includes('gift_card_code:body'),'Quote order must not accept browser gift-card pricing');
 assert.ok(quoteOrder.includes('coupon_code:null'),'Negotiated quote orders must disable coupons');
 assert.ok(quoteOrder.includes('gift_card_code:null'),'Negotiated quote orders must disable gift cards');
+
+const retailQuote=fs.readFileSync(path.join(__dirname,'api/quote-order.js'),'utf8');
+for(const required of ['merchandise_total','merchandiseTotal','couponDiscount = coupon.discount_type'])assert.ok(retailQuote.includes(required),`Retail coupon pricing must use GST-inclusive merchandise value via ${required}`);
 
 console.log('Fashion_Fussion backend pricing/security/refund/return-refund/quote/variant-inventory audit tests passed');
