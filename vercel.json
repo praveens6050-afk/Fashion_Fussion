@@ -12,6 +12,24 @@
       ]
     },
     {
+      "source": "/",
+      "headers": [
+        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/>; rel=\"canonical\"" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/>; rel=\"canonical\"" }
+      ]
+    },
+    {
+      "source": "/security-policy.html",
+      "headers": [
+        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/security-policy.html>; rel=\"canonical\"" }
+      ]
+    },
+    {
       "source": "/search.html",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, follow" }
