@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/api/return-refund-status",
+      "destination": "/api/refund-status?mode=return-refund"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
