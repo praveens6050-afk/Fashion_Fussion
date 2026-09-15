@@ -6,14 +6,19 @@ const errors=[];
 function requireMarkers(file,markers,label=file){const text=read(file);for(const marker of markers)if(!text.includes(marker))errors.push(`${label}: missing ${marker}`);return text}
 const config=requireMarkers('supabase-config.js',[
   "variant-commerce.js?v=2','data-variant-commerce",
+  "catalog-cart-entry.js?v=1','data-catalog-cart-entry",
   "product-variants.js?v=2','data-product-variants",
   "variant-cart-ui.js?v=1','data-variant-cart-ui",
   "admin-inventory.js?v=1','data-admin-inventory",
   "admin-catalog-safety.js?v=1','data-admin-catalog-safety"
 ]);
+for(const page of ['index.html','search.html','wishlist.html'])if(!config.includes(page))errors.push(`supabase-config.js: variant-aware catalog runtime missing ${page}`);
 if(!config.includes("page==='admin.html'"))errors.push('supabase-config.js: admin inventory runtime must be admin-page scoped');
-const variantCommerce=requireMarkers('variant-commerce.js',['fashion_fussion_cart_lines_v2','variant_id','readLines','writeLines','addLine','updateLine','removeLine','/api/quote-order','/api/create-order','resolveSingleSellableVariants','get_variant_availability','sellable.length!==1']);
+const variantCommerce=requireMarkers('variant-commerce.js',['fashion_fussion_cart_lines_v2','variant_id','readLines','writeLines','addLine','addSyncedLine','updateLine','removeLine','/api/quote-order','/api/create-order','resolveSingleSellableVariants','get_variant_availability','sellable.length!==1','fashion_fussion_checkout_key']);
 if(!variantCommerce.includes('await resolveSingleSellableVariants(parsed)'))errors.push('variant-commerce.js: checkout requests must repair exactly-one sellable variant before submit');
+if(!variantCommerce.includes('writeLines(lines)'))errors.push('variant-commerce.js: synchronized catalog additions must persist both line and legacy cart stores');
+const catalogEntry=requireMarkers('catalog-cart-entry.js',['index.html','search.html','wishlist.html','has_variants','product_variants','get_variant_availability','sellable.length===1','kind:\'choose\'','addSyncedLine','stopImmediatePropagation','product.html?id=']);
+if(!catalogEntry.includes("['index.html','search.html','wishlist.html']"))errors.push('catalog-cart-entry.js: variant-aware click interception must stay catalog-page scoped');
 const productVariants=requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable','sellable.length===1']);
 if(!productVariants.includes('else if(sellable.length===1)select(sellable[0])'))errors.push('product-variants.js: only exactly one sellable variant may auto-select');
 const variantCart=requireMarkers('variant-cart-ui.js',['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox','repairLines','resolveSingleSellableVariants']);

@@ -3,10 +3,11 @@ const SUPABASE_ANON_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
 window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 (function(){'use strict';
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
+  const page=location.pathname.split('/').pop()||'index.html';
+  if(['index.html','search.html','wishlist.html','product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
+  if(['index.html','search.html','wishlist.html'].includes(page))add('catalog-cart-entry.js?v=1','data-catalog-cart-entry');
   function start(){
-    const page=location.pathname.split('/').pop()||'index.html';
     if(['index.html','account.html','quote-checkout.html'].includes(page))add('business-registration-trust.js?v=2','data-business-registration-trust');
-    if(['product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
     if(page==='product.html')add('product-variants.js?v=2','data-product-variants');
     if(['cart.html','checkout.html'].includes(page))add('variant-cart-ui.js?v=1','data-variant-cart-ui');
     if(page==='account.html'){add('account-stability.js?v=1','data-account-stability');add('account-role-guard.js?v=2','data-account-role-guard');add('support-chat.js?v=8','data-support-chat');add('account-refunds.js?v=1','data-account-refunds');add('account-returns.js?v=2','data-account-returns');add('account-business.js?v=4','data-account-business');add('account-repeat-order.js?v=1','data-account-repeat-order');add('account-cancel-promotion.js?v=1','data-account-cancel-promotion')}
