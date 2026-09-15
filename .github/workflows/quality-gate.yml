@@ -21,6 +21,8 @@ jobs:
         run: node scripts/check_inventory_source.js
       - name: Checkout readiness source checks
         run: node scripts/check_checkout_readiness_source.js
+      - name: Production release source checks
+        run: node scripts/check_release_source.js
       - name: Backend syntax
         working-directory: backend
         run: npm run check
