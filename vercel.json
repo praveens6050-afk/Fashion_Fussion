@@ -30,6 +30,12 @@
       ]
     },
     {
+      "source": "/faq.html",
+      "headers": [
+        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/faq.html>; rel=\"canonical\"" }
+      ]
+    },
+    {
       "source": "/business-buying.html",
       "headers": [
         { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/business-buying.html>; rel=\"canonical\"" }
