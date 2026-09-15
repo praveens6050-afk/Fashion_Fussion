@@ -5,8 +5,8 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const errors=[];
 function requireMarkers(file,markers,label=file){const text=read(file);for(const marker of markers)if(!text.includes(marker))errors.push(`${label}: missing ${marker}`);return text}
 const config=requireMarkers('supabase-config.js',[
-  "variant-commerce.js?v=3','data-variant-commerce",
-  "product-variants.js?v=3','data-product-variants",
+  "variant-commerce.js?v=2','data-variant-commerce",
+  "product-variants.js?v=2','data-product-variants",
   "variant-cart-ui.js?v=1','data-variant-cart-ui",
   "admin-inventory.js?v=1','data-admin-inventory",
   "admin-catalog-safety.js?v=1','data-admin-catalog-safety"
