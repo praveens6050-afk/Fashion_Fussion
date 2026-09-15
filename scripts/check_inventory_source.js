@@ -5,17 +5,22 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const errors=[];
 function requireMarkers(file,markers,label=file){const text=read(file);for(const marker of markers)if(!text.includes(marker))errors.push(`${label}: missing ${marker}`);return text}
 const config=requireMarkers('supabase-config.js',[
+  "catalog-variant-guard.js?v=1','data-catalog-variant-guard",
   "variant-commerce.js?v=2','data-variant-commerce",
   "product-variants.js?v=2','data-product-variants",
   "variant-cart-ui.js?v=1','data-variant-cart-ui",
   "admin-inventory.js?v=1','data-admin-inventory",
   "admin-catalog-safety.js?v=1','data-admin-catalog-safety"
 ]);
+if(!config.includes("['index.html','search.html'].includes(page)"))errors.push('supabase-config.js: catalogue variant guard must be limited to listing pages');
 if(!config.includes("page==='admin.html'"))errors.push('supabase-config.js: admin inventory runtime must be admin-page scoped');
+const catalogGuard=requireMarkers('catalog-variant-guard.js',['has_variants','CHOOSE OPTIONS','event.stopImmediatePropagation()','product.html?id=','sessionStorage.removeItem(CHECKOUT_KEY)']);
+if(!catalogGuard.includes("if(known===false)return"))errors.push('catalog-variant-guard.js: non-variant catalogue products must preserve direct add-to-cart');
 const variantCommerce=requireMarkers('variant-commerce.js',['fashion_fussion_cart_lines_v2','variant_id','readLines','writeLines','addLine','updateLine','removeLine','/api/quote-order','/api/create-order','resolveSingleSellableVariants','get_variant_availability','sellable.length!==1']);
 if(!variantCommerce.includes('await resolveSingleSellableVariants(parsed)'))errors.push('variant-commerce.js: checkout requests must repair exactly-one sellable variant before submit');
-const productVariants=requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable','sellable.length===1']);
+const productVariants=requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable','sellable.length===1','price_override??product.price']);
 if(!productVariants.includes('else if(sellable.length===1)select(sellable[0])'))errors.push('product-variants.js: only exactly one sellable variant may auto-select');
+if(productVariants.includes('price_override||product.price'))errors.push('product-variants.js: variant price override must use nullish fallback, not truthy fallback');
 const variantCart=requireMarkers('variant-cart-ui.js',['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox','repairLines','resolveSingleSellableVariants']);
 if(!variantCart.includes('await repairLines()'))errors.push('variant-cart-ui.js: legacy cart lines must be repaired before render');
 requireMarkers('admin-inventory.js',['product_variants','inventory_levels','admin_set_variant_inventory','reserved','reorder_level','has_variants']);
