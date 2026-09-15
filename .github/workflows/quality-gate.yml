@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,9 +25,10 @@ jobs:
         run: node scripts/check_release_source.js
       - name: Database hardening source checks
         run: node scripts/check_database_hardening_source.js
-      - name: Backend syntax
-        working-directory: backend
-        run: npm run check
+      - name: Public launch contract checks
+        run: node scripts/check_public_launch_contract.js
+      - name: Exhaustive backend and API syntax
+        run: node scripts/check_all_backend_syntax.js
       - name: Backend pricing tests
         working-directory: backend
         run: npm test
@@ -46,3 +47,4 @@ jobs:
           node scripts/order_details_smoke.js
           node scripts/return_exchange_smoke.js
           node scripts/account_cancellation_smoke.js
+          node scripts/public_launch_smoke.js
