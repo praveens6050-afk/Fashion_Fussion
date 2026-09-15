@@ -19,8 +19,9 @@ if(!variantCommerce.includes('await resolveSingleSellableVariants(parsed)'))erro
 if(!variantCommerce.includes('writeLines(lines)'))errors.push('variant-commerce.js: synchronized catalog additions must persist both line and legacy cart stores');
 const catalogEntry=requireMarkers('catalog-cart-entry.js',['index.html','search.html','wishlist.html','has_variants','product_variants','get_variant_availability','sellable.length===1','kind:\'choose\'','addSyncedLine','stopImmediatePropagation','product.html?id=']);
 if(!catalogEntry.includes("['index.html','search.html','wishlist.html']"))errors.push('catalog-cart-entry.js: variant-aware click interception must stay catalog-page scoped');
-const productVariants=requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable','sellable.length===1']);
+const productVariants=requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable','sellable.length===1','price_override??product.price']);
 if(!productVariants.includes('else if(sellable.length===1)select(sellable[0])'))errors.push('product-variants.js: only exactly one sellable variant may auto-select');
+if(productVariants.includes('price_override||product.price'))errors.push('product-variants.js: variant price override must use nullish fallback so a numeric zero override is preserved');
 const variantCart=requireMarkers('variant-cart-ui.js',['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox','repairLines','resolveSingleSellableVariants']);
 if(!variantCart.includes('await repairLines()'))errors.push('variant-cart-ui.js: legacy cart lines must be repaired before render');
 requireMarkers('admin-inventory.js',['product_variants','inventory_levels','admin_set_variant_inventory','reserved','reorder_level','has_variants']);
