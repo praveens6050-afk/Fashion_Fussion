@@ -12,9 +12,12 @@ const config=requireMarkers('supabase-config.js',[
   "admin-catalog-safety.js?v=1','data-admin-catalog-safety"
 ]);
 if(!config.includes("page==='admin.html'"))errors.push('supabase-config.js: admin inventory runtime must be admin-page scoped');
-requireMarkers('variant-commerce.js',['fashion_fussion_cart_lines_v2','variant_id','readLines','writeLines','addLine','updateLine','removeLine','/api/quote-order','/api/create-order']);
-requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable']);
-requireMarkers('variant-cart-ui.js',['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox']);
+const variantCommerce=requireMarkers('variant-commerce.js',['fashion_fussion_cart_lines_v2','variant_id','readLines','writeLines','addLine','updateLine','removeLine','/api/quote-order','/api/create-order','resolveSingleSellableVariants','get_variant_availability','sellable.length!==1']);
+if(!variantCommerce.includes('await resolveSingleSellableVariants(parsed)'))errors.push('variant-commerce.js: checkout requests must repair exactly-one sellable variant before submit');
+const productVariants=requireMarkers('product-variants.js',['product_variants','get_variant_availability','FashionVariantCart','currently unavailable','sellable.length===1']);
+if(!productVariants.includes('else if(sellable.length===1)select(sellable[0])'))errors.push('product-variants.js: only exactly one sellable variant may auto-select');
+const variantCart=requireMarkers('variant-cart-ui.js',['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox','repairLines','resolveSingleSellableVariants']);
+if(!variantCart.includes('await repairLines()'))errors.push('variant-cart-ui.js: legacy cart lines must be repaired before render');
 requireMarkers('admin-inventory.js',['product_variants','inventory_levels','admin_set_variant_inventory','reserved','reorder_level','has_variants']);
 requireMarkers('admin-catalog-safety.js',['Safe publish workflow','status.value=\'false\'','positive available stock','Launch guard']);
 const productGrantMigration=requireMarkers('supabase/migrations/20260915171000_restore_product_feature_column_select.sql',['bulk_enabled','bulk_min_qty','has_variants','to anon, authenticated']);
