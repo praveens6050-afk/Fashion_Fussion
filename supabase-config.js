@@ -5,6 +5,7 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
   function start(){
     const page=location.pathname.split('/').pop()||'index.html';
+    if(['index.html','account.html','quote-checkout.html'].includes(page))add('business-registration-trust.js?v=2','data-business-registration-trust');
     if(['product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
     if(page==='product.html')add('product-variants.js?v=2','data-product-variants');
     if(['cart.html','checkout.html'].includes(page))add('variant-cart-ui.js?v=1','data-variant-cart-ui');
