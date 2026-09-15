@@ -24,6 +24,12 @@
       ]
     },
     {
+      "source": "/contact.html",
+      "headers": [
+        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/contact.html>; rel=\"canonical\"" }
+      ]
+    },
+    {
       "source": "/security-policy.html",
       "headers": [
         { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/security-policy.html>; rel=\"canonical\"" }
