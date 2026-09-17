@@ -50,8 +50,13 @@ if(!/String\(refund\.status\s*\|\|\s*['"]{2}\)\.toLowerCase\(\)/.test(webhook))e
 if(!/different_refund_reference/.test(webhook))errors.push('backend/api/razorpay-webhook.js: webhook must reject a different refund reference once an order refund is persisted');
 if(!/refund_reference:\s*refundReference\(refund\)\s*\|\|\s*order\.refund_reference\s*\|\|\s*null/.test(webhook))errors.push('backend/api/razorpay-webhook.js: webhook must preserve an existing refund reference when later events omit acquirer data');
 const checkout=fs.readFileSync(path.join(root,'checkout.html'),'utf8');
-for(const required of ['id="addressSection"','id="addressState"','name="deliveryAddress"','customer_addresses','shipping_address:{id:address.id}','order-confirmation.html?id='])if(!checkout.includes(required))errors.push(`checkout.html: inline address/confirmation flow missing ${required}`);
-if(/\.eq\(['"]is_default['"],true\)\.limit\(1\)\.maybeSingle\(\)/.test(checkout))errors.push('checkout.html: checkout must load selectable saved addresses, not only the default address');
+const checkoutScript=fs.readFileSync(path.join(root,'checkout.js'),'utf8');
+for(const required of ['id="addressSection"','id="addressState"','checkout.js?v=1'])if(!checkout.includes(required))errors.push(`checkout.html: checkout structure/runtime link missing ${required}`);
+for(const required of ['name="deliveryAddress"','customer_addresses','shipping_address:{id:address.id}','order-confirmation.html?id='])if(!checkoutScript.includes(required))errors.push(`checkout.js: address/confirmation flow missing ${required}`);
+if(/\.eq\(['"]is_default['"],true\)\.limit\(1\)\.maybeSingle\(\)/.test(checkoutScript))errors.push('checkout.js: checkout must load selectable saved addresses, not only the default address');
+if(/<script(?![^>]*\bsrc=)[^>]*>/i.test(checkout))errors.push('checkout.html: checkout runtime must remain externalized; inline script detected');
+if(/\son(?:error|load|click)\s*=/i.test(checkout+checkoutScript))errors.push('checkout: inline DOM event handler detected');
+if(/\.style\./.test(checkoutScript))errors.push('checkout.js: direct inline style mutation detected');
 const quoteCheckout=fs.readFileSync(path.join(root,'quote-checkout.html'),'utf8');
 for(const required of ['Business quote checkout','bulk_quotes','bulk_quote_items','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','/api/create-quote-order','/api/verify-payment','purchase_order_no','Coupons and gift cards are not applied'])if(!quoteCheckout.includes(required))errors.push(`quote-checkout.html: secure accepted quote checkout missing ${required}`);
 if(/coupon_code|gift_card_code/.test(quoteCheckout))errors.push('quote-checkout.html: negotiated quote checkout must not submit coupon or gift-card pricing');
