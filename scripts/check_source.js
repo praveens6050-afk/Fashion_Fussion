@@ -58,8 +58,16 @@ if(/<script(?![^>]*\bsrc=)[^>]*>/i.test(checkout))errors.push('checkout.html: ch
 if(/\son(?:error|load|click)\s*=/i.test(checkout+checkoutScript))errors.push('checkout: inline DOM event handler detected');
 if(/\.style\./.test(checkoutScript))errors.push('checkout.js: direct inline style mutation detected');
 const quoteCheckout=fs.readFileSync(path.join(root,'quote-checkout.html'),'utf8');
-for(const required of ['Business quote checkout','bulk_quotes','bulk_quote_items','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','/api/create-quote-order','/api/verify-payment','purchase_order_no','Coupons and gift cards are not applied'])if(!quoteCheckout.includes(required))errors.push(`quote-checkout.html: secure accepted quote checkout missing ${required}`);
-if(/coupon_code|gift_card_code/.test(quoteCheckout))errors.push('quote-checkout.html: negotiated quote checkout must not submit coupon or gift-card pricing');
+const quoteCheckoutScript=fs.readFileSync(path.join(root,'quote-checkout.js'),'utf8');
+for(const required of ['Business quote checkout','quote-checkout.css?v=1','quote-checkout.js?v=1','Coupons and gift cards are not applied'])if(!quoteCheckout.includes(required))errors.push(`quote-checkout.html: secure quote checkout structure/runtime link missing ${required}`);
+for(const required of ['bulk_quotes','bulk_quote_items','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','/api/create-quote-order','/api/verify-payment','purchase_order_no'])if(!quoteCheckoutScript.includes(required))errors.push(`quote-checkout.js: secure accepted quote checkout missing ${required}`);
+if(/coupon_code|gift_card_code/.test(quoteCheckoutScript))errors.push('quote-checkout.js: negotiated quote checkout must not submit coupon or gift-card pricing');
+if(/<style\b/i.test(quoteCheckout))errors.push('quote-checkout.html: quote checkout styles must remain externalized; inline style block detected');
+if(/<script(?![^>]*\bsrc=)[^>]*>/i.test(quoteCheckout))errors.push('quote-checkout.html: quote checkout runtime must remain externalized; inline script detected');
+if(/\sstyle\s*=/i.test(quoteCheckout))errors.push('quote-checkout.html: inline style attribute detected');
+if(/\son(?:error|load|click|change)\s*=/i.test(quoteCheckout))errors.push('quote-checkout.html: inline DOM event handler detected');
+if(/\.style\./.test(quoteCheckoutScript))errors.push('quote-checkout.js: direct inline style mutation detected');
+if(/\.on(?:error|load|click|change)\s*=/.test(quoteCheckoutScript))errors.push('quote-checkout.js: DOM event property handler detected; use addEventListener');
 const quoteOrder=fs.readFileSync(path.join(root,'backend/api/create-quote-order.js'),'utf8');
 for(const required of ['bulk_quote_id','status!==\'accepted\'','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','business_billing_address:quote.business_billing_address','createRazorpayOrder','findExistingQuoteOrder'])if(!quoteOrder.includes(required))errors.push(`backend/api/create-quote-order.js: authoritative quote order guard missing ${required}`);
 if(/calculate\(body\.items\)|getDiscounts\(/.test(quoteOrder))errors.push('backend/api/create-quote-order.js: accepted quote checkout must not reprice through retail cart/coupon logic');
