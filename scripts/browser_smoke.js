@@ -181,7 +181,7 @@ const CHECKOUT_KEY = 'fashion_fussion_checkout_key';
     await route.fulfill({ status: 200, contentType: 'application/javascript', body: stub });
   });
 
-  await checkoutPage.route('https://fashion-fussion-olive.vercel.app/api/**', async route => {
+  await checkoutPage.route('**/api/**', async route => {
     const request = route.request();
     if (request.headers()['authorization'] !== 'Bearer smoke-access-token') throw new Error('authenticated checkout API call did not include the current bearer session');
     const url = new URL(request.url());
