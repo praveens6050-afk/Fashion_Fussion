@@ -47,6 +47,7 @@ window.SellerCatalogBridge={
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
 function loadSellerModule(src){const script=document.createElement('script');script.src=src;script.async=false;document.body.appendChild(script)}
+loadSellerModule('seller-storage-scope.js');
 loadSellerModule('operations-bootstrap.js');
 loadSellerModule('catalog-enhancements.js');
 loadSellerModule('inventory-fulfillment.js');
