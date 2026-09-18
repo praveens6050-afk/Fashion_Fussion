@@ -23,9 +23,9 @@ Do not attach `admin.fashionfussion.in` or `seller.fashionfussion.in` to the cus
 
 ## Customer-only deployment package
 
-The `customer-panel/` folder is a dedicated deployable copy of the current customer storefront. Admin HTML/JS/CSS modules are intentionally not included in this frontend package.
+The `customer-panel/` folder is the dedicated customer storefront package. Admin frontend modules and admin-only backend actions are intentionally excluded.
 
-The customer package keeps the existing API/backend tree during the first split because customer checkout, payment, shipping/tracking and post-purchase flows currently share backend implementation with some authenticated admin actions. Those server routes remain authorization-protected. Backend service extraction should happen only after all three frontends are stable.
+Customer courier tracking uses a dedicated authenticated `/api/shipping-status` endpoint that only reads the signed-in customer's own shipment record. Shipment creation, AWB assignment, pickup scheduling, Shiprocket health checks, private product costs, checkout-health administration, admin order mutations and refund execution belong to the Admin project.
 
 The customer `vercel.json` adds panel boundaries:
 
@@ -39,19 +39,19 @@ The repository-root `vercel.json` remains identical to `main`; the isolated cust
 
 ## Environment variables
 
-Before testing a new customer Vercel project, copy the existing production project's required environment variables through Vercel's environment-variable UI. Do not copy secrets into GitHub files.
+Before testing a new customer Vercel project, copy only the variables required by customer checkout/payment/refund-status APIs. Do not copy secrets into GitHub files.
 
-Preserve all environment variables used by the existing checkout, Razorpay, Supabase and shipping server functions. The new customer project must be functionally equivalent to the existing customer project before domain cutover.
+Required server variables include the existing Supabase and Razorpay variables used by the customer payment flows, plus `ALLOWED_ORIGIN=https://fashionfussion.in` for production. Add a controlled preview origin only while preview testing.
 
-If `ALLOWED_ORIGIN` is configured, include the exact customer production origin `https://fashionfussion.in` and any preview origin used during controlled preview testing.
+Shiprocket administrator credentials and pickup configuration are not required by the cleaned Customer project; those belong to the Admin project.
 
 ## Safe zero-downtime rollout
 
 1. Leave the current live `fashion-fussion` Vercel project and `fashionfussion.in` domain unchanged.
 2. Create `fashion-fussion-admin` and test its generated Vercel URL.
 3. Create `fashion-fussion-seller` and test its generated Vercel URL.
-4. Create `fashion-fussion-customer` from this branch with Root Directory `customer-panel`, then copy the current customer project's environment variables.
-5. Run customer smoke tests on the generated preview URL: homepage, login, product, cart, checkout calculation, payment/COD paths that can be tested safely, account/orders, returns and business/bulk flows.
+4. Create `fashion-fussion-customer` from this branch with Root Directory `customer-panel`, then configure the required customer environment variables.
+5. Run customer smoke tests on the generated preview URL: homepage, login, product, cart, checkout calculation, payment/COD paths that can be tested safely, account/orders, courier status, returns and business/bulk flows.
 6. Attach `admin.fashionfussion.in` and `seller.fashionfussion.in` only after their previews pass.
 7. Verify both subdomains independently.
 8. Only then move `fashionfussion.in` from the old customer Vercel project to `fashion-fussion-customer`.
