@@ -37,3 +37,16 @@ function saveProfile(event){event.preventDefault();const session=readSellerSessi
 function logoutSeller(){localStorage.removeItem(SELLER_SESSION_KEY);sessionStorage.removeItem(SELLER_SESSION_KEY);location.href='login.html'}
 const seller=readSellerSession();
 if(!seller){location.replace('login.html')}else{const account=currentSeller();renderSellerIdentity(account);renderOrders();renderPayments();renderReturns();populateProfile(account);portal$('orderSearch')?.addEventListener('input',renderOrders);portal$('sellerProfileForm')?.addEventListener('submit',saveProfile);portal$('logoutSeller')?.addEventListener('click',logoutSeller)}
+
+window.SellerCatalogBridge={
+  getProducts:()=>products,
+  makeId:()=>uid(),
+  notify:message=>toast(message),
+  commit:next=>{products=next;persist();renderAll()},
+  close:()=>closeDrawer(),
+  showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
+};
+const catalogEnhancements=document.createElement('script');
+catalogEnhancements.src='catalog-enhancements.js';
+catalogEnhancements.defer=true;
+document.body.appendChild(catalogEnhancements);
