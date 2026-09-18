@@ -79,6 +79,55 @@ This folder is intentionally isolated from the existing Fashion_Fussion storefro
 - Printable packing slip
 - Demo fulfilment reset action
 
+### Returns & refunds
+- Dedicated return/refund workflow replacing the earlier static returns preview
+- Return search by return ID, order, SKU, product or customer
+- Active / New request / Refunded / All filters
+- Seller return flow: `Requested → Approved → Pickup scheduled → Received → Refunded`
+- Seller rejection action with a seller-visible local note
+- Local refund-value metrics
+- Demo reverse-pickup progression
+- Demo refund confirmation with no real payment movement
+- Separate return-workflow reset action
+
+> Return approvals, reverse pickups and refunds are local prototype events only. No payment gateway, customer wallet/card, courier or warehouse system is called.
+
+### Seller support tickets
+- Dedicated Support workspace
+- Create local seller tickets by category and priority
+- Open / Resolved / All filters
+- Local seller notes / conversation preview
+- Resolve and reopen ticket states
+- Sidebar open-ticket counter
+
+> No real support system, email, SLA engine or admin support queue is connected.
+
+### Tax & invoice settings
+- Dedicated Tax & invoices workspace
+- Seller legal/invoice name
+- Sample PAN-format validation
+- GST-registered toggle and sample GSTIN-format validation
+- Invoice prefix and next-number preference
+- Default place-of-supply and optional HSN preference
+- Invoice footer note
+- Invoice-number preview
+- Explicit status for unavailable GST calculation, invoice validation, credit-note tax and invoice PDF services
+
+> These settings do **not** calculate, collect, file or validate taxes and do not create a legally valid GST/tax invoice. Use sample values only.
+
+### Team, roles & permissions
+- Dedicated Team & roles workspace
+- Current seller represented as immutable Owner in the mock team UI
+- Add mock staff members by name/email
+- Assign predefined roles: Catalog manager, Operations manager, Finance manager or Support agent
+- Permission summary for each role
+- Change a mock member's role
+- Enable/disable mock members
+- Remove mock members
+- Permission-matrix preview for future backend authorization
+
+> Mock team members cannot sign in and the displayed permissions do not enforce access control. Production authorization must be enforced server-side.
+
 ### Analytics
 - Gross demo order value
 - Total orders, active orders and ordered units
@@ -110,7 +159,6 @@ This folder is intentionally isolated from the existing Fashion_Fussion storefro
 
 ### Other operations preview
 - Payments / settlement history preview
-- Returns queue preview
 - Seller Profile workspace
 - Account setup progress
 
@@ -127,11 +175,15 @@ This prototype does **not** currently connect to:
 - Warehouse or shipping carrier APIs
 - Real AWB / shipping labels / courier bookings
 - Real invoice or GST-invoice service
+- Real GST calculation / filing / tax engine
 - Real KYC / GST / PAN verification
 - Real bank-account verification or settlement provider
 - Real document storage
 - Real customer orders
-- Real returns or logistics services
+- Real return authorization / warehouse inspection
+- Real payment refunds
+- Real support/helpdesk system
+- Real staff invitations / RBAC authorization
 
 No existing storefront/admin/backend file is required or modified by this folder.
 
@@ -148,7 +200,7 @@ Demo credentials:
 
 The prototype is plain HTML/CSS/JavaScript and has no build step.
 
-Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending and Rejected listings. The Orders screen also includes a separate **Reset demo** action for fulfilment states. Settings includes a separate onboarding reset for the current local seller.
+Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending and Rejected listings. Orders includes a separate **Reset demo** action for fulfilment states, Returns includes its own reset action, and Settings includes a separate onboarding reset for the current local seller.
 
 ## Files
 
@@ -165,6 +217,7 @@ Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending an
 - `inventory-restock-fix.js` — low-stock bulk restock correction for variant totals
 - `analytics-shipping.js` — analytics, notifications, shipping queue, order detail and printable documents
 - `onboarding-settings.js` — business onboarding, mock KYC readiness, bank/pickup workflow and account settings
+- `returns-support-team.js` — stateful returns/refunds, seller support, tax preferences and mock team roles
 
 ## Planned integration contract
 
@@ -204,6 +257,35 @@ Recommended future inventory/fulfilment rules:
 9. Analytics should read immutable order events rather than browser-local demo state
 10. Notifications should be seller-scoped and generated from backend events
 
+Recommended future return/refund rules:
+
+1. Return requests must reference authoritative seller-owned order items
+2. Return eligibility and window should be evaluated server-side from product policy and delivery timestamps
+3. Every transition should be auditable (`requested → approved/rejected → pickup → received/inspection → refund/exchange`)
+4. Refund amount must be calculated from captured payment/order adjustments, not seller-entered browser values
+5. Refund execution must be idempotent and tied to payment-provider transaction IDs
+6. Warehouse inspection outcomes and rejection reasons should be immutable events
+7. Customer-facing return/refund status must derive from the same authoritative workflow
+
+Recommended future tax/invoice rules:
+
+1. Legal seller/tax identity must come from verified seller records
+2. Taxability, GST rates, HSN/SAC, place of supply and intra/inter-state treatment must be computed server-side
+3. Invoice numbers must be generated atomically and must not rely on a browser-side counter
+4. Credit notes/refund tax adjustments must be linked to the original invoice/order
+5. Final invoice documents should be generated from immutable order, seller and tax snapshots
+6. Tax settings should be permission-protected and changes auditable
+
+Recommended future team/RBAC rules:
+
+1. Team membership must reference real authenticated users and `seller_id`
+2. Invitations should be tokenized, expiring and auditable
+3. Roles/permissions must be enforced in database/API authorization, not only hidden UI
+4. Owner-level permission changes require stronger authorization
+5. Sensitive actions such as bank/tax changes, refunds and staff management should have dedicated permissions
+6. Disabled/removed staff sessions should be revoked promptly
+7. Role changes should be logged with actor, timestamp, old role and new role
+
 Suggested future ownership/review fields:
 
 - `seller_id`
@@ -222,10 +304,15 @@ Suggested future seller modules:
 
 - `sellers`
 - `seller_members`
+- `seller_member_roles`
+- `seller_role_permissions`
+- `seller_invitations`
 - `seller_addresses`
 - `seller_kyc`
 - `seller_kyc_documents`
 - `seller_bank_accounts`
+- `seller_tax_profiles`
+- `seller_invoice_sequences`
 - `seller_preferences`
 - `seller_products` / seller ownership on products
 - `seller_inventory`
@@ -237,5 +324,9 @@ Suggested future seller modules:
 - `seller_notifications`
 - `seller_settlements`
 - `seller_returns`
+- `seller_return_events`
+- `seller_refunds`
+- `seller_support_tickets`
+- `seller_support_messages`
 
 The final database/RLS/API design should be added only when the seller panel is intentionally connected to the main application.
