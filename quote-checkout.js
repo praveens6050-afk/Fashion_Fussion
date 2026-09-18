@@ -1,5 +1,5 @@
 'use strict';
-const BACKEND_URL='https://fashion-fussion-olive.vercel.app';
+const BACKEND_URL='';
 const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
 const quoteId=Number(new URLSearchParams(location.search).get('quote'));
