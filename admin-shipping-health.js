@@ -1,5 +1,5 @@
 (function(){'use strict';
-const BACKEND_URL=location.hostname.endsWith('vercel.app')?location.origin:'https://fashion-fussion-olive.vercel.app';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
 const $=id=>document.getElementById(id);
 async function api(){const{data:{session}}=await window.supabaseClient.auth.getSession();if(!session)throw new Error('Admin session expired');const r=await fetch(BACKEND_URL+'/api/admin-order-action',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'connection_test'})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Shiprocket connection test failed');return d}
 function show(message,good){const box=$('ffShippingFeedback');if(!box)return;box.style.display='block';box.style.background=good?'#edf9f1':'#fff0ef';box.style.color=good?'#118344':'#b42318';box.textContent=message}

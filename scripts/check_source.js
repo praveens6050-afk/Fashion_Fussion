@@ -82,10 +82,12 @@ if(/['"]ordered['"]/.test(adminQuotes.match(/const MANUAL_STATUS=[^;]+/)?.[0]||'
 const orderBusiness=fs.readFileSync(path.join(root,'order-business-details.js'),'utf8');
 for(const required of ['business_name','business_gstin','business_billing_address','purchase_order_no','bulk_quote_id','does not claim that a statutory GST invoice'])if(!orderBusiness.includes(required))errors.push(`order-business-details.js: business order snapshot display missing ${required}`);
 const orderDetails=fs.readFileSync(path.join(root,'order-details.html'),'utf8');
-for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetails.includes(`id="${anchor}"`))errors.push(`order-details.html: missing ${anchor} hash target`);
-for(const required of ['id="refundFeedback"','aria-live="polite"','setRefundFeedback(','/api/refund-status'])if(!orderDetails.includes(required))errors.push(`order-details.html: inline refund feedback missing ${required}`);
-if(/\balert\s*\(/.test(orderDetails))errors.push('order-details.html: refund/order status must use inline feedback, not browser alerts');
-if(/razorpay_payment_id|razorpay_order_id/.test(orderDetails))errors.push('order-details.html: raw Razorpay identifiers must not be selected or exposed');
+const orderDetailsScript=fs.readFileSync(path.join(root,'csp-order-details.js'),'utf8');
+if(!orderDetails.includes('csp-order-details.js?v=1'))errors.push('order-details.html: external order-details runtime link missing');
+for(const anchor of ['trackingSection','actionsSection','helpSection'])if(!orderDetailsScript.includes(`id="${anchor}"`))errors.push(`csp-order-details.js: missing ${anchor} hash target`);
+for(const required of ['id="refundFeedback"','aria-live="polite"','setRefundFeedback(','/api/refund-status'])if(!orderDetailsScript.includes(required))errors.push(`csp-order-details.js: refund feedback/status flow missing ${required}`);
+if(/\balert\s*\(/.test(orderDetails+orderDetailsScript))errors.push('order-details: refund/order status must use inline page feedback, not browser alerts');
+if(/razorpay_payment_id|razorpay_order_id/.test(orderDetails+orderDetailsScript))errors.push('order-details: raw Razorpay identifiers must not be selected or exposed');
 const refundTracker=fs.readFileSync(path.join(root,'order-refund-tracker.js'),'utf8');
 for(const required of ['cancellation_reason','cancelled_at','refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','persistedRefundTracker','Original payment method'])if(!refundTracker.includes(required))errors.push(`order-refund-tracker.js: persisted customer refund tracker missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(refundTracker))errors.push('order-refund-tracker.js: raw Razorpay identifiers must not be selected or exposed');
@@ -110,7 +112,9 @@ for(const required of ['product_variants','get_variant_availability','variant-op
 const variantCartUi=fs.readFileSync(path.join(root,'variant-cart-ui.js'),'utf8');
 for(const required of ['product_variants','price_override','Size ','Color ','data-variant-line','updateLine','removeLine','itemsBox'])if(!variantCartUi.includes(required))errors.push(`variant-cart-ui.js: cart/checkout variant presentation missing ${required}`);
 const account=fs.readFileSync(path.join(root,'account.html'),'utf8');
-for(const required of ['data-view="addresses"','id="addressesView"','id="addressForm"','customer_addresses','set_default_customer_address'])if(!account.includes(required))errors.push(`account.html: integrated address management missing ${required}`);
+const accountScript=fs.readFileSync(path.join(root,'csp-account.js'),'utf8');
+for(const required of ['data-view="addresses"','id="addressesView"','id="addressForm"','csp-account.js?v=1'])if(!account.includes(required))errors.push(`account.html: integrated address structure/runtime missing ${required}`);
+for(const required of ['customer_addresses','set_default_customer_address'])if(!accountScript.includes(required))errors.push(`csp-account.js: integrated address behavior missing ${required}`);
 const accountRefunds=fs.readFileSync(path.join(root,'account-refunds.js'),'utf8');
 for(const required of ['refund_id','refund_status','refund_reference','refund_amount','refund_updated_at','cancellation_reason','Original payment method','order-details.html?id=','hydrateAudit(','mergeAudit('])if(!accountRefunds.includes(required))errors.push(`account-refunds.js: persisted account refund view missing ${required}`);
 if(/razorpay_payment_id|razorpay_order_id/.test(accountRefunds))errors.push('account-refunds.js: raw Razorpay identifiers must not be selected or exposed');

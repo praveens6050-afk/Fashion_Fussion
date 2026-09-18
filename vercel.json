@@ -15,95 +15,152 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com; frame-src https://*.razorpay.com; upgrade-insecure-requests" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdn.jsdelivr.net https://checkout.razorpay.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com; frame-src https://*.razorpay.com; upgrade-insecure-requests"
+        }
       ]
     },
     {
       "source": "/",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/index.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/about.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/about.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/about.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/faq.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/faq.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/faq.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/business-buying.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/business-buying.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/business-buying.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/contact.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/contact.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/contact.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/terms.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/terms.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/terms.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/shipping-delivery.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/shipping-delivery.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/shipping-delivery.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/returns-refunds.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/returns-refunds.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/returns-refunds.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/privacy.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/privacy.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/privacy.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/security-policy.html",
       "headers": [
-        { "key": "Link", "value": "<https://fashion-fussion-olive.vercel.app/security-policy.html>; rel=\"canonical\"" }
+        {
+          "key": "Link",
+          "value": "<https://fashion-fussion-olive.vercel.app/security-policy.html>; rel=\"canonical\""
+        }
       ]
     },
     {
       "source": "/search.html",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
       ]
     },
     {
       "source": "/product.html",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
       ]
     },
     {
       "source": "/(admin|admin-account|account|cart|checkout|quote-checkout|login|signup|reset-password|wishlist|notifications|coupons|gift-cards|order-confirmation|order-details|order-status|order-tracking).html",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
       ]
     }
   ]

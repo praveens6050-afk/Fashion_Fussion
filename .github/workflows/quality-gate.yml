@@ -15,6 +15,45 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
+      - name: Verify pinned Supabase SDK integrity
+        run: |
+          set -euo pipefail
+          expected='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP'
+          tmp="$(mktemp -d)"
+          cd "$tmp"
+          tgz="$(npm pack --silent @supabase/supabase-js@2.116.0)"
+          tar -xzf "$tgz"
+          test -f package/dist/umd/supabase.js
+          actual="sha384-$(openssl dgst -sha384 -binary package/dist/umd/supabase.js | openssl base64 -A)"
+          test "$actual" = "$expected"
+          echo "Pinned Supabase SDK integrity verified: $actual"
+          cd "$GITHUB_WORKSPACE"
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [
+              'gift-cards.html', 'reset-password.html', 'checkout.html',
+              'order-confirmation.html', 'account.html', 'order-details.html',
+              'product.html', 'search.html', 'admin-account.html', 'index.html',
+              'signup.html', 'login.html', 'notifications.html', 'quote-checkout.html',
+              'cart.html', 'coupons.html', 'wishlist.html', 'admin.html'
+          ]
+          url = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js'
+          sri = 'sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP'
+          tag = f'<script src="{url}" integrity="{sri}" crossorigin="anonymous"></script>'
+          errors = []
+          for name in files:
+              text = Path(name).read_text(encoding='utf-8')
+              if text.count(tag) != 1:
+                  errors.append(f'{name}: expected one canonical pinned Supabase SDK tag')
+              stripped = text.replace(tag, '')
+              if 'cdn.jsdelivr.net/npm/@supabase/supabase-js' in stripped:
+                  errors.append(f'{name}: extra/non-canonical Supabase SDK CDN reference')
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          print(f'Canonical Supabase SDK SRI tags verified on {len(files)} HTML pages.')
+          PY
+      - name: Strict CSP hardening source checks
+        run: node scripts/check_csp_hardening.js
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks

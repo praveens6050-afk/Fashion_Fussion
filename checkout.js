@@ -1,5 +1,5 @@
 'use strict';
-const BACKEND_URL='https://fashion-fussion-olive.vercel.app',CART_KEY='fashion_fussion_cart',CHECKOUT_KEY='fashion_fussion_checkout_key';
+const BACKEND_URL=window.FF_API_ORIGIN||'',CART_KEY='fashion_fussion_cart',CHECKOUT_KEY='fashion_fussion_checkout_key';
 let session=null,products=[],addresses=[],address=null,quote=null,appliedCoupon='',appliedGift='',refreshSeq=0;
 const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
