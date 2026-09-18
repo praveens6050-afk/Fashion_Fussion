@@ -45,3 +45,7 @@ The seller portal is still a standalone browser-storage prototype. Publishing it
 5. Sign out and confirm the login page returns.
 6. Confirm the existing customer `fashion-fussion` Vercel project/domain is unchanged.
 7. Confirm the seller project's production deployment source is `seller-panel-standalone` and Root Directory is `seller-panel`.
+
+## Verification checkpoint — 19 Sep 2026
+
+This branch is the exact standalone Seller deployment candidate after QA/cleanup. The current customer production remains untouched. A branch preview may be used for static smoke testing, but public seller production should not be treated as secure until Supabase seller authentication/ownership replaces the browser-local prototype auth.
