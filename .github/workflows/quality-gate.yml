@@ -28,7 +28,30 @@ jobs:
           test "$actual" = "$expected"
           echo "Pinned Supabase SDK integrity verified: $actual"
           cd "$GITHUB_WORKSPACE"
-          grep -RIl 'cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0' --include='*.html' . || true
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [
+              'gift-cards.html', 'reset-password.html', 'checkout.html',
+              'order-confirmation.html', 'account.html', 'order-details.html',
+              'product.html', 'search.html', 'admin-account.html', 'index.html',
+              'signup.html', 'login.html', 'notifications.html', 'quote-checkout.html',
+              'cart.html', 'coupons.html', 'wishlist.html', 'admin.html'
+          ]
+          url = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js'
+          sri = 'sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP'
+          tag = f'<script src="{url}" integrity="{sri}" crossorigin="anonymous"></script>'
+          errors = []
+          for name in files:
+              text = Path(name).read_text(encoding='utf-8')
+              if text.count(tag) != 1:
+                  errors.append(f'{name}: expected one canonical pinned Supabase SDK tag')
+              stripped = text.replace(tag, '')
+              if 'cdn.jsdelivr.net/npm/@supabase/supabase-js' in stripped:
+                  errors.append(f'{name}: extra/non-canonical Supabase SDK CDN reference')
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          print(f'Canonical Supabase SDK SRI tags verified on {len(files)} HTML pages.')
+          PY
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
