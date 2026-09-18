@@ -1,0 +1,98 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const root = path.resolve(__dirname, '..');
+const failures = [];
+const fail = message => failures.push(message);
+const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const exists = file => fs.existsSync(path.join(root, file));
+
+const STYLE_BLOCK_RE = /<style\b[^>]*>[\s\S]*?<\/style\s*>/i;
+const INLINE_SCRIPT_RE = /<script(?![^>]*\bsrc\s*=)[^>]*>[\s\S]*?<\/script\s*>/i;
+const STYLE_ATTR_RE = /\sstyle\s*=\s*(["']).*?\1/is;
+const EVENT_ATTR_RE = /\son[a-z0-9_-]+\s*=\s*(["']).*?\1/is;
+const JAVASCRIPT_URL_RE = /(?:href|src)\s*=\s*(["'])\s*javascript:/i;
+const CSS_TEXT_RE = /\.style\.cssText\s*=/;
+const SET_STYLE_ATTR_RE = /(?:setAttribute|setAttributeNS)\s*\(\s*["']style["']/i;
+const PROD_BACKEND_ORIGIN = 'https://fashion-fussion-olive.vercel.app';
+
+const htmlFiles = fs.readdirSync(root)
+  .filter(name => name.endsWith('.html'))
+  .filter(name => /<head\b/i.test(read(name)) && /<\/head>/i.test(read(name)))
+  .sort();
+
+if (!htmlFiles.length) fail('No HTML documents found for CSP checks.');
+
+for (const file of htmlFiles) {
+  const text = read(file);
+  if (STYLE_BLOCK_RE.test(text)) fail(`${file}: inline <style> block is forbidden`);
+  if (INLINE_SCRIPT_RE.test(text)) fail(`${file}: inline <script> block is forbidden`);
+  if (STYLE_ATTR_RE.test(text)) fail(`${file}: style= attribute is forbidden`);
+  if (EVENT_ATTR_RE.test(text)) fail(`${file}: inline on*= event handler is forbidden`);
+  if (JAVASCRIPT_URL_RE.test(text)) fail(`${file}: javascript: URL is forbidden`);
+  if (!text.includes('csp-dynamic.css?v=1')) fail(`${file}: csp-dynamic.css compatibility stylesheet is missing`);
+
+  for (const match of text.matchAll(/(?:src|href)=["'](csp-[^"'?]+\.(?:js|css))(?:\?[^"']*)?["']/gi)) {
+    if (!exists(match[1])) fail(`${file}: referenced CSP asset does not exist: ${match[1]}`);
+  }
+}
+
+const rootJsFiles = fs.readdirSync(root)
+  .filter(name => name.endsWith('.js'))
+  .sort();
+
+for (const file of rootJsFiles) {
+  const text = read(file);
+  if (STYLE_ATTR_RE.test(text)) fail(`${file}: generated style= attribute is forbidden`);
+  if (EVENT_ATTR_RE.test(text)) fail(`${file}: generated on*= event handler is forbidden`);
+  if (JAVASCRIPT_URL_RE.test(text)) fail(`${file}: generated javascript: URL is forbidden`);
+  if (CSS_TEXT_RE.test(text)) fail(`${file}: style.cssText assignment is forbidden`);
+  if (SET_STYLE_ATTR_RE.test(text)) fail(`${file}: setAttribute('style', ...) is forbidden`);
+  if (text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: browser API calls must use same-origin paths, not the production Vercel hostname`);
+}
+
+if (!exists('csp-dynamic.css')) fail('csp-dynamic.css is missing.');
+
+let config;
+try {
+  config = JSON.parse(read('vercel.json'));
+} catch (error) {
+  fail(`vercel.json is not valid JSON: ${error.message}`);
+}
+
+if (config) {
+  const globalRule = (config.headers || []).find(rule => rule.source === '/(.*)');
+  const cspHeader = globalRule?.headers?.find(header => String(header.key).toLowerCase() === 'content-security-policy');
+  const csp = String(cspHeader?.value || '');
+  if (!csp) {
+    fail('Global Content-Security-Policy header is missing.');
+  } else {
+    const required = [
+      "default-src 'self'",
+      "script-src 'self' https://cdn.jsdelivr.net https://checkout.razorpay.com",
+      "script-src-attr 'none'",
+      "style-src 'self'",
+      "style-src-attr 'none'",
+      'https://gmdevprqtvoshbbytsxf.supabase.co',
+      'wss://gmdevprqtvoshbbytsxf.supabase.co',
+      'https://*.razorpay.com',
+      'frame-src https://*.razorpay.com',
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+    ];
+    if (csp.includes("'unsafe-inline'")) fail("Global CSP must not allow 'unsafe-inline'.");
+    for (const token of required) {
+      if (!csp.includes(token)) fail(`Global CSP is missing required directive/source: ${token}`);
+    }
+  }
+}
+
+if (failures.length) {
+  console.error('Strict CSP hardening checks failed:');
+  failures.forEach(message => console.error(`- ${message}`));
+  process.exit(1);
+}
+
+console.log(`Strict CSP hardening source guards passed (${htmlFiles.length} HTML documents, ${rootJsFiles.length} browser JS files).`);
