@@ -50,3 +50,7 @@ const catalogEnhancements=document.createElement('script');
 catalogEnhancements.src='catalog-enhancements.js';
 catalogEnhancements.defer=true;
 document.body.appendChild(catalogEnhancements);
+const inventoryFulfillment=document.createElement('script');
+inventoryFulfillment.src='inventory-fulfillment.js';
+inventoryFulfillment.defer=true;
+document.body.appendChild(inventoryFulfillment);
