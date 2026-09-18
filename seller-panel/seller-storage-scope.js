@@ -73,7 +73,7 @@
   // this seller's scoped catalog; new sellers receive the starter catalog.
   try {
     const scopedProducts = JSON.parse(localStorage.getItem('ff_seller_panel_demo_v1') || 'null');
-    if (Array.isArray(scopedProducts) && scopedProducts.length && typeof products !== 'undefined') {
+    if (Array.isArray(scopedProducts) && typeof products !== 'undefined') {
       products = scopedProducts;
     } else if (typeof starterProducts !== 'undefined' && typeof products !== 'undefined') {
       products = structuredClone(starterProducts);
