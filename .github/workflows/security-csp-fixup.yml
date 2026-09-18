@@ -1,0 +1,184 @@
+name: Security CSP Fixup
+on:
+  push:
+    branches: [security/full-audit-hardening]
+permissions:
+  contents: write
+concurrency:
+  group: security-csp-fixup
+  cancel-in-progress: false
+jobs:
+  harden:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: security/full-audit-hardening
+          fetch-depth: 1
+      - name: Externalize inline script and style blocks
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          html_files = sorted(Path('.').glob('*.html'))
+          style_block_re = re.compile(r'<style\b[^>]*>([\s\S]*?)</style\s*>', re.I)
+          script_block_re = re.compile(r'<script(?![^>]*\bsrc\s*=)([^>]*)>([\s\S]*?)</script\s*>', re.I)
+          style_attr_re = re.compile(r'(<[A-Za-z][^<>]*?)\sstyle\s*=\s*(["\'])(.*?)\2([^<>]*?>)', re.I | re.S)
+          event_attr_re = re.compile(r'\son[a-z0-9_-]+\s*=\s*(["\'])(.*?)\1', re.I | re.S)
+          class_re = re.compile(r'\bclass\s*=\s*(["\'])(.*?)\1', re.I | re.S)
+
+          created_css = 0
+          created_js = 0
+
+          def importantize(style):
+              out = []
+              for raw in style.split(';'):
+                  raw = raw.strip()
+                  if not raw:
+                      continue
+                  if ':' not in raw:
+                      raise SystemExit(f'Unsupported inline style declaration: {raw}')
+                  prop, val = raw.split(':', 1)
+                  val = val.strip()
+                  if '!important' not in val.lower():
+                      val += ' !important'
+                  out.append(f'{prop.strip()}:{val}')
+              return ';'.join(out) + (';' if out else '')
+
+          for p in html_files:
+              text = p.read_text(encoding='utf-8')
+              stem = p.stem
+              extra_css = []
+              style_index = 0
+              had_fallback_handler = False
+
+              # Convert the two remaining image onerror handlers to data markers.
+              def event_repl(m):
+                  nonlocal_hack[0] = True
+                  handler = m.group(2).replace("\\'", "'").strip()
+                  parsed = re.fullmatch(r"this\.outerHTML='<div class=&quot;([^&]+)&quot;>([^<]+)</div>'", handler)
+                  if not parsed:
+                      raise SystemExit(f'{p}: unsupported inline event handler: {handler[:120]}')
+                  cls, label = parsed.groups()
+                  if '"' in cls or '"' in label:
+                      raise SystemExit(f'{p}: unsupported fallback marker content')
+                  return f' data-csp-fallback-class="{cls}" data-csp-fallback-text="{label}"'
+
+              nonlocal_hack = [False]
+              text = event_attr_re.sub(event_repl, text)
+              had_fallback_handler = nonlocal_hack[0]
+
+              # Replace static style attributes, including those inside HTML strings in inline JS,
+              # with generated classes. Direct element.style.property assignments remain valid under strict CSP.
+              def style_repl(m):
+                  nonlocal style_index
+                  style_index += 1
+                  cls = f'csp-inline-{stem}-{style_index}'
+                  tag = m.group(1) + m.group(4)
+                  cm = class_re.search(tag)
+                  if cm:
+                      replacement = f'class={cm.group(1)}{cm.group(2)} {cls}{cm.group(1)}'
+                      tag = tag[:cm.start()] + replacement + tag[cm.end():]
+                  else:
+                      if tag.endswith('/>'):
+                          tag = tag[:-2] + f' class="{cls}"/>'
+                      else:
+                          tag = tag[:-1] + f' class="{cls}">'
+                  extra_css.append(f'.{cls}{{{importantize(m.group(3))}}}')
+                  return tag
+
+              text = style_attr_re.sub(style_repl, text)
+
+              style_matches = list(style_block_re.finditer(text))
+              if len(style_matches) > 1:
+                  raise SystemExit(f'{p}: expected at most one style block, found {len(style_matches)}')
+              css_path = Path(f'csp-{stem}.css')
+              if style_matches:
+                  css = style_matches[0].group(1).strip() + '\n'
+                  if extra_css:
+                      css += '\n'.join(extra_css) + '\n'
+                  css_path.write_text(css, encoding='utf-8')
+                  text = style_block_re.sub(f'<link rel="stylesheet" href="{css_path.name}?v=1">', text, count=1)
+                  created_css += 1
+              elif extra_css:
+                  css_path.write_text('\n'.join(extra_css) + '\n', encoding='utf-8')
+                  text = text.replace('</head>', f'<link rel="stylesheet" href="{css_path.name}?v=1"></head>', 1)
+                  created_css += 1
+
+              script_matches = list(script_block_re.finditer(text))
+              if len(script_matches) > 1:
+                  raise SystemExit(f'{p}: expected at most one inline script block, found {len(script_matches)}')
+              if script_matches:
+                  attrs = script_matches[0].group(1)
+                  js = script_matches[0].group(2).strip() + '\n'
+                  if had_fallback_handler:
+                      listener = """document.addEventListener('error',event=>{const target=event.target;if(!(target instanceof HTMLImageElement))return;const cls=target.dataset.cspFallbackClass;if(!cls)return;const fallback=document.createElement('div');fallback.className=cls;fallback.textContent=target.dataset.cspFallbackText||'Image unavailable';target.replaceWith(fallback)},true);\n"""
+                      js = listener + js
+                  if p.name == 'admin.html':
+                      old = "const BACKEND_URL='https://fashion-fussion-olive.vercel.app';"
+                      if old not in js:
+                          raise SystemExit('admin.html: expected hardcoded backend origin not found')
+                      js = js.replace(old, "const BACKEND_URL='';", 1)
+                  js_path = Path(f'csp-{stem}.js')
+                  js_path.write_text(js, encoding='utf-8')
+                  replacement = f'<script{attrs} src="{js_path.name}?v=1"></script>'
+                  text = script_block_re.sub(replacement, text, count=1)
+                  created_js += 1
+              elif had_fallback_handler:
+                  raise SystemExit(f'{p}: fallback handler conversion requires an externalized page script')
+
+              p.write_text(text, encoding='utf-8')
+
+          # Enforce source is ready for a strict no-unsafe-inline policy.
+          problems = []
+          for p in html_files:
+              text = p.read_text(encoding='utf-8')
+              if style_block_re.search(text): problems.append(f'{p}: inline style block remains')
+              if script_block_re.search(text): problems.append(f'{p}: inline script block remains')
+              if re.search(r'\sstyle\s*=\s*(["\']).*?\1', text, re.I|re.S): problems.append(f'{p}: style attribute remains')
+              if re.search(r'\son[a-z0-9_-]+\s*=\s*(["\']).*?\1', text, re.I|re.S): problems.append(f'{p}: event handler attribute remains')
+              if re.search(r'(?:href|src)\s*=\s*(["\'])\s*javascript:', text, re.I): problems.append(f'{p}: javascript URL remains')
+          for p in sorted(Path('.').glob('*.js')):
+              text = p.read_text(encoding='utf-8')
+              if re.search(r'\sstyle\s*=\s*(["\']).*?\1', text, re.I|re.S): problems.append(f'{p}: dynamic style attribute string remains')
+              if re.search(r'\son[a-z0-9_-]+\s*=\s*(["\']).*?\1', text, re.I|re.S): problems.append(f'{p}: dynamic event-handler string remains')
+              if re.search(r'\.style\.cssText\s*=', text): problems.append(f'{p}: style.cssText assignment remains')
+              if re.search(r'(?:setAttribute|setAttributeNS)\s*\(\s*["\']style["\']', text, re.I): problems.append(f'{p}: direct style attribute mutation remains')
+          if problems:
+              raise SystemExit('\n'.join(problems))
+
+          config_path = Path('vercel.json')
+          config = json.loads(config_path.read_text(encoding='utf-8'))
+          strict_csp = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdn.jsdelivr.net https://checkout.razorpay.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com; frame-src https://*.razorpay.com; upgrade-insecure-requests"
+          found = 0
+          for rule in config.get('headers', []):
+              if rule.get('source') != '/(.*)':
+                  continue
+              for header in rule.get('headers', []):
+                  if header.get('key','').lower() == 'content-security-policy':
+                      header['value'] = strict_csp
+                      found += 1
+          if found != 1:
+              raise SystemExit(f'Expected one global CSP header, found {found}')
+          config_path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
+          print(f'Externalized {created_js} inline scripts and {created_css} inline styles across {len(html_files)} pages.')
+          print('Strict CSP source inventory passed: no inline blocks, style attrs, event attrs, javascript URLs, cssText, or setAttribute(style).')
+          PY
+          git diff --check
+      - name: Commit strict CSP refactor
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'No CSP refactor changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.html' 'csp-*.css' 'csp-*.js' vercel.json
+          git commit -m 'Externalize inline assets for strict CSP'
+          git push origin HEAD:security/full-audit-hardening
