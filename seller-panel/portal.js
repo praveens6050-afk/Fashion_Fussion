@@ -52,3 +52,4 @@ loadSellerModule('catalog-enhancements.js');
 loadSellerModule('inventory-fulfillment.js');
 loadSellerModule('inventory-restock-fix.js');
 loadSellerModule('analytics-shipping.js');
+loadSellerModule('onboarding-settings.js');
