@@ -17,6 +17,26 @@ async function one(path) {
   return data?.[0] || null;
 }
 
+async function enforceQuoteRateLimit(userId) {
+  const response = await fetch(SUPABASE_URL + '/rest/v1/rpc/consume_api_rate_limit', {
+    method: 'POST',
+    headers: { ...serverHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      p_subject_key: String(userId),
+      p_scope: 'quote_order',
+      p_limit: 30,
+      p_window_seconds: 60
+    })
+  });
+  const allowed = await response.json().catch(() => false);
+  if (!response.ok) throw new Error('Could not validate quote request rate limit');
+  if (allowed !== true) {
+    const error = new Error('Too many price checks. Please wait a moment and try again.');
+    error.status = 429;
+    throw error;
+  }
+}
+
 async function redemptionCount(couponId) {
   const response = await fetch(
     SUPABASE_URL + '/rest/v1/coupon_redemptions?coupon_id=eq.' + encodeURIComponent(couponId) + '&select=id',
@@ -102,7 +122,8 @@ module.exports = async function quoteOrder(req, res) {
   if (req.method !== 'POST') return json(req, res, 405, { error: 'Method not allowed' });
 
   try {
-    await getSupabaseUser(req);
+    const user = await getSupabaseUser(req);
+    await enforceQuoteRateLimit(user.id);
     const body = await readBody(req);
     const calc = await calculate(body.items);
     const promo = await discounts(body, calc);
@@ -124,7 +145,7 @@ module.exports = async function quoteOrder(req, res) {
       gift_card_code: promo.gift?.code || null
     });
   } catch (error) {
-    return json(req, res, 400, { error: error.message || 'Unable to calculate offer' });
+    return json(req, res, error.status || 400, { error: error.message || 'Unable to calculate offer' });
   }
 };
 
