@@ -46,19 +46,9 @@ window.SellerCatalogBridge={
   close:()=>closeDrawer(),
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
-const catalogEnhancements=document.createElement('script');
-catalogEnhancements.src='catalog-enhancements.js';
-catalogEnhancements.defer=true;
-document.body.appendChild(catalogEnhancements);
-const inventoryFulfillment=document.createElement('script');
-inventoryFulfillment.src='inventory-fulfillment.js';
-inventoryFulfillment.defer=true;
-document.body.appendChild(inventoryFulfillment);
-const inventoryRestockFix=document.createElement('script');
-inventoryRestockFix.src='inventory-restock-fix.js';
-inventoryRestockFix.defer=true;
-document.body.appendChild(inventoryRestockFix);
-const analyticsShipping=document.createElement('script');
-analyticsShipping.src='analytics-shipping.js';
-analyticsShipping.defer=true;
-document.body.appendChild(analyticsShipping);
+function loadSellerModule(src){const script=document.createElement('script');script.src=src;script.async=false;document.body.appendChild(script)}
+loadSellerModule('operations-bootstrap.js');
+loadSellerModule('catalog-enhancements.js');
+loadSellerModule('inventory-fulfillment.js');
+loadSellerModule('inventory-restock-fix.js');
+loadSellerModule('analytics-shipping.js');
