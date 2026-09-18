@@ -30,6 +30,8 @@ The browser uses the public Supabase URL/anon key from `supabase-config.js`. Ser
 
 `SUPABASE_SERVICE_ROLE_KEY` must remain server-only and must never be placed in browser JavaScript.
 
+For preview verification, if the Vercel preview hostname sends an `Origin` header to the same-project API, add that exact preview origin to `ALLOWED_ORIGIN` as a comma-separated second value. After custom-domain verification, keep only origins that should actually be allowed.
+
 ## Routing
 
 - `/` and `/login` -> administrator sign-in
@@ -47,7 +49,9 @@ Both projects may intentionally use the same Supabase database because customer/
 
 ## Store preview
 
-Admin `Store Preview` links explicitly to `https://fashionfussion.in/?admin_preview=1`. It never assumes the customer storefront is hosted in the admin project.
+Admin `Store Preview` opens the normal customer storefront at `https://fashionfussion.in/`.
+
+Supabase browser sessions are origin-specific, so an administrator signed in at `admin.fashionfussion.in` is not automatically signed in at `fashionfussion.in`. The old `?admin_preview=1` cross-domain behavior is therefore intentionally not used here. If inactive-product preview is needed later, add a short-lived server-issued preview-token flow rather than sharing browser auth across domains.
 
 ## Safe rollout order
 
