@@ -53,10 +53,11 @@ jobs:
 
           checker=Path('scripts/check_csp_hardening.js')
           text=checker.read_text(encoding='utf-8')
-          old="  if (text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: hardcoded production backend origin is forbidden; use same-origin API paths`);"
-          new="  if (file !== 'supabase-config.js' && text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: production backend origin must only be defined by the central Pages fallback`);\n  if (file === 'supabase-config.js' && !text.includes(\"window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';\")) fail('supabase-config.js: canonical GitHub Pages API fallback is missing');\n  if (/fetch\\(\\s*['\"]\\/api\\//.test(text)) fail(`${file}: direct same-origin API fetch breaks GitHub Pages; use FF_API_ORIGIN or a BACKEND_URL derived from it`);\n  if (/\\bBACKEND_URL\\s*=\\s*['\"]{2}/.test(text)) fail(`${file}: empty BACKEND_URL breaks GitHub Pages; derive it from window.FF_API_ORIGIN`);"
-          if old not in text: raise SystemExit('CSP checker backend-origin guard target missing')
-          checker.write_text(text.replace(old,new,1),encoding='utf-8')
+          replacement="  if (file !== 'supabase-config.js' && text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: production backend origin must only be defined by the central Pages fallback`);\n  if (file === 'supabase-config.js' && !text.includes(\"window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';\")) fail('supabase-config.js: canonical GitHub Pages API fallback is missing');\n  if (/fetch\\(\\s*['\"]\\/api\\//.test(text)) fail(`${file}: direct same-origin API fetch breaks GitHub Pages; use FF_API_ORIGIN or a BACKEND_URL derived from it`);\n  if (/\\bBACKEND_URL\\s*=\\s*['\"]{2}/.test(text)) fail(`${file}: empty BACKEND_URL breaks GitHub Pages; derive it from window.FF_API_ORIGIN`);"
+          pattern=re.compile(r"  if \(text\.includes\(PROD_BACKEND_ORIGIN\)\) fail\(`\$\{file\}: [^`]+`\);")
+          text,count=pattern.subn(replacement,text,count=1)
+          if count!=1: raise SystemExit(f'CSP checker backend-origin guard target count={count}')
+          checker.write_text(text,encoding='utf-8')
 
           assert assignment in cfg.read_text(encoding='utf-8')
           for name in ['checkout.js','admin-orders.js','csp-admin.js']:
