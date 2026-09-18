@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fashion_Fussion Seller Center — Sign in</title>
+  <meta name="description" content="Standalone seller sign in and registration prototype for Fashion_Fussion.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-brand-panel">
+      <div class="auth-brand"><div class="brand-mark">FF</div><div><strong>Fashion_Fussion</strong><span>Seller Center</span></div></div>
+      <div class="auth-copy">
+        <p class="eyebrow light">SELL ON FASHION_FUSSION</p>
+        <h1>Manage your catalog from one professional seller workspace.</h1>
+        <p>List products, track admin approval, manage orders, view payments and resolve returns from one place.</p>
+      </div>
+      <div class="auth-benefits">
+        <div><b>01</b><span><strong>Controlled catalog</strong><small>Products go live only after admin approval.</small></span></div>
+        <div><b>02</b><span><strong>Clear rejection feedback</strong><small>Fix exactly what admin asks and resubmit.</small></span></div>
+        <div><b>03</b><span><strong>Business-ready workspace</strong><small>Orders, settlements and returns are prepared for future integration.</small></span></div>
+      </div>
+      <div class="auth-prototype">Standalone prototype · No live customer/admin connection yet</div>
+    </section>
+
+    <section class="auth-card-wrap">
+      <div class="auth-card">
+        <div class="auth-card-head">
+          <p class="eyebrow">SELLER ACCESS</p>
+          <h2 id="authTitle">Sign in to Seller Center</h2>
+          <p id="authSubtitle">Use the demo account or create a local seller account.</p>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+          <button class="active" type="button" data-auth-mode="login">Sign in</button>
+          <button type="button" data-auth-mode="register">Create account</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <label>Email address<input id="loginEmail" type="email" required autocomplete="email" placeholder="seller@example.com"></label>
+          <label>Password<input id="loginPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="Minimum 6 characters"></label>
+          <div class="auth-row"><label class="check"><input id="rememberMe" type="checkbox" checked><span>Keep me signed in</span></label><button type="button" class="text-button" id="fillDemo">Use demo account</button></div>
+          <button class="primary auth-submit" type="submit">Sign in</button>
+          <div class="demo-credentials"><strong>Demo access</strong><span>Email: demo@seller.local</span><span>Password: seller123</span></div>
+        </form>
+
+        <form id="registerForm" class="auth-form" hidden>
+          <div class="form-grid"><label>First name<input id="firstName" required maxlength="60" autocomplete="given-name"></label><label>Last name<input id="lastName" required maxlength="60" autocomplete="family-name"></label></div>
+          <label>Business / store name<input id="storeName" required maxlength="120" placeholder="e.g. Sharma Fashion House"></label>
+          <label>Business email<input id="registerEmail" type="email" required autocomplete="email" placeholder="business@example.com"></label>
+          <label>Mobile number<input id="mobile" type="tel" required maxlength="15" inputmode="numeric" placeholder="10-digit mobile number"></label>
+          <label>Create password<input id="registerPassword" type="password" required minlength="6" autocomplete="new-password"></label>
+          <label>Seller type<select id="sellerType"><option value="individual">Individual seller</option><option value="business">Registered business</option><option value="manufacturer">Manufacturer / brand</option><option value="wholesaler">Wholesaler / distributor</option></select></label>
+          <label class="check terms-check"><input id="termsAccepted" type="checkbox" required><span>I agree to the seller terms placeholder and understand this is currently a standalone prototype.</span></label>
+          <button class="primary auth-submit" type="submit">Create seller account</button>
+        </form>
+
+        <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body>
+</html>
