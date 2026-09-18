@@ -24,17 +24,16 @@ jobs:
           from pathlib import Path
           import re
 
-          PROD='https://fashion-fussion-olive.vercel.app'
           cfg=Path('supabase-config.js')
           text=cfg.read_text(encoding='utf-8')
           assignment="window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';"
           if assignment not in text:
-              marker="window.SUPABASE_ANON_KEY='"
+              marker="const SUPABASE_ANON_KEY="
               i=text.find(marker)
               if i<0: raise SystemExit('supabase-config.js: config marker missing')
               end=text.find(';',i)
               if end<0: raise SystemExit('supabase-config.js: config statement terminator missing')
-              text=text[:end+1]+assignment+text[end+1:]
+              text=text[:end+1]+'\n'+assignment+text[end+1:]
           cfg.write_text(text,encoding='utf-8')
 
           changed=[]
@@ -42,19 +41,16 @@ jobs:
               if p.name=='supabase-config.js': continue
               text=p.read_text(encoding='utf-8')
               before=text
-              # Existing centralized backend constants.
               text=text.replace("const BACKEND_URL='';","const BACKEND_URL=window.FF_API_ORIGIN||'';")
               text=text.replace('const BACKEND_URL="";','const BACKEND_URL=window.FF_API_ORIGIN||\'\';')
               text=text.replace("var API='/api/admin-order-action';","var API=(window.FF_API_ORIGIN||'')+'/api/admin-order-action';")
               text=text.replace('var API="/api/admin-order-action";','var API=(window.FF_API_ORIGIN||\'\')+\'/api/admin-order-action\';')
-              # Direct root API fetches also need the Pages fallback.
               text=re.sub(r"fetch\(('/api/[^']*')",r"fetch((window.FF_API_ORIGIN||'')+\1",text)
               text=re.sub(r'fetch\(("/api/[^"]*")',r"fetch((window.FF_API_ORIGIN||'')+\1",text)
               if text!=before:
                   p.write_text(text,encoding='utf-8')
                   changed.append(p.name)
 
-          # Permanent checker: the Vercel origin may only live in central config.
           checker=Path('scripts/check_csp_hardening.js')
           text=checker.read_text(encoding='utf-8')
           old="  if (text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: hardcoded production backend origin is forbidden; use same-origin API paths`);"
@@ -62,7 +58,6 @@ jobs:
           if old not in text: raise SystemExit('CSP checker backend-origin guard target missing')
           checker.write_text(text.replace(old,new,1),encoding='utf-8')
 
-          # Assertions for known screenshot/customer/admin API surfaces.
           assert assignment in cfg.read_text(encoding='utf-8')
           for name in ['checkout.js','admin-orders.js','csp-admin.js']:
               t=Path(name).read_text(encoding='utf-8')
