@@ -1,0 +1,9 @@
+# Security-sensitive ownership
+* @praveens6050-afk
+/.github/ @praveens6050-afk
+/backend/ @praveens6050-afk
+/api/ @praveens6050-afk
+/supabase/migrations/ @praveens6050-afk
+/vercel.json @praveens6050-afk
+/checkout* @praveens6050-afk
+/quote-checkout* @praveens6050-afk
