@@ -1,0 +1,78 @@
+name: Security SRI Fixup
+on:
+  push:
+    branches: [security/full-audit-hardening]
+permissions:
+  contents: write
+concurrency:
+  group: security-sri-fixup
+  cancel-in-progress: false
+jobs:
+  normalize-sri:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: security/full-audit-hardening
+          fetch-depth: 1
+      - name: Normalize pinned Supabase SDK tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          files = [
+              'gift-cards.html', 'reset-password.html', 'checkout.html',
+              'order-confirmation.html', 'account.html', 'order-details.html',
+              'product.html', 'search.html', 'admin-account.html', 'index.html',
+              'signup.html', 'login.html', 'notifications.html', 'quote-checkout.html',
+              'cart.html', 'coupons.html', 'wishlist.html', 'admin.html'
+          ]
+          bare = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0'
+          exact = bare + '/dist/umd/supabase.js'
+          sri = 'sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP'
+          canonical = f'<script src="{exact}" integrity="{sri}" crossorigin="anonymous"></script>'
+          tag_re = re.compile(r'<script\s+src="https://cdn\.jsdelivr\.net/npm/@supabase/supabase-js@2\.116\.0(?:/dist/umd/supabase\.js)?"(?:\s+integrity="[^"]+")?(?:\s+crossorigin="anonymous")?\s*></script>')
+
+          changed = 0
+          for name in files:
+              p = Path(name)
+              text = p.read_text(encoding='utf-8')
+              new, count = tag_re.subn(canonical, text)
+              if count != 1:
+                  raise SystemExit(f'{name}: expected exactly one Supabase SDK script tag, found {count}')
+              if new != text:
+                  p.write_text(new, encoding='utf-8')
+                  changed += 1
+
+          leftovers = []
+          canonical_count = 0
+          for name in files:
+              text = Path(name).read_text(encoding='utf-8')
+              canonical_count += text.count(canonical)
+              if bare in text.replace(canonical, ''):
+                  leftovers.append(name)
+          if leftovers:
+              raise SystemExit('Non-canonical Supabase SDK references remain: ' + ', '.join(leftovers))
+          if canonical_count != len(files):
+              raise SystemExit(f'Expected {len(files)} canonical SDK tags, got {canonical_count}')
+          print(f'Normalized {changed} files; verified {canonical_count} canonical SRI tags.')
+          PY
+          git diff --check
+      - name: Commit deterministic fixup
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'No SRI normalization changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.html'
+          git commit -m 'Normalize Supabase SDK SRI source path'
+          git push origin HEAD:security/full-audit-hardening
