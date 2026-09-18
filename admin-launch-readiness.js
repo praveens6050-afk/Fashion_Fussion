@@ -37,5 +37,5 @@ function render(d){const c=d.catalog||{},o=d.orders||{},s=d.shipments||{},checko
   $('ffLaunchReadinessNext').innerHTML='<div data-csp-style="csp-js-admin-launch-readiness-8"><b>Next safe action</b><div data-csp-style="csp-js-admin-launch-readiness-9">'+esc(d.next)+'</div></div>';
 }
 async function load(){const state=$('ffLaunchReadinessState');if(!state)return;state.textContent='Checking first-order readiness…';try{render(await snapshot())}catch(e){state.innerHTML='<b data-csp-style="csp-js-admin-launch-readiness-10">Launch readiness unavailable:</b> '+esc(e.message);$('ffLaunchReadinessNext').innerHTML=''}}
-new MutationObserver(()=>{if(document.getElementById('dashboard')?.style.display!=='none')inject()}).observe(document.documentElement,{childList:true,subtree:true,attributes:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',inject,{once:true});else inject();
+function maybeInject(){if(document.getElementById('dashboard')?.dataset.adminReady==='true')inject()}new MutationObserver(maybeInject).observe(document.documentElement,{childList:true,subtree:true,attributes:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',maybeInject,{once:true});else maybeInject();
 })();
