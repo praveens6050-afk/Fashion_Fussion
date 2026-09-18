@@ -41,8 +41,8 @@ jobs:
               if p.name=='supabase-config.js': continue
               text=p.read_text(encoding='utf-8')
               before=text
-              text=text.replace("const BACKEND_URL=''","const BACKEND_URL=window.FF_API_ORIGIN||''")
-              text=text.replace('const BACKEND_URL=""','const BACKEND_URL=window.FF_API_ORIGIN||\'\'')
+              text=text.replace("BACKEND_URL=''","BACKEND_URL=window.FF_API_ORIGIN||''")
+              text=text.replace('BACKEND_URL=""','BACKEND_URL=window.FF_API_ORIGIN||\'\'')
               text=text.replace("var API='/api/admin-order-action';","var API=(window.FF_API_ORIGIN||'')+'/api/admin-order-action';")
               text=text.replace('var API="/api/admin-order-action";','var API=(window.FF_API_ORIGIN||\'\')+\'/api/admin-order-action\';')
               text=re.sub(r"fetch\(('/api/[^']*')",r"fetch((window.FF_API_ORIGIN||'')+\1",text)
@@ -60,7 +60,7 @@ jobs:
           checker.write_text(text,encoding='utf-8')
 
           assert assignment in cfg.read_text(encoding='utf-8')
-          for name in ['checkout.js','admin-orders.js','csp-admin.js']:
+          for name in ['checkout.js','csp-cart.js','admin-orders.js','csp-admin.js']:
               t=Path(name).read_text(encoding='utf-8')
               if 'BACKEND_URL' in t and "window.FF_API_ORIGIN||''" not in t:
                   raise SystemExit(f'{name}: BACKEND_URL not bound to central API origin')
