@@ -4,8 +4,8 @@
   "private":true,
   "engines":{"node":"24.x"},
   "scripts":{
-    "test":"node test.js",
-    "check":"node --check lib.js && node --check api/quote-order.js && node --check api/create-order.js && node --check api/verify-payment.js && node --check api/reconcile-payment.js && node --check api/razorpay-webhook.js && node --check api/cancel-order.js && node --check api/refund-status.js && node --check api/customer-shipping-status.js"
+    "test":"node test-customer.js",
+    "check":"node --check lib.js && node --check api/quote-order.js && node --check api/create-order.js && node --check api/verify-payment.js && node --check api/reconcile-payment.js && node --check api/razorpay-webhook.js && node --check api/cancel-order.js && node --check api/refund-status.js && node --check api/return-refund-status.js && node --check api/customer-shipping-status.js"
   },
   "dependencies":{}
 }
