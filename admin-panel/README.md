@@ -103,3 +103,7 @@ Supabase browser sessions are origin-specific, so an administrator signed in at 
 9. Only after the admin subdomain is healthy should the customer-only project redirect legacy admin URLs here.
 
 This branch/folder must not be merged into `main` merely to deploy the admin project. Vercel should deploy it directly from `admin-panel-standalone` with Root Directory `admin-panel`.
+
+## Verification checkpoint — 19 Sep 2026
+
+This branch is the deployment candidate after standalone cleanup. The existing live customer production remains on `main`; this checkpoint exists to trigger and identify the exact Admin preview build without changing production aliases or domains.
