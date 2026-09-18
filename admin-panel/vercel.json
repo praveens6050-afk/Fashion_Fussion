@@ -1,12 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": false,
+  "redirects": [
+    { "source": "/", "destination": "/login.html", "permanent": false },
+    { "source": "/login", "destination": "/login.html", "permanent": false },
+    { "source": "/admin", "destination": "/admin.html", "permanent": false },
+    { "source": "/account", "destination": "/admin-account.html", "permanent": false },
+    { "source": "/reset-password", "destination": "/reset-password.html", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/login.html" },
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/account", "destination": "/admin-account.html" },
-    { "source": "/reset-password", "destination": "/reset-password.html" },
     { "source": "/api/admin-product-costs", "destination": "/api/admin-order-action?mode=product-costs" }
   ],
   "headers": [
