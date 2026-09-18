@@ -52,6 +52,8 @@ jobs:
               raise SystemExit('\n'.join(errors))
           print(f'Canonical Supabase SDK SRI tags verified on {len(files)} HTML pages.')
           PY
+      - name: Strict CSP hardening source checks
+        run: node scripts/check_csp_hardening.js
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
