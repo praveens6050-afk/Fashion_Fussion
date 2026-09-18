@@ -13,6 +13,30 @@ This folder is intentionally isolated from the existing Fashion_Fussion storefro
 
 > Authentication in this prototype uses browser storage only. It is **not production authentication** and real credentials must not be used.
 
+### Seller onboarding & KYC preparation
+- Dedicated five-step onboarding workflow
+- Business / legal identity section
+- Entity type and primary category
+- PAN-format validation for fictional/sample values
+- Optional GST-registration toggle and GSTIN-format validation
+- Settlement-bank form with account-number confirmation and IFSC-format validation
+- Pickup-address and dispatch-contact form
+- Document-readiness checklist without uploading files
+- Seller-specific onboarding progress percentage
+- Draft / Pending review / Verified-ready UI states
+- Demo verification submission that does not call a real admin or KYC provider
+- Onboarding reset action for local prototype data
+
+> Do not enter real PAN, GSTIN, bank account numbers, identity documents or other sensitive details in this standalone build. The workflow is for UI/data-contract preparation only.
+
+### Settings & security
+- Account summary and local verification status
+- Local notification-preference controls
+- Local password change for non-demo accounts
+- Demo-account password protection so documented demo credentials keep working
+- Session sign-out controls
+- Local onboarding reset
+
 ### Catalog
 - Desktop-first seller dashboard
 - Seller product list with search and status filters
@@ -87,9 +111,8 @@ This folder is intentionally isolated from the existing Fashion_Fussion storefro
 ### Other operations preview
 - Payments / settlement history preview
 - Returns queue preview
-- Seller Profile & KYC workspace
+- Seller Profile workspace
 - Account setup progress
-- PAN, GST, bank account and pickup-address placeholders for future verification
 
 ## Important: not connected yet
 
@@ -105,7 +128,8 @@ This prototype does **not** currently connect to:
 - Real AWB / shipping labels / courier bookings
 - Real invoice or GST-invoice service
 - Real KYC / GST / PAN verification
-- Real bank accounts or settlement provider
+- Real bank-account verification or settlement provider
+- Real document storage
 - Real customer orders
 - Real returns or logistics services
 
@@ -124,7 +148,7 @@ Demo credentials:
 
 The prototype is plain HTML/CSS/JavaScript and has no build step.
 
-Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending and Rejected listings. The Orders screen also includes a separate **Reset demo** action for fulfilment states.
+Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending and Rejected listings. The Orders screen also includes a separate **Reset demo** action for fulfilment states. Settings includes a separate onboarding reset for the current local seller.
 
 ## Files
 
@@ -140,6 +164,7 @@ Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending an
 - `inventory-fulfillment.js` — inventory workspace and order fulfilment workflow
 - `inventory-restock-fix.js` — low-stock bulk restock correction for variant totals
 - `analytics-shipping.js` — analytics, notifications, shipping queue, order detail and printable documents
+- `onboarding-settings.js` — business onboarding, mock KYC readiness, bank/pickup workflow and account settings
 
 ## Planned integration contract
 
@@ -152,6 +177,19 @@ When integration starts, replace the browser-storage adapters with authenticated
 5. Rejected product remains hidden from customer storefront
 6. Seller edits/resubmits → `pending` and previous rejection reason is cleared
 7. Any material edit to an approved listing should return it to `pending` until reviewed again
+
+Recommended future onboarding / KYC rules:
+
+1. Seller onboarding data is scoped by authenticated `seller_id`
+2. PAN, GSTIN and bank details are encrypted/masked where appropriate and never trusted from browser state alone
+3. GST/PAN/bank verification must happen server-side through approved providers
+4. Actual KYC documents must use protected object storage with strict authorization
+5. KYC status transitions must be auditable (`draft → submitted → reviewing → verified / rejected`)
+6. Rejections should include seller-visible reasons and resubmission history
+7. Bank-account changes after verification should trigger re-verification
+8. Pickup-address changes should be independently validated before logistics activation
+9. Authentication must move to Supabase Auth (or another production identity layer); browser-stored passwords must be removed
+10. Account/session security should use server-managed sessions, password-reset flows and rate limits
 
 Recommended future inventory/fulfilment rules:
 
@@ -176,6 +214,9 @@ Suggested future ownership/review fields:
 - `submitted_at`
 - `approved_at`
 - `inventory_updated_at`
+- `kyc_status`
+- `kyc_submitted_at`
+- `kyc_reviewed_at`
 
 Suggested future seller modules:
 
@@ -183,7 +224,9 @@ Suggested future seller modules:
 - `seller_members`
 - `seller_addresses`
 - `seller_kyc`
+- `seller_kyc_documents`
 - `seller_bank_accounts`
+- `seller_preferences`
 - `seller_products` / seller ownership on products
 - `seller_inventory`
 - `seller_product_variants`
