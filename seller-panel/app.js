@@ -15,7 +15,7 @@ let activeStatus='all';
 let editingId=null;
 
 const $=id=>document.getElementById(id);
-const esc=value=>String(value??'').replace(/[&<>\"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[char]));
+function esc(value){return String(value??'').replace(/[&<>"']/g,char=>{if(char==='&')return'&amp;';if(char==='<')return'&lt;';if(char==='>')return'&gt;';if(char==='"')return'&quot;';return'&#39;'})}
 const money=value=>'₹'+Number(value||0).toLocaleString('en-IN',{maximumFractionDigits:2});
 const statusHtml=status=>`<span class="status ${status}">${STATUS_LABELS[status]||status}</span>`;
 const safeImage=url=>{try{const parsed=new URL(url);return ['http:','https:'].includes(parsed.protocol)?url:''}catch{return''}};
