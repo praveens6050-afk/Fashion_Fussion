@@ -57,3 +57,4 @@ loadSellerModule('returns-support-team.js');
 loadSellerModule('growth-b2b-scorecard.js');
 loadSellerModule('reporting-data-sync.js');
 loadSellerModule('dashboard-reports-bulk.js');
+loadSellerModule('customer-ops-accounting.js');
