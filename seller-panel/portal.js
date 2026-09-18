@@ -58,3 +58,7 @@ const inventoryRestockFix=document.createElement('script');
 inventoryRestockFix.src='inventory-restock-fix.js';
 inventoryRestockFix.defer=true;
 document.body.appendChild(inventoryRestockFix);
+const analyticsShipping=document.createElement('script');
+analyticsShipping.src='analytics-shipping.js';
+analyticsShipping.defer=true;
+document.body.appendChild(analyticsShipping);
