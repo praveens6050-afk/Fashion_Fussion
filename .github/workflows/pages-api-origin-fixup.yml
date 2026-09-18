@@ -1,0 +1,87 @@
+name: Pages API Origin Fixup
+on:
+  push:
+    branches: [security/full-audit-hardening]
+permissions:
+  contents: write
+concurrency:
+  group: pages-api-origin-fixup
+  cancel-in-progress: false
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: security/full-audit-hardening
+          fetch-depth: 1
+      - name: Preserve GitHub Pages API compatibility
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          PROD='https://fashion-fussion-olive.vercel.app'
+          cfg=Path('supabase-config.js')
+          text=cfg.read_text(encoding='utf-8')
+          assignment="window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';"
+          if assignment not in text:
+              marker="window.SUPABASE_ANON_KEY='"
+              i=text.find(marker)
+              if i<0: raise SystemExit('supabase-config.js: config marker missing')
+              end=text.find(';',i)
+              if end<0: raise SystemExit('supabase-config.js: config statement terminator missing')
+              text=text[:end+1]+assignment+text[end+1:]
+          cfg.write_text(text,encoding='utf-8')
+
+          changed=[]
+          for p in sorted(Path('.').glob('*.js')):
+              if p.name=='supabase-config.js': continue
+              text=p.read_text(encoding='utf-8')
+              before=text
+              # Existing centralized backend constants.
+              text=text.replace("const BACKEND_URL='';","const BACKEND_URL=window.FF_API_ORIGIN||'';")
+              text=text.replace('const BACKEND_URL="";','const BACKEND_URL=window.FF_API_ORIGIN||\'\';')
+              text=text.replace("var API='/api/admin-order-action';","var API=(window.FF_API_ORIGIN||'')+'/api/admin-order-action';")
+              text=text.replace('var API="/api/admin-order-action";','var API=(window.FF_API_ORIGIN||\'\')+\'/api/admin-order-action\';')
+              # Direct root API fetches also need the Pages fallback.
+              text=re.sub(r"fetch\(('/api/[^']*')",r"fetch((window.FF_API_ORIGIN||'')+\1",text)
+              text=re.sub(r'fetch\(("/api/[^"]*")',r"fetch((window.FF_API_ORIGIN||'')+\1",text)
+              if text!=before:
+                  p.write_text(text,encoding='utf-8')
+                  changed.append(p.name)
+
+          # Permanent checker: the Vercel origin may only live in central config.
+          checker=Path('scripts/check_csp_hardening.js')
+          text=checker.read_text(encoding='utf-8')
+          old="  if (text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: hardcoded production backend origin is forbidden; use same-origin API paths`);"
+          new="  if (file !== 'supabase-config.js' && text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: production backend origin must only be defined by the central Pages fallback`);\n  if (file === 'supabase-config.js' && !text.includes(\"window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';\")) fail('supabase-config.js: canonical GitHub Pages API fallback is missing');\n  if (/fetch\\(\\s*['\"]\\/api\\//.test(text)) fail(`${file}: direct same-origin API fetch breaks GitHub Pages; use FF_API_ORIGIN or a BACKEND_URL derived from it`);\n  if (/\\bBACKEND_URL\\s*=\\s*['\"]{2}/.test(text)) fail(`${file}: empty BACKEND_URL breaks GitHub Pages; derive it from window.FF_API_ORIGIN`);"
+          if old not in text: raise SystemExit('CSP checker backend-origin guard target missing')
+          checker.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          # Assertions for known screenshot/customer/admin API surfaces.
+          assert assignment in cfg.read_text(encoding='utf-8')
+          for name in ['checkout.js','admin-orders.js','csp-admin.js']:
+              t=Path(name).read_text(encoding='utf-8')
+              if 'BACKEND_URL' in t and "window.FF_API_ORIGIN||''" not in t:
+                  raise SystemExit(f'{name}: BACKEND_URL not bound to central API origin')
+          t=Path('admin-payment-review.js').read_text(encoding='utf-8')
+          if "window.FF_API_ORIGIN||''" not in t: raise SystemExit('admin-payment-review.js: API origin fallback missing')
+          print('Pages/API-origin updated files:', ', '.join(changed))
+          PY
+          node scripts/check_csp_hardening.js
+          node --check supabase-config.js
+          for f in *.js; do node --check "$f" >/dev/null; done
+          git diff --check
+      - name: Commit Pages compatibility fix
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.js' scripts/check_csp_hardening.js
+          git commit -m 'Preserve API actions on GitHub Pages and custom domains'
+          git push origin HEAD:security/full-audit-hardening
