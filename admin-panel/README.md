@@ -20,17 +20,40 @@ Create a separate Vercel project from the same GitHub repository with:
 
 Do not attach `fashionfussion.in` or `seller.fashionfussion.in` to this project.
 
-## Required Vercel environment variables
+## Vercel environment variables
 
-The browser uses the public Supabase URL/anon key from `supabase-config.js`. Server-only API functions require:
+The browser uses the public Supabase URL/anon key from `supabase-config.js`. Keep all privileged values server-only.
+
+Core admin server variables:
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ALLOWED_ORIGIN=https://admin.fashionfussion.in`
 
-`SUPABASE_SERVICE_ROLE_KEY` must remain server-only and must never be placed in browser JavaScript.
+Razorpay-backed admin readiness/refund operations also require the same production values used by the current customer backend:
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
+
+Shiprocket admin shipping/serviceability operations require:
+
+- `SHIPROCKET_EMAIL`
+- `SHIPROCKET_PASSWORD`
+- `SHIPROCKET_PICKUP_LOCATION`
+- `SHIPROCKET_PICKUP_PINCODE`
+
+Copy these through Vercel Environment Variables. Never commit their values to GitHub or browser JavaScript.
 
 For preview verification, if the Vercel preview hostname sends an `Origin` header to the same-project API, add that exact preview origin to `ALLOWED_ORIGIN` as a comma-separated second value. After custom-domain verification, keep only origins that should actually be allowed.
+
+## Supabase Auth redirect allowlist
+
+For administrator password recovery, add this redirect URL in Supabase Auth URL configuration:
+
+- `https://admin.fashionfussion.in/reset-password.html`
+
+If password reset is tested on a Vercel preview URL, temporarily allow the exact preview reset-password URL too.
 
 ## Routing
 
@@ -41,25 +64,42 @@ For preview verification, if the Vercel preview hostname sends an `Origin` heade
 
 The dashboard still verifies `profiles.is_admin = true` before showing administrator data. The admin-specific login additionally signs out authenticated non-admin users.
 
+## Admin feature parity
+
+The isolated package preserves the current dynamic Admin modules loaded by `supabase-config.js`, including:
+
+- notifications and support chat
+- order management and COD actions
+- promotions
+- returns/exchanges and approved return refunds
+- business quote management
+- inventory controls and catalog safety
+- Shiprocket shipping and shipping health
+- checkout health and launch readiness
+- payment review, recovery status and attention UI
+
+The required admin API/server files are bundled inside this project so the Admin frontend does not depend on relative files from the customer Vercel project.
+
 ## Backend boundary
 
-The admin project contains its own copy of the currently required admin API entry point and server modules. This prevents an admin frontend deployment from depending on customer-project static files or relative customer routes.
-
-Both projects may intentionally use the same Supabase database because customer/admin separation is a deployment boundary, while authorization remains enforced through Supabase Auth, RLS and the existing admin server checks.
+Both customer and admin projects may intentionally use the same Supabase database because frontend deployment separation is distinct from data authorization. Access remains controlled by Supabase Auth, RLS, `profiles.is_admin`, and the server-side administrator checks.
 
 ## Store preview
 
 Admin `Store Preview` opens the normal customer storefront at `https://fashionfussion.in/`.
 
-Supabase browser sessions are origin-specific, so an administrator signed in at `admin.fashionfussion.in` is not automatically signed in at `fashionfussion.in`. The old `?admin_preview=1` cross-domain behavior is therefore intentionally not used here. If inactive-product preview is needed later, add a short-lived server-issued preview-token flow rather than sharing browser auth across domains.
+Supabase browser sessions are origin-specific, so an administrator signed in at `admin.fashionfussion.in` is not automatically signed in at `fashionfussion.in`. The old `?admin_preview=1` cross-domain behavior is intentionally not used. If inactive-product preview is needed later, use a short-lived server-issued preview-token flow rather than sharing browser auth across domains.
 
 ## Safe rollout order
 
 1. Deploy this project on its Vercel-generated preview URL.
-2. Add the required server environment variables.
-3. Verify admin login, product list, private costs, add/edit/inactivate flows and admin account.
-4. Attach `admin.fashionfussion.in` only after preview verification.
-5. Keep the current customer project/domain unchanged during this process.
-6. Only after the admin subdomain is confirmed healthy should customer-only routing be tightened to stop exposing legacy admin pages on the customer project.
+2. Add all required server environment variables.
+3. Verify admin login and role rejection for a non-admin account.
+4. Verify product list/private costs/add/edit/inactivate flows.
+5. Verify orders, promotions, returns, quotes, inventory, payment review and shipping/readiness panels.
+6. Verify admin account and password-reset flow.
+7. Attach `admin.fashionfussion.in` only after preview verification.
+8. Keep the current customer project/domain unchanged during this process.
+9. Only after the admin subdomain is healthy should the customer-only project redirect legacy admin URLs here.
 
 This branch/folder must not be merged into `main` merely to deploy the admin project. Vercel should deploy it directly from `admin-panel-standalone` with Root Directory `admin-panel`.
