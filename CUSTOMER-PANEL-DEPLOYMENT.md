@@ -69,3 +69,7 @@ The dedicated Admin project enforces `profiles.is_admin = true`. Seller producti
 ## Rollback
 
 If the new customer project has any production issue after domain cutover, reassign `fashionfussion.in` to the previously working Vercel customer project/deployment. Database migrations or destructive backend changes must not be bundled with this frontend domain split.
+
+## Verification checkpoint — 19 Sep 2026
+
+This branch is the exact cleaned Customer deployment candidate. The existing `fashionfussion.in` production remains on the current `main` deployment until a separate Customer Vercel project passes preview smoke tests; no production domain move is part of this checkpoint.
