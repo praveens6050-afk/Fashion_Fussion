@@ -24,7 +24,8 @@ if(/\.from\([^)]*\)\.(insert|update|delete|upsert)\s*\(/.test(launch)||/\.rpc\s*
 if(!dispatcher.includes('return checkoutHealth(req,res)'))errors.push('api/admin-order-action.js: checkout health must reuse the shared admin serverless route');
 if(!loader.includes("page==='admin.html'"))errors.push('supabase-config.js: checkout/launch readiness UI must remain admin-only');
 for(const file of ['checkout.js','quote-checkout.js']){
-  const text=requireMarkers(file,["const BACKEND_URL=window.FF_API_ORIGIN||'';"]);
+  const text=read(file);
+  if(!/\bBACKEND_URL\s*=\s*window\.FF_API_ORIGIN\s*\|\|\s*['"]{2}/.test(text))errors.push(`${file}: BACKEND_URL must derive from window.FF_API_ORIGIN`);
   if(text.includes('https://fashion-fussion-olive.vercel.app'))errors.push(`${file}: production backend origin must stay centralized in supabase-config.js`);
 }
 const quoteApi=requireMarkers('backend/api/quote-order.js',['consume_api_rate_limit',"p_scope: 'quote_order'",'p_limit: 30','p_window_seconds: 60','error.status = 429']);
