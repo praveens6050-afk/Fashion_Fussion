@@ -1,5 +1,5 @@
 (function(){'use strict';
-const BACKEND_URL='';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function badge(ok,label){return '<span data-csp-style="'+(ok?'csp-dyn-ready':'csp-dyn-blocked')+'">'+(ok?'Ready':'Blocked')+'</span>'+(label?' <span data-csp-style="csp-js-admin-launch-readiness-1">· '+esc(label)+'</span>':'')}
 async function session(){const{data:{session},error}=await window.supabaseClient.auth.getSession();if(error||!session?.access_token)throw new Error('Admin session expired');return session}

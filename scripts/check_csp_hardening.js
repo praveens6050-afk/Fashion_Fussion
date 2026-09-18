@@ -52,7 +52,10 @@ for (const file of rootJsFiles) {
   if (CSS_TEXT_RE.test(text)) fail(`${file}: style.cssText assignment is forbidden`);
   if (SET_STYLE_ATTR_RE.test(text)) fail(`${file}: setAttribute('style', ...) is forbidden`);
   if (DYNAMIC_STYLE_ELEMENT_RE.test(text)) fail(`${file}: runtime <style> creation is forbidden; use a same-origin stylesheet`);
-  if (text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: browser API calls must use same-origin paths, not the production Vercel hostname`);
+  if (file !== 'supabase-config.js' && text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: production backend origin must only be defined by the central Pages fallback`);
+  if (file === 'supabase-config.js' && !text.includes("window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';")) fail('supabase-config.js: canonical GitHub Pages API fallback is missing');
+  if (/fetch\(\s*['"]\/api\//.test(text)) fail(`${file}: direct same-origin API fetch breaks GitHub Pages; use FF_API_ORIGIN or a BACKEND_URL derived from it`);
+  if (/\bBACKEND_URL\s*=\s*['"]{2}/.test(text)) fail(`${file}: empty BACKEND_URL breaks GitHub Pages; derive it from window.FF_API_ORIGIN`);
 }
 
 if (!exists('csp-dynamic.css')) fail('csp-dynamic.css is missing.');

@@ -1,5 +1,5 @@
 (function(){'use strict';
-const BACKEND_URL='';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 async function api(){const{data:{session}}=await window.supabaseClient.auth.getSession();if(!session)throw new Error('Admin session expired');const r=await fetch(BACKEND_URL+'/api/admin-order-action',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'checkout_health'})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Checkout readiness check failed');return d}
 function ready(value){return value?'<b data-csp-style="csp-js-admin-checkout-health-1">Ready</b>':'<b data-csp-style="csp-js-admin-checkout-health-2">Blocked</b>'}

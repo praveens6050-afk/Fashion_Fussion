@@ -1,5 +1,5 @@
 (function(){'use strict';
-const BACKEND_URL='';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
 // finalize_bulk_quote remains the authoritative database finalizer; admin mutations reach it only through the authenticated server API.
 const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});

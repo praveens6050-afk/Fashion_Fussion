@@ -1,5 +1,5 @@
 'use strict';
-const BACKEND_URL='';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
 const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
 const labels={ordered:'Order Placed',packed:'Packed',shipped:'Shipped',out_for_delivery:'Out for Delivery',delivered:'Delivered'};

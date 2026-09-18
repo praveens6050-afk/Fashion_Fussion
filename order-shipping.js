@@ -1,5 +1,5 @@
 (function(){'use strict';
-const BACKEND_URL='';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 let loading=false,done=false;
 async function fetchShipment(){const params=new URLSearchParams(location.search),key=params.get('id')||params.get('order');if(!key)return null;const{data:{session}}=await window.supabaseClient.auth.getSession();if(!session?.access_token)return null;const r=await fetch(BACKEND_URL+'/api/admin-order-action',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'customer_status',order_key:key})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Courier status unavailable');return d.shipment||null}

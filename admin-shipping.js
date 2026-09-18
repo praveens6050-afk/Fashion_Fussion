@@ -1,5 +1,5 @@
 (function(){'use strict';
-const BACKEND_URL='';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));let currentConfig={};
 async function api(action,extra={}){const{data:{session}}=await window.supabaseClient.auth.getSession();if(!session)throw new Error('Admin session expired');const r=await fetch(BACKEND_URL+'/api/admin-order-action',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...extra})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Shipping request failed');return d}
 function formData(){return{order_id:Number($('ffShipOrder').value),weight_kg:Number($('ffShipWeight').value),length_cm:Number($('ffShipLength').value),breadth_cm:Number($('ffShipBreadth').value),height_cm:Number($('ffShipHeight').value)}}
