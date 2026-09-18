@@ -19,6 +19,7 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
     add('admin-shipping-health.js?v=1','data-admin-shipping-health');
     add('admin-checkout-health.js?v=1','data-admin-checkout-health');
     add('admin-launch-readiness.js?v=1','data-admin-launch-readiness');
+    add('admin-seller-approvals.js?v=1','data-admin-seller-approvals');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
