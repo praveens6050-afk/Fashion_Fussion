@@ -30,7 +30,6 @@ jobs:
           style_attr_re = re.compile(r'(<[A-Za-z][^<>]*?)\sstyle\s*=\s*(["\'])(.*?)\2([^<>]*?>)', re.I | re.S)
           event_attr_re = re.compile(r'\son[a-z0-9_-]+\s*=\s*(["\'])(.*?)\1', re.I | re.S)
           class_re = re.compile(r'\bclass\s*=\s*(["\'])(.*?)\1', re.I | re.S)
-
           created_css = 0
           created_js = 0
 
@@ -53,12 +52,11 @@ jobs:
               text = p.read_text(encoding='utf-8')
               stem = p.stem
               extra_css = []
-              style_index = 0
-              had_fallback_handler = False
+              style_index = [0]
+              handler_seen = [False]
 
-              # Convert the two remaining image onerror handlers to data markers.
               def event_repl(m):
-                  nonlocal_hack[0] = True
+                  handler_seen[0] = True
                   handler = m.group(2).replace("\\'", "'").strip()
                   parsed = re.fullmatch(r"this\.outerHTML='<div class=&quot;([^&]+)&quot;>([^<]+)</div>'", handler)
                   if not parsed:
@@ -68,26 +66,20 @@ jobs:
                       raise SystemExit(f'{p}: unsupported fallback marker content')
                   return f' data-csp-fallback-class="{cls}" data-csp-fallback-text="{label}"'
 
-              nonlocal_hack = [False]
               text = event_attr_re.sub(event_repl, text)
-              had_fallback_handler = nonlocal_hack[0]
 
-              # Replace static style attributes, including those inside HTML strings in inline JS,
-              # with generated classes. Direct element.style.property assignments remain valid under strict CSP.
               def style_repl(m):
-                  nonlocal style_index
-                  style_index += 1
-                  cls = f'csp-inline-{stem}-{style_index}'
+                  style_index[0] += 1
+                  cls = f'csp-inline-{stem}-{style_index[0]}'
                   tag = m.group(1) + m.group(4)
                   cm = class_re.search(tag)
                   if cm:
                       replacement = f'class={cm.group(1)}{cm.group(2)} {cls}{cm.group(1)}'
                       tag = tag[:cm.start()] + replacement + tag[cm.end():]
+                  elif tag.endswith('/>'):
+                      tag = tag[:-2] + f' class="{cls}"/>'
                   else:
-                      if tag.endswith('/>'):
-                          tag = tag[:-2] + f' class="{cls}"/>'
-                      else:
-                          tag = tag[:-1] + f' class="{cls}">'
+                      tag = tag[:-1] + f' class="{cls}">'
                   extra_css.append(f'.{cls}{{{importantize(m.group(3))}}}')
                   return tag
 
@@ -96,17 +88,16 @@ jobs:
               style_matches = list(style_block_re.finditer(text))
               if len(style_matches) > 1:
                   raise SystemExit(f'{p}: expected at most one style block, found {len(style_matches)}')
-              css_path = Path(f'csp-{stem}.css')
-              if style_matches:
-                  css = style_matches[0].group(1).strip() + '\n'
+              if style_matches or extra_css:
+                  css_path = Path(f'csp-{stem}.css')
+                  css = (style_matches[0].group(1).strip() + '\n') if style_matches else ''
                   if extra_css:
                       css += '\n'.join(extra_css) + '\n'
                   css_path.write_text(css, encoding='utf-8')
-                  text = style_block_re.sub(f'<link rel="stylesheet" href="{css_path.name}?v=1">', text, count=1)
-                  created_css += 1
-              elif extra_css:
-                  css_path.write_text('\n'.join(extra_css) + '\n', encoding='utf-8')
-                  text = text.replace('</head>', f'<link rel="stylesheet" href="{css_path.name}?v=1"></head>', 1)
+                  if style_matches:
+                      text = style_block_re.sub(f'<link rel="stylesheet" href="{css_path.name}?v=1">', text, count=1)
+                  else:
+                      text = text.replace('</head>', f'<link rel="stylesheet" href="{css_path.name}?v=1"></head>', 1)
                   created_css += 1
 
               script_matches = list(script_block_re.finditer(text))
@@ -115,9 +106,8 @@ jobs:
               if script_matches:
                   attrs = script_matches[0].group(1)
                   js = script_matches[0].group(2).strip() + '\n'
-                  if had_fallback_handler:
-                      listener = """document.addEventListener('error',event=>{const target=event.target;if(!(target instanceof HTMLImageElement))return;const cls=target.dataset.cspFallbackClass;if(!cls)return;const fallback=document.createElement('div');fallback.className=cls;fallback.textContent=target.dataset.cspFallbackText||'Image unavailable';target.replaceWith(fallback)},true);\n"""
-                      js = listener + js
+                  if handler_seen[0]:
+                      js = "document.addEventListener('error',event=>{const target=event.target;if(!(target instanceof HTMLImageElement))return;const cls=target.dataset.cspFallbackClass;if(!cls)return;const fallback=document.createElement('div');fallback.className=cls;fallback.textContent=target.dataset.cspFallbackText||'Image unavailable';target.replaceWith(fallback)},true);\n" + js
                   if p.name == 'admin.html':
                       old = "const BACKEND_URL='https://fashion-fussion-olive.vercel.app';"
                       if old not in js:
@@ -125,15 +115,13 @@ jobs:
                       js = js.replace(old, "const BACKEND_URL='';", 1)
                   js_path = Path(f'csp-{stem}.js')
                   js_path.write_text(js, encoding='utf-8')
-                  replacement = f'<script{attrs} src="{js_path.name}?v=1"></script>'
-                  text = script_block_re.sub(replacement, text, count=1)
+                  text = script_block_re.sub(f'<script{attrs} src="{js_path.name}?v=1"></script>', text, count=1)
                   created_js += 1
-              elif had_fallback_handler:
-                  raise SystemExit(f'{p}: fallback handler conversion requires an externalized page script')
+              elif handler_seen[0]:
+                  raise SystemExit(f'{p}: fallback handler conversion requires page script')
 
               p.write_text(text, encoding='utf-8')
 
-          # Enforce source is ready for a strict no-unsafe-inline policy.
           problems = []
           for p in html_files:
               text = p.read_text(encoding='utf-8')
@@ -156,18 +144,16 @@ jobs:
           strict_csp = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdn.jsdelivr.net https://checkout.razorpay.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com; frame-src https://*.razorpay.com; upgrade-insecure-requests"
           found = 0
           for rule in config.get('headers', []):
-              if rule.get('source') != '/(.*)':
-                  continue
-              for header in rule.get('headers', []):
-                  if header.get('key','').lower() == 'content-security-policy':
-                      header['value'] = strict_csp
-                      found += 1
+              if rule.get('source') == '/(.*)':
+                  for header in rule.get('headers', []):
+                      if header.get('key','').lower() == 'content-security-policy':
+                          header['value'] = strict_csp
+                          found += 1
           if found != 1:
               raise SystemExit(f'Expected one global CSP header, found {found}')
           config_path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-
           print(f'Externalized {created_js} inline scripts and {created_css} inline styles across {len(html_files)} pages.')
-          print('Strict CSP source inventory passed: no inline blocks, style attrs, event attrs, javascript URLs, cssText, or setAttribute(style).')
+          print('Strict CSP source inventory passed.')
           PY
           git diff --check
       - name: Commit strict CSP refactor
