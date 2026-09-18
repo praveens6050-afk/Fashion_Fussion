@@ -19,6 +19,12 @@ for(const action of ['create_shipment','check_serviceability','assign_awb','requ
 if(/\.from\([^)]*\)\.(insert|update|delete|upsert)\s*\(/.test(launch)||/\.rpc\s*\(/.test(launch))errors.push('admin-launch-readiness.js: read-only ladder must not mutate Supabase data');
 if(!dispatcher.includes('return checkoutHealth(req,res)'))errors.push('api/admin-order-action.js: checkout health must reuse the shared admin serverless route');
 if(!loader.includes("page==='admin.html'"))errors.push('supabase-config.js: checkout/launch readiness UI must remain admin-only');
+for(const file of ['checkout.js','quote-checkout.js']){
+  const text=requireMarkers(file,["const BACKEND_URL=''"]);
+  if(text.includes('https://fashion-fussion-olive.vercel.app'))errors.push(`${file}: checkout API must stay same-origin for custom domains`);
+}
+const quoteApi=requireMarkers('backend/api/quote-order.js',['consume_api_rate_limit',"p_scope: 'quote_order'",'p_limit: 30','p_window_seconds: 60','error.status = 429']);
+if(!quoteApi.includes('await enforceQuoteRateLimit(user.id)'))errors.push('backend/api/quote-order.js: authenticated quote rate limit must run before pricing work');
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
 console.log('Checkout and first-order readiness source guards passed');
 require('./check_public_launch_contract.js');
