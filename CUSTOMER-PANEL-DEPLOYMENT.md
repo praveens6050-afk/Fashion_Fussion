@@ -27,6 +27,27 @@ The `customer-panel/` folder is the dedicated customer storefront package. Admin
 
 Customer courier tracking uses a dedicated authenticated `/api/shipping-status` endpoint that only reads the signed-in customer's own shipment record. Shipment creation, AWB assignment, pickup scheduling, Shiprocket health checks, private product costs, checkout-health administration, admin order mutations and refund execution belong to the Admin project.
 
+## Seller catalog integration
+
+No special Seller code is required in the Customer frontend. The connected Seller/Admin workflow publishes approved seller listings into the existing authoritative customer commerce tables:
+
+- `products`
+- `product_variants`
+- `inventory_levels`
+- `product_bulk_tiers` when applicable
+
+The existing product RLS remains the visibility boundary: anonymous/customer catalog reads only receive products with `products.is_active = true`.
+
+Therefore:
+
+- Pending seller submission → not customer-visible.
+- Approved seller submission → authoritative product/variant/inventory is prepared and then activated → customer-visible.
+- Edit of an approved seller submission → linked customer product is immediately deactivated while the revision is pending.
+- Rejected seller submission → rejection reason stays in the seller/admin workflow and the linked customer product stays inactive/hidden.
+- Reapproval updates/reactivates the linked product rather than creating a duplicate.
+
+This behavior has been verified through rollback-only database assertions using the anonymous customer role.
+
 The customer `vercel.json` adds panel boundaries:
 
 - `/admin` and `/admin.html` -> `https://admin.fashionfussion.in`
@@ -51,9 +72,9 @@ Shiprocket administrator credentials and pickup configuration are not required b
 2. Create `fashion-fussion-admin` and test its generated Vercel URL.
 3. Create `fashion-fussion-seller` and test its generated Vercel URL.
 4. Create `fashion-fussion-customer` from this branch with Root Directory `customer-panel`, then configure the required customer environment variables.
-5. Run customer smoke tests on the generated preview URL: homepage, login, product, cart, checkout calculation, payment/COD paths that can be tested safely, account/orders, courier status, returns and business/bulk flows.
+5. Run customer smoke tests on the generated preview URL: homepage, login, approved seller product visibility, product/variant selection, cart, checkout calculation, payment/COD paths that can be tested safely, account/orders, courier status, returns and business/bulk flows.
 6. Attach `admin.fashionfussion.in` and `seller.fashionfussion.in` only after their previews pass.
-7. Verify both subdomains independently.
+7. Verify Seller → Admin Approve/Reject → Customer visibility end to end on preview URLs.
 8. Only then move `fashionfussion.in` from the old customer Vercel project to `fashion-fussion-customer`.
 9. Immediately run production smoke tests on the custom domain.
 10. Keep the old customer project/deployment available as rollback until the new customer project is confirmed stable.
@@ -62,13 +83,13 @@ Do not delete the old Vercel project during cutover.
 
 ## Authentication note
 
-Supabase browser sessions are origin-specific. Customer, admin and seller frontends should not rely on sharing browser local/session storage across the three subdomains. Each application must authenticate/authorize for its own role and origin.
+Supabase browser sessions are origin-specific. Customer, Admin and Seller frontends do not rely on sharing browser local/session storage across the three subdomains. Each application authenticates/authorizes for its own role and origin.
 
-The dedicated Admin project enforces `profiles.is_admin = true`. Seller production authentication still needs its Supabase seller-role/ownership integration before replacing the current standalone seller prototype authentication.
+The dedicated Admin project enforces `profiles.is_admin = true`. Seller catalog authentication/ownership now uses Supabase Auth plus seller-owned submission rows and authenticated RPCs. Seller KYC, settlements, order fulfilment and other operational modules remain separate staged integrations.
 
 ## Rollback
 
-If the new customer project has any production issue after domain cutover, reassign `fashionfussion.in` to the previously working Vercel customer project/deployment. Database migrations or destructive backend changes must not be bundled with this frontend domain split.
+If the new customer project has any production issue after domain cutover, reassign `fashionfussion.in` to the previously working Vercel customer project/deployment. Do not bundle destructive database changes with the frontend domain cutover.
 
 ## Verification checkpoint — 19 Sep 2026
 
