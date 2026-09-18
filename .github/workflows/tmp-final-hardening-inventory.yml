@@ -1,0 +1,24 @@
+name: Temporary Final Hardening Inventory
+on:
+  push:
+    branches: [hardening/final-csp-runtime-cleanup]
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Inventory runtime style mutations and url.parse usage
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== STYLE PROPERTY ASSIGNMENTS ==='
+          grep -RInE --include='*.js' --exclude-dir=.git --exclude='*.min.js' '\.style\.[A-Za-z0-9_-]+[[:space:]]*=' . || true
+          echo '=== STYLE setProperty/removeProperty ==='
+          grep -RInE --include='*.js' --exclude-dir=.git '(\.style\.(setProperty|removeProperty)|setAttribute\([[:space:]]*["'"']style)' . || true
+          echo '=== CLASS / HIDDEN USAGE NEAR STYLE ==='
+          grep -RInE --include='*.js' --exclude-dir=.git '\.(hidden|classList)\b' . | head -n 250 || true
+          echo '=== url.parse / require url / node:url ==='
+          grep -RInE --include='*.js' --include='*.json' --exclude-dir=.git '(url\.parse|require\(["'"']url["'"']\)|require\(["'"']node:url["'"']\)|from[[:space:]]+["'"']node:url["'"'])' . || true
+          echo '=== DONE ==='
