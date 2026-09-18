@@ -7,6 +7,7 @@
   function session(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||sessionStorage.getItem(SESSION_KEY)||'null')}catch{return null}}
   function sellerKey(){const s=session();return s?.sellerId||s?.email||'seller'}
   function seed(key,value){let root={};try{root=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch{}const scoped=sellerKey();if(Object.prototype.hasOwnProperty.call(root,scoped))return false;root[scoped]=value;localStorage.setItem(key,JSON.stringify(root));return true}
+  function loadModule(src){const script=document.createElement('script');script.src=src;script.async=false;document.body.appendChild(script)}
   const returns=[
     {id:'RET-1048',order:'FFO-240918-1042',customer:'Aarav Mehta',product:'Premium Cotton Oversized T-Shirt',sku:'FF-TSH-104',qty:1,amount:799,reason:'Size did not fit',requested:'2026-09-18T10:05:00+05:30',status:'requested',resolution:'',note:''},
     {id:'RET-1039',order:'FFO-240918-1038',customer:'Neha Verma',product:'Minimal Desk Organizer Set',sku:'FF-DSK-011',qty:1,amount:899,reason:'Received damaged',requested:'2026-09-16T12:10:00+05:30',status:'pickup_scheduled',resolution:'refund',note:'Demo pickup scheduled.'},
@@ -19,4 +20,6 @@
   ];
   const changed=seed(RETURN_STORE,returns)|seed(QUOTE_STORE,quotes);
   if(changed)window.dispatchEvent(new Event('storage'));
+  loadModule('plans-fees-compliance-help.js');
+  loadModule('plans-compliance-open-fix.js');
 })();
