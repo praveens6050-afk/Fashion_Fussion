@@ -54,3 +54,4 @@ loadSellerModule('inventory-restock-fix.js');
 loadSellerModule('analytics-shipping.js');
 loadSellerModule('onboarding-settings.js');
 loadSellerModule('returns-support-team.js');
+loadSellerModule('growth-b2b-scorecard.js');
