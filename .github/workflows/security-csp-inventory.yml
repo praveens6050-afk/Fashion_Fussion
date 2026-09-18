@@ -1,0 +1,32 @@
+name: Security CSP Inventory
+on:
+  push:
+    branches: [security/full-audit-hardening]
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Inventory inline CSP dependencies
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          total = [0,0,0,0,0]
+          print('file\tinline_scripts\tstyle_blocks\tstyle_attrs\tevent_attrs\tjavascript_urls')
+          for p in sorted(Path('.').glob('*.html')):
+              text = p.read_text(encoding='utf-8')
+              scripts = len(re.findall(r'<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?</script\s*>', text, re.I))
+              styles = len(re.findall(r'<style\b[^>]*>[\s\S]*?</style\s*>', text, re.I))
+              style_attrs = len(re.findall(r'\sstyle\s*=\s*(["\']).*?\1', text, re.I|re.S))
+              event_attrs = len(re.findall(r'\son[a-z0-9_-]+\s*=\s*(["\']).*?\1', text, re.I|re.S))
+              js_urls = len(re.findall(r'(?:href|src)\s*=\s*(["\'])\s*javascript:', text, re.I))
+              vals = [scripts,styles,style_attrs,event_attrs,js_urls]
+              if any(vals):
+                  print(f'{p}\t' + '\t'.join(map(str, vals)))
+              total = [a+b for a,b in zip(total,vals)]
+          print('TOTAL\t' + '\t'.join(map(str,total)))
+          PY
