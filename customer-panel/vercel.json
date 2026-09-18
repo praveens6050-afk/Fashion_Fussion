@@ -11,8 +11,7 @@
     { "source": "/seller-panel/:path*", "destination": "https://seller.fashionfussion.in/:path*", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/api/return-refund-status", "destination": "/api/refund-status?mode=return-refund" },
-    { "source": "/api/admin-product-costs", "destination": "/api/admin-order-action?mode=product-costs" }
+    { "source": "/api/return-refund-status", "destination": "/api/refund-status?mode=return-refund" }
   ],
   "headers": [
     { "source": "/(.*)", "headers": [
