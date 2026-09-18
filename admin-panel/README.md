@@ -62,12 +62,28 @@ If password reset is tested on a Vercel preview URL, temporarily allow the exact
 - `/account` -> admin account
 - `/reset-password` -> password recovery
 
-The dashboard still verifies `profiles.is_admin = true` before showing administrator data. The admin-specific login additionally signs out authenticated non-admin users.
+The dashboard verifies `profiles.is_admin = true` before showing administrator data. The admin-specific login additionally signs out authenticated non-admin users.
+
+## Seller Product Approvals
+
+The Admin dashboard now includes a connected **Seller Product Approvals** queue.
+
+- Admin can see seller-owned submissions through the admin RLS path.
+- Pending submissions can be approved or rejected.
+- Rejection requires a non-empty seller-visible reason.
+- The browser does not directly activate customer products; review actions call the authenticated `admin_review_seller_product(...)` database RPC.
+- The RPC independently checks `profiles.is_admin = true` server-side.
+- Approval prepares the authoritative customer product, variants/inventory and optional bulk tier before activation.
+- Rejection keeps/deactivates the linked customer product so it remains hidden.
+- A seller revision of an approved listing automatically deactivates the linked customer product until reapproval.
+
+The Seller/Admin/Customer lifecycle has passed rollback-only database assertions, including denial of a non-admin approval attempt and customer/anonymous visibility checks.
 
 ## Admin feature parity
 
 The isolated package preserves the current dynamic Admin modules loaded by `supabase-config.js`, including:
 
+- Seller Product Approvals
 - notifications and support chat
 - order management and COD actions
 - promotions
@@ -82,7 +98,7 @@ The required admin API/server files are bundled inside this project so the Admin
 
 ## Backend boundary
 
-Both customer and admin projects may intentionally use the same Supabase database because frontend deployment separation is distinct from data authorization. Access remains controlled by Supabase Auth, RLS, `profiles.is_admin`, and the server-side administrator checks.
+Customer, Admin and Seller projects intentionally use the same Supabase database while remaining separate frontend deployments. Access is controlled by Supabase Auth, RLS, `profiles.is_admin`, seller ownership policies and server/database authorization checks.
 
 ## Store preview
 
@@ -95,15 +111,17 @@ Supabase browser sessions are origin-specific, so an administrator signed in at 
 1. Deploy this project on its Vercel-generated preview URL.
 2. Add all required server environment variables.
 3. Verify admin login and role rejection for a non-admin account.
-4. Verify product list/private costs/add/edit/inactivate flows.
-5. Verify orders, promotions, returns, quotes, inventory, payment review and shipping/readiness panels.
-6. Verify admin account and password-reset flow.
-7. Attach `admin.fashionfussion.in` only after preview verification.
-8. Keep the current customer project/domain unchanged during this process.
-9. Only after the admin subdomain is healthy should the customer-only project redirect legacy admin URLs here.
+4. Submit a controlled seller listing from the Seller preview and verify it appears in Seller Product Approvals.
+5. Reject it and verify the reason reaches the Seller while Customer cannot see it.
+6. Resubmit and approve it; verify product/variant/inventory creation and Customer visibility.
+7. Verify product list/private costs/add/edit/inactivate flows.
+8. Verify orders, promotions, returns, quotes, inventory, payment review and shipping/readiness panels.
+9. Verify admin account and password-reset flow.
+10. Attach `admin.fashionfussion.in` only after preview verification.
+11. Keep the current customer project/domain unchanged during this process.
 
-This branch/folder must not be merged into `main` merely to deploy the admin project. Vercel should deploy it directly from `admin-panel-standalone` with Root Directory `admin-panel`.
+This branch/folder must not be merged into `main` merely to deploy the Admin project. Vercel should deploy it directly from `admin-panel-standalone` with Root Directory `admin-panel`.
 
 ## Verification checkpoint — 19 Sep 2026
 
-This branch is the deployment candidate after standalone cleanup. The existing live customer production remains on `main`; this checkpoint exists to trigger and identify the exact Admin preview build without changing production aliases or domains.
+The database approval workflow is connected and rollback-tested. Exact browser smoke testing of this final branch SHA remains a Vercel deployment-time gate after quota reset. Existing live customer production remains on `main` until all three standalone projects pass their preview checks.
