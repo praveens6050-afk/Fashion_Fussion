@@ -22,4 +22,5 @@
   if(changed)window.dispatchEvent(new Event('storage'));
   loadModule('plans-fees-compliance-help.js');
   loadModule('plans-compliance-open-fix.js');
+  loadModule('qa-final-fixes.js');
 })();
