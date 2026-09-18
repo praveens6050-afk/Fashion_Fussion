@@ -50,7 +50,39 @@ This folder is intentionally isolated from the existing Fashion_Fussion storefro
 - Seller fulfilment flow: `New → Accepted → Packed → Ready to ship → Shipped`
 - Order cancellation allowed in early stages
 - Visual fulfilment stepper and status badges
+- Detailed order modal
+- Printable seller invoice preview
+- Printable packing slip
 - Demo fulfilment reset action
+
+### Analytics
+- Gross demo order value
+- Total orders, active orders and ordered units
+- Live vs total seller listings
+- Top products by ordered units
+- Operational insights for new orders, dispatch, stock and rejected listings
+- Metrics refresh from the same local catalog and fulfilment data
+
+### Notifications
+- Seller notification center in the top navigation
+- Unread counter
+- Rejected-listing alerts
+- Low/out-of-stock alerts
+- New-order alerts
+- Ready-to-ship alerts
+- Notification links open the relevant seller workspace
+- Read state stored locally
+
+### Shipping & logistics preview
+- Dedicated Shipping workspace
+- Packed / ready-to-ship / shipped queue
+- Demo courier assignment
+- Locally generated placeholder AWB/tracking number
+- Demo pickup scheduling
+- Shipment counters
+- Order-document access from the shipping queue
+
+> Courier names, AWB numbers and pickup events in this standalone build are placeholders. They do not create real shipments.
 
 ### Other operations preview
 - Payments / settlement history preview
@@ -70,6 +102,8 @@ This prototype does **not** currently connect to:
 - Product image storage
 - Real inventory reservation / checkout stock sync
 - Warehouse or shipping carrier APIs
+- Real AWB / shipping labels / courier bookings
+- Real invoice or GST-invoice service
 - Real KYC / GST / PAN verification
 - Real bank accounts or settlement provider
 - Real customer orders
@@ -100,10 +134,12 @@ Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending an
 - `styles.css` — original seller catalog/dashboard styles
 - `portal.css` — seller access, orders, payments, returns and profile styles
 - `app.js` — standalone catalog and product-review workflow
-- `portal.js` — seller identity, operations bootstrap and module loading
+- `portal.js` — seller identity, operations bootstrap and deterministic module loading
+- `operations-bootstrap.js` — seeds shared standalone fulfilment data and startup UI normalization
 - `catalog-enhancements.js` — advanced listing, variants, bulk pricing, media and shipping fields
 - `inventory-fulfillment.js` — inventory workspace and order fulfilment workflow
 - `inventory-restock-fix.js` — low-stock bulk restock correction for variant totals
+- `analytics-shipping.js` — analytics, notifications, shipping queue, order detail and printable documents
 
 ## Planned integration contract
 
@@ -125,6 +161,10 @@ Recommended future inventory/fulfilment rules:
 4. Seller cannot ship more quantity than the accepted order quantity
 5. Shipment events should be auditable and timestamped
 6. Customer/storefront availability should be driven from sellable stock rather than browser state
+7. Courier booking should generate real carrier shipment IDs/AWBs server-side
+8. Shipping labels, invoices and packing slips should be generated from authoritative order/tax data
+9. Analytics should read immutable order events rather than browser-local demo state
+10. Notifications should be seller-scoped and generated from backend events
 
 Suggested future ownership/review fields:
 
@@ -150,6 +190,8 @@ Suggested future seller modules:
 - `seller_order_items`
 - `seller_order_events`
 - `seller_shipments`
+- `seller_shipment_events`
+- `seller_notifications`
 - `seller_settlements`
 - `seller_returns`
 
