@@ -41,8 +41,8 @@ jobs:
               if p.name=='supabase-config.js': continue
               text=p.read_text(encoding='utf-8')
               before=text
-              text=text.replace("const BACKEND_URL='';","const BACKEND_URL=window.FF_API_ORIGIN||'';")
-              text=text.replace('const BACKEND_URL="";','const BACKEND_URL=window.FF_API_ORIGIN||\'\';')
+              text=text.replace("const BACKEND_URL=''","const BACKEND_URL=window.FF_API_ORIGIN||''")
+              text=text.replace('const BACKEND_URL=""','const BACKEND_URL=window.FF_API_ORIGIN||\'\'')
               text=text.replace("var API='/api/admin-order-action';","var API=(window.FF_API_ORIGIN||'')+'/api/admin-order-action';")
               text=text.replace('var API="/api/admin-order-action";','var API=(window.FF_API_ORIGIN||\'\')+\'/api/admin-order-action\';')
               text=re.sub(r"fetch\(('/api/[^']*')",r"fetch((window.FF_API_ORIGIN||'')+\1",text)
