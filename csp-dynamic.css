@@ -1,3 +1,13 @@
+[hidden]{display:none!important}
+.ff-status-error{color:#c62828!important}
+.ff-status-ok{color:#2e7d32!important}
+.ff-feedback-good{background:#edf9f1!important;color:#118344!important}
+.ff-feedback-bad{background:#fff0ef!important;color:#b42318!important}
+.ff-margin-left-8{margin-left:8px!important}
+.ff-margin-top-8{margin-top:8px!important}
+.ff-margin-top-16{margin-top:16px!important}
+.ff-relative{position:relative!important}
+.ff-no-top-margin{margin-top:0!important}
 [data-csp-style="csp-dyn-ready"]{font-weight:800;color:#118344}
 [data-csp-style="csp-dyn-blocked"]{font-weight:800;color:#b42318}
 [data-csp-style="csp-refund-good"]{font-size:11px;font-weight:800;color:#118344}
@@ -37,7 +47,7 @@
 [data-csp-style="csp-js-admin-launch-readiness-8"]{border:1px solid #d7e3ff;background:#f6f9ff;color:#35507a;border-radius:10px;padding:12px 14px}
 [data-csp-style="csp-js-admin-launch-readiness-9"]{margin-top:6px;line-height:1.45}
 [data-csp-style="csp-js-admin-launch-readiness-10"]{color:#b42318}
-[data-csp-style="csp-cssText-admin-notifications-1"]{display:none;position:fixed;right:20px;top:75px;width:360px;max-width:calc(100vw - 40px);max-height:65vh;overflow:auto;background:#fff;color:#222;border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 30px #0003;z-index:10000;padding:14px}
+[data-csp-style="csp-cssText-admin-notifications-1"]{position:fixed;right:20px;top:75px;width:360px;max-width:calc(100vw - 40px);max-height:65vh;overflow:auto;background:#fff;color:#222;border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 30px #0003;z-index:10000;padding:14px}
 [data-csp-style="csp-cssText-admin-notifications-2"]{border-top:1px solid #eee;padding:10px 0}
 [data-csp-style="csp-js-admin-orders-1"]{text-align:center;padding:30px}
 [data-csp-style="csp-js-admin-orders-2"]{text-align:center;padding:30px}
@@ -65,8 +75,8 @@
 [data-csp-style="csp-js-admin-shipping-10"]{width:100%;margin-top:5px}
 [data-csp-style="csp-js-admin-shipping-11"]{font-size:11px;font-weight:800}
 [data-csp-style="csp-js-admin-shipping-12"]{width:100%;margin-top:5px}
-[data-csp-style="csp-js-admin-shipping-13"]{display:none;margin:0 0 14px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;background:#fafbfc;font-size:12px}
-[data-csp-style="csp-js-admin-shipping-14"]{display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;font-size:12px}
+[data-csp-style="csp-js-admin-shipping-13"]{margin:0 0 14px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;background:#fafbfc;font-size:12px}
+[data-csp-style="csp-js-admin-shipping-14"]{margin:0 0 14px;padding:10px 12px;border-radius:8px;font-size:12px}
 [data-csp-style="csp-js-admin-shipping-15"]{text-align:center;padding:24px}
 [data-csp-style="csp-js-admin-shipping-16"]{font-size:11px;color:#697386;margin:14px 0 0}
 [data-csp-style="csp-js-admin-shipping-17"]{color:#118344}
@@ -94,14 +104,14 @@
 [data-csp-style="csp-js-order-refund-tracker-9"]{display:flex;justify-content:space-between;gap:12px;margin-top:8px}
 [data-csp-style="csp-js-order-refund-tracker-10"]{color:#697386}
 [data-csp-style="csp-js-order-refund-tracker-11"]{margin-top:8px;color:#697386;font-size:11px}
-[data-csp-style="csp-js-order-return-exchange-1"]{display:none}
+[data-csp-style="csp-js-order-return-exchange-1"]{}
 [data-csp-style="csp-js-order-return-exchange-2"]{margin-top:7px}
 [data-csp-style="csp-js-order-shipping-1"]{padding:20px}
 [data-csp-style="csp-js-order-shipping-2"]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 [data-csp-style="csp-js-order-shipping-3"]{margin-top:14px;padding:12px 14px;border-radius:9px;background:#f8f9fb;border:1px solid #e5e7eb;font-size:12px}
 [data-csp-style="csp-js-order-shipping-4"]{margin-top:14px;max-width:220px}
 [data-csp-style="csp-js-order-shipping-5"]{margin:12px 0 0}
-[data-csp-style="csp-js-support-chat-core-1"]{display:none}
+[data-csp-style="csp-js-support-chat-core-1"]{}
 [data-csp-style="csp-html-account-1"]{font-size:15px;margin:0 0 15px}
 [data-csp-style="csp-html-account-2"]{margin-top:10px}
 [data-csp-style="csp-html-admin-account-1"]{display:none}
