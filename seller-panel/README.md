@@ -24,11 +24,35 @@ This folder is intentionally isolated from the existing Fashion_Fussion storefro
 - Rejected listings display the admin rejection reason
 - Editing any existing listing sends it back to **Pending Review**
 - New listings always start as **Pending Review**
+- Brand, style/model, HSN and country-of-origin fields
+- Retail price, MRP, GST and optional bulk/B2B price + MOQ
+- Size/color variant matrix with variant-level SKU, stock and optional price override
+- Multiple image URLs with primary-image preview
+- Package weight, dimensions, dispatch time, return window and low-stock threshold
 - Dashboard counters and review activity feed
 - Demo catalog persisted in browser `localStorage`
 
-### Operations preview
-- Orders dashboard with sample order states
+### Inventory
+- Dedicated inventory workspace
+- Product and variant-level stock rows
+- Search + All / Low stock / Out of stock / With variants filters
+- Low-stock and out-of-stock counters
+- Configurable low-stock thresholds from product listing data
+- Bulk `+10` restock action for low-stock SKUs
+- Multi-row stock editing with save/discard workflow
+- Variant stock automatically recalculates parent product stock
+- Inventory update timestamps stored locally
+
+### Orders & fulfilment
+- Orders dashboard with persisted sample orders
+- Order search by order ID, customer, product or SKU
+- Active / New / Processing / Shipped / All filters
+- Seller fulfilment flow: `New → Accepted → Packed → Ready to ship → Shipped`
+- Order cancellation allowed in early stages
+- Visual fulfilment stepper and status badges
+- Demo fulfilment reset action
+
+### Other operations preview
 - Payments / settlement history preview
 - Returns queue preview
 - Seller Profile & KYC workspace
@@ -44,6 +68,8 @@ This prototype does **not** currently connect to:
 - Admin approval/rejection actions
 - Customer storefront
 - Product image storage
+- Real inventory reservation / checkout stock sync
+- Warehouse or shipping carrier APIs
 - Real KYC / GST / PAN verification
 - Real bank accounts or settlement provider
 - Real customer orders
@@ -64,7 +90,7 @@ Demo credentials:
 
 The prototype is plain HTML/CSS/JavaScript and has no build step.
 
-Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending and Rejected listings.
+Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending and Rejected listings. The Orders screen also includes a separate **Reset demo** action for fulfilment states.
 
 ## Files
 
@@ -74,7 +100,10 @@ Use **Reset catalog demo** in the sidebar to restore sample Approved, Pending an
 - `styles.css` — original seller catalog/dashboard styles
 - `portal.css` — seller access, orders, payments, returns and profile styles
 - `app.js` — standalone catalog and product-review workflow
-- `portal.js` — standalone seller identity, operations and profile workflow
+- `portal.js` — seller identity, operations bootstrap and module loading
+- `catalog-enhancements.js` — advanced listing, variants, bulk pricing, media and shipping fields
+- `inventory-fulfillment.js` — inventory workspace and order fulfilment workflow
+- `inventory-restock-fix.js` — low-stock bulk restock correction for variant totals
 
 ## Planned integration contract
 
@@ -88,6 +117,15 @@ When integration starts, replace the browser-storage adapters with authenticated
 6. Seller edits/resubmits → `pending` and previous rejection reason is cleared
 7. Any material edit to an approved listing should return it to `pending` until reviewed again
 
+Recommended future inventory/fulfilment rules:
+
+1. Inventory belongs to a seller-owned product or variant SKU
+2. Checkout reserves stock transactionally
+3. Cancellation/rejected payment releases reserved stock
+4. Seller cannot ship more quantity than the accepted order quantity
+5. Shipment events should be auditable and timestamped
+6. Customer/storefront availability should be driven from sellable stock rather than browser state
+
 Suggested future ownership/review fields:
 
 - `seller_id`
@@ -97,6 +135,7 @@ Suggested future ownership/review fields:
 - `reviewed_at`
 - `submitted_at`
 - `approved_at`
+- `inventory_updated_at`
 
 Suggested future seller modules:
 
@@ -106,7 +145,11 @@ Suggested future seller modules:
 - `seller_kyc`
 - `seller_bank_accounts`
 - `seller_products` / seller ownership on products
+- `seller_inventory`
+- `seller_product_variants`
 - `seller_order_items`
+- `seller_order_events`
+- `seller_shipments`
 - `seller_settlements`
 - `seller_returns`
 
