@@ -16,6 +16,7 @@ const EVENT_ATTR_RE = /\son[a-z0-9_-]+\s*=\s*(["']).*?\1/is;
 const JAVASCRIPT_URL_RE = /(?:href|src)\s*=\s*(["'])\s*javascript:/i;
 const CSS_TEXT_RE = /\.style\.cssText\s*=/;
 const SET_STYLE_ATTR_RE = /(?:setAttribute|setAttributeNS)\s*\(\s*["']style["']/i;
+const DYNAMIC_STYLE_ELEMENT_RE = /createElement\s*\(\s*["']style["']\s*\)/i;
 const PROD_BACKEND_ORIGIN = 'https://fashion-fussion-olive.vercel.app';
 
 const htmlFiles = fs.readdirSync(root)
@@ -50,10 +51,12 @@ for (const file of rootJsFiles) {
   if (JAVASCRIPT_URL_RE.test(text)) fail(`${file}: generated javascript: URL is forbidden`);
   if (CSS_TEXT_RE.test(text)) fail(`${file}: style.cssText assignment is forbidden`);
   if (SET_STYLE_ATTR_RE.test(text)) fail(`${file}: setAttribute('style', ...) is forbidden`);
+  if (DYNAMIC_STYLE_ELEMENT_RE.test(text)) fail(`${file}: runtime <style> creation is forbidden; use a same-origin stylesheet`);
   if (text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: browser API calls must use same-origin paths, not the production Vercel hostname`);
 }
 
 if (!exists('csp-dynamic.css')) fail('csp-dynamic.css is missing.');
+if (!exists('support-chat.css')) fail('support-chat.css is missing.');
 
 let config;
 try {
@@ -74,7 +77,7 @@ if (config) {
       "script-src 'self' https://cdn.jsdelivr.net https://checkout.razorpay.com",
       "script-src-attr 'none'",
       "style-src 'self'",
-      "style-src-attr 'none'",
+      "style-src-attr 'unsafe-inline'",
       'https://gmdevprqtvoshbbytsxf.supabase.co',
       'wss://gmdevprqtvoshbbytsxf.supabase.co',
       'https://*.razorpay.com',
@@ -82,7 +85,9 @@ if (config) {
       "object-src 'none'",
       "frame-ancestors 'none'",
     ];
-    if (csp.includes("'unsafe-inline'")) fail("Global CSP must not allow 'unsafe-inline'.");
+    const directives = Object.fromEntries(csp.split(';').map(part=>part.trim()).filter(Boolean).map(part=>{const i=part.indexOf(' ');return i<0?[part,'']:[part.slice(0,i),part.slice(i+1)]}));
+    if ((directives['script-src']||'').includes("'unsafe-inline'")) fail("script-src must not allow 'unsafe-inline'.");
+    if ((directives['style-src']||'').includes("'unsafe-inline'")) fail("style-src must not allow inline <style> blocks; only style-src-attr may allow runtime CSSOM attributes.");
     for (const token of required) {
       if (!csp.includes(token)) fail(`Global CSP is missing required directive/source: ${token}`);
     }

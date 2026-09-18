@@ -1,5 +1,5 @@
 (function(){'use strict';
-var API='https://fashion-fussion-olive.vercel.app/api/admin-order-action';
+var API='/api/admin-order-action';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function labelIssue(type){return type==='different_payment_reference'?'Different payment reference':'Captured payment on inactive order'}
 function call(action,payload){return window.supabaseClient.auth.getSession().then(function(x){var session=x.data.session;if(!session)throw new Error('Admin session expired');return fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify(Object.assign({action:action},payload||{}))})}).then(function(r){return r.json().catch(function(){return {}}).then(function(d){if(!r.ok)throw new Error(d.error||'Payment review request failed');return d})})}
