@@ -13,12 +13,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo '=== STYLE PROPERTY ASSIGNMENTS ==='
-          grep -RInE --include='*.js' --exclude-dir=.git --exclude='*.min.js' '\.style\.[A-Za-z0-9_-]+[[:space:]]*=' . || true
-          echo '=== STYLE setProperty/removeProperty ==='
-          grep -RInE --include='*.js' --exclude-dir=.git '(\.style\.(setProperty|removeProperty)|setAttribute\([[:space:]]*["'"']style)' . || true
-          echo '=== CLASS / HIDDEN USAGE NEAR STYLE ==='
-          grep -RInE --include='*.js' --exclude-dir=.git '\.(hidden|classList)\b' . | head -n 250 || true
-          echo '=== url.parse / require url / node:url ==='
-          grep -RInE --include='*.js' --include='*.json' --exclude-dir=.git '(url\.parse|require\(["'"']url["'"']\)|require\(["'"']node:url["'"']\)|from[[:space:]]+["'"']node:url["'"'])' . || true
-          echo '=== DONE ==='
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          roots=[p for p in Path('.').rglob('*') if p.is_file() and '.git' not in p.parts]
+          style_assign=re.compile(r'\.style\.([A-Za-z0-9_-]+)\s*=')
+          style_call=re.compile(r'\.style\.(setProperty|removeProperty)\s*\(')
+          set_style=re.compile(r"setAttribute(?:NS)?\s*\(\s*['\"]style['\"]")
+          url_parse=re.compile(r'\burl\.parse\s*\(')
+          require_url=re.compile(r"require\s*\(\s*['\"](?:node:)?url['\"]\s*\)")
+          import_url=re.compile(r"from\s+['\"]node:url['\"]")
+          print('=== STYLE MUTATIONS ===')
+          count=0
+          for p in sorted(x for x in roots if x.suffix=='.js'):
+              text=p.read_text(encoding='utf-8',errors='ignore')
+              for i,line in enumerate(text.splitlines(),1):
+                  if style_assign.search(line) or style_call.search(line) or set_style.search(line):
+                      count+=1; print(f'{p}:{i}:{line[:1200]}')
+          print(f'STYLE_MUTATION_LINES={count}')
+          print('=== URL PARSE / URL MODULE ===')
+          count=0
+          for p in sorted(x for x in roots if x.suffix in {'.js','.json','.mjs','.cjs'}):
+              text=p.read_text(encoding='utf-8',errors='ignore')
+              for i,line in enumerate(text.splitlines(),1):
+                  if url_parse.search(line) or require_url.search(line) or import_url.search(line):
+                      count+=1; print(f'{p}:{i}:{line[:1200]}')
+          print(f'URL_USAGE_LINES={count}')
+          print('=== DONE ===')
+          PY
