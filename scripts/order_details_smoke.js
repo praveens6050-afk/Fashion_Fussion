@@ -38,6 +38,7 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
   await page.route('**/supabase-config.js*', async route => {
     const stub = `
       (() => {
+        window.FF_API_ORIGIN='https://fashion-fussion-olive.vercel.app';
         const session={access_token:'smoke-access-token',user:{id:'smoke-user',email:'smoke@example.test'}};
         const order=${JSON.stringify(activeOrder)};
         function currentOrder(){
