@@ -16,6 +16,7 @@ jobs:
           from pathlib import Path
           import re
           total = [0,0,0,0,0]
+          print('HTML INLINE INVENTORY')
           print('file\tinline_scripts\tstyle_blocks\tstyle_attrs\tevent_attrs\tjavascript_urls')
           for p in sorted(Path('.').glob('*.html')):
               text = p.read_text(encoding='utf-8')
@@ -29,4 +30,17 @@ jobs:
                   print(f'{p}\t' + '\t'.join(map(str, vals)))
               total = [a+b for a,b in zip(total,vals)]
           print('TOTAL\t' + '\t'.join(map(str,total)))
+
+          print('\nCSSOM / DYNAMIC INLINE STYLE INVENTORY')
+          cssom_total = 0
+          set_style_total = 0
+          for p in sorted(list(Path('.').glob('*.js')) + list(Path('scripts').glob('*.js')) + list(Path('backend').glob('*.js')) + list(Path('api').glob('*.js')) + list(Path('.').glob('*.html'))):
+              text = p.read_text(encoding='utf-8')
+              cssom = len(re.findall(r'\.style(?:\.|\[)', text))
+              set_style = len(re.findall(r'(?:setAttribute|setAttributeNS)\s*\(\s*["\']style["\']', text, re.I))
+              if cssom or set_style:
+                  print(f'{p}\tstyle_api={cssom}\tset_style_attr={set_style}')
+              cssom_total += cssom
+              set_style_total += set_style
+          print(f'CSSOM_TOTAL\tstyle_api={cssom_total}\tset_style_attr={set_style_total}')
           PY
