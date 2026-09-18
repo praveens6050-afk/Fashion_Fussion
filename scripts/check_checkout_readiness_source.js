@@ -12,7 +12,11 @@ const health=requireMarkers('backend/api/checkout-health.js',[
 for(const rpc of ['reserve_order_promotions','reserve_order_inventory','release_order_inventory','release_order_promotions','finalize_cod_order_inventory','finalize_zero_value_order_inventory','commit_order_inventory','finalize_checkout_order','claim_prepaid_order_cancellation','restore_cancelled_order_promotions','restock_cancelled_order_inventory','record_payment_exception'])if(!health.includes(rpc))errors.push(`backend/api/checkout-health.js: missing RPC readiness check ${rpc}`);
 if(/\/refund|method:\s*['"]POST['"].*api\.razorpay\.com/s.test(health))errors.push('backend/api/checkout-health.js: readiness check must never create/refund Razorpay resources');
 const dispatcher=requireMarkers('api/admin-order-action.js',['checkout-health.js',"action==='checkout_health'"]);
-const loader=requireMarkers('supabase-config.js',["admin-checkout-health.js?v=1','data-admin-checkout-health","admin-launch-readiness.js?v=1','data-admin-launch-readiness',`window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';`]);
+const loader=requireMarkers('supabase-config.js',[
+  "admin-checkout-health.js?v=1','data-admin-checkout-health",
+  "admin-launch-readiness.js?v=1','data-admin-launch-readiness",
+  `window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';`
+]);
 requireMarkers('admin-checkout-health.js',['Checkout Readiness','checkout_health','COD real test','Prepaid real test','never creates an order, payment, refund, shipment or inventory movement']);
 const launch=requireMarkers('admin-launch-readiness.js',['First Live Order Readiness','checkout_health','connection_test','admin_list','product_variants','inventory_levels','packed_eligible','sellable_skus','AWB assigned','Pickup requested','Read-only preflight']);
 for(const action of ['create_shipment','check_serviceability','assign_awb','request_pickup','sync_tracking','collect_cod','cancel_cod','update_fulfillment'])if(launch.includes("api(s.access_token,'"+action+"'"))errors.push(`admin-launch-readiness.js: read-only ladder must not invoke ${action}`);
