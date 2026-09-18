@@ -55,3 +55,5 @@ loadSellerModule('analytics-shipping.js');
 loadSellerModule('onboarding-settings.js');
 loadSellerModule('returns-support-team.js');
 loadSellerModule('growth-b2b-scorecard.js');
+loadSellerModule('reporting-data-sync.js');
+loadSellerModule('dashboard-reports-bulk.js');
