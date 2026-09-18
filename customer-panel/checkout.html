@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Secure Checkout | Fashion_Fussion</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
+<script src="supabase-config.js?v=20260910-cutover1"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<link rel="stylesheet" href="checkout.css?v=2">
+<link rel="stylesheet" href="checkout-business.css?v=1">
+<link rel="stylesheet" href="csp-dynamic.css?v=1"></head>
+<body>
+<header class="top"><div class="top-in"><a class="logo" href="index.html">Fashion_Fussion</a><div class="secure">🔒 <span><b>Secure Checkout</b><br>Protected payment & privacy</span></div></div></header>
+<div class="subbar"><div class="subbar-in"><div class="crumb"><a href="cart.html">Cart</a> &nbsp;›&nbsp; <strong>Checkout</strong> &nbsp;›&nbsp; Confirmation</div><a class="back" href="cart.html">← Return to cart</a></div></div>
+<main class="page">
+<div class="title-row"><div><h1>Checkout</h1><p>Review your delivery, products and payment before placing the order.</p></div></div>
+<div class="layout">
+<section>
+<div class="card" id="addressSection"><div class="card-head"><span class="step">1</span><h2>Delivery address</h2><small id="addressState">Select address</small></div><div id="addressBox" class="empty">Loading saved addresses...</div></div>
+<div class="card"><div class="card-head"><span class="step">2</span><h2>Order summary</h2></div><div id="itemsBox" class="empty">Loading products...</div></div>
+<div class="card"><div class="card-head"><span class="step">3</span><h2>Payment method</h2></div><div class="pay-grid">
+<label class="pay-option"><input type="radio" name="paymentMethod" value="prepaid" checked><div><div class="pay-title">Pay online securely</div><div class="pay-note">UPI, cards and other available methods through Razorpay. No payment handling fee.</div></div><span class="recommended">RECOMMENDED</span></label>
+<label class="pay-option"><input type="radio" name="paymentMethod" value="cod"><div><div class="pay-title">Cash on Delivery</div><div class="pay-note">Pay when your order arrives. No separate COD handling fee.</div></div><span></span></label>
+</div></div>
+</section>
+<aside class="side"><div class="card"><div class="card-head"><h2>Price details</h2></div><div id="benefitBox"></div><div id="priceBox" class="price-box"></div>
+<div class="promo"><label>COUPON</label><div class="promo-line"><input id="couponCode" autocomplete="off" placeholder="Enter coupon code"><button id="applyCoupon" type="button">Apply</button></div><div id="couponMsg" class="promo-msg"></div></div>
+<div class="promo"><label>GIFT CARD</label><div class="promo-line"><input id="giftCode" autocomplete="off" placeholder="Enter gift card code"><button id="applyGift" type="button">Apply</button></div><div id="giftMsg" class="promo-msg"></div></div>
+<button id="continueBtn" class="continue" disabled>PAY SECURELY</button><div class="trust"><strong>🔒 Safe & secure checkout</strong><br>Your final payable amount is shown before order placement.</div><div id="checkoutStatus" class="status"></div></div>
+<div class="support"><span>Transparent pricing</span><span>Secure payment</span><span>Order support</span></div></aside>
+</div></main>
+<script src="checkout.js?v=1"></script>
+</body>
+</html>

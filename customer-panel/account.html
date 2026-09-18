@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Account | Fashion_Fussion</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
+<script src="supabase-config.js"></script>
+<link rel="stylesheet" href="csp-account.css?v=1">
+<link rel="stylesheet" href="csp-dynamic.css?v=1"></head>
+<body>
+<header class="top"><div class="topin"><a class="logo" href="index.html">Fashion_Fussion</a><nav class="topnav"><a href="index.html">Store</a><a href="cart.html">Cart</a><button id="topLogout" type="button">Sign out</button></nav></div></header>
+<div class="subbar"><div class="subin">Home &nbsp;›&nbsp; My Account</div></div>
+<div id="loading" class="loading">Loading your account…</div>
+<main id="app" class="wrap" hidden>
+<div class="layout">
+<aside class="side"><div class="profile-mini"><div class="avatar" id="avatar">U</div><div><div class="hello">Hello,</div><div class="mini-name" id="miniName">Customer</div></div></div><div class="menu"><button class="active" data-view="orders">My Orders</button><button data-view="profile">Profile</button><button data-view="addresses">Addresses</button><button data-view="refunds">Payments & Refunds</button><button class="danger" id="menuLogout" type="button">Sign out</button></div></aside>
+<section>
+<div class="main-title"><h1 id="viewTitle">My Orders</h1><p id="viewSub">Track purchases, delivery progress, cancellations and refunds.</p></div>
+<div id="ordersView" class="view active"><div class="panel"><div class="panel-head"><h2>Your orders</h2><button class="btn" id="refreshOrders" type="button">↻ Refresh</button></div><div class="panel-body"><div id="ordersList" class="orders"><div class="empty">Loading orders…</div></div></div></div></div>
+<div id="profileView" class="view"><div class="panel"><div class="panel-head"><h2>Profile information</h2><button class="btn" id="editProfile" type="button">Edit</button></div><div class="panel-body"><form id="profileForm"><div class="grid"><div class="field"><label for="fullName">Full name</label><input id="fullName" maxlength="100" autocomplete="name"></div><div class="field"><label for="phone">Phone</label><input id="phone" maxlength="20" autocomplete="tel"></div><div class="field full"><label for="email">Email</label><input id="email" readonly></div></div><div id="profileStatus"></div><div class="actions"><button id="saveProfile" class="btn primary" type="submit">Save profile</button></div></form></div></div></div>
+<div id="addressesView" class="view"><div class="panel"><div class="panel-head"><h2>Delivery addresses</h2><button class="btn primary" id="addAddress" type="button">+ Add address</button></div><div class="panel-body"><div id="addressStatus"></div><div id="addressList" class="address-list"><div class="empty">Loading addresses…</div></div><form id="addressForm" class="address-form"><h3 id="addressFormTitle" data-csp-style="csp-html-account-1">Add delivery address</h3><div class="grid"><div class="field"><label for="addressName">Full name</label><input id="addressName" maxlength="100" autocomplete="name" required></div><div class="field"><label for="addressPhone">Phone</label><input id="addressPhone" maxlength="20" autocomplete="tel" required></div><div class="field full"><label for="addressLine1">Address line 1</label><input id="addressLine1" maxlength="200" autocomplete="address-line1" required></div><div class="field full"><label for="addressLine2">Address line 2 (optional)</label><input id="addressLine2" maxlength="200" autocomplete="address-line2"></div><div class="field"><label for="addressCity">City</label><input id="addressCity" maxlength="100" autocomplete="address-level2" required></div><div class="field"><label for="addressState">State</label><input id="addressState" maxlength="100" autocomplete="address-level1" required></div><div class="field"><label for="addressPin">PIN code</label><input id="addressPin" maxlength="6" inputmode="numeric" autocomplete="postal-code" required></div><div class="field"><label for="addressLabel">Label</label><input id="addressLabel" maxlength="30" value="Home"></div></div><label class="checkline"><input id="addressDefault" type="checkbox"> Set as default delivery address</label><div class="actions"><button id="cancelAddress" class="btn" type="button">Cancel</button><button id="saveAddress" class="btn primary" type="submit">Save address</button></div></form></div></div></div>
+<div id="refundsView" class="view"><div class="panel"><div class="panel-head"><h2>Payments & refunds</h2></div><div class="panel-body"><div id="refundsList" class="orders"><div class="empty">Refund activity from your orders will appear here.</div></div></div></div></div>
+</section>
+</div>
+</main>
+<script src="csp-account.js?v=1"></script>
+</body>
+</html>
