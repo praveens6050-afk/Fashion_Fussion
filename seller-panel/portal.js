@@ -54,3 +54,7 @@ const inventoryFulfillment=document.createElement('script');
 inventoryFulfillment.src='inventory-fulfillment.js';
 inventoryFulfillment.defer=true;
 document.body.appendChild(inventoryFulfillment);
+const inventoryRestockFix=document.createElement('script');
+inventoryRestockFix.src='inventory-restock-fix.js';
+inventoryRestockFix.defer=true;
+document.body.appendChild(inventoryRestockFix);
