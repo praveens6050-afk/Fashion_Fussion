@@ -1,0 +1,126 @@
+name: Temporary Final CSP Fixup
+on:
+  push:
+    branches: [hardening/final-csp-runtime-cleanup]
+permissions:
+  contents: write
+jobs:
+  fixup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: hardening/final-csp-runtime-cleanup
+      - name: Remove runtime style attributes and tighten CSP
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def rep(path, old, new, required=True):
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              if old not in text:
+                  if required: raise SystemExit(f'Missing expected marker in {path}: {old[:100]}')
+                  return
+              p.write_text(text.replace(old,new),encoding='utf-8')
+
+          # Account/admin visibility uses hidden instead of runtime style attributes.
+          rep('csp-account.js',"function lockProfile(){$('fullName').readOnly=true;$('phone').readOnly=true;$('saveProfile').style.display='none';$('editProfile').style.display='inline-block'}function unlockProfile(){$('fullName').readOnly=false;$('phone').readOnly=false;$('saveProfile').style.display='inline-block';$('editProfile').style.display='none';$('fullName').focus()}","function lockProfile(){$('fullName').readOnly=true;$('phone').readOnly=true;$('saveProfile').hidden=true;$('editProfile').hidden=false}function unlockProfile(){$('fullName').readOnly=false;$('phone').readOnly=false;$('saveProfile').hidden=false;$('editProfile').hidden=true;$('fullName').focus()}")
+          rep('csp-admin-account.js',"function fail(msg){loading.style.display='none';content.style.display='none';errorBox.style.display='block';errorBox.textContent=msg;}","function fail(msg){loading.hidden=true;content.hidden=true;errorBox.hidden=false;errorBox.textContent=msg;}")
+          rep('csp-admin-account.js',"loading.style.display='none';content.style.display='block';","loading.hidden=true;content.hidden=false;")
+          rep('admin-account.html','<div id="content" data-csp-style="csp-html-admin-account-1">','<div id="content" hidden>')
+          rep('admin-account.html','<div id="errorBox" data-csp-style="csp-html-admin-account-2" class="error"></div>','<div id="errorBox" hidden class="error"></div>')
+
+          rep('csp-admin.js',"function deny(msg){$('loadingScreen').style.display='none';$('dashboard').style.display='none';$('accessDenied').style.display='block';$('accessDeniedMessage').textContent=msg}","function deny(msg){$('loadingScreen').hidden=true;$('dashboard').hidden=true;$('dashboard').dataset.adminReady='false';$('accessDenied').hidden=false;$('accessDeniedMessage').textContent=msg}")
+          rep('csp-admin.js',"$('loadingScreen').style.display='none';$('accessDenied').style.display='none';$('dashboard').style.display='block';return true","$('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;$('dashboard').dataset.adminReady='true';return true")
+          rep('admin.html','<section id="accessDenied" data-csp-style="csp-html-admin-1">','<section id="accessDenied" hidden>')
+          rep('admin.html','<main class="dashboard" id="dashboard">','<main class="dashboard" id="dashboard" hidden data-admin-ready="false">')
+          rep('csp-admin.css','.dashboard{display:none}', '.dashboard{display:block}')
+
+          # Admin inventory/shipping feedback states become CSS classes + hidden.
+          rep('admin-inventory.js',"function status(msg,err=false){const el=$('inventoryAdminStatus');if(!el)return;el.textContent=msg;el.style.color=err?'#c62828':'#2e7d32'}","function status(msg,err=false){const el=$('inventoryAdminStatus');if(!el)return;el.textContent=msg;el.classList.toggle('ff-status-error',err);el.classList.toggle('ff-status-ok',!err)}")
+          rep('admin-inventory.js',"function wait(){if(document.getElementById('dashboard')?.style.display==='block')load();else setTimeout(wait,250)}","function wait(){if(document.getElementById('dashboard')?.dataset.adminReady==='true')load();else setTimeout(wait,250)}")
+
+          rep('admin-shipping.js','<div id="ffCourierOptions" data-csp-style="csp-js-admin-shipping-13"></div><div id="ffShippingFeedback" data-csp-style="csp-js-admin-shipping-14"></div>','<div id="ffCourierOptions" hidden data-csp-style="csp-js-admin-shipping-13"></div><div id="ffShippingFeedback" hidden data-csp-style="csp-js-admin-shipping-14"></div>')
+          rep('admin-shipping.js',"function feedback(message,good){const el=$('ffShippingFeedback');if(!el)return;el.style.display=message?'block':'none';el.style.background=good?'#edf9f1':'#fff0ef';el.style.color=good?'#118344':'#b42318';el.textContent=message||''}","function feedback(message,good){const el=$('ffShippingFeedback');if(!el)return;el.hidden=!message;el.classList.toggle('ff-feedback-good',Boolean(good));el.classList.toggle('ff-feedback-bad',!good);el.textContent=message||''}")
+          rep('admin-shipping.js',"box.style.display='block';box.textContent='Checking Shiprocket courier serviceability…';","box.hidden=false;box.textContent='Checking Shiprocket courier serviceability…';")
+          rep('admin-shipping.js',"const observer=new MutationObserver(()=>{if(document.getElementById('dashboard')?.style.display!=='none')inject()});observer.observe(document.documentElement,{attributes:true,childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',inject);else inject();","function maybeInject(){if(document.getElementById('dashboard')?.dataset.adminReady==='true')inject()}const observer=new MutationObserver(maybeInject);observer.observe(document.documentElement,{attributes:true,childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',maybeInject);else maybeInject();")
+
+          rep('admin-shipping-health.js',"function show(message,good){const box=$('ffShippingFeedback');if(!box)return;box.style.display='block';box.style.background=good?'#edf9f1':'#fff0ef';box.style.color=good?'#118344':'#b42318';box.textContent=message}","function show(message,good){const box=$('ffShippingFeedback');if(!box)return;box.hidden=false;box.classList.toggle('ff-feedback-good',Boolean(good));box.classList.toggle('ff-feedback-bad',!good);box.textContent=message}")
+          rep('admin-shipping-health.js',"btn.style.marginLeft='8px';","btn.classList.add('ff-margin-left-8');")
+
+          # Notification/support UI uses semantic classes/hidden state.
+          rep('admin-notifications.js',"a.style.position='relative';","a.classList.add('ff-relative');")
+          rep('admin-notifications.js',"panel.setAttribute('data-csp-style','csp-cssText-admin-notifications-1');document.body.appendChild(panel);","panel.setAttribute('data-csp-style','csp-cssText-admin-notifications-1');panel.hidden=true;document.body.appendChild(panel);")
+          rep('admin-notifications.js',"h.style.marginTop='0';","h.classList.add('ff-no-top-margin');")
+          rep('admin-notifications.js',"a.onclick=e=>{e.preventDefault();panel.style.display=panel.style.display==='none'?'block':'none';if(panel.style.display==='block')load()};","a.onclick=e=>{e.preventDefault();panel.hidden=!panel.hidden;if(!panel.hidden)load()};")
+          rep('csp-notifications.js',"time.style.marginTop='8px';","time.classList.add('ff-margin-top-8');")
+          rep('business-registration-trust.js',"box.style.marginTop='16px';","box.classList.add('ff-margin-top-16');")
+
+          rep('support-chat-core.js','<div class="ffInput" id="ffSupportInput" data-csp-style="csp-js-support-chat-core-1">','<div class="ffInput" id="ffSupportInput" hidden data-csp-style="csp-js-support-chat-core-1">')
+          rep('support-chat-core.js',"input().style.display='none';","input().hidden=true;")
+          rep('support-chat-core.js',"input().style.display=r.status==='accepted'?'flex':'none';","input().hidden=r.status!=='accepted';")
+          rep('support-chat-core.js',"input().style.display='flex';","input().hidden=false;")
+
+          # Auth / returns visibility.
+          rep('reset-password.html','<section id="resetSection">','<section id="resetSection" hidden>')
+          rep('reset-password.html','<section id="invalidSection">','<section id="invalidSection" hidden>')
+          rep('csp-reset-password.css','#resetSection,#invalidSection{display:none}','')
+          rep('csp-reset-password.js',"function showReset(){resetSection.style.display='block';invalidSection.style.display='none'}function showInvalid(){resetSection.style.display='none';invalidSection.style.display='block'}","function showReset(){resetSection.hidden=false;invalidSection.hidden=true}function showInvalid(){resetSection.hidden=true;invalidSection.hidden=false}")
+          rep('csp-signup.js',"function show(text,type){message.textContent=text;message.className='message '+type;message.style.display='block'}","function show(text,type){message.textContent=text;message.className='message '+type;message.hidden=false}")
+          rep('csp-signup.js',"message.style.display='none';","message.hidden=true;message.textContent='';message.className='message';")
+
+          rep('order-return-exchange.js','<div class="rex-field" id="rexSizeField" data-csp-style="csp-js-order-return-exchange-1">','<div class="rex-field" id="rexSizeField" hidden data-csp-style="csp-js-order-return-exchange-1">')
+          rep('order-return-exchange.js',"m.querySelector('#rexSizeField').style.display=type==='exchange_size'?'block':'none';","m.querySelector('#rexSizeField').hidden=type!=='exchange_size';")
+
+          # Global CSP-safe utility styles and remove obsolete display:none declarations from data styles.
+          p=Path('csp-dynamic.css'); css=p.read_text(encoding='utf-8')
+          prefix="[hidden]{display:none!important}\n.ff-status-error{color:#c62828!important}\n.ff-status-ok{color:#2e7d32!important}\n.ff-feedback-good{background:#edf9f1!important;color:#118344!important}\n.ff-feedback-bad{background:#fff0ef!important;color:#b42318!important}\n.ff-margin-left-8{margin-left:8px!important}\n.ff-margin-top-8{margin-top:8px!important}\n.ff-margin-top-16{margin-top:16px!important}\n.ff-relative{position:relative!important}\n.ff-no-top-margin{margin-top:0!important}\n"
+          if not css.startswith('[hidden]{display:none!important}'):
+              css=prefix+css
+          for old,new in [
+              ('[data-csp-style="csp-cssText-admin-notifications-1"]{display:none;','[data-csp-style="csp-cssText-admin-notifications-1"]{'),
+              ('[data-csp-style="csp-js-admin-shipping-13"]{display:none;','[data-csp-style="csp-js-admin-shipping-13"]{'),
+              ('[data-csp-style="csp-js-admin-shipping-14"]{display:none;','[data-csp-style="csp-js-admin-shipping-14"]{'),
+              ('[data-csp-style="csp-js-order-return-exchange-1"]{display:none}','[data-csp-style="csp-js-order-return-exchange-1"]{}'),
+              ('[data-csp-style="csp-js-support-chat-core-1"]{display:none}','[data-csp-style="csp-js-support-chat-core-1"]{}'),
+          ]:
+              if old not in css: raise SystemExit('Missing csp-dynamic marker: '+old)
+              css=css.replace(old,new)
+          p.write_text(css,encoding='utf-8')
+
+          # Tighten header to prohibit all style attributes.
+          rep('vercel.json',"style-src 'self'; style-src-attr 'unsafe-inline';","style-src 'self'; style-src-attr 'none';")
+
+          # Make the CSP guard permanent and stricter.
+          p=Path('scripts/check_csp_hardening.js'); text=p.read_text(encoding='utf-8')
+          text=text.replace("const CSS_TEXT_RE = /\\.style\\.cssText\\s*=/;","const CSS_TEXT_RE = /\\.style\\.cssText\\s*=/;\nconst STYLE_API_RE = /\\.style\\./;")
+          text=text.replace("  if (CSS_TEXT_RE.test(text)) fail(`${file}: style.cssText assignment is forbidden`);","  if (CSS_TEXT_RE.test(text)) fail(`${file}: style.cssText assignment is forbidden`);\n  if (STYLE_API_RE.test(text)) fail(`${file}: runtime element.style access is forbidden; use hidden, classes or data-state`);")
+          text=text.replace("\"style-src-attr 'unsafe-inline'\",","\"style-src-attr 'none'\",")
+          text=text.replace("if ((directives['style-src']||'').includes(\"'unsafe-inline'\")) fail(\"style-src must not allow inline <style> blocks; only style-src-attr may allow runtime CSSOM attributes.\");","if ((directives['style-src']||'').includes(\"'unsafe-inline'\")) fail(\"style-src must not allow inline <style> blocks.\");\n    if ((directives['style-src-attr']||'').includes(\"'unsafe-inline'\") || (directives['style-src-attr']||'') !== \"'none'\") fail(\"style-src-attr must be 'none'.\");")
+          if "style-src-attr 'unsafe-inline'" in text: raise SystemExit('Old style-src-attr guard remains')
+          p.write_text(text,encoding='utf-8')
+
+          # Final invariant: no browser-root JS may touch element.style at all.
+          bad=[]
+          for js in sorted(Path('.').glob('*.js')):
+              t=js.read_text(encoding='utf-8',errors='ignore')
+              if '.style.' in t: bad.append(js.name)
+          if bad: raise SystemExit('Remaining runtime style API usage: '+', '.join(bad))
+          PY
+          node scripts/check_csp_hardening.js
+          node scripts/check_source.js
+          node scripts/check_checkout_readiness_source.js
+          node scripts/check_public_launch_contract.js
+          git diff --check
+      - name: Commit source fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then echo 'No source changes to commit'; exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add account.html admin-account.html admin.html reset-password.html csp-account.js csp-admin-account.js csp-admin.js csp-admin.css admin-inventory.js admin-shipping.js admin-shipping-health.js admin-notifications.js csp-notifications.js business-registration-trust.js support-chat-core.js csp-reset-password.css csp-reset-password.js csp-signup.js order-return-exchange.js csp-dynamic.css vercel.json scripts/check_csp_hardening.js
+          git commit -m 'Finish runtime CSP style-attribute hardening'
+          git push origin HEAD:hardening/final-csp-runtime-cleanup
