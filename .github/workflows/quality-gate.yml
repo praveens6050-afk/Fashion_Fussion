@@ -15,6 +15,16 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
+      - name: Resolve pinned Supabase SDK integrity
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          cd "$tmp"
+          tgz="$(npm pack --silent @supabase/supabase-js@2.116.0)"
+          tar -xzf "$tgz"
+          test -f package/dist/umd/supabase.js
+          sri="sha384-$(openssl dgst -sha384 -binary package/dist/umd/supabase.js | openssl base64 -A)"
+          echo "SUPABASE_SDK_SRI=$sri"
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
