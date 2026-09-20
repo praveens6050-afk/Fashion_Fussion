@@ -35,6 +35,7 @@ function normalizeSupabaseEnv(){
 module.exports=async function adminAction(req,res){
   try{
     normalizeSupabaseEnv();
+    require('../backend/admin-auth-bootstrap.js')();
     const mode=String(req.query?.mode||'').trim();
     const body=req.body&&typeof req.body==='object'?req.body:{};
     const action=String(body.action||'').trim();
