@@ -5,6 +5,8 @@ const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || "";
+const SUPABASE_SERVER_KEY = SUPABASE_SECRET_KEY || SUPABASE_SERVICE_ROLE_KEY;
 
 const DELIVERY_THRESHOLD = 299;
 const DELIVERY_BELOW_THRESHOLD = 49;
@@ -15,15 +17,14 @@ const PREPAID_DISCOUNT = 0;
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_CART_LINES = 50;
 const MAX_ITEM_QUANTITY = 500;
-const DEFAULT_ORIGIN = "https://praveens6050-afk.github.io";
+const DEFAULT_ORIGIN = "https://admin.fashionfussion.in";
 const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGIN || DEFAULT_ORIGIN)
   .split(",")
   .map(value => value.trim())
   .filter(Boolean);
 
 const serverHeaders = {
-  apikey: SUPABASE_SERVICE_ROLE_KEY,
-  Authorization: "Bearer " + SUPABASE_SERVICE_ROLE_KEY
+  apikey: SUPABASE_SERVER_KEY
 };
 
 function applySecurityHeaders(res) {
@@ -118,7 +119,7 @@ function paymentPricing(basePayable, paymentMethod) {
 }
 
 function assertServerConfig() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_SERVER_KEY) {
     throw new Error("Supabase server configuration is missing");
   }
 }
@@ -137,7 +138,7 @@ async function getSupabaseUser(req) {
   }
   const accessToken = String(authHeader).substring(7).trim();
   const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
-    headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + accessToken }
+    headers: { apikey: SUPABASE_SERVER_KEY, Authorization: "Bearer " + accessToken }
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data?.id) {
@@ -349,7 +350,7 @@ async function calculate(items) {
 }
 
 module.exports = {
-  KEY_ID, KEY_SECRET, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+  KEY_ID, KEY_SECRET, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_SECRET_KEY, SUPABASE_SERVER_KEY,
   DELIVERY_THRESHOLD, DELIVERY_BELOW_THRESHOLD, PAYMENT_HANDLING_FEE, PREPAID_DISCOUNT,
   MAX_BODY_BYTES, MAX_CART_LINES, MAX_ITEM_QUANTITY, serverHeaders, applySecurityHeaders, cors, json,
   readRawBody, readBody, basicAuth, safeEqualText, roundMoney, normalizePaymentMethod,
