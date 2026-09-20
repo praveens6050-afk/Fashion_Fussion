@@ -80,6 +80,21 @@ function readRawBody(req) {
 }
 
 async function readBody(req) {
+  const parsed = req?.body;
+  if (parsed != null) {
+    if (Buffer.isBuffer(parsed)) {
+      if (parsed.length > MAX_BODY_BYTES) throw new Error("Request body is too large");
+      try { return JSON.parse(parsed.toString("utf8") || "{}"); }
+      catch { throw new Error("Invalid JSON body"); }
+    }
+    if (typeof parsed === "string") {
+      if (Buffer.byteLength(parsed, "utf8") > MAX_BODY_BYTES) throw new Error("Request body is too large");
+      try { return JSON.parse(parsed || "{}"); }
+      catch { throw new Error("Invalid JSON body"); }
+    }
+    if (typeof parsed === "object") return parsed;
+  }
+  if (req?.readableEnded || req?.complete) return {};
   const raw = await readRawBody(req);
   try { return JSON.parse(raw.toString("utf8") || "{}"); }
   catch { throw new Error("Invalid JSON body"); }
