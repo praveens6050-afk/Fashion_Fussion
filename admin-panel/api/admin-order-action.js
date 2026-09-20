@@ -18,12 +18,13 @@ function normalizeSupabaseEnv(){
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.PUBLIC_SUPABASE_URL,
     process.env.VITE_SUPABASE_URL,
-    process.env.SUPABASE_PROJECT_URL
+    process.env.SUPABASE_PROJECT_URL,
+    'https://gmdevprqtvoshbbytsxf.supabase.co'
   ];
   for(const candidate of candidates){
     const valid=cleanHttpOrigin(candidate);
     if(valid){
-      console.warn('SUPABASE_URL is invalid; using a valid public Supabase project URL fallback.');
+      console.warn('SUPABASE_URL is invalid; using a valid Supabase project URL fallback.');
       process.env.SUPABASE_URL=valid;
       return valid;
     }
