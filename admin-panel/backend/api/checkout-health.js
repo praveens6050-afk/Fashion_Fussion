@@ -1,5 +1,5 @@
 const {
-  KEY_ID,KEY_SECRET,WEBHOOK_SECRET,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,
+  KEY_ID,KEY_SECRET,WEBHOOK_SECRET,SUPABASE_URL,SUPABASE_SERVER_KEY,
   serverHeaders,cors,json,readBody,requireAdminUser,basicAuth
 }=require('../lib');
 
@@ -50,7 +50,7 @@ module.exports=async function checkoutHealth(req,res){
   try{
     await readBody(req);
     const user=await requireAdminUser(req);
-    const server_configured=Boolean(SUPABASE_URL&&SUPABASE_SERVICE_ROLE_KEY);
+    const server_configured=Boolean(SUPABASE_URL&&SUPABASE_SERVER_KEY);
     const [activeProducts,ordersCount,activeVariants,inventoryRows,addressReady,rpcs,razorpay]=await Promise.all([
       countRows('products?is_active=eq.true&select=id'),
       countRows('orders?select=id'),
