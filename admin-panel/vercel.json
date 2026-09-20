@@ -8,9 +8,6 @@
     { "source": "/account", "destination": "/admin-account.html", "permanent": false },
     { "source": "/reset-password", "destination": "/reset-password.html", "permanent": false }
   ],
-  "rewrites": [
-    { "source": "/api/admin-product-costs", "destination": "/api/admin-order-action?mode=product-costs" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
