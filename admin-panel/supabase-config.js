@@ -1,8 +1,39 @@
 const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
 window.FF_API_ORIGIN='';
-window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 (function(){'use strict';
+  const SDK_FALLBACK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
+  const SDK_INTEGRITY='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
+  function createClient(){
+    if(window.supabaseClient)return window.supabaseClient;
+    if(!window.supabase||typeof window.supabase.createClient!=='function')return null;
+    window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    return window.supabaseClient;
+  }
+  function loadFallback(){
+    return new Promise((resolve,reject)=>{
+      const existing=document.querySelector('script[data-admin-supabase-fallback]');
+      if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',()=>reject(new Error('Supabase SDK could not be loaded')),{once:true});return}
+      const script=document.createElement('script');
+      script.src=SDK_FALLBACK;
+      script.integrity=SDK_INTEGRITY;
+      script.crossOrigin='anonymous';
+      script.async=false;
+      script.setAttribute('data-admin-supabase-fallback','true');
+      script.onload=resolve;
+      script.onerror=()=>reject(new Error('Supabase SDK could not be loaded'));
+      document.head.appendChild(script);
+    });
+  }
+  window.ffAdminSupabaseReady=(async()=>{
+    let client=createClient();
+    if(client)return client;
+    await loadFallback();
+    client=createClient();
+    if(!client)throw new Error('Supabase client is unavailable');
+    return client;
+  })();
+
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
   const page=(location.pathname.split('/').pop()||'login.html').toLowerCase();
   function loadAdminModules(){
