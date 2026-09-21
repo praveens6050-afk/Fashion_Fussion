@@ -1,1 +1,0 @@
-module.exports = require('../backend/api/cancel-order.js');

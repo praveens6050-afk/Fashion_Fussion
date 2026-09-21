@@ -1,1 +1,0 @@
-drop index if exists public.customer_addresses_one_default_per_user;
