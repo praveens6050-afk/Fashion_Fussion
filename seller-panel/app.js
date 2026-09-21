@@ -150,7 +150,7 @@ function handleAction(target){
   return false;
 }
 
-document.addEventListener('click',event=>handleAction(event.target));
+document.addEventListener('click',event=>{\n  if(handleAction(event.target)){\n    event.preventDefault();\n    event.stopImmediatePropagation();\n  }\n},true);
 $('statusTabs').addEventListener('click',event=>{const tab=event.target.closest('[data-status]');if(!tab)return;activeStatus=tab.dataset.status;syncTabs();renderProducts()});
 $('productSearch').addEventListener('input',renderProducts);
 $('globalSearch').addEventListener('input',event=>{const value=event.target.value.trim();if(value){switchView('products');$('productSearch').value=value;activeStatus='all';syncTabs();renderProducts()}else if(activeView==='products'){$('productSearch').value='';renderProducts()}});
