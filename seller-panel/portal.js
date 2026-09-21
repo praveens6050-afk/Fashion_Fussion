@@ -61,4 +61,5 @@ function loadSellerModule(src){
 // Operational prototypes remain in source for future integration but are not executed.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
+loadSellerModule('product-image-upload.js?v=20260921-file-upload');
 loadSellerModule('seller-support.js?v=1');
