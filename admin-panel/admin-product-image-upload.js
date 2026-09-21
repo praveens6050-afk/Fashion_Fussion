@@ -10,6 +10,14 @@
     const status=document.getElementById('status');
     if(status){status.textContent=msg;status.className='status show '+type;setTimeout(()=>{if(status.textContent===msg)status.className='status'},4000)}
   }
+  function setBusy(busy){
+    const save=document.getElementById('saveProduct');
+    if(!save)return;
+    if(!save.dataset.uploadIdleText)save.dataset.uploadIdleText=save.textContent||'Save Product';
+    save.disabled=Boolean(busy);
+    save.textContent=busy?'Uploading image…':save.dataset.uploadIdleText;
+    save.setAttribute('aria-busy',busy?'true':'false');
+  }
   async function upload(file){
     if(!file?.type?.startsWith('image/'))throw new Error('Please select an image file.');
     if(file.size>MAX_SIZE)throw new Error('Image must be 5 MB or smaller.');
@@ -30,16 +38,16 @@
     hidden.type='hidden';hidden.removeAttribute('placeholder');
     const label=group.querySelector('label');if(label)label.textContent='Product image';
     const file=document.createElement('input');file.type='file';file.accept='image/*';file.id='adminProductImageFile';file.setAttribute('aria-label','Product image');group.appendChild(file);
-    const help=document.createElement('small');help.id='adminProductImageStatus';help.textContent='Choose JPG, PNG, WEBP or another image file. Max 5 MB.';help.style.display='block';help.style.marginTop='6px';help.style.opacity='.75';group.appendChild(help);
+    const help=document.createElement('small');help.id='adminProductImageStatus';help.className='admin-image-help';help.textContent='Choose an image file. Max 5 MB.';group.appendChild(help);
     file.addEventListener('change',async()=>{
       const selected=file.files?.[0];if(!selected)return;
-      file.disabled=true;help.textContent='Uploading image…';
-      try{hidden.value=await upload(selected);help.textContent='Image uploaded successfully.';flash('Product image uploaded.');}
-      catch(error){file.value='';help.textContent='Upload failed.';flash(error.message||'Image upload failed.','err')}
-      finally{file.disabled=false}
+      file.disabled=true;setBusy(true);help.textContent='Uploading '+selected.name+'…';
+      try{hidden.value=await upload(selected);help.textContent='Uploaded: '+selected.name;flash('Product image uploaded.');}
+      catch(error){file.value='';help.textContent='Upload failed. Choose the image again.';flash(error.message||'Image upload failed.','err')}
+      finally{file.disabled=false;setBusy(false)}
     });
-    document.getElementById('addProductButton')?.addEventListener('click',()=>setTimeout(()=>{file.value='';help.textContent='Choose JPG, PNG, WEBP or another image file. Max 5 MB.'},0));
-    document.getElementById('productsTable')?.addEventListener('click',event=>{if(event.target.closest?.('[data-edit]'))setTimeout(()=>{file.value='';help.textContent=hidden.value?'Current uploaded image will be kept unless you select a new one.':'Choose an image file. Max 5 MB.'},0)},true);
+    document.getElementById('addProductButton')?.addEventListener('click',()=>setTimeout(()=>{file.value='';help.textContent='Choose an image file. Max 5 MB.';setBusy(false)},0));
+    document.getElementById('productsTable')?.addEventListener('click',event=>{if(event.target.closest?.('[data-edit]'))setTimeout(()=>{file.value='';help.textContent=hidden.value?'Current image will be kept unless you choose a new file.':'Choose an image file. Max 5 MB.';setBusy(false)},0)},true);
   }
   install();
   new MutationObserver(install).observe(document.documentElement,{childList:true,subtree:true});
