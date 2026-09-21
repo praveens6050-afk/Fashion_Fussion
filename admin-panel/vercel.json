@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "exit 0",
   "cleanUrls": false,
   "redirects": [
     { "source": "/", "destination": "/login.html", "permanent": false },
