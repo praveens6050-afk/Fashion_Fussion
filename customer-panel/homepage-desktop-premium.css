@@ -1,0 +1,131 @@
+/* Fashion_Fussion desktop storefront refinement.
+   Loaded only on the homepage via supabase-config.js.
+   Scope intentionally starts at 1024px so the current mobile experience is untouched. */
+@media (min-width:1024px){
+  :root{
+    --ff-navy:#0b1220;
+    --ff-navy-2:#121d31;
+    --ff-surface:#ffffff;
+    --ff-bg:#f4f6f8;
+    --ff-text:#111827;
+    --ff-muted:#667085;
+    --ff-line:#e4e7ec;
+    --ff-accent:#ffb000;
+    --ff-accent-strong:#f59e0b;
+    --ff-brand:#5b3df5;
+    --ff-shadow:0 12px 34px rgba(16,24,40,.08);
+    --ff-shadow-hover:0 18px 42px rgba(16,24,40,.14);
+  }
+
+  body{background:var(--ff-bg);color:var(--ff-text)}
+  .wrap{max-width:1440px;padding-left:36px;padding-right:36px}
+
+  /* Compact marketplace utility strip with stronger information hierarchy. */
+  .notice{padding:7px 20px;background:#070d18;color:#d0d5dd;font-size:11px;letter-spacing:.01em}
+  .notice b{color:#fff}
+
+  /* Header: cleaner than the dense Amazon/Flipkart pattern while retaining fast access. */
+  .top{background:rgba(11,18,32,.98);box-shadow:0 1px 0 rgba(255,255,255,.08)}
+  .toprow{height:76px;gap:26px}
+  .brand{font-size:24px;letter-spacing:-.85px;padding:8px 0;position:relative}
+  .brand:after{content:"";position:absolute;left:0;bottom:3px;width:38px;height:3px;border-radius:99px;background:var(--ff-accent)}
+  .search{height:46px;max-width:none;margin-left:12px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.14))}
+  .search input{border:1px solid transparent;border-right:0;border-radius:10px 0 0 10px;padding:0 18px;font-size:13px;background:#fff;color:#101828}
+  .search input:focus{border-color:#ffc85b;box-shadow:inset 0 0 0 1px #ffc85b}
+  .search button{width:52px;border-radius:0 10px 10px 0;background:var(--ff-accent);font-size:20px;transition:background .16s ease,transform .16s ease}
+  .search button:hover{background:#ffc13a}
+  .search button:active{transform:scale(.97)}
+  .actions{gap:10px;font-size:11px}
+  .actions>a{min-height:46px;padding:7px 10px;border-radius:8px;display:flex;flex-direction:column;justify-content:center;transition:background .16s ease}
+  .actions>a:hover{background:rgba(255,255,255,.08)}
+  .action-title{font-size:12px;white-space:nowrap}
+  .cart{padding-right:14px!important}
+  .count{right:2px;top:1px;background:var(--ff-accent);color:#101828;box-shadow:0 0 0 2px var(--ff-navy)}
+
+  /* Department row behaves like a restrained discovery rail instead of a second crowded header. */
+  .navrow{background:#162136;border-top:1px solid rgba(255,255,255,.05)}
+  .navin{min-height:44px;gap:6px;overflow:hidden}
+  .navin button,.navin a{padding:9px 12px;border-radius:7px;white-space:nowrap;font-size:11px;transition:background .16s ease,color .16s ease}
+  .navin button:hover,.navin a:hover{background:rgba(255,255,255,.09);color:#fff}
+
+  /* Hero: clearer retail proposition, less generic banner styling. */
+  .hero{padding:26px 0 16px}
+  .hero-grid{grid-template-columns:minmax(0,1.65fr) 390px;gap:18px}
+  .hero-main{min-height:360px;border-radius:18px;padding:48px 50px;background:
+    radial-gradient(circle at 82% 24%,rgba(91,61,245,.36),transparent 30%),
+    radial-gradient(circle at 15% 90%,rgba(245,158,11,.16),transparent 34%),
+    linear-gradient(126deg,#0b1220 0%,#18243a 58%,#25235d 100%);
+    box-shadow:var(--ff-shadow);position:relative;overflow:hidden}
+  .hero-main:after{content:"";position:absolute;right:-95px;bottom:-135px;width:330px;height:330px;border:1px solid rgba(255,255,255,.10);border-radius:50%;box-shadow:0 0 0 44px rgba(255,255,255,.025),0 0 0 88px rgba(255,255,255,.018);pointer-events:none}
+  .eyebrow{padding:7px 11px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);font-size:10px;letter-spacing:.03em}
+  .hero h1{font-size:48px;line-height:1.03;letter-spacing:-1.8px;max-width:720px;margin:21px 0 15px}
+  .hero p{font-size:14px;line-height:1.7;max-width:650px;color:#d0d5dd}
+  .hero-ctas{margin-top:28px;gap:11px}
+  .btn{min-height:42px;border-radius:8px;padding:11px 16px;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(16,24,40,.10)}
+  .btn.primary{background:var(--ff-accent);border-color:var(--ff-accent);color:#111827}
+  .btn.primary:hover{background:#ffc13a;border-color:#ffc13a}
+  .btn.ghost:hover{box-shadow:none;background:rgba(255,255,255,.08)}
+
+  /* Business card differentiates bulk buying without splitting the storefront. */
+  .business{border-radius:18px;padding:26px;border:1px solid #e6e8ec;box-shadow:var(--ff-shadow);position:relative}
+  .business:before{content:"Business-ready";position:absolute;right:22px;top:19px;padding:5px 8px;border-radius:99px;background:#f3f0ff;color:#5639db;font-size:9px;font-weight:900;letter-spacing:.03em;text-transform:uppercase}
+  .business .tag{margin-top:3px;color:#6941c6}
+  .business h2{font-size:24px;line-height:1.18;letter-spacing:-.4px;margin:12px 0 10px;padding-right:54px}
+  .business p{font-size:11.5px;line-height:1.65}
+  .benefit{padding:12px 0;gap:11px}
+  .benefit>div:first-child{width:21px;height:21px;display:grid;place-items:center;border-radius:50%;background:#ecfdf3;color:#027a48;font-size:11px;font-weight:900;flex:0 0 auto}
+
+  /* Trust bar uses compact proof points rather than promotional tiles. */
+  .trust{padding:2px 0 20px}
+  .trust-grid{gap:10px}
+  .trust-item{min-height:70px;border-radius:10px;padding:14px 15px;border-color:#e7e9ee;box-shadow:0 2px 7px rgba(16,24,40,.025)}
+  .trust-item b{font-size:11.5px;color:#1d2939}
+  .trust-item span{font-size:9.5px;color:#667085}
+
+  /* Catalogue section: denser discovery, stronger card hierarchy, easier scanning. */
+  .section{padding:24px 0 54px}
+  .section-head{margin-bottom:15px;align-items:center}
+  .section-head h2{font-size:27px;letter-spacing:-.55px}
+  .section-head p{font-size:11px}
+  .section-head>.btn{background:#fff}
+  .chips{gap:7px;margin-bottom:15px;flex-wrap:nowrap;overflow:hidden}
+  .chip{padding:8px 13px;border-radius:8px;font-size:10px;background:#fff;color:#344054;transition:all .16s ease}
+  .chip:hover{border-color:#98a2b3;background:#f9fafb;color:#101828}
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  .product{border-radius:11px;border-color:#e4e7ec;box-shadow:0 1px 2px rgba(16,24,40,.025);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .product:hover{transform:translateY(-3px);box-shadow:var(--ff-shadow-hover);border-color:#d0d5dd}
+  .media{aspect-ratio:1.04;background:#f8fafc}
+  .media img{transition:transform .22s ease}
+  .product:hover .media img{transform:scale(1.025)}
+  .badge{left:11px;top:11px;border-radius:5px;padding:5px 7px;font-size:8.5px;box-shadow:0 1px 3px rgba(16,24,40,.12)}
+  .heart{right:11px;top:11px;width:34px;height:34px;border-color:#e4e7ec;box-shadow:0 2px 5px rgba(16,24,40,.06);transition:transform .15s ease,box-shadow .15s ease}
+  .heart:hover{transform:scale(1.05);box-shadow:0 4px 10px rgba(16,24,40,.10)}
+  .body{padding:14px 14px 15px;gap:6px}
+  .cat{font-size:8.5px;color:#6941c6}
+  .name{font-size:13.5px;line-height:1.38;min-height:38px;color:#101828}
+  .desc{font-size:10.5px;line-height:1.48;color:#667085}
+  .social{font-size:9.5px}
+  .price-row{padding-top:3px}
+  .price{font-size:20px;letter-spacing:-.25px;color:#101828}
+  .gst{font-size:8.5px}
+  .product-actions{grid-template-columns:minmax(0,1fr) auto;gap:7px;padding-top:3px}
+  .add,.details-btn{min-height:39px;border-radius:7px;padding:10px 12px;font-size:10px;transition:background .16s ease,transform .16s ease,border-color .16s ease}
+  .add{background:#111827}
+  .add:hover{background:#233047;transform:translateY(-1px)}
+  .details-btn:hover{border-color:#98a2b3;background:#f9fafb}
+
+  /* Footer remains useful but visually quieter than the buying journey. */
+  footer{background:#0b1220;padding:38px 0 25px}
+  .foot{grid-template-columns:2.2fr 1fr 1fr;gap:44px}
+  .foot p,.foot a{font-size:11px}
+  .legal{font-size:10px;color:#98a2b3}
+
+  /* Accessibility: keyboard focus is visible throughout the primary shopping flow. */
+  a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid rgba(255,176,0,.55);outline-offset:2px}
+}
+
+@media (min-width:1360px){
+  .grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .hero-grid{grid-template-columns:minmax(0,1.72fr) 400px}
+}

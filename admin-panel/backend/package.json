@@ -1,0 +1,11 @@
+{
+  "name":"fashion-fussion-admin-api",
+  "version":"1.2.0",
+  "private":true,
+  "engines":{"node":"24.x"},
+  "scripts":{
+    "test":"npm run check",
+    "check":"node --check lib.js && node --check admin-auth-bootstrap.js && node --check api/admin-business-quote-action.js && node --check api/admin-order-action.js && node --check api/checkout-health.js && node --check api/process-return-refund.js && node --check api/refund-recovery.js && node --check api/shipping.js && node --check api/shiprocket-health.js && node --check ../api/admin-order-action.js && node --check ../api/process-return-refund.js"
+  },
+  "dependencies":{}
+}

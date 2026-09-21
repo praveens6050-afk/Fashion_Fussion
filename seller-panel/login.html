@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fashion_Fussion Seller Center — Sign in</title>
+  <meta name="description" content="Seller sign in and registration for Fashion_Fussion Seller Center.">
+  <script src="https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
+  <script src="supabase-config.js?v=20260921-supabase-recovery"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="portal.css">
+  <style>.auth-form[hidden]{display:none!important}</style>
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-brand-panel">
+      <div class="auth-brand"><div class="brand-mark">FF</div><div><strong>Fashion_Fussion</strong><span>Seller Center</span></div></div>
+      <div class="auth-copy">
+        <p class="eyebrow light">SELL ON FASHION_FUSSION</p>
+        <h1>Manage your catalog from one professional seller workspace.</h1>
+        <p>Submit products for administrator review. Approved listings can go live on the customer store; rejected listings stay hidden and include the review reason.</p>
+      </div>
+      <div class="auth-benefits">
+        <div><b>01</b><span><strong>Controlled catalog</strong><small>Products go live only after administrator approval.</small></span></div>
+        <div><b>02</b><span><strong>Clear rejection feedback</strong><small>See the exact reason, fix the listing and resubmit.</small></span></div>
+        <div><b>03</b><span><strong>Seller-owned access</strong><small>Your catalog submissions are tied to your authenticated seller account.</small></span></div>
+      </div>
+      <div class="auth-prototype">Connected approval workflow · Customer visibility requires admin approval</div>
+    </section>
+
+    <section class="auth-card-wrap">
+      <div class="auth-card">
+        <div class="auth-card-head">
+          <p class="eyebrow">SELLER ACCESS</p>
+          <h2 id="authTitle">Sign in to Seller Center</h2>
+          <p id="authSubtitle">Use your registered seller email and password.</p>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+          <button class="active" type="button" data-auth-mode="login">Sign in</button>
+          <button type="button" data-auth-mode="register">Create account</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <label>Email address<input id="loginEmail" type="email" required autocomplete="email" placeholder="seller@example.com"></label>
+          <label>Password<input id="loginPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="Your password"></label>
+          <button class="primary auth-submit" id="loginSubmit" type="submit">Sign in</button>
+        </form>
+
+        <form id="registerForm" class="auth-form" hidden>
+          <div class="form-grid"><label>First name<input id="firstName" required maxlength="60" autocomplete="given-name"></label><label>Last name<input id="lastName" required maxlength="60" autocomplete="family-name"></label></div>
+          <label>Business / store name<input id="storeName" required maxlength="120" placeholder="e.g. Sharma Fashion House"></label>
+          <label>Business email<input id="registerEmail" type="email" required autocomplete="email" placeholder="business@example.com"></label>
+          <label>Mobile number<input id="mobile" type="tel" required maxlength="15" inputmode="numeric" placeholder="10-digit mobile number"></label>
+          <label>Create password<input id="registerPassword" type="password" required minlength="10" autocomplete="new-password" placeholder="At least 10 characters"></label>
+          <label>Seller type<select id="sellerType"><option value="individual">Individual seller</option><option value="business">Registered business</option><option value="manufacturer">Manufacturer / brand</option><option value="wholesaler">Wholesaler / distributor</option></select></label>
+          <label class="check terms-check"><input id="termsAccepted" type="checkbox" required><span>I agree to the seller terms and catalog review requirements.</span></label>
+          <button class="primary auth-submit" id="registerSubmit" type="submit">Create seller account</button>
+        </form>
+
+        <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+  <script src="auth.js?v=20260921-supabase-recovery"></script>
+</body>
+</html>

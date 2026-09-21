@@ -1,0 +1,9 @@
+(function(){'use strict';
+const BACKEND_URL=window.FF_API_ORIGIN||'';
+const $=id=>document.getElementById(id);
+async function api(){const{data:{session}}=await window.supabaseClient.auth.getSession();if(!session)throw new Error('Admin session expired');const r=await fetch(BACKEND_URL+'/api/admin-order-action',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'connection_test'})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Shiprocket connection test failed');return d}
+function show(message,good){const box=$('ffShippingFeedback');if(!box)return;box.hidden=false;box.classList.toggle('ff-feedback-good',Boolean(good));box.classList.toggle('ff-feedback-bad',!good);box.textContent=message}
+async function test(){const btn=$('ffShiprocketConnectionTest');if(!btn)return;btn.disabled=true;btn.textContent='Testing…';try{const d=await api();show('Shiprocket API authentication successful'+(d.serviceability_ready?' · Pickup location and pincode are ready.':' · Authentication is valid, but pickup configuration is incomplete.')+(d.latency_ms!=null?' · '+d.latency_ms+' ms':''),true)}catch(e){show(e.message||'Shiprocket connection test failed',false)}finally{btn.disabled=false;btn.textContent='Test connection'}}
+function inject(){const card=$('ffShippingCard');if(!card||$('ffShiprocketConnectionTest'))return;const header=card.querySelector('.card-header');if(!header)return;const btn=document.createElement('button');btn.className='secondary';btn.id='ffShiprocketConnectionTest';btn.type='button';btn.textContent='Test connection';btn.classList.add('ff-margin-left-8');btn.onclick=test;header.appendChild(btn)}
+new MutationObserver(inject).observe(document.documentElement,{childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',inject,{once:true});else inject();
+})();
