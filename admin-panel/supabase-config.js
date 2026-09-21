@@ -12,14 +12,14 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
     add('admin-promotions.js?v=2','data-admin-promotions');
     add('admin-returns.js?v=1','data-admin-returns');
     add('admin-business-quotes.js?v=3','data-admin-business-quotes');
-    add('admin-inventory.js?v=1','data-admin-inventory');
+    add('admin-inventory.js?v=2','data-admin-inventory');
     add('admin-catalog-safety.js?v=1','data-admin-catalog-safety');
     add('admin-shipping.js?v=2','data-admin-shipping');
     add('admin-shipping-health.js?v=1','data-admin-shipping-health');
-    add('admin-checkout-health.js?v=1','data-admin-checkout-health');
-    add('admin-launch-readiness.js?v=1','data-admin-launch-readiness');
+    add('admin-checkout-health.js?v=2','data-admin-checkout-health');
+    add('admin-launch-readiness.js?v=2','data-admin-launch-readiness');
     add('admin-seller-approvals.js?v=1','data-admin-seller-approvals');
-    add('admin-owner-center.js?v=1','data-admin-owner-center');
+    add('admin-owner-center.js?v=2','data-admin-owner-center');
   }
   function start(){
     if(page!=='admin.html')return;
