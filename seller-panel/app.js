@@ -69,7 +69,7 @@ function renderProducts(){
 }
 
 function renderReviewCards(){
-  const sorted=[...products].sort((a,b)=>({rejected:0,pending:1,approved:2}[a.status]-{rejected:0,pending:1,approved:2}[b.status]||new Date(b.updatedAt)-new Date(a.updatedAt));
+  const sorted=[...products].sort((a,b)=>({rejected:0,pending:1,approved:2}[a.status]-{rejected:0,pending:1,approved:2}[b.status]||new Date(b.updatedAt)-new Date(a.updatedAt)));
   $('reviewCards').innerHTML=sorted.length?sorted.map(p=>`<article class="review-card"><div><div class="meta">${thumbHtml(p)}<div><h3>${esc(p.name)}</h3><p class="details">${esc(p.sku)} · Updated ${formatDate(p.updatedAt)}</p></div>${statusHtml(p.status)}</div>${p.status==='rejected'?`<div class="reason"><strong>Admin rejection reason:</strong> ${esc(p.rejectionReason||'Changes required before approval.')}</div>`:''}${p.status==='pending'?'<div class="pending-note">This product is not visible to customers while admin review is pending.</div>':''}${p.status==='approved'?'<div class="pending-note" style="background:var(--green-bg);color:var(--green)">Approved. This listing is ready to be treated as live when storefront integration is connected.</div>':''}</div><div class="review-actions"><button class="small-btn" data-edit="${esc(p.id)}">${p.status==='rejected'?'Fix & resubmit':'Edit listing'}</button></div></article>`).join(''):'<div class="empty-state"><h3>No listings yet</h3></div>';
   bindImageFallbacks();
 }
@@ -150,7 +150,12 @@ function handleAction(target){
   return false;
 }
 
-document.addEventListener('click',event=>{\n  if(handleAction(event.target)){\n    event.preventDefault();\n    event.stopImmediatePropagation();\n  }\n},true);
+document.addEventListener('click',event=>{
+  if(handleAction(event.target)){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+},true);
 $('statusTabs').addEventListener('click',event=>{const tab=event.target.closest('[data-status]');if(!tab)return;activeStatus=tab.dataset.status;syncTabs();renderProducts()});
 $('productSearch').addEventListener('input',renderProducts);
 $('globalSearch').addEventListener('input',event=>{const value=event.target.value.trim();if(value){switchView('products');$('productSearch').value=value;activeStatus='all';syncTabs();renderProducts()}else if(activeView==='products'){$('productSearch').value='';renderProducts()}});
