@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in seller-panel-*) git diff --quiet HEAD^ HEAD -- seller-panel vercel.json ;; *) exit 0 ;; esac",
+  "ignoreCommand": "exit 1",
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
