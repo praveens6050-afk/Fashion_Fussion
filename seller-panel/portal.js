@@ -66,10 +66,12 @@ function loadSellerStyle(href){
 }
 
 loadSellerStyle('sidebar-compact.css?v=20260921-menu');
+loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
 
-// Production launch scope: live catalog/review + support only.
-// Operational prototypes remain in source for future integration but are not executed.
+// Live catalog/review + support stay unchanged; premium module only improves presentation
+// and computes dashboard insights from the seller's already-loaded catalog data.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
 loadSellerModule('product-image-upload.js?v=20260921-file-upload');
 loadSellerModule('seller-support.js?v=1');
+loadSellerModule('seller-hub-premium.js?v=20260921-hub');
