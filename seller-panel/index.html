@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Fashion_Fussion Seller Center</title>
   <meta name="description" content="Fashion_Fussion seller portal for catalog submissions and admin approval.">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
-  <script src="supabase-config.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
+  <script src="supabase-config.js?v=20260921-supabase-recovery"></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="portal.css">
 </head>
@@ -39,6 +39,6 @@
   <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
   <aside class="drawer" id="productDrawer" aria-hidden="true"><div class="drawer-head"><div><p class="eyebrow">PRODUCT LISTING</p><h2 id="drawerTitle">Add product</h2></div><button class="close-btn" id="closeDrawer" aria-label="Close">×</button></div><form id="productForm" class="product-form"><input type="hidden" id="productId"><div class="form-section"><h3>Basic information</h3><p>Use clear information that customers can understand.</p><label>Product name<input id="name" maxlength="160" required placeholder="e.g. Premium Cotton T-Shirt"></label><div class="form-grid"><label>Category<input id="category" maxlength="80" required placeholder="Fashion"></label><label>Seller SKU<input id="sku" maxlength="40" required placeholder="FF-TSH-001"></label></div><label>Description<textarea id="description" maxlength="1200" rows="5" required placeholder="Describe the product, material, fit and key benefits"></textarea></label></div><div class="form-section"><h3>Pricing & inventory</h3><p>These values are reviewed before the product goes live.</p><div class="form-grid"><label>Selling price (₹)<input id="price" type="number" min="1" step="0.01" required></label><label>MRP (₹)<input id="mrp" type="number" min="1" step="0.01" required></label></div><div class="form-grid"><label>Available stock<input id="stock" type="number" min="0" step="1" required></label><label>GST rate (%)<select id="gst"><option>0</option><option>5</option><option>12</option><option selected>18</option><option>28</option></select></label></div></div><div class="form-section"><h3>Product media</h3><p>Add a secure public image URL.</p><label>Image URL (optional)<input id="image" type="url" maxlength="1000" placeholder="https://example.com/product.jpg"></label></div><div id="editReviewWarning" class="notice warning compact" hidden><div class="notice-icon">!</div><div><strong>Editing sends this listing back to review</strong><p>The linked customer product becomes inactive until admin approves the revised listing.</p></div></div><div class="drawer-actions"><button type="button" class="ghost" id="cancelDrawer">Cancel</button><button type="submit" class="primary" id="submitProduct">Submit for review</button></div></form></aside>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20260921-2250"></script><script src="portal.js?v=20260921-2250"></script><script src="seller-live-integration.js"></script><script src="navigation-fix.js?v=20260921-2250"></script>
+  <script src="app.js?v=20260921-2250"></script><script src="portal.js?v=20260921-2250"></script><script src="seller-live-integration.js?v=20260921-supabase-recovery"></script><script src="navigation-fix.js?v=20260921-2250"></script>
 </body>
 </html>
