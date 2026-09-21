@@ -53,3 +53,17 @@ if(!isSellerLogin){
   if(!document.querySelector('script[data-seller-launch-safety]')){const guard=document.createElement('script');guard.src='seller-launch-safety.js';guard.async=false;guard.setAttribute('data-seller-launch-safety','true');document.head.appendChild(guard)}
   if(!localStorage.getItem('ff_seller_session_v1')&&!sessionStorage.getItem('ff_seller_session_v1'))sessionStorage.setItem('ff_seller_session_v1',JSON.stringify({sellerId:'LIVE',storeName:'Seller',email:'',name:'Seller',authProvider:'supabase-pending'}));
 }
+
+window.ffSellerSupabaseReady.then(()=>{
+  if(isSellerLogin||window.SellerLiveIntegration)return;
+  window.__sellerLiveIntegrationBooted=false;
+  if(document.querySelector('script[data-seller-live-recovery]'))return;
+  const script=document.createElement('script');
+  script.src='seller-live-integration.js?v=20260921-supabase-recovery';
+  script.async=false;
+  script.setAttribute('data-seller-live-recovery','true');
+  document.body.appendChild(script);
+}).catch(error=>{
+  console.error('[Seller Center] Supabase startup failed',error);
+  document.documentElement.classList.remove('seller-live-loading');
+});
