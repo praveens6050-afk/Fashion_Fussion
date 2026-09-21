@@ -2,7 +2,7 @@
 const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
 const SUPABASE_SRI='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
-const SUPABASE_FALLBACK_URL='https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
+const SUPABASE_FALLBACK_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
 
 function createSellerSupabaseClient(){
   if(window.supabaseClient)return window.supabaseClient;
