@@ -1,7 +1,50 @@
 'use strict';
 const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
-window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const SUPABASE_SRI='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
+const SUPABASE_FALLBACK_URL='https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
+
+function createSellerSupabaseClient(){
+  if(window.supabaseClient)return window.supabaseClient;
+  if(!window.supabase||typeof window.supabase.createClient!=='function')return null;
+  window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  return window.supabaseClient;
+}
+
+function loadPinnedSellerSdk(src){
+  return new Promise((resolve,reject)=>{
+    const existing=[...document.scripts].find(script=>script.src===src);
+    if(existing){
+      if(window.supabase&&typeof window.supabase.createClient==='function'){resolve();return}
+      existing.addEventListener('load',()=>resolve(),{once:true});
+      existing.addEventListener('error',()=>reject(new Error('Supabase SDK failed to load')),{once:true});
+      return;
+    }
+    const script=document.createElement('script');
+    script.src=src;
+    script.integrity=SUPABASE_SRI;
+    script.crossOrigin='anonymous';
+    script.referrerPolicy='no-referrer';
+    script.onload=()=>resolve();
+    script.onerror=()=>reject(new Error('Supabase SDK failed to load'));
+    document.head.appendChild(script);
+  });
+}
+
+window.ffSellerSupabaseReady=(async()=>{
+  let client=createSellerSupabaseClient();
+  if(client)return client;
+  try{
+    await loadPinnedSellerSdk(SUPABASE_FALLBACK_URL);
+    client=createSellerSupabaseClient();
+    if(client)return client;
+  }catch(error){
+    console.error('[Seller Center] Supabase fallback load failed',error);
+  }
+  throw new Error('Seller services could not start. Check your connection and reload the page.');
+})();
+window.ffSupabaseReady=window.ffSellerSupabaseReady;
+
 const sellerPath=(location.pathname.split('/').pop()||'index.html').toLowerCase();
 const isSellerLogin=sellerPath==='login'||sellerPath==='login.html';
 if(!isSellerLogin){
