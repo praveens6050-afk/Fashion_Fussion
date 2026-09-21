@@ -5,9 +5,11 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
 (function(){'use strict';
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
   function style(href,marker){if(document.querySelector('link['+marker+']'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=href;l.setAttribute(marker,'true');document.head.appendChild(l)}
+  const page=location.pathname.split('/').pop()||'index.html';
+  const compatPage=page.toLowerCase().replace(/\.html$/,'').replace(/[^a-z0-9-]+/g,'-')||'index';
+  document.documentElement.classList.add('ff-customer-compat','ff-page-'+compatPage);
   add('customer-browser-compat.js?v=20260921-responsive','data-customer-browser-compat');
   style('customer-responsive.css?v=20260921-responsive','data-customer-responsive');
-  const page=location.pathname.split('/').pop()||'index.html';
   if(['index.html','search.html','wishlist.html','product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
   if(['index.html','search.html','wishlist.html'].includes(page))add('catalog-cart-entry.js?v=1','data-catalog-cart-entry');
   function start(){
