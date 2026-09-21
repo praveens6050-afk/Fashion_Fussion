@@ -1,5 +1,6 @@
 const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
+const SUPABASE_SDK_SRI='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
 window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';
 
 (function(){'use strict';
@@ -17,6 +18,7 @@ window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fu
       const s=document.createElement('script');
       s.src=src;
       s.async=true;
+      s.integrity=SUPABASE_SDK_SRI;
       s.crossOrigin='anonymous';
       s.onload=()=>resolve(src);
       s.onerror=()=>{s.remove();reject(new Error('Failed to load '+src));};
@@ -27,8 +29,8 @@ window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fu
   async function ensureSupabase(){
     if(window.supabase&&typeof window.supabase.createClient==='function')return window.supabase;
     const sources=[
-      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-      'https://unpkg.com/@supabase/supabase-js@2'
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js',
+      'https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js'
     ];
     let lastError=null;
     for(const src of sources){
