@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in admin-panel-*) git diff --quiet HEAD^ HEAD ./ ;; *) exit 0 ;; esac",
   "cleanUrls": false,
   "redirects": [
     { "source": "/", "destination": "/login.html", "permanent": false },
