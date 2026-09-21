@@ -7,7 +7,7 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
   const page=(location.pathname.split('/').pop()||'login.html').toLowerCase();
   function loadAdminModules(){
     add('admin-notifications.js?v=2','data-admin-notifications');
-    add('support-chat.js?v=9','data-support-chat');
+    add('support-chat.js?v=10','data-support-chat');
     add('admin-orders.js?v=2','data-admin-orders');
     add('admin-promotions.js?v=2','data-admin-promotions');
     add('admin-returns.js?v=1','data-admin-returns');
@@ -19,6 +19,7 @@ window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KE
     add('admin-checkout-health.js?v=1','data-admin-checkout-health');
     add('admin-launch-readiness.js?v=1','data-admin-launch-readiness');
     add('admin-seller-approvals.js?v=1','data-admin-seller-approvals');
+    add('admin-owner-center.js?v=1','data-admin-owner-center');
   }
   function start(){
     if(page!=='admin.html')return;
