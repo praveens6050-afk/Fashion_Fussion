@@ -57,6 +57,16 @@ function loadSellerModule(src){
   document.body.appendChild(script);
 }
 
+function loadSellerStyle(href){
+  if(document.querySelector(`link[href="${href}"]`))return;
+  const link=document.createElement('link');
+  link.rel='stylesheet';
+  link.href=href;
+  document.head.appendChild(link);
+}
+
+loadSellerStyle('sidebar-compact.css?v=20260921-menu');
+
 // Production launch scope: live catalog/review + support only.
 // Operational prototypes remain in source for future integration but are not executed.
 loadSellerModule('seller-storage-scope.js');
