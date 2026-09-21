@@ -3,9 +3,8 @@
   "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in seller-panel-*) git diff --quiet HEAD^ HEAD -- seller-panel vercel.json ;; *) exit 0 ;; esac",
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/", "destination": "/seller-panel/index.html" },
-    { "source": "/(.*)", "destination": "/seller-panel/$1" }
+  "redirects": [
+    { "source": "/", "destination": "/seller-panel/", "permanent": false }
   ],
   "headers": [
     {
@@ -17,12 +16,6 @@
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
         { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests" }
-      ]
-    },
-    {
-      "source": "/(login|login.html)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
     }
   ]
