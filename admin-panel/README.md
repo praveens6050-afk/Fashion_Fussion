@@ -125,3 +125,5 @@ This branch/folder must not be merged into `main` merely to deploy the Admin pro
 ## Verification checkpoint — 19 Sep 2026
 
 The database approval workflow is connected and rollback-tested. Exact browser smoke testing of this final branch SHA remains a Vercel deployment-time gate after quota reset. Existing live customer production remains on `main` until all three standalone projects pass their preview checks.
+
+<!-- deploy-trigger: 2026-09-22T00:08+05:30 | admin auth hotfix -->
