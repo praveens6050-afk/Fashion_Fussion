@@ -19,4 +19,4 @@ Disallow: /order-details.html
 Disallow: /order-status.html
 Disallow: /order-tracking.html
 
-Sitemap: https://fashion-fussion-olive.vercel.app/sitemap.xml
+Sitemap: https://fashionfussion.in/sitemap.xml

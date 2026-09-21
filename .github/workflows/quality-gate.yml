@@ -39,13 +39,15 @@ jobs:
           ]
           url = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js'
           sri = 'sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP'
-          tag = f'<script src="{url}" integrity="{sri}" crossorigin="anonymous"></script>'
+          canonical = f'<script src="{url}" integrity="{sri}" crossorigin="anonymous"></script>'
+          deferred = f'<script defer src="{url}" integrity="{sri}" crossorigin="anonymous"></script>'
           errors = []
           for name in files:
               text = Path(name).read_text(encoding='utf-8')
-              if text.count(tag) != 1:
-                  errors.append(f'{name}: expected one canonical pinned Supabase SDK tag')
-              stripped = text.replace(tag, '')
+              count = text.count(canonical) + text.count(deferred)
+              if count != 1:
+                  errors.append(f'{name}: expected one canonical pinned Supabase SDK tag (normal or defer)')
+              stripped = text.replace(canonical, '').replace(deferred, '')
               if 'cdn.jsdelivr.net/npm/@supabase/supabase-js' in stripped:
                   errors.append(f'{name}: extra/non-canonical Supabase SDK CDN reference')
           if errors:
