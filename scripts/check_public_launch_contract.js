@@ -3,6 +3,7 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const errors=[];
+const PUBLIC_ORIGIN='https://fashionfussion.in';
 const publicPages=['about.html','faq.html','business-buying.html','contact.html','terms.html','shipping-delivery.html','returns-refunds.html','privacy.html','security-policy.html'];
 const sitemap=read('sitemap.xml');
 const robots=read('robots.txt');
@@ -11,7 +12,7 @@ const vercel=read('vercel.json');
 const checkout=read('checkout.html');
 for(const page of publicPages){
   if(!fs.existsSync(path.join(root,page)))errors.push(`missing public page ${page}`);
-  const absolute=`https://fashion-fussion-olive.vercel.app/${page}`;
+  const absolute=`${PUBLIC_ORIGIN}/${page}`;
   if(!sitemap.includes(`<loc>${absolute}</loc>`))errors.push(`sitemap missing ${page}`);
   if(robots.includes(`Disallow: /${page}`))errors.push(`robots incorrectly blocks ${page}`);
   if(!homepageDiscovery.includes(page))errors.push(`homepage discovery missing ${page}`);
@@ -28,7 +29,7 @@ if(checkout.includes('https://checkout.razorpay.com/v1/checkout.js')){
 }
 if(!vercel.includes('noindex, nofollow, noarchive'))errors.push('private-route noindex policy missing');
 if(!read('index.html').includes('<meta name="description"'))errors.push('homepage meta description missing');
-if(!sitemap.includes('<loc>https://fashion-fussion-olive.vercel.app/</loc>'))errors.push('sitemap missing homepage');
-if(!robots.includes('Sitemap: https://fashion-fussion-olive.vercel.app/sitemap.xml'))errors.push('robots missing sitemap declaration');
+if(!sitemap.includes(`<loc>${PUBLIC_ORIGIN}/</loc>`))errors.push('sitemap missing homepage');
+if(!robots.includes(`Sitemap: ${PUBLIC_ORIGIN}/sitemap.xml`))errors.push('robots missing sitemap declaration');
 if(errors.length){console.error(errors.join('\n'));process.exit(1)}
 console.log('Public launch contract passed.');
