@@ -1,22 +1,42 @@
 'use strict';
 (()=>{
-  const disabledViews=new Set(['orders','payments','returns']);
-  const apply=()=>{
+  const blockedViews=new Set([
+    'orders','payments','returns','inventory','analytics','shipping','onboarding','settings','support','tax','team',
+    'promotions','quotes','scorecard','bulk-tools','reports','messages','locations','sla','accounting'
+  ]);
+  const blockedIds=new Set([
+    'dashboardExtras','customizeDashboard','sellerNotificationsButton','sellerNotificationPanel','sellerOrderModal'
+  ]);
+
+  function hide(el){
+    if(!el)return;
+    el.hidden=true;
+    el.setAttribute('aria-hidden','true');
+    if(el.matches?.('.nav-item,[data-view]'))el.setAttribute('tabindex','-1');
+  }
+
+  function apply(){
     document.querySelectorAll('.nav-item[data-view]').forEach(button=>{
-      if(disabledViews.has(button.dataset.view)){
-        button.hidden=true;
-        button.setAttribute('aria-hidden','true');
-        button.setAttribute('tabindex','-1');
-      }
+      if(blockedViews.has(button.dataset.view))hide(button);
     });
-    disabledViews.forEach(view=>{
-      const section=document.getElementById('view-'+view);
-      if(section){section.hidden=true;section.setAttribute('aria-hidden','true')}
-    });
-  };
+    blockedViews.forEach(view=>hide(document.getElementById('view-'+view)));
+    blockedIds.forEach(id=>hide(document.getElementById(id)));
+    document.querySelectorAll('.top-actions .icon-btn[aria-label="Notifications"],.top-actions .icon-btn[aria-label="Seller notifications"]').forEach(hide);
+  }
+
   const style=document.createElement('style');
   style.id='seller-launch-safety-style';
-  style.textContent='.nav-item[data-view="orders"],.nav-item[data-view="payments"],.nav-item[data-view="returns"],#view-orders,#view-payments,#view-returns{display:none!important}';
+  const selectors=[
+    ...[...blockedViews].map(view=>`.nav-item[data-view="${view}"]`),
+    ...[...blockedViews].map(view=>`#view-${view}`),
+    ...[...blockedIds].map(id=>`#${id}`),
+    '.top-actions .icon-btn[aria-label="Notifications"]',
+    '.top-actions .icon-btn[aria-label="Seller notifications"]'
+  ];
+  style.textContent=selectors.join(',')+'{display:none!important}';
   document.head.appendChild(style);
+
+  const observer=new MutationObserver(()=>apply());
+  observer.observe(document.documentElement,{childList:true,subtree:true});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
 })();
