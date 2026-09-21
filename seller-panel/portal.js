@@ -20,6 +20,27 @@ function renderProvisionalIdentity(session){
 
 renderProvisionalIdentity(readSellerSession());
 
+if(!window.__sellerNavigationCaptureBound){
+  window.__sellerNavigationCaptureBound=true;
+  document.addEventListener('click',event=>{
+    const target=event.target;
+    if(!(target instanceof Element))return;
+    const add=target.closest('[data-action="add-product"]');
+    if(add){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openDrawer();
+      return;
+    }
+    const view=target.closest('[data-view]');
+    if(view&&view.dataset.view&&view.dataset.view!=='support-live'){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      switchView(view.dataset.view);
+    }
+  },true);
+}
+
 window.SellerCatalogBridge={
   getProducts:()=>products,
   makeId:()=>uid(),
