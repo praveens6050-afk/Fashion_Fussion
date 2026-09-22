@@ -26,7 +26,32 @@ jobs:
       - name: Verify deployment artifacts
         run: |
           test -f dist/login.html
+          test -f dist/admin.html
+          test -f dist/admin-account.html
+          test -f dist/reset-password.html
           test -f dist/_headers
           test -f dist/_redirects
           test -f dist/_routes.json
           test -s .cf-functions-test/index.js
+      - name: Verify Cloudflare clean URL safety
+        run: |
+          grep -Fxq '/ /login 302' dist/_redirects
+          if grep -Eq '^/(login|admin|account|admin-account|reset-password)[[:space:]]+[^[:space:]]+\.html[[:space:]]+200$' dist/_redirects; then
+            echo 'Unsafe .html clean-route rewrite detected in _redirects'
+            exit 1
+          fi
+          grep -Fq "const isAdminPage=page==='admin'||page==='admin.html';" supabase-config.js
+          grep -Fq "location.replace('/admin')" admin-login.js
+          grep -Fq "new URL('/reset-password',location.origin)" admin-login.js
+          grep -Fq "location.replace('/login')" csp-reset-password.js
+          grep -Fq '/admin-account' admin.html
+          grep -Fq '/admin' admin-account.html
+          grep -Fq '/admin-account' dist/_headers
+          grep -Fq 'Cache-Control: no-store, max-age=0' dist/_headers
+      - name: Verify API routing boundary
+        run: |
+          grep -Fq '"/api/*"' dist/_routes.json
+          if grep -Fq '"/*"' dist/_routes.json; then
+            echo 'Pages Functions must not execute for all static routes'
+            exit 1
+          fi
