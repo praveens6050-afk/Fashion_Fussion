@@ -1,0 +1,5 @@
+/ /login.html 302
+/login /login.html 200
+/admin /admin.html 200
+/account /admin-account.html 200
+/reset-password /reset-password.html 200
