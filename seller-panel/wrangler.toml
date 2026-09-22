@@ -1,0 +1,4 @@
+name = "fashion-fussion-seller"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-09-22"
+compatibility_flags = ["nodejs_compat"]
