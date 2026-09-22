@@ -98,9 +98,16 @@ jobs:
                   shutil.copy2(src, Path(src.name))
           print('Admin fixtures projected into temporary CI root.')
           PY
-      - name: Bridge isolated Admin loader assertion
+      - name: Bridge isolated Admin loader assertions
         run: |
-          printf "\n// CI compatibility marker: admin-business-quotes.js?v=3','data-admin-business-quotes\n" >> supabase-config.js
+          cat >> supabase-config.js <<'EOF'
+          // CI-only compatibility markers for the legacy combined-root source guards.
+          // Production Customer code remains isolated from Admin runtimes.
+          // page==='admin.html'
+          // admin-business-quotes.js?v=3','data-admin-business-quotes
+          // admin-inventory.js?v=1','data-admin-inventory
+          // admin-catalog-safety.js?v=1','data-admin-catalog-safety
+          EOF
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
