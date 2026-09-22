@@ -1,0 +1,7 @@
+/admin https://admin.fashionfussion.in 302
+/admin.html https://admin.fashionfussion.in 302
+/admin-account https://admin.fashionfussion.in/account 302
+/admin-account.html https://admin.fashionfussion.in/account 302
+/seller https://seller.fashionfussion.in 302
+/seller-panel https://seller.fashionfussion.in 302
+/seller-panel/* https://seller.fashionfussion.in/:splat 302
