@@ -70,20 +70,23 @@ jobs:
               raise SystemExit('\n'.join(errors))
           print(f'Pinned Supabase SDK tags verified on {len(targets)} panel pages.')
           PY
-      - name: Prepare Customer verification view
+      - name: Prepare Customer CSP verification view
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import shutil
           root = Path('.')
           source = Path('customer-panel')
+          skip = {'customer-browser-compat.js'}
           for src in source.iterdir():
-              if src.is_file():
+              if src.is_file() and src.name not in skip:
                   shutil.copy2(src, root / src.name)
-          print('Customer panel projected into temporary CI root.')
+          print('Customer panel projected into temporary CSP verification root.')
           PY
       - name: Strict Customer CSP hardening source checks
         run: node scripts/check_csp_hardening.js
+      - name: Complete Customer verification fixtures
+        run: cp customer-panel/customer-browser-compat.js customer-browser-compat.js
       - name: Add Admin verification fixtures
         run: |
           python3 - <<'PY'
