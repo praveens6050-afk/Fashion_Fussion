@@ -72,6 +72,6 @@ loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
 // and computes dashboard insights from the seller's already-loaded catalog data.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
-loadSellerModule('product-image-upload.js?v=20260921-file-upload');
+loadSellerModule('product-image-upload.js?v=20260922-readiness');
 loadSellerModule('seller-support.js?v=1');
 loadSellerModule('seller-hub-premium.js?v=20260921-hub');
