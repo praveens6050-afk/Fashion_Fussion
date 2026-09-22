@@ -25,5 +25,19 @@ jobs:
         run: |
           test -f dist/index.html
           test -f dist/login.html
+          test -f dist/product-image-upload.js
+          test -f dist/navigation-fix.js
           test -f dist/_headers
           test -f dist/_redirects
+      - name: Verify Cloudflare route safety
+        run: |
+          if grep -Eq '^/login[[:space:]]+/login\.html[[:space:]]+200$' dist/_redirects; then
+            echo 'Unsafe Seller login clean-route rewrite detected'
+            exit 1
+          fi
+      - name: Verify Seller image upload wiring
+        run: |
+          grep -Fq "product-image-upload.js?v=20260922-readiness" navigation-fix.js
+          grep -Fq "primary.type='hidden'" product-image-upload.js
+          grep -Fq "file.type='file'" product-image-upload.js
+          grep -Fq "state.busy" product-image-upload.js
