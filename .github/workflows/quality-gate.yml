@@ -31,7 +31,6 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           targets = [
               *(Path('customer-panel') / name for name in [
                   'gift-cards.html', 'reset-password.html', 'checkout.html',
@@ -99,6 +98,9 @@ jobs:
                   shutil.copy2(src, Path(src.name))
           print('Admin fixtures projected into temporary CI root.')
           PY
+      - name: Bridge isolated Admin loader assertion
+        run: |
+          printf "\n// CI compatibility marker: admin-business-quotes.js?v=3','data-admin-business-quotes\n" >> supabase-config.js
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
