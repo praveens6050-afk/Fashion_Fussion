@@ -4,13 +4,13 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-Robots-Tag: noindex, nofollow, noarchive
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /login
-  Cache-Control: no-store, max-age=0
+  Cache-Control: no-store, max-age=0, no-transform
 
 /login.html
-  Cache-Control: no-store, max-age=0
+  Cache-Control: no-store, max-age=0, no-transform
 
 /admin
   Cache-Control: no-store, max-age=0
@@ -32,3 +32,15 @@
 
 /reset-password.html
   Cache-Control: no-store, max-age=0
+
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/admin-login.20260923.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/favicon.svg
+  Cache-Control: public, max-age=31536000, immutable
+
+/admin.webmanifest
+  Cache-Control: public, max-age=31536000, immutable
