@@ -30,32 +30,72 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           python3 - <<'PY'
           from pathlib import Path
-          files = [
-              'gift-cards.html', 'reset-password.html', 'checkout.html',
-              'order-confirmation.html', 'account.html', 'order-details.html',
-              'product.html', 'search.html', 'admin-account.html', 'index.html',
-              'signup.html', 'login.html', 'notifications.html', 'quote-checkout.html',
-              'cart.html', 'coupons.html', 'wishlist.html', 'admin.html'
+          import re
+
+          targets = [
+              *(Path('customer-panel') / name for name in [
+                  'gift-cards.html', 'reset-password.html', 'checkout.html',
+                  'order-confirmation.html', 'account.html', 'order-details.html',
+                  'product.html', 'search.html', 'index.html', 'signup.html',
+                  'login.html', 'notifications.html', 'quote-checkout.html',
+                  'cart.html', 'coupons.html', 'wishlist.html'
+              ]),
+              Path('admin-panel/admin.html'),
+              Path('admin-panel/admin-account.html'),
+              Path('admin-panel/login.html'),
+              Path('seller-panel/index.html'),
+              Path('seller-panel/login.html'),
           ]
-          url = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js'
           sri = 'sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP'
-          canonical = f'<script src="{url}" integrity="{sri}" crossorigin="anonymous"></script>'
-          deferred = f'<script defer src="{url}" integrity="{sri}" crossorigin="anonymous"></script>'
+          allowed = {
+              'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js',
+              'https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js',
+          }
+          tag_re = re.compile(r'<script\b[^>]*\bsrc=["\']([^"\']*supabase-js[^"\']*)["\'][^>]*>', re.I)
           errors = []
-          for name in files:
-              text = Path(name).read_text(encoding='utf-8')
-              count = text.count(canonical) + text.count(deferred)
-              if count != 1:
-                  errors.append(f'{name}: expected one canonical pinned Supabase SDK tag (normal or defer)')
-              stripped = text.replace(canonical, '').replace(deferred, '')
-              if 'cdn.jsdelivr.net/npm/@supabase/supabase-js' in stripped:
-                  errors.append(f'{name}: extra/non-canonical Supabase SDK CDN reference')
+          for path in targets:
+              if not path.exists():
+                  errors.append(f'{path}: missing')
+                  continue
+              text = path.read_text(encoding='utf-8')
+              tags = tag_re.findall(text)
+              if len(tags) != 1 or tags[0] not in allowed:
+                  errors.append(f'{path}: expected exactly one pinned Supabase 2.116.0 SDK tag from an approved CDN')
+              full_tag = next(iter(re.finditer(r'<script\b[^>]*\bsrc=["\'][^"\']*supabase-js[^"\']*["\'][^>]*>', text, re.I)), None)
+              if not full_tag or f'integrity="{sri}"' not in full_tag.group(0) or 'crossorigin="anonymous"' not in full_tag.group(0):
+                  errors.append(f'{path}: pinned Supabase SDK tag must keep exact SRI and anonymous CORS')
+              if re.search(r'@supabase/supabase-js@(?!2\.116\.0)', text):
+                  errors.append(f'{path}: unpinned or wrong Supabase SDK version detected')
           if errors:
               raise SystemExit('\n'.join(errors))
-          print(f'Canonical Supabase SDK SRI tags verified on {len(files)} HTML pages.')
+          print(f'Pinned Supabase SDK tags verified on {len(targets)} panel pages.')
           PY
-      - name: Strict CSP hardening source checks
+      - name: Prepare Customer verification view
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          root = Path('.')
+          source = Path('customer-panel')
+          for src in source.iterdir():
+              if src.is_file():
+                  shutil.copy2(src, root / src.name)
+          print('Customer panel projected into temporary CI root.')
+          PY
+      - name: Strict Customer CSP hardening source checks
         run: node scripts/check_csp_hardening.js
+      - name: Add Admin verification fixtures
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          source = Path('admin-panel')
+          prefixes = ('admin', 'csp-admin', 'desktop-admin', 'runtime-admin')
+          for src in source.iterdir():
+              if src.is_file() and src.name.startswith(prefixes):
+                  shutil.copy2(src, Path(src.name))
+          print('Admin fixtures projected into temporary CI root.')
+          PY
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
