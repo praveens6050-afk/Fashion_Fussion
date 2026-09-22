@@ -22,7 +22,7 @@ jobs:
       - name: Build static assets
         run: npm run build
       - name: Validate Pages Functions bundle
-        run: npx --yes wrangler@latest pages functions build --outdir=.cf-functions-test
+        run: npx --yes wrangler@latest pages functions build --compatibility-date=2026-09-22 --compatibility-flag=nodejs_compat --outdir=.cf-functions-test
       - name: Verify deployment artifacts
         run: |
           test -f dist/login.html
