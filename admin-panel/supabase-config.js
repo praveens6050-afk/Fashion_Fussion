@@ -35,7 +35,8 @@ window.FF_API_ORIGIN='';
   })();
 
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
-  const page=(location.pathname.split('/').pop()||'login.html').toLowerCase();
+  const page=(location.pathname.split('/').filter(Boolean).pop()||'login').toLowerCase();
+  const isAdminPage=page==='admin'||page==='admin.html';
   function loadAdminModules(){
     add('admin-notifications.js?v=2','data-admin-notifications');
     add('support-chat.js?v=10','data-support-chat');
@@ -53,7 +54,7 @@ window.FF_API_ORIGIN='';
     add('admin-owner-center.js?v=2','data-admin-owner-center');
   }
   function start(){
-    if(page!=='admin.html')return;
+    if(!isAdminPage)return;
     const dashboard=document.getElementById('dashboard');
     if(!dashboard)return;
     if(dashboard.dataset.adminReady==='true'){loadAdminModules();return}
