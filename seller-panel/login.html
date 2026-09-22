@@ -9,7 +9,7 @@
   <script src="supabase-config.js?v=20260922-auth-b1"></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="portal.css">
-  <link rel="stylesheet" href="auth-fixes.css?v=20260922-b1">
+  <link rel="stylesheet" href="auth-fixes.css?v=20260922-b2">
   <style>.auth-form[hidden]{display:none!important}</style>
 </head>
 <body class="auth-body">
@@ -39,18 +39,18 @@
         </div>
 
         <div class="auth-tabs" role="tablist" aria-label="Seller account access">
-          <button class="active" type="button" data-auth-mode="login">Sign in</button>
-          <button type="button" data-auth-mode="register">Create account</button>
+          <button id="loginTab" class="active" type="button" role="tab" aria-selected="true" aria-controls="loginForm" tabindex="0" data-auth-mode="login">Sign in</button>
+          <button id="registerTab" type="button" role="tab" aria-selected="false" aria-controls="registerForm" tabindex="-1" data-auth-mode="register">Create account</button>
         </div>
 
-        <form id="loginForm" class="auth-form">
+        <form id="loginForm" class="auth-form" role="tabpanel" aria-labelledby="loginTab">
           <label>Email address<input id="loginEmail" type="email" required autocomplete="email" placeholder="seller@example.com"></label>
           <label>Password<div class="password-field"><input id="loginPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="Your password"><button class="password-toggle" type="button" data-password-toggle="loginPassword" aria-controls="loginPassword" aria-pressed="false">Show</button></div></label>
           <div class="auth-row login-options"><label class="check remember-check"><input id="rememberMe" type="checkbox"><span>Remember me</span></label><button class="text-button" id="forgotPassword" type="button">Forgot password?</button></div>
           <button class="primary auth-submit" id="loginSubmit" type="submit">Sign in</button>
         </form>
 
-        <form id="registerForm" class="auth-form" hidden>
+        <form id="registerForm" class="auth-form" role="tabpanel" aria-labelledby="registerTab" hidden>
           <div class="form-grid"><label>First name<input id="firstName" required maxlength="60" autocomplete="given-name"></label><label>Last name<input id="lastName" required maxlength="60" autocomplete="family-name"></label></div>
           <label>Business / store name<input id="storeName" required maxlength="120" autocomplete="organization" placeholder="e.g. Sharma Fashion House"></label>
           <label>Business email<input id="registerEmail" type="email" required autocomplete="email" placeholder="business@example.com"></label>
@@ -61,7 +61,7 @@
           <button class="primary auth-submit" id="registerSubmit" type="submit">Create seller account</button>
         </form>
 
-        <form id="resetPasswordForm" class="auth-form" hidden>
+        <form id="resetPasswordForm" class="auth-form" aria-labelledby="authTitle" hidden>
           <label>New password<div class="password-field"><input id="newPassword" type="password" required minlength="10" autocomplete="new-password" placeholder="At least 10 characters"><button class="password-toggle" type="button" data-password-toggle="newPassword" aria-controls="newPassword" aria-pressed="false">Show</button></div></label>
           <label>Confirm new password<div class="password-field"><input id="confirmPassword" type="password" required minlength="10" autocomplete="new-password" placeholder="Repeat new password"><button class="password-toggle" type="button" data-password-toggle="confirmPassword" aria-controls="confirmPassword" aria-pressed="false">Show</button></div></label>
           <button class="primary auth-submit" id="resetPasswordSubmit" type="submit">Set new password</button>
@@ -71,6 +71,6 @@
       </div>
     </section>
   </main>
-  <script src="auth.js?v=20260922-auth-b1"></script>
+  <script src="auth.js?v=20260922-auth-b2"></script>
 </body>
 </html>

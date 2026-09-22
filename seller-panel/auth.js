@@ -8,8 +8,16 @@ const REMEMBER_KEY='ff_seller_remember_mode';
   if(!client)throw new Error('Seller authentication service is unavailable.');
 
   function setMessage(message,type=''){const box=$('authMessage');if(!box)return;box.textContent=message;box.className='auth-message '+type}
+  function syncTabState(mode){
+    document.querySelectorAll('[data-auth-mode]').forEach(button=>{
+      const selected=button.dataset.authMode===mode;
+      button.classList.toggle('active',selected);
+      button.setAttribute('aria-selected',selected?'true':'false');
+      button.tabIndex=selected?0:-1;
+    });
+  }
   function setMode(mode){
-    document.querySelectorAll('[data-auth-mode]').forEach(b=>b.classList.toggle('active',b.dataset.authMode===mode));
+    syncTabState(mode);
     $('loginForm').hidden=mode!=='login';
     $('registerForm').hidden=mode!=='register';
     $('resetPasswordForm').hidden=mode!=='recovery';
@@ -40,9 +48,21 @@ const REMEMBER_KEY='ff_seller_remember_mode';
     const visible=input.type==='text';input.type=visible?'password':'text';button.textContent=visible?'Show':'Hide';button.setAttribute('aria-pressed',visible?'false':'true');
   }));
 
-  document.querySelectorAll('[data-auth-mode]').forEach(btn=>btn.addEventListener('click',()=>setMode(btn.dataset.authMode)));
+  const tabs=[...document.querySelectorAll('[role="tab"][data-auth-mode]')];
+  tabs.forEach((btn,index)=>{
+    btn.addEventListener('click',()=>setMode(btn.dataset.authMode));
+    btn.addEventListener('keydown',event=>{
+      let next=index;
+      if(event.key==='ArrowRight')next=(index+1)%tabs.length;
+      else if(event.key==='ArrowLeft')next=(index-1+tabs.length)%tabs.length;
+      else if(event.key==='Home')next=0;
+      else if(event.key==='End')next=tabs.length-1;
+      else return;
+      event.preventDefault();tabs[next].focus();setMode(tabs[next].dataset.authMode);
+    });
+  });
 
-  client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')setMode('recovery')});
+  client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')setMode('recovery')});
   if(isRecoveryUrl())setMode('recovery');
   else{
     try{const{data:{session}}=await client.auth.getSession();if(session?.user){try{await finishLogin(session.user,storedRemember)}catch{await client.auth.signOut();localStorage.removeItem(UI_SESSION_KEY);sessionStorage.removeItem(UI_SESSION_KEY)}}}catch(error){console.warn('[Seller Center] Session restore failed',error)}
