@@ -1,0 +1,32 @@
+name: Cloudflare Admin Validate
+
+on:
+  push:
+    branches: [cloudflare-admin]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin-panel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build static assets
+        run: npm run build
+      - name: Validate Pages Functions bundle
+        run: npx --yes wrangler@latest pages functions build --outdir=.cf-functions-test
+      - name: Verify deployment artifacts
+        run: |
+          test -f dist/login.html
+          test -f dist/_headers
+          test -f dist/_redirects
+          test -f dist/_routes.json
+          test -s .cf-functions-test/index.js
