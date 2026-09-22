@@ -3,20 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Fashion_Fussion Seller Center — Sign in</title>
-  <meta name="description" content="Seller sign in and registration for Fashion_Fussion Seller Center.">
+  <title>Fashion Fussion Seller Center — Sign in</title>
+  <meta name="description" content="Seller sign in and registration for Fashion Fussion Seller Center.">
   <script src="https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
-  <script src="supabase-config.js?v=20260921-supabase-recovery"></script>
+  <script src="supabase-config.js?v=20260922-auth-b1"></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="portal.css">
+  <link rel="stylesheet" href="auth-fixes.css?v=20260922-b1">
   <style>.auth-form[hidden]{display:none!important}</style>
 </head>
 <body class="auth-body">
   <main class="auth-shell">
     <section class="auth-brand-panel">
-      <div class="auth-brand"><div class="brand-mark">FF</div><div><strong>Fashion_Fussion</strong><span>Seller Center</span></div></div>
+      <div class="auth-brand"><div class="brand-mark">FF</div><div><strong>Fashion Fussion</strong><span>Seller Center</span></div></div>
       <div class="auth-copy">
-        <p class="eyebrow light">SELL ON FASHION_FUSSION</p>
+        <p class="eyebrow light">SELL ON FASHION FUSSION</p>
         <h1>Manage your catalog from one professional seller workspace.</h1>
         <p>Submit products for administrator review. Approved listings can go live on the customer store; rejected listings stay hidden and include the review reason.</p>
       </div>
@@ -30,38 +31,46 @@
 
     <section class="auth-card-wrap">
       <div class="auth-card">
+        <a class="back-store" href="https://fashionfussion.in/" aria-label="Back to Fashion Fussion store">← Back to Fashion Fussion store</a>
         <div class="auth-card-head">
           <p class="eyebrow">SELLER ACCESS</p>
           <h2 id="authTitle">Sign in to Seller Center</h2>
           <p id="authSubtitle">Use your registered seller email and password.</p>
         </div>
 
-        <div class="auth-tabs" role="tablist">
+        <div class="auth-tabs" role="tablist" aria-label="Seller account access">
           <button class="active" type="button" data-auth-mode="login">Sign in</button>
           <button type="button" data-auth-mode="register">Create account</button>
         </div>
 
         <form id="loginForm" class="auth-form">
           <label>Email address<input id="loginEmail" type="email" required autocomplete="email" placeholder="seller@example.com"></label>
-          <label>Password<input id="loginPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="Your password"></label>
+          <label>Password<div class="password-field"><input id="loginPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="Your password"><button class="password-toggle" type="button" data-password-toggle="loginPassword" aria-controls="loginPassword" aria-pressed="false">Show</button></div></label>
+          <div class="auth-row login-options"><label class="check remember-check"><input id="rememberMe" type="checkbox"><span>Remember me</span></label><button class="text-button" id="forgotPassword" type="button">Forgot password?</button></div>
           <button class="primary auth-submit" id="loginSubmit" type="submit">Sign in</button>
         </form>
 
         <form id="registerForm" class="auth-form" hidden>
           <div class="form-grid"><label>First name<input id="firstName" required maxlength="60" autocomplete="given-name"></label><label>Last name<input id="lastName" required maxlength="60" autocomplete="family-name"></label></div>
-          <label>Business / store name<input id="storeName" required maxlength="120" placeholder="e.g. Sharma Fashion House"></label>
+          <label>Business / store name<input id="storeName" required maxlength="120" autocomplete="organization" placeholder="e.g. Sharma Fashion House"></label>
           <label>Business email<input id="registerEmail" type="email" required autocomplete="email" placeholder="business@example.com"></label>
-          <label>Mobile number<input id="mobile" type="tel" required maxlength="15" inputmode="numeric" placeholder="10-digit mobile number"></label>
-          <label>Create password<input id="registerPassword" type="password" required minlength="10" autocomplete="new-password" placeholder="At least 10 characters"></label>
+          <label>Mobile number<input id="mobile" type="tel" required maxlength="15" inputmode="numeric" autocomplete="tel" placeholder="10-digit mobile number"></label>
+          <label>Create password<div class="password-field"><input id="registerPassword" type="password" required minlength="10" autocomplete="new-password" placeholder="At least 10 characters"><button class="password-toggle" type="button" data-password-toggle="registerPassword" aria-controls="registerPassword" aria-pressed="false">Show</button></div></label>
           <label>Seller type<select id="sellerType"><option value="individual">Individual seller</option><option value="business">Registered business</option><option value="manufacturer">Manufacturer / brand</option><option value="wholesaler">Wholesaler / distributor</option></select></label>
-          <label class="check terms-check"><input id="termsAccepted" type="checkbox" required><span>I agree to the seller terms and catalog review requirements.</span></label>
+          <label class="check terms-check"><input id="termsAccepted" type="checkbox" required><span>I agree to the <a href="https://fashionfussion.in/terms.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a> and catalog review requirements.</span></label>
           <button class="primary auth-submit" id="registerSubmit" type="submit">Create seller account</button>
+        </form>
+
+        <form id="resetPasswordForm" class="auth-form" hidden>
+          <label>New password<div class="password-field"><input id="newPassword" type="password" required minlength="10" autocomplete="new-password" placeholder="At least 10 characters"><button class="password-toggle" type="button" data-password-toggle="newPassword" aria-controls="newPassword" aria-pressed="false">Show</button></div></label>
+          <label>Confirm new password<div class="password-field"><input id="confirmPassword" type="password" required minlength="10" autocomplete="new-password" placeholder="Repeat new password"><button class="password-toggle" type="button" data-password-toggle="confirmPassword" aria-controls="confirmPassword" aria-pressed="false">Show</button></div></label>
+          <button class="primary auth-submit" id="resetPasswordSubmit" type="submit">Set new password</button>
         </form>
 
         <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
       </div>
     </section>
   </main>
-  <script src="auth.js?v=20260921-supabase-recovery"></script>
+  <script src="auth.js?v=20260922-auth-b1"></script>
 </body>
 </html>
