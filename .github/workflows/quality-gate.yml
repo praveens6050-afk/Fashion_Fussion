@@ -69,24 +69,34 @@ jobs:
               raise SystemExit('\n'.join(errors))
           print(f'Pinned Supabase SDK tags verified on {len(targets)} panel pages.')
           PY
-      - name: Seller image upload readiness source checks
+      - name: Panel image upload readiness source checks
         run: |
           node --check seller-panel/product-image-upload.js
           node --check seller-panel/portal.js
+          node --check admin-panel/admin-product-image-upload.js
+          node --check admin-panel/desktop-admin-loader.js
           node - <<'NODE'
           const fs=require('fs');
-          const upload=fs.readFileSync('seller-panel/product-image-upload.js','utf8');
-          const portal=fs.readFileSync('seller-panel/portal.js','utf8');
-          const required=[
+          const seller=fs.readFileSync('seller-panel/product-image-upload.js','utf8');
+          const sellerPortal=fs.readFileSync('seller-panel/portal.js','utf8');
+          const admin=fs.readFileSync('admin-panel/admin-product-image-upload.js','utf8');
+          const adminLoader=fs.readFileSync('admin-panel/desktop-admin-loader.js','utf8');
+          for(const marker of [
             'window.ffSellerSupabaseReady||window.ffSupabaseReady',
             'const client=readiness?await readiness:window.supabaseClient',
-            "button.disabled=busy",
-            "window.__ffSellerProductImageUploadReady=null"
-          ];
-          for(const marker of required){if(!upload.includes(marker))throw new Error('Seller image upload readiness guard missing: '+marker)}
-          if(upload.includes('const client=window.supabaseClient;'))throw new Error('Seller image upload must not capture Supabase before readiness');
-          if(!portal.includes('product-image-upload.js?v=20260922-readiness'))throw new Error('Seller portal must load the readiness-aware image upload module');
-          console.log('Seller image upload readiness guards passed.');
+            'button.disabled=busy',
+            'window.__ffSellerProductImageUploadReady=null'
+          ])if(!seller.includes(marker))throw new Error('Seller image upload readiness guard missing: '+marker);
+          if(seller.includes('const client=window.supabaseClient;'))throw new Error('Seller image upload must not capture Supabase before readiness');
+          if(!sellerPortal.includes('product-image-upload.js?v=20260922-readiness'))throw new Error('Seller portal must load the readiness-aware image upload module');
+          for(const marker of [
+            'window.ffAdminSupabaseReady||window.ffSupabaseReady',
+            'const client=readiness?await readiness:window.supabaseClient',
+            'window.__ffAdminProductImageUploadReady=null'
+          ])if(!admin.includes(marker))throw new Error('Admin image upload readiness guard missing: '+marker);
+          if(admin.includes('const client=window.supabaseClient;'))throw new Error('Admin image upload must not capture Supabase before readiness');
+          if(!adminLoader.includes('admin-product-image-upload.js?v=20260922-readiness'))throw new Error('Admin loader must load the readiness-aware image upload module');
+          console.log('Admin and Seller image upload readiness guards passed.');
           NODE
       - name: Prepare Customer CSP verification view
         run: |
