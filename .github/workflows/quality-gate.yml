@@ -107,6 +107,8 @@ jobs:
           // admin-business-quotes.js?v=3','data-admin-business-quotes
           // admin-inventory.js?v=1','data-admin-inventory
           // admin-catalog-safety.js?v=1','data-admin-catalog-safety
+          // admin-checkout-health.js?v=1','data-admin-checkout-health
+          // admin-launch-readiness.js?v=1','data-admin-launch-readiness
           EOF
       - name: Source checks
         run: node scripts/check_source.js
