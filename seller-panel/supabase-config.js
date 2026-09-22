@@ -3,11 +3,18 @@ const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
 const SUPABASE_SRI='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
 const SUPABASE_FALLBACK_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
+const SELLER_REMEMBER_KEY='ff_seller_remember_mode';
+
+const sellerAuthStorage={
+  getItem(key){return (localStorage.getItem(SELLER_REMEMBER_KEY)==='true'?localStorage:sessionStorage).getItem(key)},
+  setItem(key,value){return (localStorage.getItem(SELLER_REMEMBER_KEY)==='true'?localStorage:sessionStorage).setItem(key,value)},
+  removeItem(key){localStorage.removeItem(key);sessionStorage.removeItem(key)}
+};
 
 function createSellerSupabaseClient(){
   if(window.supabaseClient)return window.supabaseClient;
   if(!window.supabase||typeof window.supabase.createClient!=='function')return null;
-  window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:sellerAuthStorage}});
   return window.supabaseClient;
 }
 
@@ -38,9 +45,7 @@ window.ffSellerSupabaseReady=(async()=>{
     await loadPinnedSellerSdk(SUPABASE_FALLBACK_URL);
     client=createSellerSupabaseClient();
     if(client)return client;
-  }catch(error){
-    console.error('[Seller Center] Supabase fallback load failed',error);
-  }
+  }catch(error){console.error('[Seller Center] Supabase fallback load failed',error)}
   throw new Error('Seller services could not start. Check your connection and reload the page.');
 })();
 window.ffSupabaseReady=window.ffSellerSupabaseReady;
@@ -63,7 +68,4 @@ window.ffSellerSupabaseReady.then(()=>{
   script.async=false;
   script.setAttribute('data-seller-live-recovery','true');
   document.body.appendChild(script);
-}).catch(error=>{
-  console.error('[Seller Center] Supabase startup failed',error);
-  document.documentElement.classList.remove('seller-live-loading');
-});
+}).catch(error=>{console.error('[Seller Center] Supabase startup failed',error);document.documentElement.classList.remove('seller-live-loading')});
