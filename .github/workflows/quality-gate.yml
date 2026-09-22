@@ -69,6 +69,25 @@ jobs:
               raise SystemExit('\n'.join(errors))
           print(f'Pinned Supabase SDK tags verified on {len(targets)} panel pages.')
           PY
+      - name: Seller image upload readiness source checks
+        run: |
+          node --check seller-panel/product-image-upload.js
+          node --check seller-panel/portal.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const upload=fs.readFileSync('seller-panel/product-image-upload.js','utf8');
+          const portal=fs.readFileSync('seller-panel/portal.js','utf8');
+          const required=[
+            'window.ffSellerSupabaseReady||window.ffSupabaseReady',
+            'const client=readiness?await readiness:window.supabaseClient',
+            "button.disabled=busy",
+            "window.__ffSellerProductImageUploadReady=null"
+          ];
+          for(const marker of required){if(!upload.includes(marker))throw new Error('Seller image upload readiness guard missing: '+marker)}
+          if(upload.includes('const client=window.supabaseClient;'))throw new Error('Seller image upload must not capture Supabase before readiness');
+          if(!portal.includes('product-image-upload.js?v=20260922-readiness'))throw new Error('Seller portal must load the readiness-aware image upload module');
+          console.log('Seller image upload readiness guards passed.');
+          NODE
       - name: Prepare Customer CSP verification view
         run: |
           python3 - <<'PY'
