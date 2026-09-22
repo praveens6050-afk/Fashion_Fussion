@@ -1,6 +1,56 @@
 'use strict';
 (()=>{
+  function ensureLabel(label,selector,text,before){
+    if(!label)return null;
+    [...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).forEach(node=>{node.textContent=''});
+    let title=label.querySelector(selector);
+    if(!title){
+      title=document.createElement('span');
+      title.setAttribute(selector.slice(1,-1).split('=')[0],selector.includes('=')?selector.split('=')[1].replace(/["\]]/g,''):'true');
+      label.insertBefore(title,before||label.firstChild);
+    }
+    title.textContent=text;
+    return title;
+  }
+  function sanitizeMediaUi(){
+    const primary=document.getElementById('image');
+    if(primary){
+      primary.type='hidden';
+      primary.removeAttribute('placeholder');
+      primary.setAttribute('aria-hidden','true');
+      const label=primary.closest('label');
+      if(label){
+        [...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).forEach(node=>{node.textContent=''});
+        let title=label.querySelector('[data-primary-image-label]');
+        if(!title){title=document.createElement('span');title.setAttribute('data-primary-image-label','true');label.insertBefore(title,primary)}
+        title.textContent='Primary product image (optional)';
+      }
+      const section=primary.closest('.form-section');
+      const intro=section?.querySelector(':scope > p');
+      if(intro)intro.textContent='Upload product image files directly. Max 5 MB per image.';
+    }
+    const additional=document.getElementById('additionalImages');
+    if(additional){
+      additional.style.display='none';
+      additional.removeAttribute('placeholder');
+      additional.setAttribute('aria-hidden','true');
+      const label=additional.closest('label');
+      if(label){
+        [...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).forEach(node=>{node.textContent=''});
+        let title=label.querySelector('[data-additional-image-label]');
+        if(!title){title=document.createElement('span');title.setAttribute('data-additional-image-label','true');label.insertBefore(title,additional)}
+        title.textContent='Additional product images (optional)';
+        const help=label.nextElementSibling;
+        if(help?.classList?.contains('field-help'))help.textContent='Upload up to 5 additional image files. Max 5 MB each.';
+      }
+    }
+  }
+
+  sanitizeMediaUi();
   if(window.__ffSellerProductImageUploadReady)return;
+  const earlyUiObserver=new MutationObserver(sanitizeMediaUi);
+  earlyUiObserver.observe(document.documentElement,{childList:true,subtree:true});
+
   window.__ffSellerProductImageUploadReady=(async()=>{
     const readiness=window.ffSellerSupabaseReady||window.ffSupabaseReady;
     const client=readiness?await readiness:window.supabaseClient;
@@ -56,14 +106,18 @@
       anchor.insertAdjacentElement('afterend',el);return el;
     }
     function installPrimary(){
+      sanitizeMediaUi();
       const hidden=document.getElementById('image');
-      if(!hidden||document.getElementById('primaryImageFile'))return;
+      if(!hidden)return;
       const label=hidden.closest('label');
       if(!label)return;
-      hidden.type='hidden';hidden.removeAttribute('required');hidden.removeAttribute('placeholder');
-      const title=document.createElement('span');title.textContent='Primary product image';
-      const file=document.createElement('input');file.id='primaryImageFile';file.type='file';file.accept='image/*';file.setAttribute('aria-label','Primary product image');
-      label.insertBefore(title,hidden);label.appendChild(file);
+      let file=document.getElementById('primaryImageFile');
+      if(!file){
+        file=document.createElement('input');file.id='primaryImageFile';file.type='file';file.accept='image/*';file.setAttribute('aria-label','Primary product image');
+        label.appendChild(file);
+      }
+      if(file.dataset.uploadBound==='true')return;
+      file.dataset.uploadBound='true';
       const status=statusNode('primaryImageUploadStatus',file);
       file.addEventListener('change',async()=>{
         const selected=file.files?.[0];if(!selected)return;
@@ -74,13 +128,17 @@
       });
     }
     function installAdditional(){
+      sanitizeMediaUi();
       const hidden=document.getElementById('additionalImages');
-      if(!hidden||document.getElementById('additionalImageFiles'))return;
+      if(!hidden)return;
       const label=hidden.closest('label');if(!label)return;
-      hidden.style.display='none';hidden.setAttribute('aria-hidden','true');
-      const originalText=[...label.childNodes].find(n=>n.nodeType===Node.TEXT_NODE);if(originalText)originalText.textContent='Additional product images (optional)';
-      const file=document.createElement('input');file.id='additionalImageFiles';file.type='file';file.accept='image/*';file.multiple=true;file.setAttribute('aria-label','Additional product images');
-      label.appendChild(file);
+      let file=document.getElementById('additionalImageFiles');
+      if(!file){
+        file=document.createElement('input');file.id='additionalImageFiles';file.type='file';file.accept='image/*';file.multiple=true;file.setAttribute('aria-label','Additional product images');
+        label.appendChild(file);
+      }
+      if(file.dataset.uploadBound==='true')return;
+      file.dataset.uploadBound='true';
       const status=statusNode('additionalImageUploadStatus',file);
       file.addEventListener('change',async()=>{
         const files=[...(file.files||[])];if(!files.length)return;
@@ -92,12 +150,14 @@
         finally{file.disabled=false}
       });
     }
-    function install(){installPrimary();installAdditional();syncBusy()}
+    function install(){sanitizeMediaUi();installPrimary();installAdditional();syncBusy()}
     install();
+    earlyUiObserver.disconnect();
     const observer=new MutationObserver(install);observer.observe(document.documentElement,{childList:true,subtree:true});
-    document.addEventListener('click',event=>{if(event.target.closest?.('[data-action="add-product"],[data-edit]'))setTimeout(()=>{const p=document.getElementById('primaryImageFile'),a=document.getElementById('additionalImageFiles');if(p)p.value='';if(a)a.value='';const ps=document.getElementById('primaryImageUploadStatus'),as=document.getElementById('additionalImageUploadStatus');if(ps)ps.textContent=document.getElementById('image')?.value?'Current uploaded image will be kept unless you select a new one.':'';if(as)as.textContent=document.getElementById('additionalImages')?.value?'Current additional images will be kept unless you select new files.':'';syncBusy();},60)},true);
+    document.addEventListener('click',event=>{if(event.target.closest?.('[data-action="add-product"],[data-edit]'))setTimeout(()=>{sanitizeMediaUi();const p=document.getElementById('primaryImageFile'),a=document.getElementById('additionalImageFiles');if(p)p.value='';if(a)a.value='';const ps=document.getElementById('primaryImageUploadStatus'),as=document.getElementById('additionalImageUploadStatus');if(ps)ps.textContent=document.getElementById('image')?.value?'Current uploaded image will be kept unless you select a new one.':'';if(as)as.textContent=document.getElementById('additionalImages')?.value?'Current additional images will be kept unless you select new files.':'';syncBusy();},60)},true);
     return client;
   })().catch(error=>{
+    earlyUiObserver.disconnect();
     window.__ffSellerProductImageUpload=false;
     window.__ffSellerProductImageUploadReady=null;
     console.error('[Seller Center] Product image upload startup failed',error);
