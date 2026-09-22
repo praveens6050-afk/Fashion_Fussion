@@ -29,6 +29,11 @@ jobs:
           test -f dist/admin.html
           test -f dist/admin-account.html
           test -f dist/reset-password.html
+          test -f dist/admin-product-image-upload.js
+          test -f dist/admin-orders.js
+          test -f dist/admin-shipping.js
+          test -f dist/admin-seller-approvals.js
+          test -f dist/admin-checkout-health.js
           test -f dist/_headers
           test -f dist/_redirects
           test -f dist/_routes.json
@@ -41,6 +46,9 @@ jobs:
             exit 1
           fi
           grep -Fq "const isAdminPage=page==='admin'||page==='admin.html';" supabase-config.js
+          grep -Fq "page!=='admin'&&page!=='admin.html'" desktop-admin-loader.js
+          grep -Fq "'login','login.html'" desktop-auth-loader.js
+          grep -Fq "'reset-password','reset-password.html'" desktop-auth-loader.js
           grep -Fq "location.replace('/admin')" admin-login.js
           grep -Fq "new URL('/reset-password',location.origin)" admin-login.js
           grep -Fq "location.replace('/login')" csp-reset-password.js
@@ -48,6 +56,17 @@ jobs:
           grep -Fq '/admin' admin-account.html
           grep -Fq '/admin-account' dist/_headers
           grep -Fq 'Cache-Control: no-store, max-age=0' dist/_headers
+      - name: Verify Admin feature wiring
+        run: |
+          grep -Fq "admin-product-image-upload.js" desktop-admin-loader.js
+          grep -Fq "admin-payment-review.js" desktop-admin-loader.js
+          grep -Fq "admin-recovery-status.js" desktop-admin-loader.js
+          grep -Fq "admin-orders.js" supabase-config.js
+          grep -Fq "admin-shipping.js" supabase-config.js
+          grep -Fq "admin-seller-approvals.js" supabase-config.js
+          grep -Fq "admin-checkout-health.js" supabase-config.js
+          grep -Fq "window.ffAdminSupabaseReady" admin-product-image-upload.js
+          grep -Fq "save.disabled=Boolean(busy)" admin-product-image-upload.js
       - name: Verify API routing boundary
         run: |
           grep -Fq '"/api/*"' dist/_routes.json
