@@ -1,0 +1,29 @@
+name: Cloudflare Seller Validate
+
+on:
+  push:
+    branches: [cloudflare-seller]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: seller-panel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build static assets
+        run: npm run build
+      - name: Verify deployment artifacts
+        run: |
+          test -f dist/index.html
+          test -f dist/login.html
+          test -f dist/_headers
+          test -f dist/_redirects
