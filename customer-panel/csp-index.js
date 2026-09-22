@@ -38,6 +38,24 @@ async function loadWishlist(){
   if(!error)(data||[]).forEach(x=>wishlistIds.add(Number(x.product_id)));
 }
 
+function wishlistLabel(id){
+  const product=allProducts.find(p=>Number(p.id)===Number(id));
+  const name=String(product?.name||'product');
+  return wishlistIds.has(Number(id))?'Remove '+name+' from wishlist':'Save '+name+' to wishlist';
+}
+function wishlistMarkup(id){
+  const saved=wishlistIds.has(Number(id));
+  const label=wishlistLabel(id);
+  return '<span class="heart-glyph" aria-hidden="true">'+(saved?'♥':'♡')+'</span><span class="sr-only">'+esc(label)+'</span>';
+}
+function syncWishlistButton(b,id){
+  const saved=wishlistIds.has(Number(id)),label=wishlistLabel(id);
+  b.classList.toggle('saved',saved);
+  b.setAttribute('aria-label',label);
+  b.setAttribute('title',label);
+  b.innerHTML=wishlistMarkup(id);
+}
+
 async function toggleWishlist(id,b){
   if(!currentUser){location.href='login.html';return;}
   b.disabled=true;
@@ -51,8 +69,7 @@ async function toggleWishlist(id,b){
       if(error&&error.code!=='23505')throw error;
       wishlistIds.add(id);
     }
-    b.classList.toggle('saved',wishlistIds.has(id));
-    b.textContent=wishlistIds.has(id)?'♥':'♡';
+    syncWishlistButton(b,id);
   }catch(e){toast(e.message||'Wishlist could not be updated');}
   finally{b.disabled=false;}
 }
@@ -64,7 +81,7 @@ function reviewLine(p){const n=Number(p.reviews||0),r=Number(p.rating||0);return
 function render(){
   const rows=allProducts;
   $('gridSub').textContent=rows.length?rows.length+' active product'+(rows.length===1?'':'s'):'No active products are available yet.';
-  $('productsGrid').innerHTML=rows.length?rows.map(p=>'<article class="product"><div class="media">'+image(p)+'<a class="media-link" href="product.html?id='+encodeURIComponent(p.id)+'" aria-label="View '+esc(p.name)+'"></a>'+(p.badge?'<span class="badge">'+esc(p.badge)+'</span>':'')+'<button class="heart '+(wishlistIds.has(Number(p.id))?'saved':'')+'" data-wish="'+p.id+'" aria-label="Save '+esc(p.name)+' to wishlist">'+(wishlistIds.has(Number(p.id))?'♥':'♡')+'</button></div><div class="body"><div class="cat">'+esc(p.category||'General')+'</div><div class="name"><a href="product.html?id='+encodeURIComponent(p.id)+'">'+esc(p.name)+'</a></div><div class="desc">'+esc(p.description||'Product from Fashion Fussion.')+'</div>'+reviewLine(p)+'<div class="price-row"><div><div class="price">'+money(p.price)+'</div><div class="gst">Inclusive of applicable taxes</div></div><div class="gst">GST '+Number(p.gst_rate||0)+'%</div></div><div class="product-actions"><button class="add" data-add="'+p.id+'">ADD TO CART</button><a class="details-btn" href="product.html?id='+encodeURIComponent(p.id)+'">DETAILS</a></div></div></article>').join(''):'<div class="empty">No active products are available yet. <a href="search.html">Browse the catalogue</a>.</div>';
+  $('productsGrid').innerHTML=rows.length?rows.map(p=>{const id=Number(p.id),saved=wishlistIds.has(id),label=saved?'Remove '+String(p.name||'product')+' from wishlist':'Save '+String(p.name||'product')+' to wishlist';return '<article class="product"><div class="media">'+image(p)+'<a class="media-link" href="product.html?id='+encodeURIComponent(p.id)+'" aria-label="View '+esc(p.name)+'"></a>'+(p.badge?'<span class="badge">'+esc(p.badge)+'</span>':'')+'<button class="heart '+(saved?'saved':'')+'" data-wish="'+p.id+'" aria-label="'+esc(label)+'" title="'+esc(label)+'"><span class="heart-glyph" aria-hidden="true">'+(saved?'♥':'♡')+'</span><span class="sr-only">'+esc(label)+'</span></button></div><div class="body"><div class="cat">'+esc(p.category||'General')+'</div><div class="name"><a href="product.html?id='+encodeURIComponent(p.id)+'">'+esc(p.name)+'</a></div><div class="desc">'+esc(p.description||'Product from Fashion Fussion.')+'</div>'+reviewLine(p)+'<div class="price-row"><div><div class="price">'+money(p.price)+'</div><div class="gst">Inclusive of applicable taxes</div></div><div class="gst">GST '+Number(p.gst_rate||0)+'%</div></div><div class="product-actions"><button class="add" data-add="'+p.id+'">ADD TO CART</button><a class="details-btn" href="product.html?id='+encodeURIComponent(p.id)+'">DETAILS</a></div></div></article>'}).join(''):'<div class="empty">No active products are available yet. <a href="search.html">Browse the catalogue</a>.</div>';
   bindImageFallbacks();
   document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>addToCart(b.dataset.add));
   document.querySelectorAll('[data-wish]').forEach(b=>b.onclick=()=>toggleWishlist(Number(b.dataset.wish),b));

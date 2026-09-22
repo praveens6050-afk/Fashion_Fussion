@@ -15,11 +15,7 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Fashion Fussion — Shop Retail & Business Quantities">
   <meta name="twitter:description" content="Shop Fashion Fussion with transparent pricing, secure checkout and larger-quantity buying support.">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
-  <script defer src="supabase-config.js?v=20260921-hotfix"></script>
-  <link rel="stylesheet" href="csp-index.css?v=20260921-hotfix">
-  <link rel="stylesheet" href="csp-dynamic.css?v=1">
-  <link rel="stylesheet" href="homepage-footer.css?v=1">
+  <link rel="stylesheet" href="homepage.bundle.css?v=20260923-cf-home" data-homepage-bundle>
 </head>
 <body>
   <div class="notice">Transparent checkout · <b>₹49 delivery below ₹299</b> · No separate prepaid or COD handling fee</div>
@@ -56,6 +52,7 @@
           <div class="benefit"><div>✓</div><div><b>Direct quantity entry</b><span>Set larger quantities without repeated clicking.</span></div></div>
           <div class="benefit"><div>✓</div><div><b>Transparent totals</b><span>Product value, GST and delivery remain separate.</span></div></div>
           <div class="benefit"><div>✓</div><div><b>Verified pricing only</b><span>No bulk discount is displayed unless backed by a real pricing rule.</span></div></div>
+          <div class="ff-margin-top-16"><a class="btn" href="business-buying.html" data-business-guide-cta="true">How business buying works</a></div>
         </aside>
       </div>
     </section>
@@ -71,9 +68,18 @@
     </section>
   </main>
 
+  <section class="ff-registration-trust" aria-label="Business registration">
+    <div class="ff-registration-trust__inner">
+      <div class="ff-registration-trust__copy"><div class="ff-registration-trust__eyebrow">Registered Indian business</div><div class="ff-registration-trust__title">Fashion Fussion</div><div class="ff-registration-note">GSTIN: <strong>08OWSPS9085P1ZM</strong> &nbsp;·&nbsp; Udyam: <strong>UDYAM-RJ-17-0674511</strong></div></div>
+      <div class="ff-registration-trust__items"><span class="ff-registration-chip">GST Registered</span><span class="ff-registration-chip">Udyam / MSME Registered</span><span class="ff-registration-chip">Micro Enterprise</span></div>
+    </div>
+  </section>
+
   <footer><div class="wrap"><div class="foot"><div class="foot-brand"><strong>Fashion Fussion</strong><p>One storefront for everyday shopping and larger-quantity buying.</p><a href="about.html">About Fashion Fussion</a></div><div><strong>Account</strong><div class="foot-links"><a href="account.html#orders">My Orders</a><a href="account.html#refunds">Payments & Refunds</a><a href="wishlist.html">Wishlist</a></div></div><div><strong>Help & Policies</strong><div class="foot-links"><a href="faq.html">Help Center & FAQ</a><a href="contact.html">Contact & Support</a><a href="shipping-delivery.html">Shipping & Delivery</a><a href="returns-refunds.html">Returns & Refunds</a></div></div><div><strong>Business & Legal</strong><div class="foot-links"><a href="business-buying.html">Business Buying</a><a href="terms.html">Terms & Conditions</a><a href="privacy.html">Privacy Policy</a><a href="security-policy.html">Security</a></div></div></div><div class="legal"><span>© 2026 Fashion Fussion.</span><span>Retail + business buying in one account</span><span>Delivery benefit threshold: ₹299</span></div></div></footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script defer src="csp-index.js?v=20260921-hotfix"></script>
+  <script defer src="/vendor/supabase.js" data-supabase-sdk="local"></script>
+  <script defer src="supabase-config.js?v=20260923-cf-home"></script>
+  <script defer src="homepage.runtime.js?v=20260923-cf-home" data-homepage-runtime></script>
 </body>
 </html>
