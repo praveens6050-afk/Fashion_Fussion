@@ -1,0 +1,19 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
+
+/seller-login.20260922.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/
+  Cache-Control: no-store, max-age=0
+
+/login
+  Cache-Control: no-store, max-age=0
+
+/login.html
+  Cache-Control: no-store, max-age=0
