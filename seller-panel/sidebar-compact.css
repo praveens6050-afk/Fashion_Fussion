@@ -1,0 +1,72 @@
+/* Seller navigation usability patch: keep every core action visible without scrolling. */
+.sidebar{
+  padding:14px 12px!important;
+  overflow:visible!important;
+}
+.brand{
+  padding:2px 8px 12px!important;
+}
+.nav{
+  display:grid!important;
+  gap:2px!important;
+  align-content:start!important;
+  overflow:visible!important;
+}
+.nav-divider,.nav-label{
+  display:none!important;
+}
+.nav-item{
+  min-height:36px!important;
+  padding:8px 10px!important;
+  border-radius:9px!important;
+  font-size:14px!important;
+  line-height:1.2!important;
+}
+.nav-item[data-view="overview"],
+.nav-item[data-view="products"],
+.nav-item[data-view="review"],
+.nav-item[data-view="support-live"],
+.nav-item[data-view="orders"],
+.nav-item[data-view="payments"],
+.nav-item[data-view="returns"],
+.nav-item[data-view="profile"],
+.nav-item[data-action="add-product"]{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+.sidebar-foot{
+  margin-top:10px!important;
+  gap:8px!important;
+}
+.prototype-note{
+  padding:9px 10px!important;
+  border-radius:10px!important;
+}
+.prototype-note strong{font-size:11px!important}
+.prototype-note small{font-size:10px!important;line-height:1.3!important}
+#logoutSeller{
+  position:fixed!important;
+  right:18px!important;
+  bottom:18px!important;
+  z-index:95!important;
+  width:auto!important;
+  min-width:112px!important;
+  padding:10px 16px!important;
+  background:#171e2c!important;
+  color:#fff!important;
+  border:1px solid #30394a!important;
+  border-radius:10px!important;
+  box-shadow:0 12px 28px rgba(15,23,42,.22)!important;
+}
+#logoutSeller:hover{background:#202a3b!important}
+.toast{bottom:74px!important}
+@media(max-width:760px){
+  .sidebar{height:auto!important;padding:12px!important}
+  .brand{padding-bottom:10px!important}
+  .nav{grid-template-columns:1fr 1fr!important;gap:4px!important}
+  .nav-item{min-height:38px!important;font-size:13px!important}
+  .sidebar-foot{margin-top:8px!important}
+  #logoutSeller{right:12px!important;bottom:12px!important;min-width:100px!important}
+  .toast{right:12px!important;bottom:66px!important}
+}
