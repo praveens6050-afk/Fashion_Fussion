@@ -27,16 +27,19 @@ jobs:
         run: npx --yes wrangler@latest pages functions build --compatibility-date=2026-09-22 --compatibility-flag=nodejs_compat --outdir=.cf-functions-test
       - name: Verify deployment artifacts
         run: |
-          for f in login.html admin.html admin-account.html reset-password.html admin-product-image-upload.js admin-orders.js admin-shipping.js admin-seller-approvals.js admin-checkout-health.js _headers _redirects _routes.json favicon.svg apple-touch-icon.png admin.webmanifest admin-login.20260923e.js; do test -s "dist/$f"; done
+          for f in login.html admin.html admin-account.html reset-password.html admin-product-image-upload.js admin-orders.js admin-shipping.js admin-seller-approvals.js admin-checkout-health.js _headers _redirects _routes.json favicon.svg apple-touch-icon.png admin.webmanifest admin-login.20260923f.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
+          test -s functions/api/admin-login-guard.js
           test -s .cf-functions-test/index.js
       - name: Verify Admin login contract
         run: |
           grep -Fq 'data-supabase-sdk="local"' dist/login.html
           grep -Fq 'defer src="/vendor/supabase.js"' dist/login.html
-          grep -Fq 'defer src="/admin-login.20260923e.js"' dist/login.html
+          grep -Fq 'defer src="/admin-login.20260923f.js"' dist/login.html
           ! grep -Fq 'rel="preload" href="/vendor/supabase.js" as="script"' dist/login.html
-          ! grep -Fq 'rel="preload" href="/admin-login.20260923e.js" as="script"' dist/login.html
+          ! grep -Fq 'rel="preload" href="/admin-login.20260923f.js" as="script"' dist/login.html
+          ! grep -Fq 'Link: </vendor/supabase.js>; rel=preload' dist/_headers
+          ! grep -Fq 'Link: </admin-login.' dist/_headers
           ! grep -Eq 'cdn\.jsdelivr\.net/.+supabase|unpkg\.com/.+supabase' dist/login.html
           test "$(grep -o '<link rel="stylesheet"' dist/login.html | wc -l)" -eq 0
           grep -Fq 'rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"' dist/login.html
@@ -45,12 +48,14 @@ jobs:
           grep -Fq 'data-csrf-protected="session-bound"' dist/login.html
           grep -Fq 'name="email"' dist/login.html
           grep -Fq 'autocomplete="email"' dist/login.html
-          grep -Fq 'autofocus required' dist/login.html
+          ! grep -Fq 'autofocus' dist/login.html
+          ! grep -Fq 'placeholder="admin@example.com"' dist/login.html
           grep -Fq 'name="password"' dist/login.html
           grep -Fq 'id="passwordToggle"' dist/login.html
           grep -Fq 'aria-label="Show administrator password"' dist/login.html
-          grep -Fq 'id="remember" name="remember" type="checkbox">Remember me' dist/login.html
+          grep -Fq 'id="remember" name="remember" type="checkbox" autocomplete="off">Remember me' dist/login.html
           ! grep -Fq 'id="remember" name="remember" type="checkbox" checked' dist/login.html
+          grep -Fq 'min-height:44px' dist/login.html
           grep -Fq 'class="mobile-brand"' dist/login.html
           grep -Fq '.mobile-brand{display:block}' dist/login.html
           ! grep -Fq '.form-side{min-height:100dvh' dist/login.html
@@ -59,24 +64,37 @@ jobs:
           grep -Fq 'grid-template-areas:"form brand"' dist/login.html
           grep -Fq 'aria-label="Open Fashion Fussion customer website in a new tab"' dist/login.html
           grep -Fq 'class="external-mark" aria-hidden="true">↗</span>' dist/login.html
+          grep -Fq 'media="(max-width:800px)"' dist/login.html
+          grep -Fq '#f6f7f9' dist/login.html
           grep -Fq 'no-transform' dist/_headers
-          grep -Fq 'PerformanceObserver' dist/admin-login.20260923e.js
-          grep -Fq "const CSRF_KEY='ff_admin_csrf_v1'" dist/admin-login.20260923e.js
-          grep -Fq 'crypto.getRandomValues' dist/admin-login.20260923e.js
-          grep -Fq 'hasValidCsrfToken' dist/admin-login.20260923e.js
-          grep -Fq "const REMEMBER_KEY='ff_admin_remember'" dist/admin-login.20260923e.js
-          grep -Fq "localStorage.getItem(REMEMBER_KEY)==='true'" dist/admin-login.20260923e.js
-          grep -Fq 'remember.checked=false' dist/admin-login.20260923e.js
-          ! grep -Fq 'setRememberMode(false)' dist/admin-login.20260923e.js
-          grep -Fq 'storage:authStorage' dist/admin-login.20260923e.js
-          grep -Fq "setAttribute('aria-pressed',String(reveal))" dist/admin-login.20260923e.js
-          grep -Fq "setAttribute('aria-label',reveal?'Hide administrator password':'Show administrator password')" dist/admin-login.20260923e.js
-          grep -Fq "setAttribute('title',reveal?'Hide password':'Show password')" dist/admin-login.20260923e.js
-          grep -Fq 'setPasswordToggleState(false)' dist/admin-login.20260923e.js
+          grep -Fq 'PerformanceObserver' dist/admin-login.20260923f.js
+          grep -Fq "const CSRF_KEY='ff_admin_csrf_v1'" dist/admin-login.20260923f.js
+          grep -Fq 'crypto.getRandomValues' dist/admin-login.20260923f.js
+          grep -Fq 'hasValidCsrfToken' dist/admin-login.20260923f.js
+          grep -Fq "const REMEMBER_KEY='ff_admin_remember'" dist/admin-login.20260923f.js
+          grep -Fq "localStorage.getItem(REMEMBER_KEY)==='true'" dist/admin-login.20260923f.js
+          grep -Fq 'remember.checked=false' dist/admin-login.20260923f.js
+          grep -Fq "addEventListener('pageshow',()=>{remember.checked=false;})" dist/admin-login.20260923f.js
+          grep -Fq 'storage:authStorage' dist/admin-login.20260923f.js
+          grep -Fq "setAttribute('aria-pressed',String(reveal))" dist/admin-login.20260923f.js
+          grep -Fq "setAttribute('aria-label',reveal?'Hide administrator password':'Show administrator password')" dist/admin-login.20260923f.js
+          grep -Fq "setAttribute('title',reveal?'Hide password':'Show password')" dist/admin-login.20260923f.js
+          grep -Fq "banner.setAttribute('role',isError?'alert':'status')" dist/admin-login.20260923f.js
+          grep -Fq "banner.setAttribute('aria-live',isError?'assertive':'polite')" dist/admin-login.20260923f.js
+          grep -Fq "fetch('/api/admin-login-guard'" dist/admin-login.20260923f.js
+          grep -Fq 'checkLoginRateLimit(mail)' dist/admin-login.20260923f.js
           grep -Fq "localStorage.getItem(REMEMBER_KEY)==='true'" dist/supabase-config.js
           grep -Fq 'storage:authStorage' dist/supabase-config.js
-          node --check dist/admin-login.20260923e.js
+          node --check dist/admin-login.20260923f.js
           node --check dist/supabase-config.js
+      - name: Verify login guard
+        run: |
+          grep -Fq "SUPABASE_SERVICE_ROLE_KEY" functions/api/admin-login-guard.js
+          grep -Fq "CF-Connecting-IP" functions/api/admin-login-guard.js
+          grep -Fq "consume_admin_login_rate_limit" functions/api/admin-login-guard.js
+          grep -Fq "p_limit:8" functions/api/admin-login-guard.js
+          grep -Fq "p_window_seconds:600" functions/api/admin-login-guard.js
+          grep -Fq "status===429" admin-login.20260923f.js
       - name: Verify heading and visual order
         run: |
           node - <<'NODE'
@@ -93,8 +111,8 @@ jobs:
           if grep -Eq '^/(login|admin|account|admin-account|reset-password)[[:space:]]+[^[:space:]]+\.html[[:space:]]+200$' dist/_redirects; then exit 1; fi
           grep -Fq "const isAdminPage=page==='admin'||page==='admin.html';" supabase-config.js
           grep -Fq "page!=='admin'&&page!=='admin.html'" desktop-admin-loader.js
-          grep -Fq "location.replace('/admin')" admin-login.20260923e.js
-          grep -Fq "new URL('/reset-password',location.origin)" admin-login.20260923e.js
+          grep -Fq "location.replace('/admin')" admin-login.20260923f.js
+          grep -Fq "new URL('/reset-password',location.origin)" admin-login.20260923f.js
           grep -Fq '/admin-account' admin.html
           grep -Fq 'Cache-Control: no-store, max-age=0' dist/_headers
       - name: Verify Admin feature wiring
