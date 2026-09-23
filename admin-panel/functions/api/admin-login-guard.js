@@ -9,7 +9,18 @@ async function sha256Hex(value){
   return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
 }
 
+function isSameOriginBrowserRequest(request){
+  const expectedOrigin=new URL(request.url).origin;
+  const origin=request.headers.get('Origin');
+  const fetchSite=request.headers.get('Sec-Fetch-Site');
+  if(origin&&origin!==expectedOrigin)return false;
+  if(fetchSite&&fetchSite!=='same-origin')return false;
+  return true;
+}
+
 export async function onRequestPost({request,env}){
+  if(!isSameOriginBrowserRequest(request))return json({ok:false,error:'Cross-origin request blocked'},403);
+
   let body={};
   try{body=await request.json();}catch{return json({ok:false,error:'Invalid request body'},400);}
   const email=String(body.email||'').trim().toLowerCase();
