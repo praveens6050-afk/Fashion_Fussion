@@ -40,7 +40,7 @@ jobs:
           test -f dist/_redirects
           test -f dist/_routes.json
           test -s dist/vendor/supabase.js
-          test -s dist/admin-login.20260923.js
+          test -s dist/admin-login.20260923b.js
           test -s dist/favicon.svg
           test -s dist/admin.webmanifest
           test -s .cf-functions-test/index.js
@@ -48,19 +48,30 @@ jobs:
         run: |
           grep -Fq 'data-supabase-sdk="local"' dist/login.html
           grep -Fq 'defer src="/vendor/supabase.js"' dist/login.html
-          grep -Fq 'defer src="/admin-login.20260923.js"' dist/login.html
+          grep -Fq 'defer src="/admin-login.20260923b.js"' dist/login.html
+          grep -Fq 'rel="preload" href="/vendor/supabase.js" as="script"' dist/login.html
+          grep -Fq 'rel="preload" href="/admin-login.20260923b.js" as="script"' dist/login.html
           ! grep -Eq 'cdn\.jsdelivr\.net/.+supabase|unpkg\.com/.+supabase' dist/login.html
           test "$(grep -o '<link rel="stylesheet"' dist/login.html | wc -l)" -eq 0
+          grep -Fq 'method="post"' dist/login.html
+          grep -Fq 'action="/login"' dist/login.html
           grep -Fq 'name="email"' dist/login.html
           grep -Fq 'name="password"' dist/login.html
           grep -Fq 'id="passwordToggle"' dist/login.html
-          grep -Fq 'autofocus' dist/login.html
+          grep -Fq 'href="/reset-password"' dist/login.html
+          grep -Fq 'min-height:44px' dist/login.html
+          grep -Fq 'class="password-control"' dist/login.html
+          grep -Fq 'min-height:54px' dist/login.html
           grep -Fq '<h1>Admin sign in</h1>' dist/login.html
+          ! grep -Fq '<h2' dist/login.html
+          ! grep -Fq 'autofocus' dist/login.html
           grep -Fq 'rel="icon"' dist/login.html
           grep -Fq 'rel="apple-touch-icon"' dist/login.html
           grep -Fq 'target="_blank"' dist/login.html
           grep -Fq 'no-transform' dist/_headers
-          node --check dist/admin-login.20260923.js
+          grep -Fq 'admin-login.20260923b.js' dist/_headers
+          grep -Fq 'PerformanceObserver' dist/admin-login.20260923b.js
+          node --check dist/admin-login.20260923b.js
           node --check dist/supabase-config.js
       - name: Verify Cloudflare clean URL safety
         run: |
@@ -73,8 +84,8 @@ jobs:
           grep -Fq "page!=='admin'&&page!=='admin.html'" desktop-admin-loader.js
           grep -Fq "'login','login.html'" desktop-auth-loader.js
           grep -Fq "'reset-password','reset-password.html'" desktop-auth-loader.js
-          grep -Fq "location.replace('/admin')" admin-login.20260923.js
-          grep -Fq "new URL('/reset-password',location.origin)" admin-login.20260923.js
+          grep -Fq "location.replace('/admin')" admin-login.20260923b.js
+          grep -Fq "new URL('/reset-password',location.origin)" admin-login.20260923b.js
           grep -Fq "location.replace('/login')" csp-reset-password.js
           grep -Fq '/admin-account' admin.html
           grep -Fq '/admin' admin-account.html
