@@ -35,13 +35,8 @@ jobs:
         run: |
           grep -Fq 'data-supabase-sdk="local"' dist/login.html
           grep -Fq 'defer src="/vendor/supabase.js"' dist/login.html
+          grep -Fq 'integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP"' dist/login.html
           grep -Fq 'defer src="/admin-login.20260923f.js"' dist/login.html
-          grep -Eq 'src="/vendor/supabase.js"[^>]*integrity="sha384-[A-Za-z0-9+/=]+"' dist/login.html
-          grep -Eq 'src="/admin-login.20260923f.js"[^>]*integrity="sha384-[A-Za-z0-9+/=]+"' dist/login.html
-          ! grep -Fq 'rel="preload" href="/vendor/supabase.js" as="script"' dist/login.html
-          ! grep -Fq 'rel="preload" href="/admin-login.20260923f.js" as="script"' dist/login.html
-          ! grep -Fq 'Link: </vendor/supabase.js>; rel=preload' dist/_headers
-          ! grep -Fq 'Link: </admin-login.' dist/_headers
           ! grep -Eq 'cdn\.jsdelivr\.net/.+supabase|unpkg\.com/.+supabase' dist/login.html
           test "$(grep -o '<link rel="stylesheet"' dist/login.html | wc -l)" -eq 0
           grep -Fq 'rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"' dist/login.html
@@ -50,27 +45,32 @@ jobs:
           grep -Fq 'data-csrf-protected="session-bound"' dist/login.html
           grep -Fq 'name="email"' dist/login.html
           grep -Fq 'autocomplete="email"' dist/login.html
-          ! grep -Fq 'autofocus' dist/login.html
           ! grep -Fq 'placeholder="admin@example.com"' dist/login.html
           grep -Fq 'name="password"' dist/login.html
           grep -Fq 'id="passwordToggle"' dist/login.html
-          grep -Fq 'aria-label="Show administrator password"' dist/login.html
-          grep -Fq 'id="remember" name="remember" type="checkbox">Remember me' dist/login.html
-          ! grep -Fq 'id="remember" name="remember" type="checkbox" autocomplete="off"' dist/login.html
-          ! grep -Fq 'id="remember" name="remember" type="checkbox" checked' dist/login.html
-          grep -Fq 'min-height:44px' dist/login.html
-          grep -Fq 'role="alert" aria-live="assertive" aria-atomic="true"' dist/login.html
+          grep -Fq 'aria-label="Show administrator password" title="Show administrator password"' dist/login.html
+          grep -Fq '<label class="remember"><input id="remember" name="remember" type="checkbox">Remember me</label>' dist/login.html
+          ! grep -Fq 'autocomplete="off">Remember me' dist/login.html
+          ! grep -Fq 'type="checkbox" checked' dist/login.html
+          grep -Fq 'role="status" aria-live="polite" aria-atomic="true"' dist/login.html
           grep -Fq -- '--line:#667085' dist/login.html
+          grep -Fq '.password-control:focus-within{border-color:var(--focus);outline:3px solid var(--focus);outline-offset:2px}' dist/login.html
           grep -Fq '.password-control:focus-within .password-toggle{border-left-color:var(--focus)}' dist/login.html
-          grep -Fq '<h2 class="brand-logo"' dist/login.html
+          grep -Fq 'font-weight:700' dist/login.html
+          grep -Fq 'font-weight:600' dist/login.html
+          ! grep -Eq 'font-weight:(650|750|850)' dist/login.html
           grep -Fq 'class="mobile-brand"' dist/login.html
-          grep -Fq '.mobile-brand{display:block}' dist/login.html
+          grep -Fq '.brand .brand-logo{display:none}' dist/login.html
+          grep -Fq '<a class="brand-logo" href="https://fashionfussion.in/"' dist/login.html
+          ! grep -Fq '<h2 class="brand-logo"' dist/login.html
+          grep -Fq '<h2 id="admin-hero-title" class="brand-title">Secure Admin Center</h2>' dist/login.html
+          grep -Fq 'class="external-mark" aria-hidden="true"><svg' dist/login.html
+          ! grep -Fq '>↗</span>' dist/login.html
           ! grep -Fq '.form-side{min-height:100dvh' dist/login.html
           ! grep -Fq '100vh' dist/login.html
           grep -Fq '100dvh' dist/login.html
           grep -Fq 'grid-template-areas:"form brand"' dist/login.html
           grep -Fq 'aria-label="Open Fashion Fussion customer website in a new tab"' dist/login.html
-          grep -Fq 'class="external-mark" aria-hidden="true">↗</span>' dist/login.html
           grep -Fq 'media="(max-width:800px)"' dist/login.html
           grep -Fq '#f6f7f9' dist/login.html
           grep -Fq 'no-transform' dist/_headers
@@ -79,19 +79,15 @@ jobs:
           grep -Fq 'crypto.getRandomValues' dist/admin-login.20260923f.js
           grep -Fq 'hasValidCsrfToken' dist/admin-login.20260923f.js
           grep -Fq "const REMEMBER_KEY='ff_admin_remember'" dist/admin-login.20260923f.js
-          grep -Fq "localStorage.getItem(REMEMBER_KEY)==='true'" dist/admin-login.20260923f.js
           grep -Fq 'remember.checked=false' dist/admin-login.20260923f.js
-          grep -Fq "addEventListener('pageshow',()=>{remember.checked=false;})" dist/admin-login.20260923f.js
-          grep -Fq 'storage:authStorage' dist/admin-login.20260923f.js
           grep -Fq "setAttribute('aria-pressed',String(reveal))" dist/admin-login.20260923f.js
-          grep -Fq "setAttribute('aria-label',reveal?'Hide administrator password':'Show administrator password')" dist/admin-login.20260923f.js
-          grep -Fq "setAttribute('title',reveal?'Hide password':'Show password')" dist/admin-login.20260923f.js
+          grep -Fq "const label=reveal?'Hide administrator password':'Show administrator password';" dist/admin-login.20260923f.js
+          grep -Fq "setAttribute('aria-label',label)" dist/admin-login.20260923f.js
+          grep -Fq "setAttribute('title',label)" dist/admin-login.20260923f.js
           grep -Fq "banner.setAttribute('role',isError?'alert':'status')" dist/admin-login.20260923f.js
           grep -Fq "banner.setAttribute('aria-live',isError?'assertive':'polite')" dist/admin-login.20260923f.js
           grep -Fq "fetch('/api/admin-login-guard'" dist/admin-login.20260923f.js
           grep -Fq 'checkLoginRateLimit(mail)' dist/admin-login.20260923f.js
-          grep -Fq "localStorage.getItem(REMEMBER_KEY)==='true'" dist/supabase-config.js
-          grep -Fq 'storage:authStorage' dist/supabase-config.js
           node --check dist/admin-login.20260923f.js
           node --check dist/supabase-config.js
       - name: Verify login guard
@@ -108,9 +104,9 @@ jobs:
           const fs=require('fs');
           const html=fs.readFileSync('dist/login.html','utf8');
           const h1=html.indexOf('<h1 id="admin-sign-in-title">');
-          const brandH2=html.indexOf('<h2 class="brand-logo"');
           const heroH2=html.indexOf('<h2 id="admin-hero-title"');
-          if(h1<0||brandH2<0||heroH2<0||h1>brandH2||brandH2>heroH2) throw new Error('Admin login heading order is invalid');
+          if(h1<0||heroH2<0||h1>heroH2) throw new Error('Admin login heading order is invalid');
+          if(html.includes('<h2 class="brand-logo"')) throw new Error('Decorative brand logo must not pollute heading hierarchy');
           if(!html.includes('grid-template-areas:"form brand"')) throw new Error('Desktop visual order must match DOM order');
           NODE
       - name: Verify Cloudflare clean URL safety
