@@ -25,7 +25,7 @@ function setRememberMode(value){
   try{localStorage.setItem(REMEMBER_KEY,value?'true':'false');}catch{}
 }
 function shouldRemember(){
-  try{return localStorage.getItem(REMEMBER_KEY)!=='false';}catch{return true;}
+  try{return localStorage.getItem(REMEMBER_KEY)==='true';}catch{return false;}
 }
 const authStorage={
   getItem(key){try{return (shouldRemember()?localStorage:sessionStorage).getItem(key);}catch{return null;}},
@@ -93,11 +93,12 @@ function setPasswordToggleState(reveal){
 }
 
 if(remember){
-  remember.checked=shouldRemember();
-  setRememberMode(remember.checked);
+  remember.checked=false;
+  setRememberMode(false);
   remember.addEventListener('change',()=>setRememberMode(remember.checked));
 }
 ensureCsrfToken();
+setPasswordToggleState(false);
 
 passwordToggle?.addEventListener('click',()=>{
   const reveal=password.type==='password';
