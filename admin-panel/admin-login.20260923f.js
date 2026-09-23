@@ -86,10 +86,11 @@ async function redirectExisting(){
   show('This account does not have administrator access.');
 }
 function setPasswordToggleState(reveal){
+  const label=reveal?'Hide administrator password':'Show administrator password';
   password.type=reveal?'text':'password';
   passwordToggle.setAttribute('aria-pressed',String(reveal));
-  passwordToggle.setAttribute('aria-label',reveal?'Hide administrator password':'Show administrator password');
-  passwordToggle.setAttribute('title',reveal?'Hide password':'Show password');
+  passwordToggle.setAttribute('aria-label',label);
+  passwordToggle.setAttribute('title',label);
   passwordToggle.innerHTML=reveal
     ? '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3l18 18"></path><path d="M10.6 10.7a2.5 2.5 0 0 0 3.5 3.5"></path><path d="M9.9 5.2A11.7 11.7 0 0 1 12 5c6.5 0 10 7 10 7a16.5 16.5 0 0 1-3 3.8"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4-.8"></path></svg>'
     : '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path><circle cx="12" cy="12" r="2.5"></circle></svg>';
