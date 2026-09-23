@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "build": "node cloudflare-build.mjs"
+    "build": "node cloudflare-build.mjs && node login-hardening.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0"
