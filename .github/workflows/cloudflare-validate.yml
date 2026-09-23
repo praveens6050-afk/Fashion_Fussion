@@ -36,6 +36,8 @@ jobs:
           grep -Fq 'data-supabase-sdk="local"' dist/login.html
           grep -Fq 'defer src="/vendor/supabase.js"' dist/login.html
           grep -Fq 'defer src="/admin-login.20260923f.js"' dist/login.html
+          grep -Eq 'src="/vendor/supabase.js"[^>]*integrity="sha384-[A-Za-z0-9+/=]+"' dist/login.html
+          grep -Eq 'src="/admin-login.20260923f.js"[^>]*integrity="sha384-[A-Za-z0-9+/=]+"' dist/login.html
           ! grep -Fq 'rel="preload" href="/vendor/supabase.js" as="script"' dist/login.html
           ! grep -Fq 'rel="preload" href="/admin-login.20260923f.js" as="script"' dist/login.html
           ! grep -Fq 'Link: </vendor/supabase.js>; rel=preload' dist/_headers
@@ -53,9 +55,14 @@ jobs:
           grep -Fq 'name="password"' dist/login.html
           grep -Fq 'id="passwordToggle"' dist/login.html
           grep -Fq 'aria-label="Show administrator password"' dist/login.html
-          grep -Fq 'id="remember" name="remember" type="checkbox" autocomplete="off">Remember me' dist/login.html
+          grep -Fq 'id="remember" name="remember" type="checkbox">Remember me' dist/login.html
+          ! grep -Fq 'id="remember" name="remember" type="checkbox" autocomplete="off"' dist/login.html
           ! grep -Fq 'id="remember" name="remember" type="checkbox" checked' dist/login.html
           grep -Fq 'min-height:44px' dist/login.html
+          grep -Fq 'role="alert" aria-live="assertive" aria-atomic="true"' dist/login.html
+          grep -Fq -- '--line:#667085' dist/login.html
+          grep -Fq '.password-control:focus-within .password-toggle{border-left-color:var(--focus)}' dist/login.html
+          grep -Fq '<h2 class="brand-logo"' dist/login.html
           grep -Fq 'class="mobile-brand"' dist/login.html
           grep -Fq '.mobile-brand{display:block}' dist/login.html
           ! grep -Fq '.form-side{min-height:100dvh' dist/login.html
@@ -101,8 +108,9 @@ jobs:
           const fs=require('fs');
           const html=fs.readFileSync('dist/login.html','utf8');
           const h1=html.indexOf('<h1 id="admin-sign-in-title">');
-          const h2=html.indexOf('<h2 id="admin-hero-title"');
-          if(h1<0||h2<0||h1>h2) throw new Error('H1 must precede H2');
+          const brandH2=html.indexOf('<h2 class="brand-logo"');
+          const heroH2=html.indexOf('<h2 id="admin-hero-title"');
+          if(h1<0||brandH2<0||heroH2<0||h1>brandH2||brandH2>heroH2) throw new Error('Admin login heading order is invalid');
           if(!html.includes('grid-template-areas:"form brand"')) throw new Error('Desktop visual order must match DOM order');
           NODE
       - name: Verify Cloudflare clean URL safety
