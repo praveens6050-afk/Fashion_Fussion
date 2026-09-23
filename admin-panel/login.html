@@ -37,6 +37,7 @@
     .banner.show{display:block}
     .banner.error{background:#fff1f0;border-color:#d88b84;color:var(--red)}
     .banner.success{background:#edf8f0;border-color:#8fc6a0;color:var(--success)}
+    .noscript{margin:0 0 18px;padding:12px 14px;border:1px solid #d88b84;border-radius:9px;background:#fff1f0;color:var(--red);font-size:13px;line-height:1.5}
     .field{margin:18px 0}
     .field label{display:block;margin:0 0 8px;color:#344054;font-size:13px;font-weight:700}
     .field>input{width:100%;height:48px;padding:0 14px;border:1px solid var(--line);border-radius:9px;background:var(--white);color:var(--ink);font-size:15px}
@@ -48,6 +49,7 @@
     .password-control:focus-within .password-toggle{border-left-color:var(--focus)}
     .password-control input{min-width:0;width:100%;height:46px;padding:0 14px;border:0;border-radius:9px 0 0 9px;background:#fff;color:var(--ink);font-size:15px;outline:0}
     .password-toggle{width:48px;min-width:48px;min-height:46px;padding:0;display:grid;place-items:center;border:0;border-left:1px solid var(--line);border-radius:0 9px 9px 0;background:#fff;color:#263f68;cursor:pointer}
+    .password-toggle[hidden]{display:none}
     .password-toggle:hover{background:#f7f8fa}
     .password-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
     .password-toggle:focus-visible{outline:0;background:#e8efff;color:#123a8c;box-shadow:inset 0 0 0 3px var(--focus);position:relative;z-index:2}
@@ -71,8 +73,7 @@
     @media(max-width:800px){.shell{min-height:auto;grid-template-columns:1fr;grid-template-areas:"form" "brand"}.form-side{min-height:auto;padding:30px 22px 24px}.mobile-brand{display:block}.card h1{font-size:30px}.brand{min-height:190px;padding:30px 25px}.brand .brand-logo{display:none}.brand-title{font-size:clamp(30px,9vw,42px);letter-spacing:-1.2px}.brand-copy{font-size:15px}.session-row{align-items:flex-start;flex-direction:column;gap:6px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
-  <script defer src="/vendor/supabase.js" data-supabase-sdk="local" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP"></script>
-  <script defer src="/admin-login.20260923f.js"></script>
+  <script defer src="/admin-login.js"></script>
 </head>
 <body>
   <main class="shell">
@@ -81,8 +82,8 @@
         <div class="mobile-brand" aria-label="Fashion Fussion" translate="no" spellcheck="false">Fashion Fussion</div>
         <h1 id="admin-sign-in-title">Admin sign in</h1>
         <p class="sub">Enter your administrator credentials</p>
-        <form id="form" method="post" action="/login" autocomplete="on" data-csrf-protected="session-bound">
-          <input id="csrfToken" name="csrf_token" type="hidden" value="">
+        <noscript><p class="noscript" role="alert">JavaScript is required to securely sign in to the administrator portal.</p></noscript>
+        <form id="form" method="post" action="/login" autocomplete="on">
           <div id="banner" class="banner" role="status" aria-live="polite" aria-atomic="true"></div>
           <div class="field">
             <label for="email">Email address</label>
@@ -93,7 +94,7 @@
             <label for="password">Password</label>
             <div class="password-control">
               <input id="password" name="password" type="password" autocomplete="current-password" required>
-              <button id="passwordToggle" class="password-toggle" type="button" aria-controls="password" aria-pressed="false" aria-label="Show administrator password" title="Show administrator password" data-i18n-key="admin.password.visibility">
+              <button id="passwordToggle" class="password-toggle" type="button" aria-controls="password" aria-pressed="false" aria-label="Show administrator password" title="Show administrator password" data-i18n-key="admin.password.visibility" hidden>
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
               </button>
             </div>
@@ -108,7 +109,7 @@
       </div>
     </section>
     <section class="brand" aria-labelledby="admin-hero-title">
-      <a class="brand-logo" href="https://fashionfussion.in/" aria-label="Fashion Fussion customer website" translate="no" spellcheck="false" data-brand-name="true">Fashion Fussion</a>
+      <a class="brand-logo" href="https://fashionfussion.in/" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab" translate="no" spellcheck="false" data-brand-name="true">Fashion Fussion</a>
       <span class="stamp">Administrator access</span>
       <h2 id="admin-hero-title" class="brand-title">Secure Admin Center</h2>
       <p class="brand-copy">Sign in with an administrator account. Customer and seller accounts cannot access this panel.</p>
