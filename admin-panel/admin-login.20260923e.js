@@ -94,7 +94,6 @@ function setPasswordToggleState(reveal){
 
 if(remember){
   remember.checked=false;
-  setRememberMode(false);
   remember.addEventListener('change',()=>setRememberMode(remember.checked));
 }
 ensureCsrfToken();

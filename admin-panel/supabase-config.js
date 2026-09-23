@@ -5,7 +5,7 @@ window.FF_API_ORIGIN='';
   const SDK_FALLBACK='/vendor/supabase.js';
   const REMEMBER_KEY='ff_admin_remember';
   function shouldRemember(){
-    try{return localStorage.getItem(REMEMBER_KEY)!=='false';}catch{return true;}
+    try{return localStorage.getItem(REMEMBER_KEY)==='true';}catch{return false;}
   }
   const authStorage={
     getItem(key){try{return (shouldRemember()?localStorage:sessionStorage).getItem(key);}catch{return null;}},
