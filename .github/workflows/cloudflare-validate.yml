@@ -78,7 +78,7 @@ jobs:
           ! grep -Fq '100vh' dist/login.html
           grep -Fq '100dvh' dist/login.html
           grep -Fq '.field>input:focus-visible{outline:3px solid var(--focus)' dist/login.html
-          grep -Fq '--focus:#1d4ed8' dist/login.html
+          grep -Fq -- '--focus:#1d4ed8' dist/login.html
           grep -Fq '.password-toggle:focus-visible' dist/login.html
           grep -Fq '.btn:focus-visible' dist/login.html
           grep -Fq 'aria-label="Open Fashion Fussion customer website in a new tab">fashionfussion.in</a>' dist/login.html
