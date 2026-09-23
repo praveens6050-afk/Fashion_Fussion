@@ -27,27 +27,33 @@ jobs:
         run: npx --yes wrangler@latest pages functions build --compatibility-date=2026-09-22 --compatibility-flag=nodejs_compat --outdir=.cf-functions-test
       - name: Verify deployment artifacts
         run: |
-          for f in login.html admin.html admin-account.html reset-password.html admin-product-image-upload.js admin-orders.js admin-shipping.js admin-seller-approvals.js admin-checkout-health.js _headers _redirects _routes.json favicon.svg apple-touch-icon.png admin.webmanifest admin-login.20260923f.js; do test -s "dist/$f"; done
+          for f in login.html admin.html admin-account.html reset-password.html admin-product-image-upload.js admin-orders.js admin-shipping.js admin-seller-approvals.js admin-checkout-health.js _headers _redirects _routes.json favicon.svg apple-touch-icon.png admin.webmanifest admin-login.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/api/admin-login-guard.js
           test -s .cf-functions-test/index.js
+          LOGIN_ASSET="$(grep -oE 'src="/assets/admin-login\.[0-9a-f]{16}\.js"' dist/login.html | head -1 | cut -d'"' -f2)"
+          test -n "$LOGIN_ASSET"
+          test -s "dist$LOGIN_ASSET"
+          cmp -s dist/admin-login.js "dist$LOGIN_ASSET"
       - name: Verify Admin login contract
         run: |
-          grep -Fq 'data-supabase-sdk="local"' dist/login.html
-          grep -Fq 'defer src="/vendor/supabase.js"' dist/login.html
-          grep -Fq 'integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP"' dist/login.html
-          grep -Fq 'defer src="/admin-login.20260923f.js"' dist/login.html
+          grep -Eq 'defer src="/assets/admin-login\.[0-9a-f]{16}\.js" integrity="sha384-[A-Za-z0-9+/=]+"' dist/login.html
+          ! grep -Fq 'src="/vendor/supabase.js"' dist/login.html
           ! grep -Eq 'cdn\.jsdelivr\.net/.+supabase|unpkg\.com/.+supabase' dist/login.html
           test "$(grep -o '<link rel="stylesheet"' dist/login.html | wc -l)" -eq 0
           grep -Fq 'rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"' dist/login.html
           grep -Fq 'method="post"' dist/login.html
           grep -Fq 'action="/login"' dist/login.html
-          grep -Fq 'data-csrf-protected="session-bound"' dist/login.html
+          ! grep -Fq 'csrf_token' dist/login.html
+          ! grep -Fq 'data-csrf-protected' dist/login.html
+          grep -Fq 'JavaScript is required to securely sign in to the administrator portal.' dist/login.html
           grep -Fq 'name="email"' dist/login.html
           grep -Fq 'autocomplete="email"' dist/login.html
           ! grep -Fq 'placeholder="admin@example.com"' dist/login.html
           grep -Fq 'name="password"' dist/login.html
           grep -Fq 'id="passwordToggle"' dist/login.html
+          grep -Fq 'data-i18n-key="admin.password.visibility" hidden' dist/login.html
+          grep -Fq '.password-toggle[hidden]{display:none}' dist/login.html
           grep -Fq 'aria-label="Show administrator password" title="Show administrator password"' dist/login.html
           grep -Fq '<label class="remember"><input id="remember" name="remember" type="checkbox">Remember me</label>' dist/login.html
           ! grep -Fq 'autocomplete="off">Remember me' dist/login.html
@@ -61,7 +67,7 @@ jobs:
           ! grep -Eq 'font-weight:(650|750|850)' dist/login.html
           grep -Fq 'class="mobile-brand"' dist/login.html
           grep -Fq '.brand .brand-logo{display:none}' dist/login.html
-          grep -Fq '<a class="brand-logo" href="https://fashionfussion.in/"' dist/login.html
+          grep -Fq '<a class="brand-logo" href="https://fashionfussion.in/" target="_blank" rel="noopener noreferrer"' dist/login.html
           ! grep -Fq '<h2 class="brand-logo"' dist/login.html
           grep -Fq '<h2 id="admin-hero-title" class="brand-title">Secure Admin Center</h2>' dist/login.html
           grep -Fq 'class="external-mark" aria-hidden="true"><svg' dist/login.html
@@ -74,21 +80,25 @@ jobs:
           grep -Fq 'media="(max-width:800px)"' dist/login.html
           grep -Fq '#f6f7f9' dist/login.html
           grep -Fq 'no-transform' dist/_headers
-          grep -Fq 'PerformanceObserver' dist/admin-login.20260923f.js
-          grep -Fq "const CSRF_KEY='ff_admin_csrf_v1'" dist/admin-login.20260923f.js
-          grep -Fq 'crypto.getRandomValues' dist/admin-login.20260923f.js
-          grep -Fq 'hasValidCsrfToken' dist/admin-login.20260923f.js
-          grep -Fq "const REMEMBER_KEY='ff_admin_remember'" dist/admin-login.20260923f.js
-          grep -Fq 'remember.checked=false' dist/admin-login.20260923f.js
-          grep -Fq "setAttribute('aria-pressed',String(reveal))" dist/admin-login.20260923f.js
-          grep -Fq "const label=reveal?'Hide administrator password':'Show administrator password';" dist/admin-login.20260923f.js
-          grep -Fq "setAttribute('aria-label',label)" dist/admin-login.20260923f.js
-          grep -Fq "setAttribute('title',label)" dist/admin-login.20260923f.js
-          grep -Fq "banner.setAttribute('role',isError?'alert':'status')" dist/admin-login.20260923f.js
-          grep -Fq "banner.setAttribute('aria-live',isError?'assertive':'polite')" dist/admin-login.20260923f.js
-          grep -Fq "fetch('/api/admin-login-guard'" dist/admin-login.20260923f.js
-          grep -Fq 'checkLoginRateLimit(mail)' dist/admin-login.20260923f.js
-          node --check dist/admin-login.20260923f.js
+          grep -Fq '/assets/*' dist/_headers
+          grep -Fq 'PerformanceObserver' dist/admin-login.js
+          grep -Fq "const REMEMBER_KEY='ff_admin_remember'" dist/admin-login.js
+          grep -Fq 'remember.checked=false' dist/admin-login.js
+          grep -Fq 'passwordToggle.hidden=false' dist/admin-login.js
+          grep -Fq 'loadSupabaseSdk' dist/admin-login.js
+          grep -Fq "script.src='/vendor/supabase.js'" dist/admin-login.js
+          grep -Fq "script.addEventListener('error',onError" dist/admin-login.js
+          grep -Fq "setAttribute('aria-pressed',String(reveal))" dist/admin-login.js
+          grep -Fq "const label=reveal?'Hide administrator password':'Show administrator password';" dist/admin-login.js
+          grep -Fq "setAttribute('aria-label',label)" dist/admin-login.js
+          grep -Fq "setAttribute('title',label)" dist/admin-login.js
+          grep -Fq "banner.setAttribute('role',isError?'alert':'status')" dist/admin-login.js
+          grep -Fq "banner.setAttribute('aria-live',isError?'assertive':'polite')" dist/admin-login.js
+          grep -Fq "fetch('/api/admin-login-guard'" dist/admin-login.js
+          grep -Fq 'checkLoginRateLimit(mail)' dist/admin-login.js
+          ! grep -Fq 'CSRF_KEY' dist/admin-login.js
+          ! grep -Fq 'hasValidCsrfToken' dist/admin-login.js
+          node --check dist/admin-login.js
           node --check dist/supabase-config.js
       - name: Verify login guard
         run: |
@@ -97,7 +107,11 @@ jobs:
           grep -Fq "consume_admin_login_rate_limit" functions/api/admin-login-guard.js
           grep -Fq "p_limit:8" functions/api/admin-login-guard.js
           grep -Fq "p_window_seconds:600" functions/api/admin-login-guard.js
-          grep -Fq "status===429" admin-login.20260923f.js
+          grep -Fq "request.headers.get('Origin')" functions/api/admin-login-guard.js
+          grep -Fq "request.headers.get('Sec-Fetch-Site')" functions/api/admin-login-guard.js
+          grep -Fq "fetchSite!=='same-origin'" functions/api/admin-login-guard.js
+          grep -Fq "status===429" admin-login.js
+          node --check functions/api/admin-login-guard.js
       - name: Verify heading and visual order
         run: |
           node - <<'NODE'
@@ -115,8 +129,8 @@ jobs:
           if grep -Eq '^/(login|admin|account|admin-account|reset-password)[[:space:]]+[^[:space:]]+\.html[[:space:]]+200$' dist/_redirects; then exit 1; fi
           grep -Fq "const isAdminPage=page==='admin'||page==='admin.html';" supabase-config.js
           grep -Fq "page!=='admin'&&page!=='admin.html'" desktop-admin-loader.js
-          grep -Fq "location.replace('/admin')" admin-login.20260923f.js
-          grep -Fq "new URL('/reset-password',location.origin)" admin-login.20260923f.js
+          grep -Fq "location.replace('/admin')" admin-login.js
+          grep -Fq "new URL('/reset-password',location.origin)" admin-login.js
           grep -Fq '/admin-account' admin.html
           grep -Fq 'Cache-Control: no-store, max-age=0' dist/_headers
       - name: Verify Admin feature wiring
