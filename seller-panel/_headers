@@ -10,6 +10,18 @@
 /supabase-config.js
   Cache-Control: no-store, max-age=0, no-transform
 
+/seller-live-integration.js
+  Cache-Control: no-store, max-age=0, no-transform
+
+/navigation-fix.js
+  Cache-Control: no-store, max-age=0, no-transform
+
+/seller-catalog-drawer-hydration.js
+  Cache-Control: no-store, max-age=0, no-transform
+
+/product-image-upload.js
+  Cache-Control: no-store, max-age=0, no-transform
+
 /seller-launch-safety.js
   Cache-Control: no-store, max-age=0, no-transform
 
