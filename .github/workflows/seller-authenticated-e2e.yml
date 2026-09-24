@@ -70,3 +70,9 @@ jobs:
         run: |
           set -o pipefail
           timeout --signal=TERM --kill-after=5s 150s node .github/live-seller-authenticated-smoke.cjs
+
+      - name: Run authenticated Seller mobile journey
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout --signal=TERM --kill-after=5s 90s node .github/live-seller-authenticated-mobile-smoke.cjs
