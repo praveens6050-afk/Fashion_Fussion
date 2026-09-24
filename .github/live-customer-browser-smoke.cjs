@@ -46,12 +46,20 @@ async function noHorizontalOverflow(page, label) {
   if (metrics.scroll > metrics.client + 3) throw new Error(`${label} horizontal overflow: ${metrics.scroll}px content in ${metrics.client}px viewport`);
 }
 
-async function expectLoginRedirect(page, path) {
-  await open(page, path);
+async function expectLoginRedirect(browser, path) {
+  // Protected pages can intentionally abort their remaining scripts/styles as soon
+  // as auth resolves and navigation to Login starts. Test the redirect itself in
+  // an isolated page so those expected navigation aborts do not hide genuine
+  // resource failures from the observed shopping journey.
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   try {
+    const response = await page.goto(BASE + path, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    if (!response || !response.ok()) throw new Error(`${path} returned ${response && response.status()}`);
     await page.waitForURL(url => cleanPath(url) === '/login', { timeout: 15000 });
   } catch (error) {
-    throw new Error(`${path} did not redirect signed-out customer to Login; current URL=${page.url()}`);
+    throw new Error(`${path} did not redirect signed-out customer to Login; current URL=${page.url()}; ${error.message}`);
+  } finally {
+    await page.close().catch(() => {});
   }
 }
 
@@ -94,7 +102,7 @@ async function assertQuantityFiveCart(page, productId, label) {
   await canonicalPage.close();
 
   for (const path of ['/wishlist', '/order-details?id=1', '/quote-checkout?quote=1']) {
-    await expectLoginRedirect(desktop, path);
+    await expectLoginRedirect(browser, path);
   }
 
   for (const path of ['/search?q=shirt', '/cart', '/login', '/signup?redirect=checkout']) {
@@ -155,7 +163,7 @@ async function assertQuantityFiveCart(page, productId, label) {
     }
   }
 
-  await expectLoginRedirect(desktop, '/checkout');
+  await expectLoginRedirect(browser, '/checkout');
 
   await open(desktop, '/signup?redirect=checkout');
   const phone = desktop.locator('input[type="tel"]');
