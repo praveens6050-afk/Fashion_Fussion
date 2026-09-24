@@ -45,7 +45,7 @@ jobs:
             printf '%s' "$body" | grep -qi '<html'
             echo "PASS $path"
           done
-          for asset in /seller-live-integration.js /product-image-upload.js /navigation-fix.js /seller-payout-provider.js; do
+          for asset in /seller-live-integration.js /product-image-upload.js /navigation-fix.js /seller-payout-provider.js /styles.css /portal.css; do
             curl --fail --silent --show-error --max-time 20 "https://seller.fashionfussion.in$asset" > /dev/null
             echo "PASS $asset"
           done
