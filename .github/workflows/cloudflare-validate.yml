@@ -63,8 +63,8 @@ jobs:
           grep -Fq 'catalog-cart-entry.js?v=3' search.html
           grep -Fq 'variant-commerce.js?v=4' wishlist.html
           grep -Fq 'catalog-cart-entry.js?v=3' wishlist.html
-          grep -Fq 'variant-commerce.js?v=4' cart.html
-          grep -Fq 'variant-cart-ui.js?v=4' cart.html
+          grep -Fq 'variant-commerce.js?v=5' cart.html
+          grep -Fq 'variant-cart-ui.js?v=5' cart.html
           grep -Fq 'variant-commerce.js?v=4' checkout.html
           grep -Fq 'variant-cart-ui.js?v=4' checkout.html
           grep -Fq 'has_variants' csp-product.js
@@ -124,8 +124,8 @@ jobs:
           test -s .cf-functions-test/index.js
           test ! -e "functions/_${legacy}-adapter.js"
           test ! -e "dist/${legacy}.json"
-          grep -q 'variant-commerce.js?v=4' dist/cart.html
-          grep -q 'variant-cart-ui.js?v=4' dist/cart.html
+          grep -q 'variant-commerce.js?v=5' dist/cart.html
+          grep -q 'variant-cart-ui.js?v=5' dist/cart.html
           grep -q 'variant-commerce.js?v=4' dist/checkout.html
           grep -q 'variant-cart-ui.js?v=4' dist/checkout.html
           grep -Fq 'checkout-business.js?v=1' dist/checkout.html
