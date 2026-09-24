@@ -58,7 +58,18 @@ jobs:
       - name: Customer journey browser test on Cloudflare production
         env:
           SMOKE_BASE_URL: https://fashionfussion.in
-        run: node scripts/browser_smoke.js
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const input='scripts/browser_smoke.js';
+          const output='scripts/.cloudflare-browser-smoke.cjs';
+          let source=fs.readFileSync(input,'utf8');
+          source=source.replace(/(\w+)\.pathname\.endsWith\('\/([a-z0-9-]+)\.html'\)/gi,"($1.pathname === '/$2' || $1.pathname.endsWith('/$2.html'))");
+          fs.writeFileSync(output,source);
+          console.log('Prepared Cloudflare clean-URL compatible browser journey.');
+          NODE
+          node scripts/.cloudflare-browser-smoke.cjs
+          rm -f scripts/.cloudflare-browser-smoke.cjs
 
       - name: Diagnose and verify www human browser canonicalization
         run: |
@@ -82,7 +93,7 @@ jobs:
               const final = new URL(page.url());
               for(const message of messages) console.log(message);
               if(final.hostname !== 'fashionfussion.in') throw new Error(`www browser remained on ${final.href}`);
-              if(final.pathname !== '/cart.html' || final.searchParams.get('from') !== 'www-test' || final.hash !== '#cart') throw new Error(`www canonical redirect lost path/query/hash: ${final.href}`);
+              if(!['/cart','/cart.html'].includes(final.pathname) || final.searchParams.get('from') !== 'www-test' || final.hash !== '#cart') throw new Error(`www canonical redirect lost path/query/hash: ${final.href}`);
               console.log(`PASS human www redirect -> ${final.href}`);
             } finally {
               await browser.close();
