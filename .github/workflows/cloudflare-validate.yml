@@ -96,11 +96,12 @@ jobs:
           set -euo pipefail
           grep -Fq 'checkout-business.js?v=1' checkout.html
           grep -Fq 'quote-checkout.js?v=2' quote-checkout.html
-          grep -Fq 'quote-payment-safety.js?v=1' quote-checkout.html
+          grep -Fq 'quote-payment-safety.js?v=2' quote-checkout.html
           grep -Fq "'quote-checkout.html'" csp-login.js
           grep -Fq 'business_invoice' checkout-business.js
           grep -Fq 'purchase_order_no' checkout-business.js
           grep -Fq "target='quote-checkout.html?quote='" quote-checkout.js
+          grep -Fq "page!=='quote-checkout'" quote-payment-safety.js
           grep -Fq 'Fashion Fussion' quote-checkout.html
 
       - name: Build static assets
@@ -138,7 +139,7 @@ jobs:
           grep -Fq 'csp-order-confirmation.js?v=3' dist/order-confirmation.html
           grep -Fq 'order-business-details.js?v=1' dist/order-confirmation.html
           grep -Fq 'quote-checkout.js?v=2' dist/quote-checkout.html
-          grep -Fq 'quote-payment-safety.js?v=1' dist/quote-checkout.html
+          grep -Fq 'quote-payment-safety.js?v=2' dist/quote-checkout.html
 
       - name: Verify Pages Functions and API boundary
         working-directory: customer-panel
