@@ -109,13 +109,18 @@ function localizeSupabase(html) {
   return html;
 }
 
+function injectCanonicalHostGuard(html) {
+  if (/data-canonical-host/i.test(html)) return html;
+  return html.replace(/<head(\s[^>]*)?>/i, match => `${match}\n<script src="/canonical-host.js" data-canonical-host></script>`);
+}
+
 async function transformHtmlTree(dir) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) await transformHtmlTree(full);
     else if (entry.isFile() && entry.name.endsWith('.html')) {
       const original = await readFile(full, 'utf8');
-      const transformed = localizeSupabase(original);
+      const transformed = localizeSupabase(injectCanonicalHostGuard(original));
       if (transformed !== original) await writeFile(full, transformed, 'utf8');
     }
   }
