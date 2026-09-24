@@ -160,22 +160,6 @@
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
-/order-status
-  X-Robots-Tag: noindex, nofollow, noarchive
-  Cache-Control: no-store, max-age=0, no-transform
-
-/order-status.html
-  X-Robots-Tag: noindex, nofollow, noarchive
-  Cache-Control: no-store, max-age=0, no-transform
-
-/order-tracking
-  X-Robots-Tag: noindex, nofollow, noarchive
-  Cache-Control: no-store, max-age=0, no-transform
-
-/order-tracking.html
-  X-Robots-Tag: noindex, nofollow, noarchive
-  Cache-Control: no-store, max-age=0, no-transform
-
 /vendor/*
   Cache-Control: public, max-age=31536000, immutable
 
