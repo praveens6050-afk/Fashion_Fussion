@@ -64,6 +64,7 @@
     .btn:hover{background:#152541;transform:translateY(-1px)}
     .btn:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
     .btn:disabled{transform:none;opacity:.58;cursor:not-allowed}
+    .security-note{margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.5;text-align:center}
     .foot{padding-top:20px;margin-top:24px;border-top:1px solid #edf0f4;text-align:center;color:var(--muted);font-size:14px}
     .foot a{color:#263f68;font-weight:700}
     .foot a:hover{text-decoration:underline;text-underline-offset:3px}
@@ -83,12 +84,12 @@
         <h1 id="admin-sign-in-title">Admin sign in</h1>
         <p class="sub">Enter your administrator credentials</p>
         <noscript><p class="noscript" role="alert">JavaScript is required to securely sign in to the administrator portal.</p></noscript>
-        <form id="form" method="post" action="/login" autocomplete="on">
+        <form id="form" method="post" action="/login" autocomplete="on" aria-labelledby="admin-sign-in-title" data-security-control="server-side-rate-limit">
           <div id="banner" class="banner" role="status" aria-live="polite" aria-atomic="true"></div>
           <div class="field">
             <label for="email">Email address</label>
-            <span id="emailHint" class="sr-only">Enter the email address assigned to your administrator account.</span>
-            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" aria-describedby="emailHint" required>
+            <span id="emailHint" class="sr-only">Enter the email address assigned to your administrator account in email format, for example name@company.com.</span>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="name@company.com" aria-describedby="emailHint" autofocus required>
           </div>
           <div class="field">
             <label for="password">Password</label>
@@ -104,12 +105,13 @@
             <a id="forgot" class="link" href="/reset-password">Forgot password?</a>
           </div>
           <button id="submit" class="btn" type="submit">Sign in to Admin</button>
+          <p class="security-note" id="securityNote">Protected by server-side rate limiting. Repeated sign-in attempts are temporarily blocked.</p>
         </form>
         <p class="foot">Customer website: <a href="https://fashionfussion.in" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab">fashionfussion.in<span class="external-mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 4h6v6"></path><path d="M12 4 5 11"></path><path d="M11 9v3H4V5h3"></path></svg></span></a></p>
       </div>
     </section>
     <section class="brand" aria-labelledby="admin-hero-title">
-      <a class="brand-logo" href="https://fashionfussion.in/" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab" translate="no" spellcheck="false" data-brand-name="true">Fashion Fussion</a>
+      <a class="brand-logo" href="https://fashionfussion.in/" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab" translate="no" spellcheck="false" data-brand-name="true">Fashion Fussion<span class="external-mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 4h6v6"></path><path d="M12 4 5 11"></path><path d="M11 9v3H4V5h3"></path></svg></span></a>
       <span class="stamp">Administrator access</span>
       <h2 id="admin-hero-title" class="brand-title">Secure Admin Center</h2>
       <p class="brand-copy">Sign in with an administrator account. Customer and seller accounts cannot access this panel.</p>
