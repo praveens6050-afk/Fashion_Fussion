@@ -141,7 +141,7 @@ jobs:
         working-directory: customer-panel
         run: |
           set -euo pipefail
-          if grep -RInE --exclude-dir=node_modules --exclude-dir=dist --exclude='*.example' '(service_role|SUPABASE_SERVICE_ROLE_KEY)[[:space:]]*[:=][[:space:]]*["'"'][A-Za-z0-9._-]{20,}' .; then
+          if grep -RInE --exclude-dir=node_modules --exclude-dir=dist --exclude='*.example' "(service_role|SUPABASE_SERVICE_ROLE_KEY)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9._-]{20,}" .; then
             echo 'Possible committed privileged Supabase credential detected.' >&2
             exit 1
           fi
