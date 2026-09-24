@@ -10,9 +10,12 @@
   }[char]));
   const money = value => '₹' + Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
-  const { data: { user }, error: userError } = await window.supabaseClient.auth.getUser();
+  // supabase-config.js initializes the client asynchronously. Protected pages must
+  // wait for that shared readiness promise instead of racing window.supabaseClient.
+  const client = window.supabaseClient || await window.ffSupabaseReady;
+  const { data: { user }, error: userError } = await client.auth.getUser();
   if (userError || !user) {
-    location.href = 'login.html?redirect=' + encodeURIComponent('wishlist.html');
+    location.replace('login.html?redirect=' + encodeURIComponent('wishlist.html'));
     return;
   }
 
@@ -33,7 +36,7 @@
   }
 
   async function load() {
-    const { data: rows, error } = await window.supabaseClient
+    const { data: rows, error } = await client
       .from('customer_wishlist')
       .select('id,product_id,created_at')
       .eq('user_id', user.id)
@@ -51,7 +54,7 @@
     }
 
     const ids = rows.map(row => row.product_id);
-    const { data: products, error: productError } = await window.supabaseClient
+    const { data: products, error: productError } = await client
       .from('products')
       .select('id,name,category,price,image_url,is_active,gst_rate')
       .in('id', ids);
@@ -78,7 +81,7 @@
     list.querySelectorAll('[data-remove]').forEach(button => {
       button.onclick = async () => {
         button.disabled = true;
-        const { error: removeError } = await window.supabaseClient
+        const { error: removeError } = await client
           .from('customer_wishlist')
           .delete()
           .eq('user_id', user.id)
