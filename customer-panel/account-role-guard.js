@@ -9,6 +9,11 @@
   }
   if(!window.supabaseClient)return;
 
+  function adminTarget(){
+    const origin=String(window.FF_ADMIN_ORIGIN||'https://admin.fashionfussion.in').replace(/\/+$/,'');
+    return origin+'/';
+  }
+
   async function guard(){
     try{
       const {data:{user}}=await window.supabaseClient.auth.getUser();
@@ -26,7 +31,7 @@
       }
 
       if(profile?.is_admin===true){
-        window.location.replace('admin.html');
+        window.location.replace(adminTarget());
       }
     }catch(error){
       console.error('Account role guard failed:',error);
