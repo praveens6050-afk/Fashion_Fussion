@@ -71,6 +71,20 @@ jobs:
           grep -Fq 'Strict-Transport-Security:' dist/_headers
           grep -Fq 'https://static.cloudflareinsights.com' dist/_headers
 
+      - name: Verify immutable release metadata
+        working-directory: admin-panel
+        run: |
+          set -euo pipefail
+          test -s dist/release.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const release=JSON.parse(fs.readFileSync('dist/release.json','utf8'));
+          if(release.git_sha!==process.env.GITHUB_SHA) throw new Error(`release git_sha mismatch: ${release.git_sha} != ${process.env.GITHUB_SHA}`);
+          if(release.branch!=='cloudflare-admin') throw new Error(`release branch mismatch: ${release.branch}`);
+          if(!release.built_at || Number.isNaN(Date.parse(release.built_at))) throw new Error('release built_at invalid');
+          console.log('PASS Admin release metadata');
+          NODE
+
       - name: Verify built HTML local assets
         working-directory: admin-panel
         run: |
