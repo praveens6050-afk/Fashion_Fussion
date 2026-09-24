@@ -1,1 +1,0 @@
-module.exports = require('../backend/api/process-return-refund.js');
