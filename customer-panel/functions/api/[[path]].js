@@ -8,7 +8,7 @@ import refundStatus from '../../api/refund-status.js';
 import release from '../../api/release.js';
 import shippingStatus from '../../api/shipping-status.js';
 import verifyPayment from '../../api/verify-payment.js';
-import { runVercelHandler } from '../_vercel-adapter.js';
+import { runNodeHandler } from '../_node-handler-bridge.js';
 
 const handlers = {
   'cancel-order': cancelOrder,
@@ -32,12 +32,12 @@ export function onRequest(context) {
     url.pathname = '/api/refund-status';
     url.searchParams.set('mode', 'return-refund');
     const request = new Request(url.toString(), context.request);
-    return runVercelHandler(refundStatus, { ...context, request });
+    return runNodeHandler(refundStatus, { ...context, request });
   }
 
   const handler = handlers[route];
   if (!handler) {
     return Response.json({ error: 'API route not found' }, { status: 404 });
   }
-  return runVercelHandler(handler, context);
+  return runNodeHandler(handler, context);
 }
