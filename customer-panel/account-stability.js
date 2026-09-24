@@ -1,6 +1,8 @@
 (function(){
 'use strict';
-if((location.pathname.split('/').pop()||'index.html')!=='account.html')return;
+const leaf=location.pathname.replace(/\/+$/,'').split('/').pop()||'account';
+const page=leaf.includes('.')?leaf:leaf+'.html';
+if(page!=='account.html')return;
 const $=id=>document.getElementById(id);
 const titles={orders:['My Orders','Track purchases, delivery progress, cancellations and refunds.'],profile:['Profile','Manage your personal account information.'],addresses:['Addresses','Manage saved delivery addresses and your default checkout address.'],refunds:['Payments & Refunds','Review refund progress linked to your orders.']};
 const extensionViews=new Set(['returns','business']);
