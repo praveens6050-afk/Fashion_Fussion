@@ -106,12 +106,15 @@ function loadSellerPayoutProvider(){
 let startupFailTimer=null;
 if(!isSellerLogin){
   startupFailTimer=setTimeout(()=>{
-    if(document.documentElement.classList.contains('seller-live-loading')){
-      console.error('[Seller Center] Startup timed out');
-      document.documentElement.classList.remove('seller-live-loading');
-      location.replace('login.html?startup=timeout');
+    if(!document.documentElement.classList.contains('seller-live-loading'))return;
+    if(window.__sellerLiveSellerVerified===true&&window.SellerLiveIntegration&&window.SellerCatalogBridge){
+      console.warn('[Seller Center] Verified seller catalog bootstrap is still in progress',window.__sellerLiveBootStage||'unknown');
+      return;
     }
-  },18000);
+    console.error('[Seller Center] Startup verification timed out',window.__sellerLiveBootStage||'unknown');
+    document.documentElement.classList.remove('seller-live-loading');
+    location.replace('login.html?startup=timeout');
+  },45000);
 }
 
 window.ffSellerSupabaseReady.then(()=>{
@@ -120,7 +123,7 @@ window.ffSellerSupabaseReady.then(()=>{
   window.__sellerLiveIntegrationBooted=false;
   if(document.querySelector('script[data-seller-live-recovery]')){loadSellerPayoutProvider();return}
   const script=document.createElement('script');
-  script.src='seller-live-integration.js?v=20260924-startup-fix';
+  script.src='seller-live-integration.js?v=20260925-bootstrap-retry';
   script.async=false;
   script.setAttribute('data-seller-live-recovery','true');
   appendScriptWhenReady(script,'body').then(loadSellerPayoutProvider).catch(error=>{
