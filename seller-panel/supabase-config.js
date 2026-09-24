@@ -7,6 +7,7 @@ const SUPABASE_FALLBACK_URLS=[
   'https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js?ff-retry=1'
 ];
 const SELLER_REMEMBER_KEY='ff_seller_remember_mode';
+const SELLER_LIVE_VERSION='20260925-authoritative-withdraw-v2';
 
 const sellerAuthStorage={
   getItem(key){return (localStorage.getItem(SELLER_REMEMBER_KEY)==='true'?localStorage:sessionStorage).getItem(key)},
@@ -86,6 +87,12 @@ function sellerLiveProductFormData(){
 }
 
 if(!isSellerLogin){
+  // Block any stale parser-level seller-live-integration.js tag from booting before the
+  // versioned recovery loader below. The current integration understands this lock and
+  // replaces it with its own version marker when it starts.
+  window.__sellerLiveIntegrationBooted=true;
+  window.__sellerLiveIntegrationVersion='bootstrap-lock:'+SELLER_LIVE_VERSION;
+
   document.addEventListener('submit',event=>{
     if(event.target?.id!=='productForm')return;
     event.preventDefault();
@@ -156,12 +163,12 @@ if(!isSellerLogin){
 window.ffSellerSupabaseReady.then(()=>{
   if(isSellerLogin){if(startupFailTimer)clearTimeout(startupFailTimer);return}
   if(window.SellerLiveIntegration){loadSellerPayoutProvider();return}
-  window.__sellerLiveIntegrationBooted=false;
   if(document.querySelector('script[data-seller-live-recovery]')){loadSellerPayoutProvider();return}
   const script=document.createElement('script');
-  script.src='seller-live-integration.js?v=20260925-bootstrap-retry';
+  script.src='seller-live-integration.js?v='+encodeURIComponent(SELLER_LIVE_VERSION);
   script.async=false;
   script.setAttribute('data-seller-live-recovery','true');
+  script.setAttribute('data-seller-live-version',SELLER_LIVE_VERSION);
   appendScriptWhenReady(script,'body').then(loadSellerPayoutProvider).catch(error=>{
     console.error('[Seller Center] Live integration recovery failed',error);
     document.documentElement.classList.remove('seller-live-loading');
