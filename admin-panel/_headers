@@ -50,24 +50,6 @@
 /admin-login.js
   Cache-Control: no-cache, max-age=0, must-revalidate
 
-/admin-login.20260923.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/admin-login.20260923b.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/admin-login.20260923c.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/admin-login.20260923d.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/admin-login.20260923e.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/admin-login.20260923f.js
-  Cache-Control: public, max-age=31536000, immutable
-
 /favicon.svg
   Cache-Control: public, max-age=31536000, immutable
 
