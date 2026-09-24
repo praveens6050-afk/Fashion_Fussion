@@ -10,6 +10,7 @@ const submit=document.getElementById('submit');
 const forgot=document.getElementById('forgot');
 const banner=document.getElementById('banner');
 const passwordToggle=document.getElementById('passwordToggle');
+const passwordToggleText=document.getElementById('passwordToggleText');
 let db=null;
 let clientPromise=null;
 
@@ -69,14 +70,17 @@ async function redirectExisting(){
 
 function setPasswordToggleState(reveal){
   if(!password||!passwordToggle)return;
-  const label=reveal?'Hide administrator password':'Show administrator password';
   password.type=reveal?'text':'password';
   passwordToggle.setAttribute('aria-pressed',String(reveal));
-  passwordToggle.setAttribute('aria-label',label);
-  passwordToggle.setAttribute('title',label);
-  passwordToggle.innerHTML=reveal
-    ? '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3l18 18"></path><path d="M10.6 10.7a2.5 2.5 0 0 0 3.5 3.5"></path><path d="M9.9 5.2A11.7 11.7 0 0 1 12 5c6.5 0 10 7 10 7a16.5 16.5 0 0 1-3 3.8"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4-.8"></path></svg>'
-    : '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path><circle cx="12" cy="12" r="2.5"></circle></svg>';
+  if(passwordToggleText){
+    passwordToggleText.textContent=reveal?'Hide administrator password':'Show administrator password';
+  }
+  const icon=passwordToggle.querySelector('svg');
+  if(icon){
+    icon.innerHTML=reveal
+      ? '<path d="M3 3l18 18"></path><path d="M10.6 10.7a2.5 2.5 0 0 0 3.5 3.5"></path><path d="M9.9 5.2A11.7 11.7 0 0 1 12 5c6.5 0 10 7 10 7a16.5 16.5 0 0 1-3 3.8"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4-.8"></path>'
+      : '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path><circle cx="12" cy="12" r="2.5"></circle>';
+  }
 }
 
 async function checkLoginRateLimit(mail){
@@ -99,6 +103,11 @@ async function submitLogin(){
   if(!submit||submit.disabled)return;
   const mail=email?.value.trim()||'';
   if(!mail||!password?.value){show('Enter your administrator email and password.');return;}
+  if(email&&!email.checkValidity()){
+    show('Enter a valid administrator email address.');
+    email.focus({preventScroll:true});
+    return;
+  }
   submit.disabled=true;
   submit.textContent='Checking access…';
   try{
@@ -131,6 +140,10 @@ if(passwordToggle){
   });
 }
 
+form?.addEventListener('submit',event=>{
+  event.preventDefault();
+  submitLogin();
+});
 submit?.addEventListener('click',submitLogin);
 for(const field of [email,password]){
   field?.addEventListener('keydown',event=>{
