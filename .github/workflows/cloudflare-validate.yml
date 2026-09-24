@@ -21,6 +21,13 @@ jobs:
           node-version: '22'
       - name: Install build dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Validate customer commerce sources
+        run: |
+          node --check variant-commerce.js
+          node --check variant-cart-ui.js
+          node --check csp-cart.js
+          node --check checkout.js
+          node backend/test-customer.js
       - name: Build static assets
         run: npm run build
       - name: Validate Pages Functions bundle
@@ -35,6 +42,8 @@ jobs:
           test -s dist/homepage.bundle.css
           test -s dist/homepage.runtime.js
           test -s .cf-functions-test/index.js
+          grep -q 'variant-commerce.js?v=3' dist/cart.html
+          grep -q 'variant-cart-ui.js?v=2' dist/cart.html
       - name: Verify homepage performance and accessibility contract
         run: |
           grep -q 'data-supabase-sdk="local"' dist/index.html
