@@ -2,7 +2,7 @@ const { withAdminRequest } = require('../backend/admin-auth-bootstrap.js');
 
 function preflight(req, res) {
   const origin = String(req?.headers?.origin || '').trim();
-  const allowed = String(process.env.ALLOWED_ORIGIN || 'https://admin.fashionfussion.in,https://fashion-fussion-admin.vercel.app')
+  const allowed = String(process.env.ALLOWED_ORIGIN || 'https://admin.fashionfussion.in')
     .split(',').map(value => value.trim()).filter(Boolean);
   if (origin && allowed.includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Vary', 'Origin');
