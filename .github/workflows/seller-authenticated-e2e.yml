@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          timeout --signal=TERM --kill-after=5s 60s node .github/seller-bootstrap-diagnostic.cjs
+          timeout --signal=TERM --kill-after=5s 60s node .github/seller-dashboard-bootstrap-diagnostic.cjs
 
       - name: Run authenticated Seller lifecycle
         shell: bash
