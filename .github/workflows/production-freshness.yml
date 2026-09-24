@@ -45,7 +45,7 @@ jobs:
             printf '%s' "$body" | grep -qi '<html'
             echo "PASS $path"
           done
-          for asset in /seller-live-integration.js /product-image-upload.js /navigation-fix.js; do
+          for asset in /seller-live-integration.js /product-image-upload.js /navigation-fix.js /seller-payout-provider.js; do
             curl --fail --silent --show-error --max-time 20 "https://seller.fashionfussion.in$asset" > /dev/null
             echo "PASS $asset"
           done
@@ -55,6 +55,13 @@ jobs:
           printf '%s\n' "$headers" | grep -qi '^strict-transport-security:'
           printf '%s\n' "$headers" | grep -qi '^content-security-policy:'
           printf '%s\n' "$headers" | grep -qi '^cache-control: no-store'
+
+      - name: Verify Seller payout readiness boundary
+        run: |
+          set -euo pipefail
+          body="$(curl --fail --silent --show-error --max-time 20 https://seller.fashionfussion.in/api/payout-profile)"
+          node -e "const x=JSON.parse(process.argv[1]);if(x.ok!==true||typeof x.configured!=='boolean'||!['disabled','gateway','direct'].includes(x.mode))process.exit(1)" "$body"
+          echo 'PASS Seller payout readiness route (GET only; no payout/tokenization performed)'
 
       - name: Install Chromium human-smoke runtime
         run: |
