@@ -48,6 +48,42 @@ jobs:
           grep -qi '^x-content-type-options: nosniff' <<<"$headers"
           grep -qi '^content-security-policy:' <<<"$headers"
 
+      - name: Verify private-route cache and indexing headers
+        run: |
+          node - <<'NODE'
+          (async()=>{
+            const base='https://fashionfussion.in';
+            const privateRoutes=['/account','/cart','/checkout','/quote-checkout','/login','/signup','/reset-password','/wishlist','/notifications','/coupons','/gift-cards','/order-confirmation','/order-details','/order-status','/order-tracking'];
+            for(const path of privateRoutes){
+              const response=await fetch(base+path,{redirect:'follow'});
+              if(!response.ok) throw new Error(`${path} returned ${response.status}`);
+              const cache=String(response.headers.get('cache-control')||'').toLowerCase();
+              const robots=String(response.headers.get('x-robots-tag')||'').toLowerCase();
+              if(!cache.includes('no-store')) throw new Error(`${path} missing no-store: ${cache}`);
+              if(!robots.includes('noindex')||!robots.includes('nofollow')||!robots.includes('noarchive')) throw new Error(`${path} missing private X-Robots-Tag: ${robots}`);
+              console.log(`PASS private headers ${path}`);
+            }
+            for(const path of ['/search','/product']){
+              const response=await fetch(base+path,{redirect:'follow'});
+              if(!response.ok) throw new Error(`${path} returned ${response.status}`);
+              const robots=String(response.headers.get('x-robots-tag')||'').toLowerCase();
+              if(!robots.includes('noindex')) throw new Error(`${path} missing noindex: ${robots}`);
+              console.log(`PASS noindex ${path}`);
+            }
+            const home=await fetch(base+'/');
+            const homeCsp=String(home.headers.get('content-security-policy')||'');
+            if(/style-src[^;]*'unsafe-inline'/i.test(homeCsp)) throw new Error('Homepage unexpectedly allows unsafe-inline styles');
+            if(/cdn\.razorpay\.com/i.test(homeCsp)) throw new Error('Homepage unexpectedly allows Razorpay risk script CDN');
+            for(const path of ['/checkout','/quote-checkout']){
+              const response=await fetch(base+path,{redirect:'follow'});
+              const csp=String(response.headers.get('content-security-policy')||'');
+              if(!/style-src[^;]*'unsafe-inline'/i.test(csp)) throw new Error(`${path} missing Razorpay inline-style CSP allowance`);
+              if(!/cdn\.razorpay\.com/i.test(csp)) throw new Error(`${path} missing Razorpay risk script CDN`);
+              console.log(`PASS payment CSP ${path}`);
+            }
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
+
       - name: Customer critical-page smoke
         run: |
           node - <<'NODE'
