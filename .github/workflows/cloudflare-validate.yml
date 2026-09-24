@@ -57,16 +57,25 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq 'variant-commerce.js?v=4' product.html
-          grep -Fq 'product-variants.js?v=2' product.html
+          grep -Fq 'product-variants.js?v=4' product.html
+          grep -Fq 'csp-product.js?v=3' product.html
           grep -Fq 'variant-commerce.js?v=4' search.html
-          grep -Fq 'catalog-cart-entry.js?v=2' search.html
+          grep -Fq 'catalog-cart-entry.js?v=3' search.html
           grep -Fq 'variant-commerce.js?v=4' wishlist.html
-          grep -Fq 'catalog-cart-entry.js?v=2' wishlist.html
+          grep -Fq 'catalog-cart-entry.js?v=3' wishlist.html
+          grep -Fq 'variant-commerce.js?v=4' cart.html
+          grep -Fq 'variant-cart-ui.js?v=3' cart.html
+          grep -Fq 'variant-commerce.js?v=4' checkout.html
+          grep -Fq 'variant-cart-ui.js?v=3' checkout.html
           grep -Fq 'has_variants' csp-product.js
           grep -Fq 'addSyncedLine' csp-product.js
+          grep -Fq 'selectedBasePrice' csp-product.js
           grep -Fq 'get_variant_availability' product-variants.js
           grep -Fq 'syncActions' product-variants.js
           ! grep -Fq 'captureCartAdd' product-variants.js
+          grep -Fq "leaf.includes('.')?leaf:leaf+'.html'" catalog-cart-entry.js
+          grep -Fq "leaf.includes('.')?leaf:leaf+'.html'" variant-cart-ui.js
+          grep -Fq "leaf.includes('.')?leaf:leaf+'.html'" desktop-checkout-loader.js
 
       - name: Build static assets
         working-directory: customer-panel
@@ -88,12 +97,14 @@ jobs:
           test -s .cf-functions-test/index.js
           test ! -e "functions/_${legacy}-adapter.js"
           test ! -e "dist/${legacy}.json"
-          grep -q 'variant-commerce.js?v=3' dist/cart.html
-          grep -q 'variant-cart-ui.js?v=2' dist/cart.html
+          grep -q 'variant-commerce.js?v=4' dist/cart.html
+          grep -q 'variant-cart-ui.js?v=3' dist/cart.html
+          grep -q 'variant-commerce.js?v=4' dist/checkout.html
+          grep -q 'variant-cart-ui.js?v=3' dist/checkout.html
           grep -q 'variant-commerce.js?v=4' dist/product.html
-          grep -q 'product-variants.js?v=2' dist/product.html
-          grep -q 'catalog-cart-entry.js?v=2' dist/search.html
-          grep -q 'catalog-cart-entry.js?v=2' dist/wishlist.html
+          grep -q 'product-variants.js?v=4' dist/product.html
+          grep -q 'catalog-cart-entry.js?v=3' dist/search.html
+          grep -q 'catalog-cart-entry.js?v=3' dist/wishlist.html
 
       - name: Verify Pages Functions and API boundary
         working-directory: customer-panel
