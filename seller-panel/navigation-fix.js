@@ -67,6 +67,33 @@ function resetProductsFilterBeforeCapturedNavigation(){
     if(all&&!all.classList.contains('active'))all.click();
   },true);
 }
+function clearSellerAuthStorage(){
+  for(const storage of [localStorage,sessionStorage]){
+    try{
+      storage.removeItem('ff_seller_session_v1');
+      for(let i=storage.length-1;i>=0;i--){
+        const key=String(storage.key(i)||'');
+        if(/^sb-.*-auth-token/i.test(key))storage.removeItem(key);
+      }
+    }catch{}
+  }
+}
+function bindLogoutGuard(){
+  if(window.__sellerLogoutCaptureBound)return;
+  window.__sellerLogoutCaptureBound=true;
+  window.addEventListener('click',event=>{
+    const target=event.target;
+    if(!(target instanceof Element)||!target.closest('#logoutSeller'))return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    clearSellerAuthStorage();
+    try{
+      const pending=window.supabaseClient?.auth?.signOut?.({scope:'local'});
+      if(pending&&typeof pending.catch==='function')pending.catch(()=>{});
+    }catch{}
+    location.replace('/login?signedout=1');
+  },true);
+}
 function activate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+view));
   document.querySelectorAll('.nav-item[data-view]').forEach(btn=>btn.classList.toggle('active',btn.dataset.view===view));
@@ -93,6 +120,7 @@ function bind(){
   ensureImageUploader();
   watchWithdrawnState();
   resetProductsFilterBeforeCapturedNavigation();
+  bindLogoutGuard();
   document.querySelectorAll('.nav-item[data-view]').forEach(btn=>{
     if(btn.dataset.view==='support-live')return;
     btn.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();activate(btn.dataset.view)},true);
