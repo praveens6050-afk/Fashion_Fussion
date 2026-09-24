@@ -20,12 +20,7 @@ const money=value=>'₹'+Number(value||0).toLocaleString('en-IN',{maximumFractio
 const statusHtml=status=>`<span class="status ${status}">${STATUS_LABELS[status]||status}</span>`;
 const safeImage=url=>{try{const parsed=new URL(url);return ['http:','https:'].includes(parsed.protocol)?url:''}catch{return''}};
 
-function loadProducts(){
-  try{
-    const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    return Array.isArray(stored)&&stored.length?stored:structuredClone(starterProducts);
-  }catch{return structuredClone(starterProducts)}
-}
+function loadProducts(){return []}
 function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(products))}
 function uid(){return 'SP-'+String(Math.max(1000,...products.map(p=>Number(String(p.id).replace(/\D/g,''))||0))+1)}
 function formatDate(value){if(!value)return'—';const date=new Date(value);if(Number.isNaN(date.getTime()))return'—';return new Intl.DateTimeFormat('en-IN',{day:'2-digit',month:'short',year:'numeric'}).format(date)}
@@ -112,6 +107,7 @@ function validateProduct(data,id){
 }
 function submitForm(event){
   event.preventDefault();
+  if(!window.SellerLiveIntegration){toast('Seller catalog is still loading. Please refresh and try again.');return}
   const data=formPayload();
   const error=validateProduct(data,editingId);
   if(error){toast(error);return}
@@ -129,12 +125,14 @@ function submitForm(event){
 
 function syncTabs(){document.querySelectorAll('#statusTabs .tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.status===activeStatus))}
 function duplicateProduct(id){
+  if(!window.SellerLiveIntegration){toast('Seller catalog is unavailable. Please refresh and try again.');return}
   const source=products.find(p=>p.id===id);if(!source)return;
   const now=new Date().toISOString();
   const copy={...source,id:uid(),name:`${source.name} Copy`,sku:`${source.sku}-COPY-${Date.now().toString().slice(-4)}`,status:'pending',rejectionReason:'',createdAt:now,updatedAt:now,reviewedAt:''};
   products.unshift(copy);persist();renderAll();toast('Product duplicated as a new pending listing.');
 }
 function deleteProduct(id){
+  if(!window.SellerLiveIntegration){toast('Seller catalog is unavailable. Please refresh and try again.');return}
   const product=products.find(p=>p.id===id);if(!product)return;
   if(!confirm(`Delete “${product.name}”? This only removes it from this standalone seller prototype.`))return;
   products=products.filter(p=>p.id!==id);persist();renderAll();toast('Product deleted.');
@@ -145,8 +143,8 @@ function handleAction(target){
   const add=target.closest('[data-action="add-product"]');if(add){openDrawer();return true}
   const view=target.closest('[data-view]');if(view){switchView(view.dataset.view);return true}
   const edit=target.closest('[data-edit]');if(edit){openDrawer(edit.dataset.edit);return true}
-  const duplicate=target.closest('[data-duplicate]');if(duplicate){duplicateProduct(duplicate.dataset.duplicate);return true}
-  const del=target.closest('[data-delete]');if(del){deleteProduct(del.dataset.delete);return true}
+  const duplicate=target.closest('[data-duplicate]');if(duplicate){if(window.SellerLiveIntegration)return false;duplicateProduct(duplicate.dataset.duplicate);return true}
+  const del=target.closest('[data-delete]');if(del){if(window.SellerLiveIntegration)return false;deleteProduct(del.dataset.delete);return true}
   return false;
 }
 
