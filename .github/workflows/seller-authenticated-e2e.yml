@@ -55,5 +55,8 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
 
+      - name: Verify Seller auth eligibility
+        run: node .github/seller-auth-preflight.cjs
+
       - name: Run authenticated Seller lifecycle
         run: node .github/live-seller-authenticated-smoke.cjs
