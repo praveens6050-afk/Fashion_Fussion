@@ -65,8 +65,40 @@ function loadSellerStyle(href){
   document.head.appendChild(link);
 }
 
-loadSellerStyle('sidebar-compact.css?v=20260921-menu');
-loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
+function restoreSellerShell(){
+  if(document.documentElement.classList.contains('seller-live-loading'))return;
+  const main=document.querySelector('.main');
+  const sidebar=document.querySelector('.sidebar');
+  const topbar=document.querySelector('.topbar');
+  [main,sidebar,topbar].forEach(el=>{
+    if(!el)return;
+    el.style.setProperty('visibility','visible','important');
+    el.style.setProperty('opacity','1','important');
+  });
+  if(main)main.style.setProperty('display','block','important');
+  if(sidebar){
+    sidebar.style.setProperty('display','flex','important');
+    sidebar.style.setProperty('background','#101828','important');
+  }
+  if(topbar)topbar.style.setProperty('display','flex','important');
+
+  const core=['overview','products','review','payments','profile'];
+  core.forEach(view=>{
+    const button=document.querySelector(`.nav-item[data-view="${view}"]`);
+    if(button){button.hidden=false;button.removeAttribute('aria-hidden');button.removeAttribute('tabindex')}
+  });
+  if(!document.querySelector('.content.view.active')){
+    document.getElementById('view-overview')?.classList.add('active');
+    document.querySelector('.nav-item[data-view="overview"]')?.classList.add('active');
+  }
+}
+
+loadSellerStyle('sidebar-compact.css?v=20260924-shell-fix');
+loadSellerStyle('seller-hub-premium.css?v=20260924-shell-fix');
+loadSellerStyle('seller-shell-recovery.css?v=20260924-shell-fix');
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreSellerShell,1800)},{once:true});
+else{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreSellerShell,1800)}
 
 // Live catalog/review + support stay unchanged; operations and finance are seller-scoped through Supabase RPC.
 loadSellerModule('seller-storage-scope.js');
@@ -76,4 +108,4 @@ loadSellerModule('seller-support.js?v=2');
 loadSellerModule('seller-operations-live.js?v=20260924-live');
 loadSellerModule('seller-finance-compliance-live.js?v=20260924-live');
 loadSellerModule('seller-settlement-live.js?v=20260924-deduction-breakdown-v2');
-loadSellerModule('seller-hub-premium.js?v=20260921-hub');
+loadSellerModule('seller-hub-premium.js?v=20260924-shell-fix');
