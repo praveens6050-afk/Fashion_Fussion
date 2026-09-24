@@ -62,6 +62,21 @@ async function noHorizontalOverflow(page, label) {
 
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   observe(desktop, 'desktop');
+
+  await desktop.goto(BASE + '/order-details?id=987654321#tracking', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 10000 });
+  const orderDetailsReturn = new URL(desktop.url()).searchParams.get('redirect');
+  if (orderDetailsReturn !== 'order-details.html?id=987654321#tracking') {
+    throw new Error(`signed-out order details lost exact login return target: ${orderDetailsReturn}`);
+  }
+
+  await desktop.goto(BASE + '/order-confirmation?id=987654321', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 10000 });
+  const confirmationReturn = new URL(desktop.url()).searchParams.get('redirect');
+  if (confirmationReturn !== 'order-confirmation.html?id=987654321') {
+    throw new Error(`signed-out order confirmation lost exact login return target: ${confirmationReturn}`);
+  }
+
   await open(desktop, '/index.html');
   for (const selector of ['.brand', '#searchBox', '#searchBtn', '#productsGrid']) {
     if (!(await desktop.locator(selector).count())) throw new Error(`homepage missing ${selector}`);
@@ -184,7 +199,7 @@ async function noHorizontalOverflow(page, label) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, post-purchase auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
