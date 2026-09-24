@@ -72,13 +72,22 @@ if(!isSellerLogin){
   if(!localStorage.getItem('ff_seller_session_v1')&&!sessionStorage.getItem('ff_seller_session_v1'))sessionStorage.setItem('ff_seller_session_v1',JSON.stringify({sellerId:'LIVE',storeName:'Seller',email:'',name:'Seller',authProvider:'supabase-pending'}));
 }
 
+function loadSellerPayoutProvider(){
+  if(isSellerLogin||document.querySelector('script[data-seller-payout-provider]'))return;
+  const payout=document.createElement('script');
+  payout.src='seller-payout-provider.js?v=20260924';
+  payout.async=true;
+  payout.setAttribute('data-seller-payout-provider','true');
+  appendScriptWhenReady(payout,'body').catch(error=>console.error('[Seller Center] Payout provider integration failed',error));
+}
+
 window.ffSellerSupabaseReady.then(()=>{
-  if(isSellerLogin||window.SellerLiveIntegration)return;
+  if(isSellerLogin||window.SellerLiveIntegration){loadSellerPayoutProvider();return}
   window.__sellerLiveIntegrationBooted=false;
-  if(document.querySelector('script[data-seller-live-recovery]'))return;
+  if(document.querySelector('script[data-seller-live-recovery]')){loadSellerPayoutProvider();return}
   const script=document.createElement('script');
   script.src='seller-live-integration.js?v=20260921-supabase-recovery';
   script.async=false;
   script.setAttribute('data-seller-live-recovery','true');
-  appendScriptWhenReady(script,'body').catch(error=>{console.error('[Seller Center] Live integration recovery failed',error);document.documentElement.classList.remove('seller-live-loading')});
+  appendScriptWhenReady(script,'body').then(loadSellerPayoutProvider).catch(error=>{console.error('[Seller Center] Live integration recovery failed',error);document.documentElement.classList.remove('seller-live-loading')});
 }).catch(error=>{console.error('[Seller Center] Supabase startup failed',error);document.documentElement.classList.remove('seller-live-loading')});
