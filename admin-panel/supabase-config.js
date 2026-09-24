@@ -56,11 +56,12 @@ window.FF_API_ORIGIN='';
   window.ffSupabaseReady=window.ffAdminSupabaseReady;
 
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=true;s.setAttribute(marker,'true');document.head.appendChild(s)}
+  function addStyle(href,marker){if(document.querySelector('link['+marker+']'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=href;l.setAttribute(marker,'true');document.head.appendChild(l)}
   const page=(location.pathname.split('/').filter(Boolean).pop()||'login').toLowerCase();
   const isAdminPage=page==='admin'||page==='admin.html';
   function loadAdminModules(){
     add('admin-notifications.js?v=2','data-admin-notifications');
-    add('support-chat.js?v=10','data-support-chat');
+    add('support-chat.js?v=11','data-support-chat');
     add('admin-orders.js?v=2','data-admin-orders');
     add('admin-promotions.js?v=2','data-admin-promotions');
     add('admin-returns.js?v=1','data-admin-returns');
@@ -72,7 +73,8 @@ window.FF_API_ORIGIN='';
     add('admin-checkout-health.js?v=2','data-admin-checkout-health');
     add('admin-launch-readiness.js?v=2','data-admin-launch-readiness');
     add('admin-seller-approvals.js?v=1','data-admin-seller-approvals');
-    add('admin-seller-finance.js?v=1','data-admin-seller-finance');
+    addStyle('admin-seller-finance.css?v=20260924-ui','data-admin-seller-finance-style');
+    add('admin-seller-finance.js?v=20260924-ui','data-admin-seller-finance');
     add('admin-seller-payout-provider.js?v=1','data-admin-seller-payout-provider');
     add('admin-owner-center.js?v=2','data-admin-owner-center');
   }
