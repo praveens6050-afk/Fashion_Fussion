@@ -58,7 +58,7 @@ function renderProducts(){
     <td>${Number(p.stock||0).toLocaleString('en-IN')}</td>
     <td>${statusHtml(p.status)}</td>
     <td>${formatDate(p.updatedAt)}</td>
-    <td><div class="row-actions"><button class="small-btn" data-edit="${esc(p.id)}">Edit</button><button class="small-btn" data-duplicate="${esc(p.id)}">Duplicate</button><button class="small-btn danger" data-delete="${esc(p.id)}">Delete</button></div></td>
+    <td><div class="row-actions"><button class="small-btn" data-edit="${esc(p.id)}">Edit</button><button class="small-btn" data-duplicate="${esc(p.id)}">Duplicate</button><button class="small-btn danger" data-delete="${esc(p.id)}">Withdraw</button></div></td>
   </tr>`).join('');
   bindImageFallbacks();
 }
