@@ -11,7 +11,7 @@ permissions:
 jobs:
   live-seller:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,3 +55,11 @@ jobs:
           printf '%s\n' "$headers" | grep -qi '^strict-transport-security:'
           printf '%s\n' "$headers" | grep -qi '^content-security-policy:'
           printf '%s\n' "$headers" | grep -qi '^cache-control: no-store'
+
+      - name: Install Chromium human-smoke runtime
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Human browser journey on live Seller production
+        run: node .github/live-seller-browser-smoke.cjs
