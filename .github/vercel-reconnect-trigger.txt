@@ -1,2 +1,0 @@
-Trigger a fresh Vercel Git deployment after reconnecting the project integration.
-This file has no application runtime effect.
