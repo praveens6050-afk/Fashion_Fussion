@@ -22,6 +22,10 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
     document.head.appendChild(l);
   }
 
+  function createClient(sdk){
+    if(!window.supabaseClient)window.supabaseClient=sdk.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    return window.supabaseClient;
+  }
   function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
   async function ensureSupabase(){
     for(let i=0;i<80;i++){
@@ -31,11 +35,15 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
     throw new Error('Local Supabase SDK is unavailable');
   }
 
-  window.ffSupabaseReady=(async()=>{
-    const sdk=await ensureSupabase();
-    if(!window.supabaseClient)window.supabaseClient=sdk.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    return window.supabaseClient;
-  })();
+  // Most pages load the SDK immediately before this file. Initialize synchronously
+  // in that common path so following page scripts can safely use supabaseClient.
+  // Keep the readiness promise for deferred/dynamically loaded SDK scenarios.
+  if(window.supabase&&typeof window.supabase.createClient==='function'){
+    createClient(window.supabase);
+    window.ffSupabaseReady=Promise.resolve(window.supabaseClient);
+  }else{
+    window.ffSupabaseReady=(async()=>createClient(await ensureSupabase()))();
+  }
 
   const rawPage=location.pathname.split('/').pop()||'';
   const page=!rawPage?'index.html':rawPage.includes('.')?rawPage:rawPage+'.html';
