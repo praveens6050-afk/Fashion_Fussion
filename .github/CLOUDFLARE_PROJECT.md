@@ -19,6 +19,6 @@ Runtime variables/secrets:
 - `SHIPROCKET_PICKUP_PINCODE`
 
 Production origin: `https://admin.fashionfussion.in`.
-For preview testing, append the exact Admin `pages.dev` origin to `ALLOWED_ORIGIN` and add required Supabase Auth redirect URLs before testing login/reset flows.
+For preview testing, append only the exact Admin `pages.dev` origin to `ALLOWED_ORIGIN` and add required Supabase Auth redirect URLs before testing login/reset flows.
 
-Only `/api/*` invokes Pages Functions. Static Admin assets stay on the CDN. Keep Vercel live until Cloudflare Admin login, catalog, orders, refund and shipping flows pass.
+Only `/api/*` invokes Pages Functions. Static Admin assets stay on the Cloudflare CDN. Production verification covers Admin login/reset, catalog, Seller approvals, orders, refunds, shipping, checkout health and image uploads.
