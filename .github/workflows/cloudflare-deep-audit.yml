@@ -44,9 +44,14 @@ jobs:
           while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -type f -name '*.js' -not -path './dist/*' -not -path './node_modules/*' -print0)
           node --check cloudflare-build.mjs
 
-      - name: Build Seller static package
+      - name: Build Seller static package and Pages Functions
         working-directory: seller-panel
-        run: npm run build
+        run: |
+          set -euo pipefail
+          npm run build
+          test -s functions/api/payout-profile.js
+          npx --yes wrangler@latest pages functions build --compatibility-date=2026-09-24 --outdir=.cf-functions-deep-audit
+          test -s .cf-functions-deep-audit/index.js
 
       - name: Verify Seller security and routing
         working-directory: seller-panel
@@ -101,7 +106,7 @@ jobs:
           console.log(`PASS local asset integrity across ${htmlFiles.length} Seller HTML files`);
           NODE
 
-      - name: Verify catalog and image-upload integration
+      - name: Verify catalog, image-upload and payout integration
         working-directory: seller-panel
         run: |
           set -euo pipefail
@@ -110,6 +115,10 @@ jobs:
           grep -Fq "file.type='file'" product-image-upload.js
           grep -Fq 'submit_seller_product' seller-live-integration.js
           grep -Fq 'register_seller_profile' seller-live-integration.js auth.js
+          grep -Fq 'seller-payout-provider.js' supabase-config.js
+          grep -Fq '/api/payout-profile' seller-payout-provider.js
+          grep -Fq "operation:'create_fund_account'" functions/api/payout-profile.js
+          grep -Fq 'provider_fund_account_ref' functions/api/payout-profile.js
 
       - name: Reject committed privileged secrets
         working-directory: seller-panel
