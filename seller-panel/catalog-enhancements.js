@@ -120,7 +120,7 @@
     $('mediaPreview').querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.parentElement.textContent = 'IMAGE ERROR'; }, { once: true }));
   }
   function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   }
   function toggleBulk() {
     $('bulkFields').classList.toggle('advanced-hidden', !$('bulkEnabled').checked);
@@ -305,12 +305,21 @@
   $('image').addEventListener('input', renderMediaPreview);
   $('additionalImages').addEventListener('input', renderMediaPreview);
   document.addEventListener('submit', submitAdvanced, true);
-  document.addEventListener('click', event => {
-    const add = event.target.closest('[data-action="add-product"]');
-    const edit = event.target.closest('[data-edit]');
-    if (add) setTimeout(() => fillAdvanced(null), 0);
-    if (edit) setTimeout(() => fillAdvanced(bridge.getProducts().find(p => p.id === edit.dataset.edit)), 0);
-  });
+
+  const drawer = $('productDrawer');
+  let lastHydratedId = null;
+  function hydrateOpenDrawer() {
+    if (!drawer.classList.contains('open')) {
+      lastHydratedId = null;
+      return;
+    }
+    const id = $('productId').value || '';
+    if (lastHydratedId === id) return;
+    lastHydratedId = id;
+    const product = id ? bridge.getProducts().find(p => String(p.id) === String(id)) : null;
+    fillAdvanced(product || null);
+  }
+  new MutationObserver(hydrateOpenDrawer).observe(drawer, {attributes:true, attributeFilter:['class','aria-hidden']});
 
   fillAdvanced(null);
 })();
