@@ -19,10 +19,16 @@ async function copyTree(src, dest, relative = '') {
   }
 }
 
-async function makeSellerDashboardSdkNonBlocking() {
+async function hardenSellerDashboardBootstrap() {
   const indexPath = path.join(dist, 'index.html');
   let html = await readFile(indexPath, 'utf8');
   html = html.replace(/\s*<script\b[^>]*src=["']https:\/\/unpkg\.com\/@supabase\/supabase-js@2\.116\.0\/dist\/umd\/supabase\.js["'][^>]*><\/script>/i, '');
+  if (!/seller-auth-guard\.js/i.test(html)) {
+    html = html.replace(
+      /(<script\b[^>]*src=["']supabase-config\.js[^"']*["'][^>]*><\/script>)/i,
+      '<script src="seller-auth-guard.js?v=20260924"></script>\n  $1'
+    );
+  }
   await writeFile(indexPath, html, 'utf8');
 }
 
@@ -38,6 +44,6 @@ async function writeReleaseMetadata() {
 
 await rm(dist, { recursive: true, force: true });
 await copyTree(root, dist);
-await makeSellerDashboardSdkNonBlocking();
+await hardenSellerDashboardBootstrap();
 await writeReleaseMetadata();
 console.log('Cloudflare static build ready:', dist);
