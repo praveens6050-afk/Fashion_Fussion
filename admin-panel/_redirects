@@ -1,1 +1,3 @@
 / /login 302
+/admin-account /admin 302
+/admin-account.html /admin 302
