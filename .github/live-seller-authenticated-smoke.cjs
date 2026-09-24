@@ -68,9 +68,11 @@ async function signIn(page) {
   await page.waitForFunction(() => !document.querySelector('#loginSubmit')?.disabled, null, { timeout: 15000 });
   await page.locator('#loginEmail').fill(EMAIL);
   await page.locator('#loginPassword').fill(PASSWORD);
-  await page.locator('#loginSubmit').click();
   try {
-    await page.waitForURL(url => !['/login', '/login/'].includes(cleanPath(url.toString())), { timeout: 20000 });
+    await Promise.all([
+      page.waitForURL(url => !['/login', '/login/'].includes(cleanPath(url.toString())), { timeout: 30000 }),
+      page.locator('#loginSubmit').click()
+    ]);
   } catch (error) {
     const message = (await page.locator('#authMessage').textContent().catch(() => ''))?.trim();
     throw new Error(`Seller sign-in did not reach dashboard${message ? `: ${message}` : ''}`);
@@ -204,8 +206,10 @@ async function testLiveCatalogLifecycle(page) {
     await testEveryWorkspace(page);
     await testProfileNoopSave(page);
     await testLiveCatalogLifecycle(page);
-    await page.locator('#logoutSeller').click();
-    await page.waitForURL(url => ['/login', '/login/'].includes(cleanPath(url.toString())), { timeout: 15000 });
+    await Promise.all([
+      page.waitForURL(url => ['/login', '/login/'].includes(cleanPath(url.toString())), { timeout: 15000 }),
+      page.locator('#logoutSeller').click()
+    ]);
     if (!(await page.locator('#loginForm').count())) throw new Error('Seller sign-out did not return to login.');
   } finally {
     await browser.close();
