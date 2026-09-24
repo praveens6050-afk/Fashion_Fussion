@@ -3,7 +3,9 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdn.jsdelivr.net https://checkout.razorpay.com https://unpkg.com https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com https://cloudflareinsights.com; frame-src https://*.razorpay.com; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://checkout.razorpay.com https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com https://cloudflareinsights.com; frame-src https://*.razorpay.com; upgrade-insecure-requests
 
 /
   Link: <https://fashionfussion.in/>; rel="canonical"
@@ -46,24 +48,31 @@
 
 /account.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /cart.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /checkout.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /quote-checkout.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /login.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /signup.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /reset-password.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /wishlist.html
   X-Robots-Tag: noindex, nofollow, noarchive
@@ -79,12 +88,25 @@
 
 /order-confirmation.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /order-details.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /order-status.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
 
 /order-tracking.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0
+
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/homepage.bundle.css
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/homepage.runtime.js
+  Cache-Control: public, max-age=3600, must-revalidate
