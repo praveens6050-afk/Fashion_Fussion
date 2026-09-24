@@ -2,6 +2,7 @@
 .sidebar{
   padding:14px 12px!important;
   overflow:visible!important;
+  z-index:30!important;
 }
 .brand{
   padding:2px 8px 12px!important;
@@ -36,7 +37,7 @@
   opacity:1!important;
 }
 .sidebar-foot{
-  margin-top:10px!important;
+  margin-top:auto!important;
   gap:8px!important;
 }
 .prototype-note{
@@ -46,27 +47,28 @@
 .prototype-note strong{font-size:11px!important}
 .prototype-note small{font-size:10px!important;line-height:1.3!important}
 #logoutSeller{
-  position:fixed!important;
-  right:18px!important;
-  bottom:18px!important;
-  z-index:95!important;
-  width:auto!important;
-  min-width:112px!important;
+  position:relative!important;
+  right:auto!important;
+  bottom:auto!important;
+  z-index:1!important;
+  width:100%!important;
+  min-width:0!important;
   padding:10px 16px!important;
   background:#171e2c!important;
   color:#fff!important;
   border:1px solid #30394a!important;
   border-radius:10px!important;
-  box-shadow:0 12px 28px rgba(15,23,42,.22)!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.18)!important;
+  pointer-events:auto!important;
 }
 #logoutSeller:hover{background:#202a3b!important}
-.toast{bottom:74px!important}
+.toast{bottom:24px!important}
 @media(max-width:760px){
   .sidebar{height:auto!important;padding:12px!important}
   .brand{padding-bottom:10px!important}
   .nav{grid-template-columns:1fr 1fr!important;gap:4px!important}
   .nav-item{min-height:38px!important;font-size:13px!important}
   .sidebar-foot{margin-top:8px!important}
-  #logoutSeller{right:12px!important;bottom:12px!important;min-width:100px!important}
-  .toast{right:12px!important;bottom:66px!important}
+  #logoutSeller{width:100%!important;min-width:0!important}
+  .toast{right:12px!important;bottom:18px!important}
 }
