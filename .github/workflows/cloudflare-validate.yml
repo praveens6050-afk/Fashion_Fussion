@@ -77,6 +77,19 @@ jobs:
           grep -Fq "leaf.includes('.')?leaf:leaf+'.html'" variant-cart-ui.js
           grep -Fq "leaf.includes('.')?leaf:leaf+'.html'" desktop-checkout-loader.js
 
+      - name: Validate account and post-purchase entry points
+        working-directory: customer-panel
+        run: |
+          set -euo pipefail
+          for script in account-refunds.js account-returns.js account-business.js account-repeat-order.js account-cancel-promotion.js account-role-guard.js account-stability.js account-extension-router.js; do grep -Fq "$script?v=1" account.html; done
+          grep -Fq 'desktop-account-loader.js?v=1' account.html
+          grep -Fq 'csp-order-details.js?v=3' order-details.html
+          for script in order-shipping.js order-refund-tracker.js order-return-exchange.js order-cancel-promotion.js order-business-details.js; do grep -Fq "$script?v=1" order-details.html; done
+          grep -Fq 'csp-order-confirmation.js?v=3' order-confirmation.html
+          grep -Fq 'order-business-details.js?v=1' order-confirmation.html
+          grep -Fq 'Fashion Fussion' account.html
+          grep -Fq 'Fashion Fussion' order-details.html
+
       - name: Build static assets
         working-directory: customer-panel
         run: npm run build
@@ -90,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           legacy='ver''cel'
-          for f in index.html login.html signup.html cart.html checkout.html product.html search.html wishlist.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
+          for f in index.html login.html signup.html cart.html checkout.html product.html search.html wishlist.html account.html order-details.html order-confirmation.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/_node-handler-bridge.js
           test -s functions/api/[[path]].js
@@ -105,6 +118,11 @@ jobs:
           grep -q 'product-variants.js?v=4' dist/product.html
           grep -q 'catalog-cart-entry.js?v=3' dist/search.html
           grep -q 'catalog-cart-entry.js?v=3' dist/wishlist.html
+          for script in account-refunds.js account-returns.js account-business.js account-repeat-order.js account-cancel-promotion.js account-role-guard.js account-stability.js account-extension-router.js; do grep -Fq "$script?v=1" dist/account.html; done
+          grep -Fq 'csp-order-details.js?v=3' dist/order-details.html
+          for script in order-shipping.js order-refund-tracker.js order-return-exchange.js order-cancel-promotion.js order-business-details.js; do grep -Fq "$script?v=1" dist/order-details.html; done
+          grep -Fq 'csp-order-confirmation.js?v=3' dist/order-confirmation.html
+          grep -Fq 'order-business-details.js?v=1' dist/order-confirmation.html
 
       - name: Verify Pages Functions and API boundary
         working-directory: customer-panel
