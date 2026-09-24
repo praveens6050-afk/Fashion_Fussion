@@ -32,8 +32,6 @@ export async function onRequestPost({request,env}){
 
   const ip=(request.headers.get('CF-Connecting-IP')||request.headers.get('X-Forwarded-For')||'unknown').split(',')[0].trim();
   const rateKey='admin-login:'+await sha256Hex(`${ip}|${email}`);
-  const limit=8;
-  const windowSeconds=600;
 
   let rpcResponse;
   try{
@@ -44,7 +42,7 @@ export async function onRequestPost({request,env}){
         'apikey':serviceRoleKey,
         'Authorization':`Bearer ${serviceRoleKey}`
       },
-      body:JSON.stringify({p_key:rateKey,p_limit:limit,p_window_seconds:windowSeconds})
+      body:JSON.stringify({p_key:rateKey,p_limit:8,p_window_seconds:600})
     });
   }catch{
     return json({ok:false,error:'Login protection is unavailable'},503);
@@ -58,9 +56,9 @@ export async function onRequestPost({request,env}){
   const remaining=Math.max(0,Number(result?.remaining||0));
   const retryAfter=Math.max(0,Number(result?.retry_after_seconds||0));
   const rateHeaders={
-    'X-RateLimit-Limit':String(limit),
+    'X-RateLimit-Limit':'8',
     'X-RateLimit-Remaining':String(remaining),
-    'X-RateLimit-Policy':`${limit};w=${windowSeconds}`
+    'X-RateLimit-Policy':'8;w=600'
   };
   if(!allowed){
     return json({ok:false,allowed:false,retry_after_seconds:retryAfter},429,{...rateHeaders,'Retry-After':String(Math.max(1,retryAfter))});
