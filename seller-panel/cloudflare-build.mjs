@@ -1,4 +1,4 @@
-import { rm, mkdir, readdir, copyFile, writeFile } from 'node:fs/promises';
+import { rm, mkdir, readdir, copyFile, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -19,6 +19,13 @@ async function copyTree(src, dest, relative = '') {
   }
 }
 
+async function makeSellerDashboardSdkNonBlocking() {
+  const indexPath = path.join(dist, 'index.html');
+  let html = await readFile(indexPath, 'utf8');
+  html = html.replace(/\s*<script\b[^>]*src=["']https:\/\/unpkg\.com\/@supabase\/supabase-js@2\.116\.0\/dist\/umd\/supabase\.js["'][^>]*><\/script>/i, '');
+  await writeFile(indexPath, html, 'utf8');
+}
+
 async function writeReleaseMetadata() {
   const gitSha = String(process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA || '').trim();
   const branch = String(process.env.CF_PAGES_BRANCH || process.env.GITHUB_REF_NAME || '').trim();
@@ -31,5 +38,6 @@ async function writeReleaseMetadata() {
 
 await rm(dist, { recursive: true, force: true });
 await copyTree(root, dist);
+await makeSellerDashboardSdkNonBlocking();
 await writeReleaseMetadata();
 console.log('Cloudflare static build ready:', dist);
