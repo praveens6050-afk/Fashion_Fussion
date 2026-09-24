@@ -11,32 +11,66 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: seller-panel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Verify Cloudflare-only branch structure
+        run: |
+          set -euo pipefail
+          test -d seller-panel
+          test -d .github
+          test ! -e admin-panel
+          test ! -e customer-panel
+          if find . -path './.git' -prune -o -iname '*vercel*' -print | grep -q .; then
+            echo 'Legacy hosting artifact found:' >&2
+            find . -path './.git' -prune -o -iname '*vercel*' -print >&2
+            exit 1
+          fi
+          if grep -RIni --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist 'vercel' seller-panel .github; then
+            echo 'Legacy hosting reference found in Cloudflare Seller branch.' >&2
+            exit 1
+          fi
+
+      - name: Validate Seller JavaScript syntax
+        working-directory: seller-panel
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -maxdepth 1 -type f -name '*.js' -print0)
+
       - name: Build static assets
+        working-directory: seller-panel
         run: npm run build
+
       - name: Verify deployment artifacts
+        working-directory: seller-panel
         run: |
-          test -f dist/index.html
-          test -f dist/login.html
-          test -f dist/product-image-upload.js
-          test -f dist/navigation-fix.js
-          test -f dist/_headers
-          test -f dist/_redirects
-      - name: Verify Cloudflare route safety
+          set -euo pipefail
+          test -s dist/index.html
+          test -s dist/login.html
+          test -s dist/product-image-upload.js
+          test -s dist/navigation-fix.js
+          test -s dist/_headers
+          test -s dist/_redirects
+          test ! -e dist/vercel.json
+
+      - name: Verify Cloudflare route and security safety
+        working-directory: seller-panel
         run: |
+          set -euo pipefail
           if grep -Eq '^/login[[:space:]]+/login\.html[[:space:]]+200$' dist/_redirects; then
             echo 'Unsafe Seller login clean-route rewrite detected'
             exit 1
           fi
+          grep -Fq 'X-Content-Type-Options: nosniff' dist/_headers
+          grep -Fq 'X-Frame-Options:' dist/_headers
+
       - name: Verify Seller image upload wiring
+        working-directory: seller-panel
         run: |
+          set -euo pipefail
           grep -Fq "product-image-upload.js?v=20260922-readiness" navigation-fix.js
           grep -Fq "primary.type='hidden'" product-image-upload.js
           grep -Fq "file.type='file'" product-image-upload.js
