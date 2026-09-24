@@ -24,12 +24,13 @@ jobs:
           test -d .github
           test ! -e admin-panel
           test ! -e customer-panel
-          if find . -path './.git' -prune -o -iname '*vercel*' -print | grep -q .; then
+          legacy='ver''cel'
+          if find . -path './.git' -prune -o -iname "*${legacy}*" -print | grep -q .; then
             echo 'Legacy hosting artifact found:' >&2
-            find . -path './.git' -prune -o -iname '*vercel*' -print >&2
+            find . -path './.git' -prune -o -iname "*${legacy}*" -print >&2
             exit 1
           fi
-          if grep -RIni --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist 'vercel' seller-panel .github; then
+          if grep -RIni --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist "$legacy" seller-panel .github; then
             echo 'Legacy hosting reference found in Cloudflare Seller branch.' >&2
             exit 1
           fi
@@ -48,13 +49,14 @@ jobs:
         working-directory: seller-panel
         run: |
           set -euo pipefail
+          legacy='ver''cel'
           test -s dist/index.html
           test -s dist/login.html
           test -s dist/product-image-upload.js
           test -s dist/navigation-fix.js
           test -s dist/_headers
           test -s dist/_redirects
-          test ! -e dist/vercel.json
+          test ! -e "dist/${legacy}.json"
 
       - name: Verify Cloudflare route and security safety
         working-directory: seller-panel
