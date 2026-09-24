@@ -56,25 +56,30 @@ jobs:
           NODE
           test "$(grep -o '<link rel="stylesheet"' dist/login.html | wc -l)" -eq 0
           grep -Fq 'rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"' dist/login.html
-          ! grep -Fq '<form' dist/login.html
-          grep -Fq 'id="form" role="form" aria-labelledby="admin-sign-in-title"' dist/login.html
+          grep -Fq '<form id="form" autocomplete="on" aria-labelledby="admin-sign-in-title"' dist/login.html
+          ! grep -Eq '<form[^>]+method=' dist/login.html
+          ! grep -Eq '<form[^>]+action=' dist/login.html
           grep -Fq 'JavaScript is required to securely sign in to the administrator portal.' dist/login.html
           grep -Fq 'name="email"' dist/login.html
           grep -Fq 'autocomplete="email"' dist/login.html
           grep -Fq 'placeholder="name@company.com"' dist/login.html
-          grep -Fq 'autofocus required' dist/login.html
+          ! grep -Fq 'autofocus' dist/login.html
           grep -Fq 'name="password"' dist/login.html
           grep -Fq 'id="passwordToggle"' dist/login.html
-          grep -Fq 'data-i18n-key="admin.password.visibility" hidden' dist/login.html
-          ! grep -Fq 'aria-label="Show administrator password" title="Show administrator password"' dist/login.html
+          grep -Fq 'aria-labelledby="passwordToggleText"' dist/login.html
+          grep -Fq '<span id="passwordToggleText" class="sr-only">Show administrator password</span>' dist/login.html
+          ! grep -Fq 'aria-label="Show administrator password"' dist/login.html
+          ! grep -Fq 'title="Show administrator password"' dist/login.html
           ! grep -Fq 'Remember me' dist/login.html
           grep -Fq 'role="alert" aria-live="assertive" aria-atomic="true"' dist/login.html
-          grep -Fq 'Session-only admin access with server-side rate limiting.' dist/login.html
+          grep -Fq 'For your security, this admin session stays in this browser tab.' dist/login.html
           grep -Fq -- '--line:#667085' dist/login.html
           grep -Fq '.password-control:focus-within{border-color:var(--focus);outline:3px solid var(--focus);outline-offset:2px}' dist/login.html
-          grep -Fq '.password-control:focus-within .password-toggle{border-left-color:var(--focus)}' dist/login.html
+          grep -Fq '.password-toggle:focus-visible{outline:0;background:#e8efff;color:#123a8c;box-shadow:none}' dist/login.html
+          grep -Fq 'align-content:start' dist/login.html
+          grep -Fq '@media(max-width:800px)' dist/login.html
+          grep -Fq '.brand{display:none}' dist/login.html
           grep -Fq 'class="mobile-brand"' dist/login.html
-          grep -Fq '.brand .brand-logo{display:none}' dist/login.html
           grep -Fq '<a class="brand-logo" href="/login"' dist/login.html
           ! grep -Fq '<a class="brand-logo" href="https://fashionfussion.in/"' dist/login.html
           ! grep -Fq 'class="brand-logo" href="/login" aria-label=' dist/login.html
@@ -83,8 +88,7 @@ jobs:
           grep -Fq 'grid-template-areas:"form brand"' dist/login.html
           grep -Fq '<meta name="theme-color" content="#0b1220">' dist/login.html
           grep -Fq '<meta name="theme-color" content="#f6f7f9" media="(max-width:800px)">' dist/login.html
-          ! grep -Fq 'min-width:801px' dist/login.html
-          grep -Fq 'Content-Security-Policy:' dist/_headers
+          grep -Fq "frame-ancestors 'none'" dist/_headers
           grep -Fq '/assets/*' dist/_headers
           grep -Fq 'PerformanceObserver' dist/admin-login.js
           grep -Fq "storage:sessionStorage" dist/admin-login.js
@@ -95,10 +99,12 @@ jobs:
           grep -Fq 'if(clientPromise)return clientPromise' dist/admin-login.js
           grep -Fq 'if(!window.supabase' dist/admin-login.js
           grep -Fq "setAttribute('aria-pressed',String(reveal))" dist/admin-login.js
-          grep -Fq "setAttribute('aria-label',label)" dist/admin-login.js
-          grep -Fq "setAttribute('title',label)" dist/admin-login.js
+          grep -Fq "passwordToggleText.textContent=reveal?'Hide administrator password':'Show administrator password'" dist/admin-login.js
+          ! grep -Fq "setAttribute('aria-label'" dist/admin-login.js
+          ! grep -Fq "setAttribute('title'" dist/admin-login.js
           grep -Fq 'setPasswordToggleState(false);' dist/admin-login.js
           grep -Fq 'passwordToggle.hidden=false' dist/admin-login.js
+          grep -Fq "form?.addEventListener('submit'" dist/admin-login.js
           grep -Fq "banner.setAttribute('role',isError?'alert':'status')" dist/admin-login.js
           grep -Fq "banner.setAttribute('aria-live',isError?'assertive':'polite')" dist/admin-login.js
           grep -Fq "fetch('/api/admin-login-guard'" dist/admin-login.js
@@ -116,7 +122,9 @@ jobs:
           grep -Fq "request.headers.get('Sec-Fetch-Site')" functions/api/admin-login-guard.js
           grep -Fq "fetchSite!=='same-origin'" functions/api/admin-login-guard.js
           grep -Fq "headers.set('Content-Security-Policy',LOGIN_CSP)" functions/_middleware.js
-          grep -Fq "url.pathname!=='/login'&&url.pathname!=='/login.html'" functions/_middleware.js
+          grep -Fq "const PROTECTED_PATHS=new Set(['/','/login','/login.html']);" functions/_middleware.js
+          grep -Fq "headers.set('X-Frame-Options','DENY')" functions/_middleware.js
+          grep -Fq "frame-ancestors 'none'" functions/_middleware.js
           node --check functions/api/admin-login-guard.js
           node --check functions/_middleware.js
       - name: Verify heading and visual order
@@ -150,6 +158,7 @@ jobs:
           grep -Fq "save.disabled=Boolean(busy)" admin-product-image-upload.js
       - name: Verify API routing boundary
         run: |
+          grep -Fq '"/"' dist/_routes.json
           grep -Fq '"/api/*"' dist/_routes.json
           grep -Fq '"/login"' dist/_routes.json
           grep -Fq '"/login.html"' dist/_routes.json
