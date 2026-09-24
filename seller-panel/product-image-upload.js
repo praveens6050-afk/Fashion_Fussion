@@ -1,15 +1,22 @@
 'use strict';
 (()=>{
+  function setText(node,text){
+    if(node&&node.textContent!==text)node.textContent=text;
+  }
+  function clearDirectText(label){
+    if(!label)return;
+    [...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE&&node.textContent!=='').forEach(node=>{node.textContent=''});
+  }
   function ensureLabel(label,selector,text,before){
     if(!label)return null;
-    [...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).forEach(node=>{node.textContent=''});
+    clearDirectText(label);
     let title=label.querySelector(selector);
     if(!title){
       title=document.createElement('span');
       title.setAttribute(selector.slice(1,-1).split('=')[0],selector.includes('=')?selector.split('=')[1].replace(/["\]]/g,''):'true');
       label.insertBefore(title,before||label.firstChild);
     }
-    title.textContent=text;
+    setText(title,text);
     return title;
   }
   function sanitizeMediaUi(){
@@ -19,15 +26,10 @@
       primary.removeAttribute('placeholder');
       primary.setAttribute('aria-hidden','true');
       const label=primary.closest('label');
-      if(label){
-        [...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).forEach(node=>{node.textContent=''});
-        let title=label.querySelector('[data-primary-image-label]');
-        if(!title){title=document.createElement('span');title.setAttribute('data-primary-image-label','true');label.insertBefore(title,primary)}
-        title.textContent='Primary product image (optional)';
-      }
+      if(label)ensureLabel(label,'[data-primary-image-label]','Primary product image (optional)',primary);
       const section=primary.closest('.form-section');
       const intro=section?.querySelector(':scope > p');
-      if(intro)intro.textContent='Upload product image files directly. Max 5 MB per image.';
+      setText(intro,'Upload product image files directly. Max 5 MB per image.');
     }
     const additional=document.getElementById('additionalImages');
     if(additional){
@@ -36,12 +38,9 @@
       additional.setAttribute('aria-hidden','true');
       const label=additional.closest('label');
       if(label){
-        [...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).forEach(node=>{node.textContent=''});
-        let title=label.querySelector('[data-additional-image-label]');
-        if(!title){title=document.createElement('span');title.setAttribute('data-additional-image-label','true');label.insertBefore(title,additional)}
-        title.textContent='Additional product images (optional)';
+        ensureLabel(label,'[data-additional-image-label]','Additional product images (optional)',additional);
         const help=label.nextElementSibling;
-        if(help?.classList?.contains('field-help'))help.textContent='Upload up to 5 additional image files. Max 5 MB each.';
+        if(help?.classList?.contains('field-help'))setText(help,'Upload up to 5 additional image files. Max 5 MB each.');
       }
     }
   }
@@ -71,7 +70,8 @@
       if(!button.dataset.uploadIdleText)button.dataset.uploadIdleText=button.textContent||'Submit for review';
       const busy=state.busy>0;
       button.disabled=busy;
-      button.textContent=busy?'Uploading image…':button.dataset.uploadIdleText;
+      const nextText=busy?'Uploading image…':button.dataset.uploadIdleText;
+      if(button.textContent!==nextText)button.textContent=nextText;
       button.setAttribute('aria-busy',busy?'true':'false');
     }
     function validFile(file){
