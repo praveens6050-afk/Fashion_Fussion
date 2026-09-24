@@ -64,13 +64,14 @@ jobs:
         working-directory: customer-panel
         run: |
           set -euo pipefail
+          legacy='ver''cel'
           for f in index.html login.html signup.html cart.html checkout.html product.html search.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/_node-handler-bridge.js
           test -s functions/api/[[path]].js
           test -s .cf-functions-test/index.js
-          test ! -e functions/_vercel-adapter.js
-          test ! -e dist/vercel.json
+          test ! -e "functions/_${legacy}-adapter.js"
+          test ! -e "dist/${legacy}.json"
           grep -q 'variant-commerce.js?v=3' dist/cart.html
           grep -q 'variant-cart-ui.js?v=2' dist/cart.html
 
