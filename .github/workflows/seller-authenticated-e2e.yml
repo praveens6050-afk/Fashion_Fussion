@@ -1,0 +1,65 @@
+name: Cloudflare Authenticated Seller E2E
+
+on:
+  push:
+    branches: [cloudflare-seller]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authenticated-seller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      SELLER_E2E_EMAIL: ${{ secrets.SELLER_E2E_EMAIL }}
+      SELLER_E2E_PASSWORD: ${{ secrets.SELLER_E2E_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Detect dedicated Seller E2E credentials
+        id: credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${SELLER_E2E_EMAIL:-}" ] && [ -n "${SELLER_E2E_PASSWORD:-}" ]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+            echo 'Dedicated Seller E2E credentials are configured.'
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::Authenticated Seller E2E skipped. Add repository secrets SELLER_E2E_EMAIL and SELLER_E2E_PASSWORD for a dedicated active test seller account.'
+          fi
+
+      - name: Wait for exact Cloudflare Seller deployment
+        if: steps.credentials.outputs.enabled == 'true'
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          RELEASE_URL: https://seller.fashionfussion.in/release.json
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 48); do
+            body="$(curl --fail --silent --show-error --max-time 10 -H 'Cache-Control: no-cache' "$RELEASE_URL?authenticated_e2e=$attempt" || true)"
+            live_sha="$(node -e "try{const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.git_sha||''))}catch{}" "$body")"
+            echo "Attempt $attempt: Cloudflare live=${live_sha:-missing} expected=$EXPECTED_SHA"
+            if [ "$live_sha" = "$EXPECTED_SHA" ]; then
+              echo 'Cloudflare Seller production is serving the exact commit.'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Cloudflare Seller production did not update to $EXPECTED_SHA." >&2
+          exit 1
+
+      - name: Install Chromium runtime
+        if: steps.credentials.outputs.enabled == 'true'
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run authenticated Seller lifecycle
+        if: steps.credentials.outputs.enabled == 'true'
+        run: node .github/live-seller-authenticated-smoke.cjs
