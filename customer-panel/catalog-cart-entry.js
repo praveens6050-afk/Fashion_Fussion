@@ -1,6 +1,7 @@
 (function(){
 'use strict';
-const page=location.pathname.split('/').pop()||'index.html';
+const leaf=location.pathname.split('/').filter(Boolean).pop()||'index.html';
+const page=leaf.includes('.')?leaf:leaf+'.html';
 if(!['index.html','search.html','wishlist.html'].includes(page))return;
 const stateCache=new Map();
 function feedback(message){try{if(typeof window.toast==='function'){window.toast(message);return}}catch{}const el=document.getElementById('toast');if(el){el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800);return}console.warn(message)}
