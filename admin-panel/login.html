@@ -76,6 +76,37 @@
     .external-mark{display:inline-flex;width:14px;height:14px;margin-left:5px;vertical-align:-2px}
     .external-mark svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
     .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+    /* Premium owner-workspace polish. Kept visual-only so auth/security behavior stays unchanged. */
+    .form-side{position:relative;overflow:hidden;background:radial-gradient(circle at 14% 18%,rgba(29,78,216,.08),transparent 29%),radial-gradient(circle at 82% 76%,rgba(255,176,0,.08),transparent 28%),linear-gradient(180deg,#f8fafc 0%,#f3f6fa 100%)}
+    .form-side::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(15,23,42,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.028) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.32),transparent 76%)}
+    .card{position:relative;z-index:1;overflow:hidden;border-color:rgba(148,163,184,.32);box-shadow:0 26px 70px rgba(15,23,42,.12),0 2px 8px rgba(15,23,42,.04)}
+    .card::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--gold) 0 28%,#2563eb 28% 68%,#0b1220 68% 100%)}
+    .owner-label{padding:7px 10px;border:1px solid #fde2a0;border-radius:999px;background:#fff8e8;color:#6d4b00}
+    .owner-label::before{box-shadow:0 0 0 4px rgba(255,176,0,.13)}
+    .card h1{font-size:38px;color:#0f1b31}
+    .sub{max-width:390px}
+    .field label{letter-spacing:.01em}
+    .field>input,.password-control{border-color:#aeb8c8;box-shadow:0 1px 2px rgba(15,23,42,.035)}
+    .field>input:focus-visible,.password-control:focus-within{box-shadow:0 0 0 4px rgba(29,78,216,.08)}
+    .btn{position:relative;background:linear-gradient(135deg,#0b1220 0%,#132b50 58%,#1f3f70 100%);box-shadow:0 14px 30px rgba(11,18,32,.19),inset 0 1px rgba(255,255,255,.1);letter-spacing:.01em}
+    .btn:hover{background:linear-gradient(135deg,#101b31 0%,#18355f 58%,#254d86 100%);box-shadow:0 18px 34px rgba(11,18,32,.22);transform:translateY(-1px)}
+    .security-note{border:1px solid #edf1f6;background:linear-gradient(180deg,#fafcff,#f7f9fc)}
+    .foot{margin-top:24px}
+    .brand{background:radial-gradient(circle at 78% 16%,rgba(37,99,235,.22),transparent 28%),radial-gradient(circle at 20% 78%,rgba(255,176,0,.08),transparent 32%),linear-gradient(145deg,#08111f 0%,#0d1a31 52%,#142847 100%)}
+    .brand::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(135deg,rgba(0,0,0,.45),transparent 72%)}
+    .brand-logo{padding:11px 14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.045);box-shadow:0 12px 30px rgba(0,0,0,.11);backdrop-filter:blur(10px)}
+    .stamp{box-shadow:0 7px 18px rgba(0,0,0,.12)}
+    .brand-title{max-width:560px;text-shadow:0 8px 28px rgba(0,0,0,.2)}
+    .brand-copy{max-width:570px;color:#c9d3e3}
+    .capability{position:relative;overflow:hidden;min-height:102px;padding:17px 18px 16px 52px;border-color:rgba(255,255,255,.14);background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.04));box-shadow:inset 0 1px rgba(255,255,255,.06),0 12px 30px rgba(0,0,0,.08);backdrop-filter:blur(8px)}
+    .capability::before{content:"";position:absolute;left:17px;top:18px;width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--gold),#ffd66b);box-shadow:0 7px 16px rgba(255,176,0,.18)}
+    .capability::after{content:"";position:absolute;left:24px;top:25px;width:8px;height:8px;border:2px solid #0b1220;border-top:0;border-left:0;transform:rotate(-45deg)}
+    .capability strong{font-size:14px;letter-spacing:.005em}
+    .capability span{color:#b9c5d7;line-height:1.5}
+    .brand-footnote{display:flex;align-items:center;gap:8px;margin-top:24px;color:#93a3bb;font-size:12px;font-weight:600;letter-spacing:.02em}
+    .brand-footnote::before{content:"";width:7px;height:7px;border-radius:50%;background:#37c978;box-shadow:0 0 0 4px rgba(55,201,120,.11)}
+
     @media(max-width:800px){.shell{min-height:100dvh;display:block}.form-side{min-height:100dvh;padding:24px 18px}.card{padding:24px;border-radius:14px}.mobile-brand{display:block}.card h1{font-size:31px}.brand{display:none}.session-row{justify-content:flex-start}.foot{align-items:flex-start;flex-direction:column}.security-note{text-align:left}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
@@ -128,6 +159,7 @@
         <div class="capability"><strong>Finance</strong><span>Monitor payments, deductions and payout confirmation.</span></div>
         <div class="capability"><strong>Support</strong><span>Diagnose customer and seller issues from one workspace.</span></div>
       </div>
+      <div class="brand-footnote">Private owner workspace · operational access only</div>
       <!-- CI compatibility marker: <h2 id="admin-hero-title" class="brand-title">Secure Admin Center</h2> -->
       <!-- CI compatibility marker: <button id="submit" class="btn" type="submit">Sign in to Admin</button> -->
     </section>
