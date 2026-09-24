@@ -66,6 +66,7 @@ window.FF_API_ORIGIN='';
     add('admin-launch-readiness.js?v=2','data-admin-launch-readiness');
     add('admin-seller-approvals.js?v=1','data-admin-seller-approvals');
     add('admin-seller-finance.js?v=1','data-admin-seller-finance');
+    add('admin-seller-payout-provider.js?v=1','data-admin-seller-payout-provider');
     add('admin-owner-center.js?v=2','data-admin-owner-center');
   }
   function start(){
