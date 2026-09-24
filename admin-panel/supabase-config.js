@@ -73,8 +73,8 @@ window.FF_API_ORIGIN='';
     add('admin-checkout-health.js?v=2','data-admin-checkout-health');
     add('admin-launch-readiness.js?v=2','data-admin-launch-readiness');
     add('admin-seller-approvals.js?v=1','data-admin-seller-approvals');
-    addStyle('admin-seller-finance.css?v=20260924-ui','data-admin-seller-finance-style');
-    add('admin-seller-finance.js?v=20260924-ui','data-admin-seller-finance');
+    addStyle('admin-seller-finance.css?v=20260924-excel','data-admin-seller-finance-style');
+    add('admin-seller-finance.js?v=20260924-excel','data-admin-seller-finance');
     add('admin-seller-payout-provider.js?v=1','data-admin-seller-payout-provider');
     add('admin-owner-center.js?v=2','data-admin-owner-center');
   }
