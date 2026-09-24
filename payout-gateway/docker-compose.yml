@@ -1,0 +1,35 @@
+services:
+  gateway:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    expose:
+      - "8787"
+    networks:
+      - payout_net
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - gateway
+    environment:
+      GATEWAY_DOMAIN: ${GATEWAY_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - payout_net
+
+networks:
+  payout_net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
