@@ -1,6 +1,7 @@
 'use strict';
 const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
+const ADMIN_LOGIN_GUARD_URL=SUPABASE_URL+'/functions/v1/admin-login-guard';
 window.FF_API_ORIGIN='';
 
 const form=document.getElementById('form');
@@ -84,10 +85,10 @@ function setPasswordToggleState(reveal){
 }
 
 async function checkLoginRateLimit(mail){
-  const response=await fetch('/api/admin-login-guard',{
+  const response=await fetch(ADMIN_LOGIN_GUARD_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    credentials:'same-origin',
+    credentials:'omit',
     body:JSON.stringify({email:mail})
   });
   let payload={};
