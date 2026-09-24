@@ -90,7 +90,10 @@ async function noHorizontalOverflow(page, label) {
       if (await add.isDisabled()) await enabled.first().click();
       if (await add.isDisabled()) throw new Error('PDP Add to Cart stayed disabled after selecting an available variant');
     }
-    await add.click();
+    await Promise.all([
+      desktop.waitForURL(url => cleanPath(url) === '/cart', { timeout: 10000 }),
+      add.click()
+    ]);
     const persisted = await desktop.evaluate(() => ({
       legacy: JSON.parse(localStorage.getItem('fashion_fussion_cart') || '{}'),
       lines: JSON.parse(localStorage.getItem('fashion_fussion_cart_lines_v2') || '[]')
@@ -126,7 +129,10 @@ async function noHorizontalOverflow(page, label) {
     const enabled = desktop.locator('#variantPicker .variant-option:not([disabled])');
     if (!(await enabled.count())) throw new Error(`variant product ${variantProductId} has no enabled option`);
     if (await desktop.locator('#add').isDisabled()) await enabled.first().click();
-    await desktop.locator('#add').click();
+    await Promise.all([
+      desktop.waitForURL(url => cleanPath(url) === '/cart', { timeout: 10000 }),
+      desktop.locator('#add').click()
+    ]);
     const variantLines = await desktop.evaluate(() => JSON.parse(localStorage.getItem('fashion_fussion_cart_lines_v2') || '[]'));
     if (!variantLines.some(line => Number(line.id) === Number(variantProductId) && Number(line.variant_id) > 0 && Number(line.qty) > 0)) throw new Error(`variant product ${variantProductId} did not persist variant_id`);
 
@@ -155,7 +161,7 @@ async function noHorizontalOverflow(page, label) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, Add to Cart redirect, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
