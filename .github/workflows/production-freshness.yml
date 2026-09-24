@@ -52,15 +52,21 @@ jobs:
           printf '%s\n' "$headers" | grep -qi '^content-security-policy:'
 
       - name: Verify Admin API boundary and payout readiness
+        env:
+          LOGIN_GUARD_URL: https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/admin-login-guard
         run: |
           set -euo pipefail
-          code="$(curl --silent --show-error --output /tmp/admin-api-body --write-out '%{http_code}' --max-time 20 https://admin.fashionfussion.in/api/admin-login-guard)"
-          test "$code" = '405'
+          guard_get="$(curl --silent --show-error --output /tmp/admin-guard-get --write-out '%{http_code}' --max-time 20 "$LOGIN_GUARD_URL")"
+          test "$guard_get" = '405'
+          guard_options="$(curl --silent --show-error --output /tmp/admin-guard-options --write-out '%{http_code}' --max-time 20 -X OPTIONS -H 'Origin: https://admin.fashionfussion.in' -H 'Access-Control-Request-Method: POST' "$LOGIN_GUARD_URL")"
+          test "$guard_options" = '204'
+          guard_invalid="$(curl --silent --show-error --output /tmp/admin-guard-invalid --write-out '%{http_code}' --max-time 20 -X POST -H 'Origin: https://admin.fashionfussion.in' -H 'Content-Type: application/json' --data '{"email":"invalid"}' "$LOGIN_GUARD_URL")"
+          test "$guard_invalid" = '400'
           unknown="$(curl --silent --show-error --output /tmp/admin-unknown-body --write-out '%{http_code}' --max-time 20 https://admin.fashionfussion.in/api/cloudflare-smoke-not-found)"
           test "$unknown" = '404'
           payout="$(curl --fail --silent --show-error --max-time 20 https://admin.fashionfussion.in/api/seller-payout)"
-          node -e "const x=JSON.parse(process.argv[1]);if(x.ok!==true||typeof x.configured!=='boolean'||!['disabled','gateway','direct'].includes(x.mode))process.exit(1);if('gateway' in x||'direct_enabled' in x)process.exit(1)" "$payout"
-          echo 'PASS Admin API boundaries and payout readiness route (GET only; no payout performed)'
+          node -e "const x=JSON.parse(process.argv[1]);if(x.ok!==true||typeof x.configured!=='boolean'||!['disabled','gateway'].includes(x.mode))process.exit(1);if('gateway' in x||'direct_enabled' in x)process.exit(1)" "$payout"
+          echo 'PASS Admin Edge login guard, Cloudflare API boundary and gateway-only payout readiness (GET only; no payout performed)'
 
       - name: Install Chromium human-smoke runtime
         run: |
