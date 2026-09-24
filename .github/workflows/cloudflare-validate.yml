@@ -56,6 +56,8 @@ jobs:
         working-directory: customer-panel
         run: |
           set -euo pipefail
+          grep -Fq 'variant-commerce.js?v=5' index.html
+          grep -Fq 'catalog-cart-entry.js?v=3' index.html
           grep -Fq 'variant-commerce.js?v=4' product.html
           grep -Fq 'product-variants.js?v=4' product.html
           grep -Fq 'csp-product.js?v=3' product.html
@@ -124,6 +126,8 @@ jobs:
           test -s .cf-functions-test/index.js
           test ! -e "functions/_${legacy}-adapter.js"
           test ! -e "dist/${legacy}.json"
+          grep -q 'variant-commerce.js?v=5' dist/index.html
+          grep -q 'catalog-cart-entry.js?v=3' dist/index.html
           grep -q 'variant-commerce.js?v=5' dist/cart.html
           grep -q 'variant-cart-ui.js?v=5' dist/cart.html
           grep -q 'variant-commerce.js?v=4' dist/checkout.html
@@ -172,15 +176,20 @@ jobs:
         run: |
           set -euo pipefail
           grep -q 'data-supabase-sdk="local"' dist/index.html
-          grep -q 'data-homepage-bundle' dist/index.html
-          grep -q 'data-homepage-runtime' dist/index.html
           ! grep -Eq 'cdn\.jsdelivr\.net/.+supabase|unpkg\.com/.+supabase' dist/index.html
-          test "$(grep -o '<link rel="stylesheet"' dist/index.html | wc -l)" -eq 1
-          test "$(grep -o 'business-registration-trust.js' dist/index.html | wc -l)" -eq 0
+          grep -Fq 'csp-index.css?v=20260925-homefix' dist/index.html
+          grep -Fq 'csp-dynamic.css?v=1' dist/index.html
+          grep -Fq 'homepage-footer.css?v=1' dist/index.html
+          test "$(grep -o '<link rel="stylesheet"' dist/index.html | wc -l)" -eq 3
+          grep -Fq 'csp-index.js?v=20260925-cart-entry' dist/index.html
+          grep -Fq 'variant-commerce.js?v=5' dist/index.html
+          grep -Fq 'catalog-cart-entry.js?v=3' dist/index.html
           grep -q 'Fashion Fussion</div>' dist/index.html
-          grep -q 'heart-glyph' dist/homepage.runtime.js
-          grep -q 'sr-only' dist/homepage.runtime.js
-          node --check dist/homepage.runtime.js
+          grep -q 'heart-glyph' dist/csp-index.js
+          grep -q 'sr-only' dist/csp-index.js
+          grep -Fq "location.href='cart.html'" dist/catalog-cart-entry.js
+          node --check dist/csp-index.js
+          node --check dist/catalog-cart-entry.js
           node --check dist/supabase-config.js
 
       - name: Verify local HTML asset integrity
