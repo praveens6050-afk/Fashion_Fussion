@@ -4,6 +4,10 @@
 /backend/ @praveens6050-afk
 /api/ @praveens6050-afk
 /supabase/migrations/ @praveens6050-afk
-/vercel.json @praveens6050-afk
+/customer-panel/_headers @praveens6050-afk
+/customer-panel/_routes.json @praveens6050-afk
+/admin-panel/_headers @praveens6050-afk
+/admin-panel/_routes.json @praveens6050-afk
+/seller-panel/_headers @praveens6050-afk
 /checkout* @praveens6050-afk
 /quote-checkout* @praveens6050-afk

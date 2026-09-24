@@ -1,0 +1,112 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://checkout.razorpay.com https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com https://cloudflareinsights.com; frame-src https://*.razorpay.com; upgrade-insecure-requests
+
+/
+  Link: <https://fashionfussion.in/>; rel="canonical"
+
+/index.html
+  Link: <https://fashionfussion.in/>; rel="canonical"
+
+/about.html
+  Link: <https://fashionfussion.in/about.html>; rel="canonical"
+
+/faq.html
+  Link: <https://fashionfussion.in/faq.html>; rel="canonical"
+
+/business-buying.html
+  Link: <https://fashionfussion.in/business-buying.html>; rel="canonical"
+
+/contact.html
+  Link: <https://fashionfussion.in/contact.html>; rel="canonical"
+
+/terms.html
+  Link: <https://fashionfussion.in/terms.html>; rel="canonical"
+
+/shipping-delivery.html
+  Link: <https://fashionfussion.in/shipping-delivery.html>; rel="canonical"
+
+/returns-refunds.html
+  Link: <https://fashionfussion.in/returns-refunds.html>; rel="canonical"
+
+/privacy.html
+  Link: <https://fashionfussion.in/privacy.html>; rel="canonical"
+
+/security-policy.html
+  Link: <https://fashionfussion.in/security-policy.html>; rel="canonical"
+
+/search.html
+  X-Robots-Tag: noindex, follow
+
+/product.html
+  X-Robots-Tag: noindex, follow
+
+/account.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/cart.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/checkout.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/quote-checkout.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/login.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/signup.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/reset-password.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/wishlist.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/notifications.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/coupons.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/gift-cards.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/order-confirmation.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/order-details.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/order-status.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/order-tracking.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/homepage.bundle.css
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/homepage.runtime.js
+  Cache-Control: public, max-age=3600, must-revalidate

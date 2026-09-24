@@ -18,7 +18,7 @@ const CSS_TEXT_RE = /\.style\.cssText\s*=/;
 const STYLE_API_RE = /\.style\./;
 const SET_STYLE_ATTR_RE = /(?:setAttribute|setAttributeNS)\s*\(\s*["']style["']/i;
 const DYNAMIC_STYLE_ELEMENT_RE = /createElement\s*\(\s*["']style["']\s*\)/i;
-const PROD_BACKEND_ORIGIN = 'https://fashion-fussion-olive.vercel.app';
+const RETIRED_HOST_RE = new RegExp('\\.' + 'ver' + 'cel\\.app', 'i');
 
 const htmlFiles = fs.readdirSync(root)
   .filter(name => name.endsWith('.html'))
@@ -54,32 +54,24 @@ for (const file of rootJsFiles) {
   if (STYLE_API_RE.test(text)) fail(`${file}: runtime element.style access is forbidden; use hidden, classes or data-state`);
   if (SET_STYLE_ATTR_RE.test(text)) fail(`${file}: setAttribute('style', ...) is forbidden`);
   if (DYNAMIC_STYLE_ELEMENT_RE.test(text)) fail(`${file}: runtime <style> creation is forbidden; use a same-origin stylesheet`);
-  if (file !== 'supabase-config.js' && text.includes(PROD_BACKEND_ORIGIN)) fail(`${file}: production backend origin must only be defined by the central Pages fallback`);
-  if (file === 'supabase-config.js' && !text.includes("window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';")) fail('supabase-config.js: canonical GitHub Pages API fallback is missing');
-  if (/fetch\(\s*['"]\/api\//.test(text)) fail(`${file}: direct same-origin API fetch breaks GitHub Pages; use FF_API_ORIGIN or a BACKEND_URL derived from it`);
-  if (/\bBACKEND_URL\s*=\s*['"]{2}/.test(text)) fail(`${file}: empty BACKEND_URL breaks GitHub Pages; derive it from window.FF_API_ORIGIN`);
+  if (RETIRED_HOST_RE.test(text)) fail(`${file}: retired deployment origin detected`);
 }
 
 if (!exists('csp-dynamic.css')) fail('csp-dynamic.css is missing.');
 if (!exists('support-chat.css')) fail('support-chat.css is missing.');
 
-let config;
-try {
-  config = JSON.parse(read('vercel.json'));
-} catch (error) {
-  fail(`vercel.json is not valid JSON: ${error.message}`);
-}
-
-if (config) {
-  const globalRule = (config.headers || []).find(rule => rule.source === '/(.*)');
-  const cspHeader = globalRule?.headers?.find(header => String(header.key).toLowerCase() === 'content-security-policy');
-  const csp = String(cspHeader?.value || '');
+if (!exists('_headers')) {
+  fail('Cloudflare _headers file is missing.');
+} else {
+  const headers = read('_headers');
+  const cspLine = headers.split(/\r?\n/).find(line => /^\s+Content-Security-Policy:/i.test(line));
+  const csp = cspLine ? cspLine.replace(/^\s+Content-Security-Policy:\s*/i, '') : '';
   if (!csp) {
-    fail('Global Content-Security-Policy header is missing.');
+    fail('Global Cloudflare Content-Security-Policy header is missing.');
   } else {
     const required = [
       "default-src 'self'",
-      "script-src 'self' https://cdn.jsdelivr.net https://checkout.razorpay.com",
+      "script-src 'self' https://checkout.razorpay.com https://static.cloudflareinsights.com",
       "script-src-attr 'none'",
       "style-src 'self'",
       "style-src-attr 'none'",
@@ -90,14 +82,23 @@ if (config) {
       "object-src 'none'",
       "frame-ancestors 'none'",
     ];
-    const directives = Object.fromEntries(csp.split(';').map(part=>part.trim()).filter(Boolean).map(part=>{const i=part.indexOf(' ');return i<0?[part,'']:[part.slice(0,i),part.slice(i+1)]}));
-    if ((directives['script-src']||'').includes("'unsafe-inline'")) fail("script-src must not allow 'unsafe-inline'.");
-    if ((directives['style-src']||'').includes("'unsafe-inline'")) fail("style-src must not allow inline <style> blocks.");
-    if ((directives['style-src-attr']||'').includes("'unsafe-inline'") || (directives['style-src-attr']||'') !== "'none'") fail("style-src-attr must be 'none'.");
+    const directives = Object.fromEntries(csp.split(';').map(part => part.trim()).filter(Boolean).map(part => {
+      const i = part.indexOf(' ');
+      return i < 0 ? [part, ''] : [part.slice(0, i), part.slice(i + 1)];
+    }));
+    if ((directives['script-src'] || '').includes("'unsafe-inline'")) fail("script-src must not allow 'unsafe-inline'.");
+    if ((directives['style-src'] || '').includes("'unsafe-inline'")) fail("style-src must not allow inline <style> blocks.");
+    if ((directives['style-src-attr'] || '').includes("'unsafe-inline'") || (directives['style-src-attr'] || '') !== "'none'") fail("style-src-attr must be 'none'.");
     for (const token of required) {
       if (!csp.includes(token)) fail(`Global CSP is missing required directive/source: ${token}`);
     }
   }
+}
+
+if (exists('supabase-config.js')) {
+  const config = read('supabase-config.js');
+  if (!config.includes("window.FF_API_ORIGIN='';")) fail('supabase-config.js: Cloudflare same-origin API boundary is missing');
+  if (RETIRED_HOST_RE.test(config)) fail('supabase-config.js: retired deployment fallback is still present');
 }
 
 if (failures.length) {
@@ -106,4 +107,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Strict CSP hardening source guards passed (${htmlFiles.length} HTML documents, ${rootJsFiles.length} browser JS files).`);
+console.log(`Strict Cloudflare CSP source guards passed (${htmlFiles.length} HTML documents, ${rootJsFiles.length} browser JS files).`);

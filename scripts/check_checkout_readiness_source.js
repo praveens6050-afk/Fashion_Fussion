@@ -3,6 +3,7 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const errors=[];
+const RETIRED_HOST_RE=new RegExp('\\.'+'ver'+'cel\\.app','i');
 function requireMarkers(file,markers){const text=read(file);for(const marker of markers)if(!text.includes(marker))errors.push(`${file}: missing ${marker}`);return text}
 const health=requireMarkers('backend/api/checkout-health.js',[
   'requireAdminUser','active_products','orders_count','delivery_address_ready','checkout_rpcs',
@@ -15,7 +16,7 @@ const dispatcher=requireMarkers('api/admin-order-action.js',['checkout-health.js
 const loader=requireMarkers('supabase-config.js',[
   "admin-checkout-health.js?v=1','data-admin-checkout-health",
   "admin-launch-readiness.js?v=1','data-admin-launch-readiness",
-  `window.FF_API_ORIGIN=location.hostname.endsWith('github.io')?'https://fashion-fussion-olive.vercel.app':'';`
+  "window.FF_API_ORIGIN='';"
 ]);
 requireMarkers('admin-checkout-health.js',['Checkout Readiness','checkout_health','COD real test','Prepaid real test','never creates an order, payment, refund, shipment or inventory movement']);
 const launch=requireMarkers('admin-launch-readiness.js',['First Live Order Readiness','checkout_health','connection_test','admin_list','product_variants','inventory_levels','packed_eligible','sellable_skus','AWB assigned','Pickup requested','Read-only preflight']);
@@ -26,7 +27,7 @@ if(!loader.includes("page==='admin.html'"))errors.push('supabase-config.js: chec
 for(const file of ['checkout.js','quote-checkout.js']){
   const text=read(file);
   if(!/\bBACKEND_URL\s*=\s*window\.FF_API_ORIGIN\s*\|\|\s*['"]{2}/.test(text))errors.push(`${file}: BACKEND_URL must derive from window.FF_API_ORIGIN`);
-  if(text.includes('https://fashion-fussion-olive.vercel.app'))errors.push(`${file}: production backend origin must stay centralized in supabase-config.js`);
+  if(RETIRED_HOST_RE.test(text))errors.push(`${file}: retired deployment origin must not be present`);
 }
 const quoteApi=requireMarkers('backend/api/quote-order.js',['consume_api_rate_limit',"p_scope: 'quote_order'",'p_limit: 30','p_window_seconds: 60','error.status = 429']);
 if(!quoteApi.includes('await enforceQuoteRateLimit(user.id)'))errors.push('backend/api/quote-order.js: authenticated quote rate limit must run before pricing work');
