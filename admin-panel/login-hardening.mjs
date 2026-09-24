@@ -6,39 +6,61 @@ const root = process.cwd();
 const dist = path.join(root, 'dist');
 const loginPath = path.join(dist, 'login.html');
 const canonicalLoginScript = path.join(dist, 'admin-login.js');
+const canonicalSupabaseScript = path.join(dist, 'vendor', 'supabase.js');
 const assetsDir = path.join(dist, 'assets');
 
 function digest(algorithm, buffer, encoding = 'base64') {
   return createHash(algorithm).update(buffer).digest(encoding);
 }
 
+function fingerprintedAsset(prefix, bytes) {
+  const fingerprint = digest('sha256', bytes, 'hex').slice(0, 16);
+  return {
+    name: `${prefix}.${fingerprint}.js`,
+    sri: `sha384-${digest('sha384', bytes)}`
+  };
+}
+
 let html = await readFile(loginPath, 'utf8');
-const loginScriptBytes = await readFile(canonicalLoginScript);
-const fingerprint = digest('sha256', loginScriptBytes, 'hex').slice(0, 16);
-const loginSri = `sha384-${digest('sha384', loginScriptBytes)}`;
-const fingerprintedName = `admin-login.${fingerprint}.js`;
-const fingerprintedPath = path.join(assetsDir, fingerprintedName);
-const fingerprintedUrl = `/assets/${fingerprintedName}`;
+const [loginScriptBytes, supabaseScriptBytes] = await Promise.all([
+  readFile(canonicalLoginScript),
+  readFile(canonicalSupabaseScript)
+]);
+const loginAsset = fingerprintedAsset('admin-login', loginScriptBytes);
+const supabaseAsset = fingerprintedAsset('supabase', supabaseScriptBytes);
+const loginUrl = `/assets/${loginAsset.name}`;
+const supabaseUrl = `/assets/${supabaseAsset.name}`;
 
 await mkdir(assetsDir, { recursive: true });
-await copyFile(canonicalLoginScript, fingerprintedPath);
+await Promise.all([
+  copyFile(canonicalLoginScript, path.join(assetsDir, loginAsset.name)),
+  copyFile(canonicalSupabaseScript, path.join(assetsDir, supabaseAsset.name))
+]);
 
 html = html
-  .replace(/\s*<script\b[^>]*src=(['"])\/vendor\/supabase\.js\1[^>]*><\/script>\s*/gi, '\n  ')
+  .replace(
+    /<script\b[^>]*src=(['"])\/vendor\/supabase\.js\1[^>]*><\/script>/i,
+    `<script defer src="${supabaseUrl}" data-supabase-sdk="local" integrity="${supabaseAsset.sri}" crossorigin="anonymous"></script>`
+  )
   .replace(
     /<script\b[^>]*src=(['"])\/admin-login(?:\.[^"']+)?\.js\1[^>]*><\/script>/i,
-    `<script defer src="${fingerprintedUrl}" integrity="${loginSri}"></script>`
+    `<script defer src="${loginUrl}" integrity="${loginAsset.sri}" crossorigin="anonymous"></script>`
   );
 
-if (!html.includes(`src="${fingerprintedUrl}"`)) {
-  throw new Error('Admin login fingerprinted asset was not injected.');
+const required = [
+  `src="${supabaseUrl}"`,
+  `integrity="${supabaseAsset.sri}"`,
+  `src="${loginUrl}"`,
+  `integrity="${loginAsset.sri}"`
+];
+for (const marker of required) {
+  if (!html.includes(marker)) throw new Error(`Admin login hardening marker missing: ${marker}`);
 }
-if (!html.includes(`integrity="${loginSri}"`)) {
-  throw new Error('Admin login SRI was not derived from the fingerprinted asset.');
-}
-if (/src=(['"])\/vendor\/supabase\.js\1/i.test(html)) {
-  throw new Error('Supabase must be loaded by the login runtime so load failures can be handled.');
+const supabaseIndex = html.indexOf(`src="${supabaseUrl}"`);
+const loginIndex = html.indexOf(`src="${loginUrl}"`);
+if (supabaseIndex < 0 || loginIndex < 0 || supabaseIndex > loginIndex) {
+  throw new Error('Supabase SDK must be deferred before the admin application script.');
 }
 
 await writeFile(loginPath, html, 'utf8');
-console.log(`Admin login hardened with immutable fingerprinted asset: ${fingerprintedUrl}`);
+console.log(`Admin login hardened with ordered fingerprinted assets: ${supabaseUrl} -> ${loginUrl}`);
