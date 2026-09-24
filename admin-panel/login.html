@@ -7,33 +7,39 @@
   <meta name="theme-color" content="#0b1220">
   <meta name="theme-color" content="#f6f7f9" media="(max-width:800px)">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests">
-  <title>Admin Sign In — Fashion Fussion</title>
+  <title>Owner Sign In — Fashion Fussion</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="manifest" href="/admin.webmanifest">
   <link rel="preconnect" href="https://gmdevprqtvoshbbytsxf.supabase.co" crossorigin>
   <style>
-    :root{--paper:#f6f7f9;--ink:#172033;--muted:#667085;--navy:#0b1220;--navy2:#13223d;--gold:#ffb000;--white:#fff;--line:#667085;--focus:#1d4ed8;--red:#a82a22;--success:#21643a}
+    :root{--paper:#f6f7f9;--ink:#172033;--muted:#667085;--navy:#0b1220;--navy2:#13223d;--gold:#ffb000;--white:#fff;--line:#667085;--focus:#1d4ed8;--red:#a82a22;--success:#21643a;--soft:#eef2f7;--soft2:#f8fafc}
     *{box-sizing:border-box}
     html{background:var(--paper)}
     body{margin:0;min-height:100dvh;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
     a{color:inherit;text-decoration:none}
     button,input{font:inherit}
-    .shell{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);grid-template-areas:"form brand";background:#fff}
-    .brand{grid-area:brand;position:relative;overflow:hidden;padding:clamp(44px,6vw,84px);display:grid;align-content:start;background:linear-gradient(145deg,var(--navy),var(--navy2));color:#fff}
+    .shell{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(460px,.98fr);grid-template-areas:"form brand";background:#f4f6f9}
+    .brand{grid-area:brand;position:relative;overflow:hidden;padding:clamp(44px,5vw,76px);display:grid;align-content:start;background:linear-gradient(145deg,var(--navy),var(--navy2));color:#fff}
     .brand::before{content:"";position:absolute;right:-170px;bottom:-190px;width:470px;height:470px;border:1px solid rgba(255,176,0,.18);border-radius:50%;box-shadow:0 0 0 70px rgba(255,176,0,.035),0 0 0 140px rgba(255,176,0,.025)}
     .brand>*{position:relative;z-index:1}
-    .brand-logo{width:max-content;margin:0 0 clamp(54px,8vh,96px);font-size:25px;font-weight:800;line-height:1;letter-spacing:-.7px;color:#fff}
+    .brand-logo{width:max-content;margin:0 0 clamp(54px,7vh,82px);font-size:25px;font-weight:800;line-height:1;letter-spacing:-.7px;color:#fff}
     .brand-logo::after{content:"";display:inline-block;width:8px;height:8px;margin-left:7px;border-radius:50%;background:var(--gold)}
-    .stamp{width:max-content;padding:8px 13px;border:1px solid #fff;border-radius:999px;background:#fff;color:var(--navy);font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
-    .brand-title{max-width:620px;margin:20px 0 18px;color:#fff;font-size:clamp(36px,4vw,56px);font-weight:800;line-height:1.06;letter-spacing:-1.8px}
-    .brand-copy{max-width:540px;margin:0;color:#d8deea;font-size:16px;line-height:1.75}
-    .form-side{grid-area:form;display:grid;place-items:center;padding:clamp(36px,6vw,72px)}
-    .card{width:min(470px,100%)}
+    .stamp{width:max-content;padding:8px 13px;border:1px solid rgba(255,255,255,.76);border-radius:999px;background:#fff;color:var(--navy);font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+    .brand-title{max-width:620px;margin:20px 0 16px;color:#fff;font-size:clamp(38px,4vw,58px);font-weight:800;line-height:1.03;letter-spacing:-1.8px}
+    .brand-copy{max-width:560px;margin:0;color:#d8deea;font-size:16px;line-height:1.7}
+    .capabilities{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:570px;margin-top:30px}
+    .capability{padding:15px 16px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.055)}
+    .capability strong{display:block;margin-bottom:4px;color:#fff;font-size:14px}
+    .capability span{display:block;color:#aeb9ca;font-size:12px;line-height:1.45}
+    .form-side{grid-area:form;display:grid;place-items:center;padding:clamp(30px,5vw,68px)}
+    .card{width:min(500px,100%);padding:32px;border:1px solid #e4e8ef;border-radius:18px;background:#fff;box-shadow:0 18px 50px rgba(20,33,55,.08)}
     .mobile-brand{display:none;margin:0 0 18px;color:var(--navy);font-size:21px;font-weight:800;letter-spacing:-.5px}
     .mobile-brand::after{content:"";display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--gold)}
-    .card h1{margin:0 0 10px;color:var(--ink);font-size:34px;font-weight:800;line-height:1.15;letter-spacing:-1px}
-    .sub{margin:0 0 22px;color:var(--muted);line-height:1.6}
+    .owner-label{display:inline-flex;align-items:center;gap:7px;margin:0 0 14px;color:#344054;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+    .owner-label::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gold)}
+    .card h1{margin:0 0 10px;color:var(--ink);font-size:36px;font-weight:800;line-height:1.12;letter-spacing:-1.15px}
+    .sub{margin:0 0 24px;color:var(--muted);font-size:15px;line-height:1.6}
     .banner{display:none;margin:0 0 14px;padding:12px 14px;border:1px solid transparent;border-radius:9px;font-size:13px;line-height:1.5}
     .banner.show{display:block}
     .banner.error{background:#fff1f0;border-color:#d88b84;color:var(--red)}
@@ -41,16 +47,16 @@
     .noscript{margin:0 0 18px;padding:12px 14px;border:1px solid #d88b84;border-radius:9px;background:#fff1f0;color:var(--red);font-size:13px;line-height:1.5}
     .field{margin:18px 0}
     .field label{display:block;margin:0 0 8px;color:#344054;font-size:13px;font-weight:700}
-    .field>input{width:100%;height:48px;padding:0 14px;border:1px solid var(--line);border-radius:9px;background:var(--white);color:var(--ink);font-size:15px}
+    .field>input{width:100%;height:50px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink);font-size:15px}
     .field input:hover{border-color:#475467}
     .field>input:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-color:var(--focus);box-shadow:none}
-    .password-control{display:grid;grid-template-columns:minmax(0,1fr) auto;overflow:visible;border:1px solid var(--line);border-radius:9px;background:#fff;transition:border-color .16s}
+    .password-control{display:grid;grid-template-columns:minmax(0,1fr) auto;overflow:visible;border:1px solid var(--line);border-radius:10px;background:#fff;transition:border-color .16s}
     .password-control:hover{border-color:#475467}
     .password-control:focus-within{border-color:var(--focus);outline:3px solid var(--focus);outline-offset:2px}
     .password-control:focus-within .password-toggle{border-left-color:var(--focus)}
     .password-control:has(.password-toggle:focus-visible){outline:0;border-color:var(--line)}
-    .password-control input{min-width:0;width:100%;height:46px;padding:0 14px;border:0;border-radius:9px 0 0 9px;background:#fff;color:var(--ink);font-size:15px;outline:0}
-    .password-toggle{width:48px;min-width:48px;min-height:46px;padding:0;display:grid;place-items:center;border:0;border-left:1px solid var(--line);border-radius:0 9px 9px 0;background:#fff;color:#263f68;cursor:pointer}
+    .password-control input{min-width:0;width:100%;height:48px;padding:0 14px;border:0;border-radius:10px 0 0 10px;background:#fff;color:var(--ink);font-size:15px;outline:0}
+    .password-toggle{width:50px;min-width:50px;min-height:48px;padding:0;display:grid;place-items:center;border:0;border-left:1px solid var(--line);border-radius:0 10px 10px 0;background:#fff;color:#263f68;cursor:pointer}
     .password-toggle[hidden]{display:none}
     .password-toggle:hover{background:#f7f8fa}
     .password-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -59,18 +65,18 @@
     .link{min-height:44px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center;color:#263f68;font-size:14px;font-weight:700;text-decoration:none;border-radius:6px}
     .link:hover{text-decoration:underline;text-underline-offset:3px}
     .link:focus-visible,.foot a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
-    .btn{width:100%;min-height:48px;padding:13px;border:0;border-radius:9px;background:var(--navy);color:#fff;font-size:15px;font-weight:800;box-shadow:0 7px 18px rgba(11,18,32,.13);cursor:pointer;transition:transform .16s,background .16s}
+    .btn{width:100%;min-height:50px;padding:13px;border:0;border-radius:10px;background:var(--navy);color:#fff;font-size:15px;font-weight:800;box-shadow:0 7px 18px rgba(11,18,32,.13);cursor:pointer;transition:transform .16s,background .16s}
     .btn:hover{background:#152541;transform:translateY(-1px)}
     .btn:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
     .btn:disabled{transform:none;opacity:.58;cursor:not-allowed}
-    .security-note{margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.5;text-align:center}
-    .foot{padding-top:20px;margin-top:24px;border-top:1px solid #edf0f4;text-align:center;color:var(--muted);font-size:14px}
+    .security-note{margin:12px 0 0;padding:10px 12px;border-radius:9px;background:var(--soft2);color:var(--muted);font-size:12px;line-height:1.5;text-align:left}
+    .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:18px;margin-top:22px;border-top:1px solid #edf0f4;color:var(--muted);font-size:13px}
     .foot a{color:#263f68;font-weight:700}
     .foot a:hover{text-decoration:underline;text-underline-offset:3px}
     .external-mark{display:inline-flex;width:14px;height:14px;margin-left:5px;vertical-align:-2px}
     .external-mark svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
     .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-    @media(max-width:800px){.shell{min-height:100dvh;display:block}.form-side{min-height:100dvh;padding:30px 22px 24px}.mobile-brand{display:block}.card h1{font-size:30px}.brand{display:none}.session-row{justify-content:flex-start}}
+    @media(max-width:800px){.shell{min-height:100dvh;display:block}.form-side{min-height:100dvh;padding:24px 18px}.card{padding:24px;border-radius:14px}.mobile-brand{display:block}.card h1{font-size:31px}.brand{display:none}.session-row{justify-content:flex-start}.foot{align-items:flex-start;flex-direction:column}.security-note{text-align:left}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
   <script defer src="/vendor/supabase.js" data-supabase-sdk="local"></script>
@@ -78,16 +84,17 @@
 </head>
 <body>
   <main class="shell">
-    <section class="form-side" aria-label="Administrator sign-in form">
+    <section class="form-side" aria-label="Owner sign-in form">
       <div class="card">
         <div class="mobile-brand" aria-label="Fashion Fussion" translate="no" spellcheck="false">Fashion Fussion</div>
-        <h1 id="admin-sign-in-title">Admin sign in</h1>
-        <p class="sub">Enter your administrator credentials</p>
+        <div class="owner-label">Owner workspace</div>
+        <h1 id="admin-sign-in-title">Owner sign in</h1>
+        <p class="sub">Access your Fashion Fussion business control center.</p>
         <noscript><p class="noscript" role="alert">JavaScript is required to securely sign in to the administrator portal.</p></noscript>
         <form id="form" autocomplete="on" aria-labelledby="admin-sign-in-title" data-security-control="server-side-rate-limit">
           <div id="banner" class="banner" role="alert" aria-live="assertive" aria-atomic="true"></div>
           <div class="field">
-            <label for="email">Email address</label>
+            <label for="email">Owner email</label>
             <span id="emailHint" class="sr-only">Enter the email address assigned to your administrator account using standard email format.</span>
             <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="name@company.com" aria-describedby="emailHint" autofocus required>
           </div>
@@ -104,17 +111,23 @@
           <div class="session-row">
             <a id="forgot" class="link" href="/reset-password">Forgot password?</a>
           </div>
-          <button id="submit" class="btn" type="submit">Sign in to Admin</button>
+          <button id="submit" class="btn" type="submit">Enter Control Center</button>
           <p class="security-note" id="securityNote">For your security, this admin session stays in this browser tab. Repeated failed sign-in attempts are temporarily blocked.</p>
         </form>
-        <p class="foot">Customer website: <a href="https://fashionfussion.in" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab">fashionfussion.in<span class="external-mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 4h6v6"></path><path d="M12 4 5 11"></path><path d="M11 9v3H4V5h3"></path></svg></span></a></p>
+        <p class="foot"><span>Owner access only</span><a href="https://fashionfussion.in" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab">Live Storefront<span class="external-mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 4h6v6"></path><path d="M12 4 5 11"></path><path d="M11 9v3H4V5h3"></path></svg></span></a></p>
       </div>
     </section>
     <section class="brand" aria-labelledby="admin-hero-title">
       <div class="brand-logo" translate="no" spellcheck="false" data-brand-name="true">Fashion Fussion</div>
-      <span class="stamp">Administrator access</span>
-      <h2 id="admin-hero-title" class="brand-title">Secure Admin Center</h2>
-      <p class="brand-copy">Sign in with an administrator account. Customer and seller accounts cannot access this panel.</p>
+      <span class="stamp">Owner access</span>
+      <h2 id="admin-hero-title" class="brand-title">Business Control Center</h2>
+      <p class="brand-copy">Run the business from one place. Review sales, orders, seller operations, finance and support without switching between accounts.</p>
+      <div class="capabilities" aria-label="Business control center capabilities">
+        <div class="capability"><strong>Orders & Returns</strong><span>Track fulfillment, exceptions and customer outcomes.</span></div>
+        <div class="capability"><strong>Sellers</strong><span>Review KYC, inventory, settlements and seller health.</span></div>
+        <div class="capability"><strong>Finance</strong><span>Monitor payments, deductions and payout confirmation.</span></div>
+        <div class="capability"><strong>Support</strong><span>Diagnose customer and seller issues from one workspace.</span></div>
+      </div>
     </section>
   </main>
 </body>
