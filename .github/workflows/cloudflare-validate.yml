@@ -30,7 +30,8 @@ jobs:
           for f in login.html admin.html admin-account.html reset-password.html admin-product-image-upload.js admin-orders.js admin-shipping.js admin-seller-approvals.js admin-seller-finance.js admin-checkout-health.js _headers _redirects _routes.json favicon.svg apple-touch-icon.png admin.webmanifest admin-login.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/_middleware.js
-          test -s functions/api/admin-login-guard.js
+          test ! -e functions/api/admin-login-guard.js
+          test -s ../supabase/functions/admin-login-guard/index.ts
           test -s .cf-functions-test/index.js
           LOGIN_ASSET="$(grep -oE 'src="/assets/admin-login\.[0-9a-f]{16}\.js"' dist/login.html | head -1 | cut -d'"' -f2)"
           SUPABASE_ASSET="$(grep -oE 'src="/assets/supabase\.[0-9a-f]{16}\.js"' dist/login.html | head -1 | cut -d'"' -f2)"
@@ -116,24 +117,26 @@ jobs:
           ! grep -Fq "field?.addEventListener('keydown'" dist/admin-login.js
           grep -Fq "banner.setAttribute('role',isError?'alert':'status')" dist/admin-login.js
           grep -Fq "banner.setAttribute('aria-live',isError?'assertive':'polite')" dist/admin-login.js
-          grep -Fq "fetch('/api/admin-login-guard'" dist/admin-login.js
+          grep -Fq "const ADMIN_LOGIN_GUARD_URL=SUPABASE_URL+'/functions/v1/admin-login-guard';" dist/admin-login.js
+          grep -Fq 'fetch(ADMIN_LOGIN_GUARD_URL' dist/admin-login.js
+          grep -Fq "credentials:'omit'" dist/admin-login.js
           grep -Fq 'checkLoginRateLimit(mail)' dist/admin-login.js
           node --check dist/admin-login.js
           node --check dist/supabase-config.js
       - name: Verify login guard and static security headers
         run: |
-          grep -Fq "SUPABASE_SERVICE_ROLE_KEY" functions/api/admin-login-guard.js
-          grep -Fq "CF-Connecting-IP" functions/api/admin-login-guard.js
-          grep -Fq "consume_admin_login_rate_limit" functions/api/admin-login-guard.js
-          grep -Fq "p_limit:8" functions/api/admin-login-guard.js
-          grep -Fq "p_window_seconds:600" functions/api/admin-login-guard.js
-          grep -Fq "request.headers.get('Origin')" functions/api/admin-login-guard.js
-          grep -Fq "request.headers.get('Sec-Fetch-Site')" functions/api/admin-login-guard.js
-          grep -Fq "fetchSite!=='same-origin'" functions/api/admin-login-guard.js
+          GUARD='../supabase/functions/admin-login-guard/index.ts'
+          grep -Fq "const ALLOWED_ORIGIN = 'https://admin.fashionfussion.in';" "$GUARD"
+          grep -Fq "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')" "$GUARD"
+          grep -Fq 'consume_admin_login_rate_limit' "$GUARD"
+          grep -Fq 'p_limit: 8' "$GUARD"
+          grep -Fq 'p_window_seconds: 600' "$GUARD"
+          grep -Fq "req.method === 'OPTIONS'" "$GUARD"
+          grep -Fq 'origin !== ALLOWED_ORIGIN' "$GUARD"
+          grep -Fq "'X-RateLimit-Policy': '8;w=600'" "$GUARD"
           grep -Fq "frame-ancestors 'none'" dist/_headers
           grep -Fq 'X-Frame-Options: DENY' dist/_headers
           grep -Fq 'https://static.cloudflareinsights.com' dist/_headers
-          node --check functions/api/admin-login-guard.js
           node --check functions/_middleware.js
       - name: Verify heading and visual order
         run: |
