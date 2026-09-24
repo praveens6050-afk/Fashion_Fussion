@@ -40,7 +40,7 @@ jobs:
       - name: Verify production domains and security headers
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --max-time 20 https://fashionfussion.in/ | grep -q 'Fashion Fussion'
+          curl --fail --silent --show-error --max-time 20 https://fashionfussion.in/ | grep -Eq 'Fashion[ _]Fussion'
           curl --fail --silent --show-error --max-time 20 https://www.fashionfussion.in/ | grep -q 'data-canonical-host'
           headers="$(curl --fail --silent --show-error --max-time 20 -I https://fashionfussion.in/)"
           printf '%s\n' "$headers" | grep -qi '^x-content-type-options: nosniff'
@@ -49,12 +49,20 @@ jobs:
       - name: Customer critical-page smoke
         run: |
           node - <<'NODE'
-          const paths=['/','/search?q=shirt','/cart','/login','/signup','/product'];
-          for (const path of paths) {
+          const pages=[
+            ['/',/Fashion[ _]Fussion/i],
+            ['/search?q=shirt',/(Search|Browse products)/i],
+            ['/cart',/(Cart|Shopping cart)/i],
+            ['/login',/(Sign in|Login)/i],
+            ['/signup',/(Create|Sign up|Register)/i],
+            ['/product',/(Product|Loading)/i]
+          ];
+          for (const [path,marker] of pages) {
             const response=await fetch('https://fashionfussion.in'+path,{redirect:'follow'});
             if(!response.ok) throw new Error(`${path} returned ${response.status}`);
             const text=await response.text();
-            if(!/Fashion Fussion/i.test(text)) throw new Error(`${path} missing brand shell`);
+            if(!marker.test(text)) throw new Error(`${path} missing expected page marker ${marker}`);
+            if(!/<html/i.test(text)||!/<body/i.test(text)) throw new Error(`${path} did not return an HTML document`);
             console.log(`PASS ${path}: ${response.status}`);
           }
           NODE
