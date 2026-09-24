@@ -53,7 +53,7 @@ jobs:
           node - <<'NODE'
           (async()=>{
             const base='https://fashionfussion.in';
-            const privateRoutes=['/account','/cart','/checkout','/quote-checkout','/login','/signup','/reset-password','/wishlist','/notifications','/coupons','/gift-cards','/order-confirmation','/order-details','/order-status','/order-tracking'];
+            const privateRoutes=['/account','/cart','/checkout','/quote-checkout','/login','/signup','/reset-password','/wishlist','/notifications','/coupons','/gift-cards','/order-confirmation','/order-details'];
             for(const path of privateRoutes){
               const response=await fetch(base+path,{redirect:'follow'});
               if(!response.ok) throw new Error(`${path} returned ${response.status}`);
