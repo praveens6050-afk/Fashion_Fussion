@@ -75,5 +75,5 @@ loadSellerModule('product-image-upload.js?v=20260922-readiness');
 loadSellerModule('seller-support.js?v=2');
 loadSellerModule('seller-operations-live.js?v=20260924-live');
 loadSellerModule('seller-finance-compliance-live.js?v=20260924-live');
-loadSellerModule('seller-settlement-live.js?v=20260924-manual-payout');
+loadSellerModule('seller-settlement-live.js?v=20260924-payout-breakdown');
 loadSellerModule('seller-hub-premium.js?v=20260921-hub');
