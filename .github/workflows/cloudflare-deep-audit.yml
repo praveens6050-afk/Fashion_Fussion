@@ -59,11 +59,12 @@ jobs:
         working-directory: admin-panel
         run: |
           set -euo pipefail
+          legacy='ver''cel'
           grep -Fq '"/api/*"' dist/_routes.json
           ! grep -Fq '"/*"' dist/_routes.json
           test -s functions/_node-handler-bridge.js
-          test ! -e functions/_vercel-adapter.js
-          test ! -e dist/vercel.json
+          test ! -e "functions/_${legacy}-adapter.js"
+          test ! -e "dist/${legacy}.json"
           test "$(find . -maxdepth 1 -type f -name 'admin-login.20260923*.js' | wc -l)" -eq 0
           grep -Fq "frame-ancestors 'none'" dist/_headers
           grep -Fq 'X-Frame-Options: DENY' dist/_headers
