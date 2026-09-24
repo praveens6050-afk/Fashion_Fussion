@@ -67,7 +67,8 @@ jobs:
           grep -Fq 'catalog-cart-entry.js?v=3' wishlist.html
           grep -Fq 'variant-commerce.js?v=5' cart.html
           grep -Fq 'variant-cart-ui.js?v=5' cart.html
-          grep -Fq 'variant-commerce.js?v=4' checkout.html
+          grep -Fq 'variant-commerce.js?v=5' checkout.html
+          grep -Fq 'checkout-cart-reconcile.js?v=1' checkout.html
           grep -Fq 'variant-cart-ui.js?v=4' checkout.html
           grep -Fq 'has_variants' csp-product.js
           grep -Fq 'addSyncedLine' csp-product.js
@@ -96,6 +97,11 @@ jobs:
         working-directory: customer-panel
         run: |
           set -euo pipefail
+          grep -Fq 'supabase-config.js?v=20260925-auth-sync' checkout.html
+          grep -Fq 'checkout-cart-reconcile.js?v=1' checkout.html
+          grep -Fq 'FashionVariantCart' checkout-cart-reconcile.js
+          grep -Fq 'readLines' checkout-cart-reconcile.js
+          grep -Fq 'fashion_fussion_cart' checkout-cart-reconcile.js
           grep -Fq 'checkout-business.js?v=1' checkout.html
           grep -Fq 'quote-checkout.js?v=2' quote-checkout.html
           grep -Fq 'quote-payment-safety.js?v=2' quote-checkout.html
@@ -119,7 +125,7 @@ jobs:
         run: |
           set -euo pipefail
           legacy='ver''cel'
-          for f in index.html login.html signup.html cart.html checkout.html product.html search.html wishlist.html account.html order-details.html order-confirmation.html quote-checkout.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
+          for f in index.html login.html signup.html cart.html checkout.html checkout-cart-reconcile.js product.html search.html wishlist.html account.html order-details.html order-confirmation.html quote-checkout.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/_node-handler-bridge.js
           test -s functions/api/[[path]].js
@@ -130,7 +136,8 @@ jobs:
           grep -q 'catalog-cart-entry.js?v=3' dist/index.html
           grep -q 'variant-commerce.js?v=5' dist/cart.html
           grep -q 'variant-cart-ui.js?v=5' dist/cart.html
-          grep -q 'variant-commerce.js?v=4' dist/checkout.html
+          grep -q 'variant-commerce.js?v=5' dist/checkout.html
+          grep -q 'checkout-cart-reconcile.js?v=1' dist/checkout.html
           grep -q 'variant-cart-ui.js?v=4' dist/checkout.html
           grep -Fq 'checkout-business.js?v=1' dist/checkout.html
           grep -q 'variant-commerce.js?v=4' dist/product.html
