@@ -27,7 +27,7 @@ jobs:
         run: npx --yes wrangler@latest pages functions build --compatibility-date=2026-09-22 --compatibility-flag=nodejs_compat --outdir=.cf-functions-test
       - name: Verify deployment artifacts
         run: |
-          for f in login.html admin.html admin-account.html reset-password.html admin-product-image-upload.js admin-orders.js admin-shipping.js admin-seller-approvals.js admin-checkout-health.js _headers _redirects _routes.json favicon.svg apple-touch-icon.png admin.webmanifest admin-login.js; do test -s "dist/$f"; done
+          for f in login.html admin.html admin-account.html reset-password.html admin-product-image-upload.js admin-orders.js admin-shipping.js admin-seller-approvals.js admin-seller-finance.js admin-checkout-health.js _headers _redirects _routes.json favicon.svg apple-touch-icon.png admin.webmanifest admin-login.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/_middleware.js
           test -s functions/api/admin-login-guard.js
@@ -161,7 +161,11 @@ jobs:
           grep -Fq "admin-product-image-upload.js" desktop-admin-loader.js
           grep -Fq "admin-payment-review.js" desktop-admin-loader.js
           grep -Fq "admin-recovery-status.js" desktop-admin-loader.js
-          for f in admin-orders.js admin-shipping.js admin-seller-approvals.js admin-checkout-health.js admin-returns.js admin-promotions.js admin-inventory.js admin-business-quotes.js; do grep -Fq "$f" supabase-config.js; done
+          for f in admin-orders.js admin-shipping.js admin-seller-approvals.js admin-seller-finance.js admin-checkout-health.js admin-returns.js admin-promotions.js admin-inventory.js admin-business-quotes.js; do grep -Fq "$f" supabase-config.js; done
+          grep -Fq "admin_list_seller_finance_reviews" admin-seller-finance.js
+          grep -Fq "admin_review_seller_finance" admin-seller-finance.js
+          grep -Fq "admin_upsert_seller_settlement" admin-seller-finance.js
+          node --check admin-seller-finance.js
           grep -Fq "window.ffAdminSupabaseReady" admin-product-image-upload.js
           grep -Fq "save.disabled=Boolean(busy)" admin-product-image-upload.js
       - name: Verify API routing boundary
