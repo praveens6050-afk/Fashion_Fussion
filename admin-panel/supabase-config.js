@@ -4,11 +4,18 @@ window.FF_API_ORIGIN='';
 (function(){'use strict';
   const SDK_FALLBACK='/vendor/supabase.js';
   const REMEMBER_KEY='ff_admin_remember';
+  const ADMIN_AUTH_STORAGE_KEY='ff_admin_auth';
   function shouldRemember(){
     try{return localStorage.getItem(REMEMBER_KEY)==='true';}catch{return false;}
   }
   const authStorage={
-    getItem(key){try{return (shouldRemember()?localStorage:sessionStorage).getItem(key);}catch{return null;}},
+    getItem(key){
+      try{
+        const primary=shouldRemember()?localStorage:sessionStorage;
+        const secondary=shouldRemember()?sessionStorage:localStorage;
+        return primary.getItem(key)??secondary.getItem(key);
+      }catch{return null;}
+    },
     setItem(key,value){
       try{
         const primary=shouldRemember()?localStorage:sessionStorage;
@@ -22,7 +29,7 @@ window.FF_API_ORIGIN='';
   function createClient(){
     if(window.supabaseClient)return window.supabaseClient;
     if(!window.supabase||typeof window.supabase.createClient!=='function')return null;
-    window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{storage:authStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{storage:authStorage,storageKey:ADMIN_AUTH_STORAGE_KEY,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     return window.supabaseClient;
   }
   function loadFallback(){
