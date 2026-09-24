@@ -1,6 +1,6 @@
 # Fashion_Fussion Cloudflare Deployment Map
 
-Fashion_Fussion is deployed on Cloudflare Pages. Legacy Vercel deployment configuration is not part of the current production architecture.
+Fashion_Fussion production hosting is standardized on Cloudflare Pages.
 
 ## Canonical production projects
 
@@ -15,7 +15,7 @@ Fashion_Fussion is deployed on Cloudflare Pages. Legacy Vercel deployment config
 - Production deployment work happens on the matching `cloudflare-*` branch.
 - Each Cloudflare Pages project must use only its matching production branch.
 - Customer, Admin and Seller frontend packages stay isolated while sharing the authorized Supabase backend.
-- Do not add legacy-host deployment manifests, legacy preview instructions, or legacy-host CI checks back into the repository.
+- Do not add obsolete hosting manifests, preview instructions, or retired-host CI checks back into the repository.
 - Privileged environment values belong in Cloudflare Pages environment variables/secrets and must never be committed.
 
 ## Verification boundary
