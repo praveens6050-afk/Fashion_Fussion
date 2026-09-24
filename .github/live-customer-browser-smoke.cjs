@@ -129,6 +129,19 @@ async function noHorizontalOverflow(page, label) {
     await desktop.locator('#add').click();
     const variantLines = await desktop.evaluate(() => JSON.parse(localStorage.getItem('fashion_fussion_cart_lines_v2') || '[]'));
     if (!variantLines.some(line => Number(line.id) === Number(variantProductId) && Number(line.variant_id) > 0 && Number(line.qty) > 0)) throw new Error(`variant product ${variantProductId} did not persist variant_id`);
+
+    await desktop.evaluate(productId => {
+      const staleVariantId = 2147483647;
+      localStorage.setItem('fashion_fussion_cart', JSON.stringify({ [productId]: 1 }));
+      localStorage.setItem('fashion_fussion_cart_lines_v2', JSON.stringify([{ id: Number(productId), variant_id: staleVariantId, qty: 1 }]));
+      localStorage.setItem('fashion_fussion_cart_variants', JSON.stringify({ [productId]: staleVariantId }));
+      sessionStorage.removeItem('fashion_fussion_checkout_key');
+    }, Number(variantProductId));
+    await open(desktop, '/cart');
+    await desktop.locator('[data-variant-line]').first().waitFor({ state: 'visible', timeout: 15000 });
+    const staleText = await desktop.locator('[data-variant-line]').first().innerText();
+    if (!/no longer available/i.test(staleText)) throw new Error('stale variant cart did not show an unavailable-option warning');
+    if (!(await desktop.locator('#place').isDisabled())) throw new Error('stale variant cart still allowed checkout');
   }
   await desktop.close();
 
@@ -142,7 +155,7 @@ async function noHorizontalOverflow(page, label) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, live variant persistence, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
