@@ -12,6 +12,14 @@ function cleanPath(url) {
   return String(url.pathname || '/').replace(/\.html$/i, '') || '/';
 }
 
+function expectedAuthRedirectAbort(request) {
+  const failure = request.failure()?.errorText || '';
+  try {
+    const url = new URL(request.url());
+    return /ERR_ABORTED/i.test(failure) && url.hostname === 'seller.fashionfussion.in' && /\/portal\.js$/i.test(url.pathname);
+  } catch { return false; }
+}
+
 function observe(page, label) {
   page.on('pageerror', error => failures.push(`${label} pageerror: ${error.message}`));
   page.on('console', message => {
@@ -24,6 +32,7 @@ function observe(page, label) {
   });
   page.on('requestfailed', request => {
     if (!sameSellerHost(request.url())) return;
+    if (expectedAuthRedirectAbort(request)) return;
     failures.push(`${label} failed request: ${request.method()} ${request.url()} ${request.failure()?.errorText || ''}`);
   });
   page.on('response', response => {
