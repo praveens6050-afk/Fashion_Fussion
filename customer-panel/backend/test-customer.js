@@ -1,6 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
+const vm=require('vm');
 const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors}=require('./lib');
 
 assert.deepStrictEqual(paymentPricing(100,'prepaid'),{payment_method:'prepaid',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
@@ -50,4 +51,36 @@ const shippingStatus=read('customer-shipping-status.js');
 for(const required of ['getSupabaseUser','user_id','order_shipments','direction=eq.forward'])assert.ok(shippingStatus.includes(required),`Customer shipment status must enforce ${required}`);
 assert.ok(!shippingStatus.includes('requireAdminUser'),'Customer shipment status must not depend on admin authorization');
 
-console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping audit tests passed');
+// Direct Checkout must use the authoritative variant-line quantities even if an
+// older legacy cart object is stale. This regression reproduces the customer
+// report where the line showed quantity 5 while the initial summary used qty 1.
+function storage(initial={}){
+  const values=new Map(Object.entries(initial));
+  return{
+    getItem(key){return values.has(key)?values.get(key):null},
+    setItem(key,value){values.set(key,String(value))},
+    removeItem(key){values.delete(key)},
+    dump(){return Object.fromEntries(values)}
+  };
+}
+const reconcileSource=fs.readFileSync(path.join(__dirname,'..','checkout-cart-reconcile.js'),'utf8');
+const reconcileLocal=storage({fashion_fussion_cart:JSON.stringify({42:1})});
+const reconcileSession=storage({fashion_fussion_checkout_key:'stale-checkout'});
+vm.runInNewContext(reconcileSource,{
+  window:{FashionVariantCart:{readLines:()=>[{id:42,variant_id:null,qty:5}]}},
+  localStorage:reconcileLocal,
+  sessionStorage:reconcileSession
+});
+assert.deepStrictEqual(JSON.parse(reconcileLocal.getItem('fashion_fussion_cart')),{'42':5},'Checkout must reconcile legacy quantity to authoritative cart-line quantity');
+assert.strictEqual(reconcileSession.getItem('fashion_fussion_checkout_key'),null,'Quantity reconciliation must invalidate stale checkout idempotency key');
+
+const multiLineLocal=storage({fashion_fussion_cart:JSON.stringify({42:1})});
+const multiLineSession=storage({fashion_fussion_checkout_key:'stale-checkout'});
+vm.runInNewContext(reconcileSource,{
+  window:{FashionVariantCart:{readLines:()=>[{id:42,variant_id:7,qty:2},{id:42,variant_id:8,qty:3}]}},
+  localStorage:multiLineLocal,
+  sessionStorage:multiLineSession
+});
+assert.deepStrictEqual(JSON.parse(multiLineLocal.getItem('fashion_fussion_cart')),{'42':5},'Checkout must aggregate multiple variant lines for legacy product quantity');
+
+console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart audit tests passed');
