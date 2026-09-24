@@ -4,6 +4,7 @@
     'orders','returns','inventory','analytics','shipping','onboarding','settings','support','tax','team',
     'promotions','quotes','scorecard','bulk-tools','reports','messages','locations','sla','accounting'
   ]);
+  const coreViews=new Set(['overview','products','review','payments','profile']);
   const blockedIds=new Set([
     'dashboardExtras','customizeDashboard','sellerNotificationsButton','sellerNotificationPanel','sellerOrderModal'
   ]);
@@ -15,11 +16,21 @@
     if(el.matches?.('.nav-item,[data-view]'))el.setAttribute('tabindex','-1');
   }
 
+  function show(el){
+    if(!el)return;
+    el.hidden=false;
+    el.removeAttribute('aria-hidden');
+    if(el.matches?.('.nav-item,[data-view]'))el.removeAttribute('tabindex');
+  }
+
   function apply(){
     document.querySelectorAll('.nav-item[data-view]').forEach(button=>{
-      if(blockedViews.has(button.dataset.view))hide(button);
+      const view=button.dataset.view;
+      if(blockedViews.has(view))hide(button);
+      else if(coreViews.has(view))show(button);
     });
     blockedViews.forEach(view=>hide(document.getElementById('view-'+view)));
+    coreViews.forEach(view=>show(document.getElementById('view-'+view)));
     blockedIds.forEach(id=>hide(document.getElementById(id)));
     document.querySelectorAll('.top-actions .icon-btn[aria-label="Notifications"],.top-actions .icon-btn[aria-label="Seller notifications"]').forEach(hide);
   }
