@@ -1,6 +1,6 @@
 import handler from '../../api/admin-order-action.js';
-import { runVercelHandler } from '../_vercel-adapter.js';
+import { runNodeHandler } from '../_node-handler-bridge.js';
 
 export function onRequest(context) {
-  return runVercelHandler(handler, context);
+  return runNodeHandler(handler, context);
 }
