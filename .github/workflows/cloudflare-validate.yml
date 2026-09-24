@@ -159,6 +159,7 @@ jobs:
           grep -Fq 'X-Content-Type-Options: nosniff' dist/_headers
           grep -Fq 'X-Frame-Options: DENY' dist/_headers
           grep -Fq 'Content-Security-Policy:' dist/_headers
+          grep -Fq 'https://cdn.razorpay.com' dist/_headers
           grep -Fq 'Strict-Transport-Security:' dist/_headers
           grep -Fq 'Cache-Control:' dist/_headers
 
