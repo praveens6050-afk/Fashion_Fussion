@@ -13,10 +13,25 @@
 /seller-launch-safety.js
   Cache-Control: no-store, max-age=0, no-transform
 
+/portal.js
+  Cache-Control: no-store, max-age=0, no-transform
+
+/sidebar-compact.css
+  Cache-Control: no-store, max-age=0, no-transform
+
+/seller-hub-premium.css
+  Cache-Control: no-store, max-age=0, no-transform
+
+/seller-shell-recovery.css
+  Cache-Control: no-store, max-age=0, no-transform
+
 /seller-login.20260922.js
   Cache-Control: public, max-age=31536000, immutable
 
 /
+  Cache-Control: no-store, max-age=0, no-transform
+
+/index.html
   Cache-Control: no-store, max-age=0, no-transform
 
 /login
