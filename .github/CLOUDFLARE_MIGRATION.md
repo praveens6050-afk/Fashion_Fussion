@@ -1,9 +1,6 @@
-# Fashion_Fussion — Vercel to Cloudflare migration
+# Fashion_Fussion — Cloudflare production architecture
 
-## Goal
-Move the complete Fashion_Fussion production stack from Vercel to Cloudflare with no functional regression and with Vercel kept as rollback until Cloudflare is verified.
-
-## Cloudflare projects
+Fashion_Fussion production is deployed on Cloudflare Pages with three isolated projects.
 
 | Panel | Cloudflare project | Git branch | Root directory | Build command | Output |
 |---|---|---|---|---|---|
@@ -11,26 +8,24 @@ Move the complete Fashion_Fussion production stack from Vercel to Cloudflare wit
 | Admin | `fashion-fussion-admin` | `cloudflare-admin` | `admin-panel` | `npm run build` | `dist` |
 | Seller | `fashion-fussion-seller` | `cloudflare-seller` | `seller-panel` | `npm run build` | `dist` |
 
-Customer/Admin Functions are intentionally limited to `/api/*` via `_routes.json`; normal pages/assets remain static CDN traffic. Seller has no server-side API Functions.
-
-## Runtime compatibility
-`compatibility_date = 2026-09-22`. Existing Node-style backend handlers are bundled through Pages Functions compatibility adapters. Wrangler validation already passes for Customer, Admin and Seller.
+Customer and Admin Pages Functions are intentionally limited to `/api/*` through `_routes.json`; normal pages and assets remain static CDN traffic. Seller has no server-side Pages Functions requirement for its normal runtime.
 
 ## Customer runtime variables / secrets
-Set for both Preview and Production where applicable:
+
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY` (secret)
 - `RAZORPAY_KEY_ID` (secret)
 - `RAZORPAY_KEY_SECRET` (secret)
 - `RAZORPAY_WEBHOOK_SECRET` (secret)
-- `ALLOWED_ORIGIN`
+- `ALLOWED_ORIGIN=https://fashionfussion.in`
 
-Production `ALLOWED_ORIGIN=https://fashionfussion.in`.
-During preview testing add the exact Customer `*.pages.dev` origin as a comma-separated allowed origin.
+For controlled preview testing, add the exact Customer `pages.dev` origin only for the duration of the test.
 
 ## Admin runtime variables / secrets
+
 - `SUPABASE_URL`
-- `ALLOWED_ORIGIN`
+- `SUPABASE_SERVICE_ROLE_KEY` where required by server-only controls
+- `ALLOWED_ORIGIN=https://admin.fashionfussion.in`
 - `RAZORPAY_KEY_ID` (secret)
 - `RAZORPAY_KEY_SECRET` (secret)
 - `RAZORPAY_WEBHOOK_SECRET` (secret)
@@ -39,37 +34,20 @@ During preview testing add the exact Customer `*.pages.dev` origin as a comma-se
 - `SHIPROCKET_PICKUP_LOCATION`
 - `SHIPROCKET_PICKUP_PINCODE`
 
-Normal Admin authorization uses the signed-in Admin JWT + Supabase RLS/RPC checks; a service-role key is not required for its normal runtime path.
-
-Production `ALLOWED_ORIGIN=https://admin.fashionfussion.in`.
-During preview testing add the exact Admin `*.pages.dev` origin.
-
 ## Seller runtime
-Seller frontend talks directly to Supabase using the publishable key already present in frontend configuration. No server-side Cloudflare secret is required for normal Seller runtime.
 
-## Supabase Auth preview allow-list
-Before testing auth on `pages.dev`, add the exact preview origins/redirect URLs to Supabase Auth allowed redirects. Seller reset/signup uses `location.origin`, so the preview URL must be allow-listed. Do not remove existing production redirects until final cutover is complete.
+Seller frontend talks directly to Supabase using the publishable frontend key. Seller ownership and mutations are protected by Auth, RLS and authenticated RPCs.
 
-## Pre-cutover verification
-1. Customer: homepage, auth, search, product, cart, checkout, COD/prepaid, order confirmation, order status/tracking, cancel/refund status.
-2. Seller: login/register/reset, catalog, normal image upload, submit/edit product, approval/rejection state.
-3. Admin: login/reset, seller review, product/inventory, image upload, orders, refund actions, shipping/Shiprocket, checkout health.
-4. Browser console must be clean of startup errors.
-5. Security headers/CSP must match current production intent.
-6. Razorpay webhook must be tested against the Cloudflare Customer API endpoint before production DNS cutover.
+## Production verification
 
-## Domain cutover order
-1. Deploy and verify all three `pages.dev` previews.
-2. Attach `seller.fashionfussion.in` and verify Seller.
-3. Attach `admin.fashionfussion.in` and verify Admin.
-4. Attach `fashionfussion.in` and `www` as required; verify Customer end-to-end.
-5. Update Razorpay webhook target to Cloudflare-backed production endpoint and confirm signature processing.
-6. Re-run Supabase Auth redirect checks on final custom domains.
-7. Keep Vercel projects intact during the observation window.
-8. Only after all production smoke tests pass, disconnect Vercel Git/domain mappings and remove obsolete Vercel deployment configuration.
+1. Customer: homepage, auth, search, product, cart, checkout, COD/prepaid payment, confirmation, tracking, cancellation and refund status.
+2. Seller: login/register/reset, catalog, normal image upload, submit/edit product and approval/rejection state.
+3. Admin: login/reset, seller review, product/inventory, image upload, orders, refund actions, shipping and checkout health.
+4. Browser console should be free of application startup errors.
+5. Security headers and CSP must be present on production responses.
+6. Razorpay webhook signature processing must be verified against the Customer production API.
+7. All three branch validation workflows and the matching Cloudflare deployment checks must pass for the exact production commit.
 
-## Rollback
-If a critical issue appears after DNS cutover, restore the previous Vercel DNS/project mapping while Cloudflare is repaired. Do not delete Vercel projects or environment variables before successful Cloudflare production validation.
+## Repository boundary
 
-## ChatGPT / Cloudflare connector target
-Preferred connector: Cloudflare official remote MCP endpoint `https://mcp.cloudflare.com/mcp` using OAuth. Once connected with write-capable permissions, use it for project creation, Pages/Workers configuration, variables/secrets, DNS/custom-domain cutover and deployment inspection.
+Each Cloudflare branch contains only its deployment package plus shared infrastructure required by that branch. Legacy hosting configuration, unrelated panel folders and obsolete deployment adapters are intentionally excluded.
