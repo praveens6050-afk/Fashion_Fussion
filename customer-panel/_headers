@@ -40,13 +40,27 @@
 /security-policy.html
   Link: <https://fashionfussion.in/security-policy.html>; rel="canonical"
 
+/search
+  X-Robots-Tag: noindex, follow
+
 /search.html
+  X-Robots-Tag: noindex, follow
+
+/product
   X-Robots-Tag: noindex, follow
 
 /product.html
   X-Robots-Tag: noindex, follow
 
+/account
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
 /account.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/cart
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
@@ -74,7 +88,15 @@
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
+/login
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
 /login.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/signup
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
@@ -82,23 +104,55 @@
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
+/reset-password
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
 /reset-password.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/wishlist
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
 /wishlist.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/notifications
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
 
 /notifications.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/coupons
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
 
 /coupons.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/gift-cards
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
 
 /gift-cards.html
   X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/order-confirmation
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
 
 /order-confirmation.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/order-details
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
@@ -106,7 +160,15 @@
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
+/order-status
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
 /order-status.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store, max-age=0, no-transform
+
+/order-tracking
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-store, max-age=0, no-transform
 
