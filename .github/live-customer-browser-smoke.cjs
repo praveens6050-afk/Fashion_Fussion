@@ -44,16 +44,14 @@ async function noHorizontalOverflow(page, label) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
 
-  // Canonical-host behavior: a human opening www should land on the apex host without losing URL state.
   const canonical = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   observe(canonical, 'www canonical');
-  await canonical.goto(WWW + '/cart.html?human=1#cart', { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await canonical.waitForURL(url => url.hostname === 'fashionfussion.in' && url.pathname === '/cart.html', { timeout: 10000 });
+  await canonical.goto(WWW + '/cart?human=1#cart', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await canonical.waitForURL(url => url.hostname === 'fashionfussion.in' && url.pathname === '/cart', { timeout: 10000 });
   const canonicalUrl = new URL(canonical.url());
   if (canonicalUrl.searchParams.get('human') !== '1' || canonicalUrl.hash !== '#cart') throw new Error(`www canonicalization lost path/query/hash: ${canonicalUrl.href}`);
   await canonical.close();
 
-  // Desktop shopper journey against live Cloudflare production.
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   observe(desktop, 'desktop');
   await open(desktop, '/index.html');
@@ -63,7 +61,6 @@ async function noHorizontalOverflow(page, label) {
   await desktop.waitForFunction(() => document.querySelectorAll('#productsGrid a[href*="product.html?id="]').length > 0, null, { timeout: 15000 });
   await noHorizontalOverflow(desktop, 'desktop homepage');
 
-  // Search like a customer, sort results, then open a real product.
   await Promise.all([
     desktop.waitForURL(url => url.pathname.endsWith('/search.html') && url.searchParams.get('q') === 'a', { timeout: 10000 }),
     (async () => { await desktop.locator('#searchBox').fill('a'); await desktop.locator('#searchBtn').click(); })()
@@ -92,9 +89,9 @@ async function noHorizontalOverflow(page, label) {
     }));
     if (!Object.values(persisted.legacy).some(qty => Number(qty) > 0)) throw new Error('PDP Add to Cart did not persist cart quantity');
 
-    await open(desktop, '/cart.html');
+    await open(desktop, '/cart');
     await desktop.locator('.item').first().waitFor({ state: 'visible', timeout: 15000 });
-    await noHorizontalOverflow(desktop, 'desktop cart');
+    await noHorizontalOverflow(desktop, 'desktop extensionless cart');
     if (await desktop.locator('[data-variant-line]').count()) {
       const lines = await desktop.evaluate(() => JSON.parse(localStorage.getItem('fashion_fussion_cart_lines_v2') || '[]'));
       if (!lines.some(line => Number.isInteger(Number(line.variant_id)) && Number(line.variant_id) > 0)) throw new Error('variant cart UI rendered but persisted variant_id is missing');
@@ -107,7 +104,6 @@ async function noHorizontalOverflow(page, label) {
     if (!(await desktop.locator('form').count())) throw new Error('signed-out checkout did not land on a login form');
   }
 
-  // Exercise the live variant runtime with the currently active variant-enabled product, when one exists.
   await open(desktop, '/index.html');
   const variantProductId = await desktop.evaluate(async () => {
     const { data, error } = await window.supabaseClient.from('products').select('id').eq('is_active', true).eq('has_variants', true).order('id').limit(1);
@@ -116,7 +112,7 @@ async function noHorizontalOverflow(page, label) {
   });
   if (variantProductId) {
     await desktop.evaluate(() => { localStorage.removeItem('fashion_fussion_cart'); localStorage.removeItem('fashion_fussion_cart_lines_v2'); localStorage.removeItem('fashion_fussion_cart_variants'); });
-    await open(desktop, `/product.html?id=${encodeURIComponent(variantProductId)}`);
+    await open(desktop, `/product?id=${encodeURIComponent(variantProductId)}`);
     await desktop.locator('#product').waitFor({ state: 'visible', timeout: 15000 });
     await desktop.locator('#variantPicker').waitFor({ state: 'visible', timeout: 15000 });
     const enabled = desktop.locator('#variantPicker .variant-option:not([disabled])');
@@ -128,10 +124,9 @@ async function noHorizontalOverflow(page, label) {
   }
   await desktop.close();
 
-  // Mobile customer pass: homepage/search/cart/login must fit without page-level horizontal scrolling.
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   observe(mobile, 'mobile');
-  for (const path of ['/index.html', '/search.html', '/cart.html', '/login.html']) {
+  for (const path of ['/index.html', '/search', '/cart', '/login']) {
     await open(mobile, path);
     await noHorizontalOverflow(mobile, `mobile ${path}`);
   }
@@ -139,7 +134,7 @@ async function noHorizontalOverflow(page, label) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, live variant persistence, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, live variant persistence, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
