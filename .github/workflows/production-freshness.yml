@@ -40,11 +40,13 @@ jobs:
       - name: Verify production domains and security headers
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --max-time 20 https://fashionfussion.in/ | grep -Eq 'Fashion[ _]Fussion'
-          curl --fail --silent --show-error --max-time 20 https://www.fashionfussion.in/ | grep -q 'data-canonical-host'
+          home="$(curl --fail --silent --show-error --max-time 20 https://fashionfussion.in/)"
+          grep -Eq 'Fashion[ _]Fussion' <<<"$home"
+          canonical="$(curl --fail --silent --show-error --max-time 20 https://www.fashionfussion.in/)"
+          grep -q 'data-canonical-host' <<<"$canonical"
           headers="$(curl --fail --silent --show-error --max-time 20 -I https://fashionfussion.in/)"
-          printf '%s\n' "$headers" | grep -qi '^x-content-type-options: nosniff'
-          printf '%s\n' "$headers" | grep -qi '^content-security-policy:'
+          grep -qi '^x-content-type-options: nosniff' <<<"$headers"
+          grep -qi '^content-security-policy:' <<<"$headers"
 
       - name: Customer critical-page smoke
         run: |
