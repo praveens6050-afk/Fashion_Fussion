@@ -103,6 +103,7 @@ else{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreS
 // Live catalog/review + support stay unchanged; operations and finance are seller-scoped through Supabase RPC.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
+loadSellerModule('seller-catalog-drawer-hydration.js?v=20260925-edit-hydration');
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
 loadSellerModule('seller-support.js?v=2');
 loadSellerModule('seller-operations-live.js?v=20260924-live');
