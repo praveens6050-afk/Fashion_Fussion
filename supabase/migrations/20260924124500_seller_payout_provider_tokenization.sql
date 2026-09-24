@@ -1,0 +1,13 @@
+alter table public.seller_payout_profiles add column if not exists provider_name text;
+alter table public.seller_payout_profiles add column if not exists provider_contact_ref text;
+alter table public.seller_payout_profiles add column if not exists provider_tokenized_at timestamptz;
+alter table public.seller_payout_profiles add column if not exists provider_last_error text;
+create unique index if not exists seller_payout_provider_fund_ref_uidx on public.seller_payout_profiles(provider_fund_account_ref) where provider_fund_account_ref is not null;
+alter table public.seller_settlements add column if not exists payout_mode text;
+alter table public.seller_settlements add column if not exists payout_idempotency_key text;
+alter table public.seller_settlements add column if not exists provider_status text;
+alter table public.seller_settlements add column if not exists provider_utr text;
+alter table public.seller_settlements add column if not exists provider_status_details jsonb;
+alter table public.seller_settlements add column if not exists provider_synced_at timestamptz;
+create unique index if not exists seller_settlement_provider_ref_uidx on public.seller_settlements(provider_payout_ref) where provider_payout_ref is not null;
+create unique index if not exists seller_settlement_idempotency_uidx on public.seller_settlements(payout_idempotency_key) where payout_idempotency_key is not null;
