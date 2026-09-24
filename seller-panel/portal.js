@@ -45,7 +45,7 @@ window.SellerCatalogBridge={
   getProducts:()=>products,
   makeId:()=>uid(),
   notify:message=>toast(message),
-  commit:next=>{products=Array.isArray(next)?next:[];persist();renderAll()},
+  commit:next=>{products=Array.isArray(next)?next:[];renderAll()},
   close:()=>closeDrawer(),
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
