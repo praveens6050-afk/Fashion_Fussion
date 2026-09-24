@@ -16,7 +16,7 @@ function expectedAuthRedirectAbort(request) {
   const failure = request.failure()?.errorText || '';
   try {
     const url = new URL(request.url());
-    return /ERR_ABORTED/i.test(failure) && url.hostname === 'seller.fashionfussion.in' && /\/portal\.js$/i.test(url.pathname);
+    return /ERR_ABORTED/i.test(failure) && url.hostname === 'seller.fashionfussion.in' && /\/(?:app|portal|supabase-config)\.js$/i.test(url.pathname);
   } catch { return false; }
 }
 
