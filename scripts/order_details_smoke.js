@@ -38,7 +38,7 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
   await page.route('**/supabase-config.js*', async route => {
     const stub = `
       (() => {
-        window.FF_API_ORIGIN='https://fashion-fussion-olive.vercel.app';
+        window.FF_API_ORIGIN='';
         const session={access_token:'smoke-access-token',user:{id:'smoke-user',email:'smoke@example.test'}};
         const order=${JSON.stringify(activeOrder)};
         function currentOrder(){
@@ -59,7 +59,7 @@ const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173';
     await route.fulfill({ status: 200, contentType: 'application/javascript', body: stub });
   });
 
-  await page.route('https://fashion-fussion-olive.vercel.app/api/**', async route => {
+  await page.route('**/api/**', async route => {
     const request = route.request();
     if (request.headers()['authorization'] !== 'Bearer smoke-access-token') throw new Error('order cancellation API call did not include the current bearer session');
     const url = new URL(request.url());
