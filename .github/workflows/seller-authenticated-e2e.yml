@@ -15,7 +15,7 @@ concurrency:
 jobs:
   authenticated-seller:
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 10
     env:
       SELLER_E2E_EMAIL: ${{ secrets.SELLER_E2E_EMAIL }}
       SELLER_E2E_PASSWORD: ${{ secrets.SELLER_E2E_PASSWORD }}
@@ -60,4 +60,7 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Run authenticated Seller lifecycle
-        run: node .github/live-seller-authenticated-smoke.cjs
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout --signal=TERM --kill-after=5s 150s node .github/live-seller-authenticated-smoke.cjs
