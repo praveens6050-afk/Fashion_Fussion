@@ -144,15 +144,6 @@ form?.addEventListener('submit',event=>{
   event.preventDefault();
   submitLogin();
 });
-submit?.addEventListener('click',submitLogin);
-for(const field of [email,password]){
-  field?.addEventListener('keydown',event=>{
-    if(event.key==='Enter'&&!event.isComposing){
-      event.preventDefault();
-      submitLogin();
-    }
-  });
-}
 
 forgot?.addEventListener('click',async event=>{
   event.preventDefault();
