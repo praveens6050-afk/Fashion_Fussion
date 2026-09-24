@@ -55,7 +55,7 @@ window.FF_API_ORIGIN='';
   })();
   window.ffSupabaseReady=window.ffAdminSupabaseReady;
 
-  function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=true;s.setAttribute(marker,'true');document.head.appendChild(s)}
+  function add(src,marker){const base=src.split('?')[0];if(document.querySelector('script['+marker+']')||document.querySelector('script[src*="'+base+'"]'))return;const s=document.createElement('script');s.src=src;s.async=true;s.setAttribute(marker,'true');document.head.appendChild(s)}
   function addStyle(href,marker){if(document.querySelector('link['+marker+']'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=href;l.setAttribute(marker,'true');document.head.appendChild(l)}
   const page=(location.pathname.split('/').filter(Boolean).pop()||'login').toLowerCase();
   const isAdminPage=page==='admin'||page==='admin.html';
