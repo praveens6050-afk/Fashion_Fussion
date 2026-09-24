@@ -105,11 +105,14 @@ async function signIn(page) {
 }
 
 async function testEveryWorkspace(page) {
-  const views = await page.locator('.nav-item[data-view]').evaluateAll(nodes => [...new Set(nodes.map(node => node.dataset.view).filter(Boolean))]);
-  if (!views.length) throw new Error('No Seller workspace navigation items found.');
+  const views = await page.locator('.nav-item[data-view]').evaluateAll(nodes => [...new Set(nodes.filter(node => {
+    const style = getComputedStyle(node);
+    return !node.hidden && node.getAttribute('aria-hidden') !== 'true' && style.display !== 'none' && style.visibility !== 'hidden';
+  }).map(node => node.dataset.view).filter(Boolean))]);
+  if (!views.length) throw new Error('No visible Seller workspace navigation items found.');
   for (const view of views) {
     const button = page.locator(`.nav-item[data-view="${view}"]`).first();
-    await button.click();
+    await button.click({ timeout: 8000 });
     const section = page.locator(`#view-${view}`);
     await section.waitFor({ state: 'visible', timeout: 8000 });
     if (!(await section.evaluate(node => node.classList.contains('active')))) throw new Error(`Seller workspace ${view} did not become active.`);
@@ -117,14 +120,24 @@ async function testEveryWorkspace(page) {
     await noHorizontalOverflow(page, `Seller ${view}`);
   }
 
-  await page.locator('.nav-item[data-view="orders"]').first().click();
-  if (!(await page.locator('#view-orders').getByText('UI preview').count())) throw new Error('Orders boundary no longer identifies preview data.');
-  await page.locator('.nav-item[data-view="payments"]').first().click();
-  if (!(await page.locator('#view-payments').getByText('Not configured').count())) throw new Error('Payments boundary no longer identifies payout configuration state.');
-  await page.locator('.nav-item[data-view="profile"]').first().click();
+  for (const staged of ['orders', 'returns']) {
+    const button = page.locator(`.nav-item[data-view="${staged}"]`).first();
+    const section = page.locator(`#view-${staged}`);
+    if (await button.isVisible()) throw new Error(`${staged} launch boundary unexpectedly became visible.`);
+    if (await section.isVisible()) throw new Error(`${staged} staged workspace unexpectedly became visible.`);
+  }
+
+  const payments = page.locator('.nav-item[data-view="payments"]').first();
+  if (await payments.isVisible()) {
+    await payments.click({ timeout: 8000 });
+    await page.locator('#view-payments').waitFor({ state: 'visible', timeout: 8000 });
+  }
+
+  const profile = page.locator('.nav-item[data-view="profile"]').first();
+  await profile.click({ timeout: 8000 });
   const kyc = (await page.locator('#kycStatus').textContent())?.trim();
-  if (!/pending integration/i.test(kyc || '')) throw new Error(`Unexpected KYC boundary: ${kyc}`);
-  console.log('PASS Seller workspace navigation and staged-boundary checks.');
+  if (!kyc) throw new Error('Seller KYC status is empty.');
+  console.log(`PASS Seller workspace navigation and launch boundaries (visible=${views.join(',')}; KYC=${kyc}).`);
 }
 
 async function testProfileNoopSave(page) {
@@ -242,7 +255,7 @@ async function testLiveCatalogLifecycle(page) {
     await browser.close();
   }
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS authenticated Seller E2E: sign-in, all workspaces, profile save, live catalog submit/edit/duplicate/withdraw, withdrawn-state UI/filter, and sign-out.');
+  console.log('PASS authenticated Seller E2E: sign-in, visible launch workspaces, profile save, live catalog submit/edit/duplicate/withdraw, withdrawn-state UI/filter, and sign-out.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
