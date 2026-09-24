@@ -51,14 +51,16 @@ jobs:
           printf '%s\n' "$headers" | grep -qi '^strict-transport-security:'
           printf '%s\n' "$headers" | grep -qi '^content-security-policy:'
 
-      - name: Verify Admin API boundary
+      - name: Verify Admin API boundary and payout readiness
         run: |
           set -euo pipefail
           code="$(curl --silent --show-error --output /tmp/admin-api-body --write-out '%{http_code}' --max-time 20 https://admin.fashionfussion.in/api/admin-login-guard)"
           test "$code" = '405'
           unknown="$(curl --silent --show-error --output /tmp/admin-unknown-body --write-out '%{http_code}' --max-time 20 https://admin.fashionfussion.in/api/cloudflare-smoke-not-found)"
           test "$unknown" = '404'
-          echo 'PASS Admin API method and unknown-route boundaries'
+          payout="$(curl --fail --silent --show-error --max-time 20 https://admin.fashionfussion.in/api/seller-payout)"
+          node -e "const x=JSON.parse(process.argv[1]);if(x.ok!==true||typeof x.configured!=='boolean'||!['disabled','gateway','direct'].includes(x.mode))process.exit(1);if('gateway' in x||'direct_enabled' in x)process.exit(1)" "$payout"
+          echo 'PASS Admin API boundaries and payout readiness route (GET only; no payout performed)'
 
       - name: Install Chromium human-smoke runtime
         run: |
