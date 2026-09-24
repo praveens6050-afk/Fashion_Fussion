@@ -68,10 +68,10 @@ function loadSellerStyle(href){
 loadSellerStyle('sidebar-compact.css?v=20260921-menu');
 loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
 
-// Live catalog/review + support stay unchanged; premium module only improves presentation
-// and computes dashboard insights from the seller's already-loaded catalog data.
+// Live catalog/review + support stay unchanged; operations are seller-scoped through Supabase RPC.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
-loadSellerModule('seller-support.js?v=1');
+loadSellerModule('seller-support.js?v=2');
+loadSellerModule('seller-operations-live.js?v=20260924-live');
 loadSellerModule('seller-hub-premium.js?v=20260921-hub');
