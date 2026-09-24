@@ -1,0 +1,35 @@
+name: Seller Logout Diagnostic
+
+on:
+  push:
+    branches:
+      - test/seller-logout-diagnostic-20260925
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  logout-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      SELLER_E2E_EMAIL: ${{ secrets.SELLER_E2E_EMAIL }}
+      SELLER_E2E_PASSWORD: ${{ secrets.SELLER_E2E_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require Seller E2E credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SELLER_E2E_EMAIL:-}"
+          test -n "${SELLER_E2E_PASSWORD:-}"
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Diagnose production logout
+        run: timeout --signal=TERM --kill-after=5s 90s node .github/seller-logout-diagnostic.cjs
