@@ -62,25 +62,46 @@ async function noHorizontalOverflow(page, label) {
   }
 }
 
+async function mouseClick(page, locator, label) {
+  await locator.scrollIntoViewIfNeeded();
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`${label} is not clickable.`);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 async function signIn(page) {
   const response = await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   if (!response || !response.ok()) throw new Error(`Seller login returned ${response && response.status()}`);
   await page.waitForFunction(() => !document.querySelector('#loginSubmit')?.disabled, null, { timeout: 15000 });
   await page.locator('#loginEmail').fill(EMAIL);
   await page.locator('#loginPassword').fill(PASSWORD);
+
+  await mouseClick(page, page.locator('#loginSubmit'), 'Seller login button');
   try {
-    await Promise.all([
-      page.waitForURL(url => !['/login', '/login/'].includes(cleanPath(url.toString())), { timeout: 30000 }),
-      page.locator('#loginSubmit').click()
-    ]);
+    await page.waitForFunction(() => {
+      const path = location.pathname.replace(/\.html$/i, '') || '/';
+      if (!['/login', '/login/'].includes(path)) return true;
+      const message = (document.getElementById('authMessage')?.textContent || '').trim();
+      return Boolean(message && !/^signing in/i.test(message));
+    }, null, { timeout: 30000 });
   } catch (error) {
-    const message = (await page.locator('#authMessage').textContent().catch(() => ''))?.trim();
-    throw new Error(`Seller sign-in did not reach dashboard${message ? `: ${message}` : ''}`);
+    const path = cleanPath(page.url());
+    if (['/login', '/login/'].includes(path)) {
+      const message = ((await page.locator('#authMessage').textContent({ timeout: 1000 }).catch(() => '')) || '').trim();
+      throw new Error(`Seller sign-in did not reach dashboard${message ? `: ${message}` : ''}`);
+    }
   }
+
+  if (['/login', '/login/'].includes(cleanPath(page.url()))) {
+    const message = ((await page.locator('#authMessage').textContent({ timeout: 1000 }).catch(() => '')) || '').trim();
+    throw new Error(`Seller sign-in remained on login${message ? `: ${message}` : ''}`);
+  }
+
   await page.waitForFunction(() => Boolean(window.SellerLiveIntegration && window.SellerCatalogBridge) && !document.documentElement.classList.contains('seller-live-loading'), null, { timeout: 20000 });
   await page.locator('#sellerDisplayName').waitFor({ state: 'visible', timeout: 10000 });
   const email = await page.locator('#profileEmail').inputValue();
   if (email.toLowerCase() !== EMAIL.toLowerCase()) throw new Error(`Signed in profile email mismatch: ${email}`);
+  console.log('PASS Seller sign-in and dashboard bootstrap.');
 }
 
 async function testEveryWorkspace(page) {
@@ -103,6 +124,7 @@ async function testEveryWorkspace(page) {
   await page.locator('.nav-item[data-view="profile"]').first().click();
   const kyc = (await page.locator('#kycStatus').textContent())?.trim();
   if (!/pending integration/i.test(kyc || '')) throw new Error(`Unexpected KYC boundary: ${kyc}`);
+  console.log('PASS Seller workspace navigation and staged-boundary checks.');
 }
 
 async function testProfileNoopSave(page) {
@@ -124,6 +146,7 @@ async function testProfileNoopSave(page) {
     type: await page.locator('#profileSellerType').inputValue()
   };
   if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error('No-op profile save unexpectedly changed seller profile fields.');
+  console.log('PASS Seller profile no-op save.');
 }
 
 async function openProductsAndSearch(page, query) {
@@ -195,6 +218,7 @@ async function testLiveCatalogLifecycle(page) {
   await withdrawnTab.click();
   if (!(await withdrawnTab.evaluate(node => node.classList.contains('active')))) throw new Error('Withdrawn filter tab did not activate.');
   if ((await page.locator('#productsTable tr').filter({ hasText: TEST_SKU }).count()) < 2) throw new Error('Withdrawn filter did not show the withdrawn E2E listings.');
+  console.log('PASS live Seller catalog submit/edit/duplicate/withdraw lifecycle.');
 }
 
 (async () => {
@@ -206,11 +230,14 @@ async function testLiveCatalogLifecycle(page) {
     await testEveryWorkspace(page);
     await testProfileNoopSave(page);
     await testLiveCatalogLifecycle(page);
-    await Promise.all([
-      page.waitForURL(url => ['/login', '/login/'].includes(cleanPath(url.toString())), { timeout: 15000 }),
-      page.locator('#logoutSeller').click()
-    ]);
+
+    await mouseClick(page, page.locator('#logoutSeller'), 'Seller logout button');
+    await page.waitForFunction(() => {
+      const path = location.pathname.replace(/\.html$/i, '') || '/';
+      return ['/login', '/login/'].includes(path);
+    }, null, { timeout: 15000 });
     if (!(await page.locator('#loginForm').count())) throw new Error('Seller sign-out did not return to login.');
+    console.log('PASS Seller sign-out.');
   } finally {
     await browser.close();
   }
