@@ -75,4 +75,17 @@
   wrapped.__ffAdvancedHydration=true;
   wrapped.__ffBaseOpenDrawer=baseOpenDrawer;
   window.openDrawer=wrapped;
+
+  // app.js owns an earlier document-capture click handler. Intercept edit clicks one
+  // level earlier so advanced live fields are hydrated before that base handler can
+  // open the drawer without them.
+  window.addEventListener('click',event=>{
+    const target=event.target;
+    if(!(target instanceof Element))return;
+    const edit=target.closest('[data-edit]');
+    if(!edit)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    wrapped(edit.dataset.edit||null);
+  },true);
 })();
