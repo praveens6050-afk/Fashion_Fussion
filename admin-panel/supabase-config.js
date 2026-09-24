@@ -76,7 +76,7 @@ window.FF_API_ORIGIN='';
     addStyle('admin-seller-finance.css?v=20260924-excel','data-admin-seller-finance-style');
     add('admin-seller-finance.js?v=20260924-excel','data-admin-seller-finance');
     add('admin-seller-payout-provider.js?v=1','data-admin-seller-payout-provider');
-    add('admin-owner-center.js?v=2','data-admin-owner-center');
+    add('admin-owner-center.js?v=3','data-admin-owner-center');
   }
   function start(){
     if(!isAdminPage)return;
