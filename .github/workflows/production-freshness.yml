@@ -71,6 +71,29 @@ jobs:
           node scripts/.cloudflare-browser-smoke.cjs
           rm -f scripts/.cloudflare-browser-smoke.cjs
 
+      - name: Mobile viewport browser test on Cloudflare production
+        run: |
+          node - <<'NODE'
+          const { chromium } = require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try{
+              const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+              const errors=[];
+              page.on('pageerror',err=>errors.push(err.message));
+              for(const path of ['/', '/search?q=shirt', '/cart']){
+                const response=await page.goto('https://fashionfussion.in'+path,{waitUntil:'domcontentloaded',timeout:30000});
+                if(!response||!response.ok()) throw new Error(`mobile ${path} returned ${response&&response.status()}`);
+                await page.waitForTimeout(500);
+                const dims=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,innerWidth:window.innerWidth}));
+                if(dims.scrollWidth>dims.innerWidth+2) throw new Error(`mobile horizontal overflow on ${path}: ${dims.scrollWidth}px > ${dims.innerWidth}px`);
+              }
+              if(errors.length) throw new Error(`mobile page errors:\n${errors.join('\n')}`);
+              console.log('PASS mobile 390px homepage/search/cart: no horizontal overflow or page errors.');
+            }finally{await browser.close()}
+          })().catch(err=>{console.error(err.stack||err);process.exit(1)});
+          NODE
+
       - name: Diagnose and verify www human browser canonicalization
         run: |
           node - <<'NODE'
@@ -94,6 +117,8 @@ jobs:
               for(const message of messages) console.log(message);
               if(final.hostname !== 'fashionfussion.in') throw new Error(`www browser remained on ${final.href}`);
               if(!['/cart','/cart.html'].includes(final.pathname) || final.searchParams.get('from') !== 'www-test' || final.hash !== '#cart') throw new Error(`www canonical redirect lost path/query/hash: ${final.href}`);
+              const insightsErrors=messages.filter(message=>message.includes('static.cloudflareinsights.com')&&(message.includes('Refused to load')||message.includes('requestfailed')));
+              if(insightsErrors.length) throw new Error(`Cloudflare Web Analytics is blocked by CSP:\n${insightsErrors.join('\n')}`);
               console.log(`PASS human www redirect -> ${final.href}`);
             } finally {
               await browser.close();
