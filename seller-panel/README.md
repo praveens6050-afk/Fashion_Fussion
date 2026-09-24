@@ -1,6 +1,6 @@
 # Fashion_Fussion Seller Panel
 
-This folder is the dedicated Seller Center deployment package. It remains isolated from the Customer and Admin frontend deployments, while its **catalog approval workflow is now connected** to the shared Fashion_Fussion Supabase backend.
+This folder is the dedicated Cloudflare Pages Seller Center package for `seller.fashionfussion.in`. It is isolated from the Customer and Admin frontend deployments and uses the shared Fashion_Fussion Supabase backend.
 
 ## Connected now
 
@@ -8,7 +8,7 @@ This folder is the dedicated Seller Center deployment package. It remains isolat
 - Supabase Auth seller sign-in and registration
 - Authenticated seller profile in `seller_profiles`
 - Seller catalog rows are owner-scoped by authenticated user ID
-- Direct browser writes to seller tables are not granted; catalog mutations use authenticated RPC functions with ownership checks
+- Direct browser writes to protected seller tables are not granted; catalog mutations use authenticated RPC functions with ownership checks
 - No service-role secret is exposed to Seller frontend code
 
 ### Catalog approval workflow
@@ -18,11 +18,11 @@ This folder is the dedicated Seller Center deployment package. It remains isolat
 - Admin **Approve** publishes/updates the authoritative customer product
 - Admin **Reject** requires a reason that is shown back to the seller
 - Rejected listings are not customer-visible
-- Editing an already approved listing immediately makes the linked customer product inactive while the revision is pending
+- Editing an already approved listing makes the linked customer product inactive while the revision is pending
 - Reapproval reuses the linked customer product rather than creating a duplicate
 - Approved listings publish variant/inventory data and optional bulk pricing into the existing customer commerce tables
-- Listings without custom seller variants receive one authoritative default SKU/variant so they remain compatible with the current inventory-safe checkout model
-- Customer visibility continues to rely on the existing `products.is_active = true` RLS policy
+- Listings without custom seller variants receive one authoritative default SKU/variant
+- Customer visibility relies on the existing `products.is_active = true` RLS policy
 
 ### Listing data supported
 - Product name, category and seller SKU
@@ -81,33 +81,15 @@ Existing customer commerce objects reused on approval include:
 
 RLS and table privileges keep seller submission rows seller-owned/admin-readable. Approval authority is checked server-side against `profiles.is_admin = true`.
 
-## Database verification
+## Cloudflare production prerequisites
 
-A rollback-only end-to-end database assertion has passed for the complete requested path:
-
-- seller registration/profile
-- seller product submission
-- non-admin approval attempt denied
-- admin approval succeeds
-- default variant/inventory and bulk tier created when applicable
-- approved product visible under anonymous/customer product RLS
-- approved listing edit returns it to pending and hides the customer product
-- admin rejection stores the exact reason
-- rejected product remains invisible under anonymous/customer product RLS
-
-The verification transaction was rolled back. Follow-up checks confirmed no integration-test seller profile, submission or product remained.
-
-## Production-launch prerequisites
-
-Before opening Seller registration publicly:
-
-1. Deploy this branch as the dedicated Vercel project with Root Directory `seller-panel`.
-2. Add `https://seller.fashionfussion.in/login` to Supabase Auth redirect URLs (and the exact preview callback only while testing).
-3. Enable Supabase **Leaked Password Protection** in Auth password-security settings; Security Advisor currently reports it disabled.
-4. Run browser smoke tests against the exact final Seller/Admin/Customer deployments before attaching production domains.
-5. Keep `main` and the current live customer project unchanged until all standalone previews pass.
-
-See `VERCEL-SELLER-DEPLOYMENT.md` for the deployment checklist.
+1. Cloudflare Pages project: `fashion-fussion-seller`.
+2. Production branch: `cloudflare-seller`.
+3. Root Directory: `seller-panel`.
+4. Build command: `npm run build`.
+5. Build output: `dist`.
+6. Add `https://seller.fashionfussion.in/login` to Supabase Auth redirect URLs.
+7. Keep Supabase password/security protections enabled and run browser smoke tests before public registration changes.
 
 ## Main files
 
@@ -119,8 +101,8 @@ See `VERCEL-SELLER-DEPLOYMENT.md` for the deployment checklist.
 - `portal.js` — seller workspace/module bootstrap
 - `seller-live-integration.js` — authoritative seller catalog/RPC adapter
 - `catalog-enhancements.js` — advanced listing/variant/bulk/media fields
-- `inventory-fulfillment.js`, `analytics-shipping.js`, `returns-support-team.js`, and other modules — staged operations workspaces; check each module's production boundary before enabling its corresponding real operation
+- `inventory-fulfillment.js`, `analytics-shipping.js`, `returns-support-team.js`, and other modules — staged operations workspaces
 
 ## Deployment boundary
 
-This Seller frontend is deployed separately from Admin and Customer. Do not merge it into `main` merely to deploy it. The final intended host is `seller.fashionfussion.in`, using branch `seller-panel-standalone` and Root Directory `seller-panel`.
+This branch is Cloudflare-only. Customer/Admin deployment artifacts and legacy hosting configuration must not be added here. The final host is `seller.fashionfussion.in`.
