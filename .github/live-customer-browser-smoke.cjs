@@ -10,6 +10,7 @@ function sameCustomerHost(url) {
     return host === 'fashionfussion.in' || host === 'www.fashionfussion.in';
   } catch { return false; }
 }
+function cleanPath(url) { return String(url.pathname || '/').replace(/\.html$/i, '') || '/'; }
 
 function observe(page, label) {
   page.on('pageerror', error => failures.push(`${label} pageerror: ${error.message}`));
@@ -47,7 +48,7 @@ async function noHorizontalOverflow(page, label) {
   const canonical = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   observe(canonical, 'www canonical');
   await canonical.goto(WWW + '/cart?human=1#cart', { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await canonical.waitForURL(url => url.hostname === 'fashionfussion.in' && url.pathname === '/cart', { timeout: 10000 });
+  await canonical.waitForURL(url => url.hostname === 'fashionfussion.in' && cleanPath(url) === '/cart', { timeout: 10000 });
   const canonicalUrl = new URL(canonical.url());
   if (canonicalUrl.searchParams.get('human') !== '1' || canonicalUrl.hash !== '#cart') throw new Error(`www canonicalization lost path/query/hash: ${canonicalUrl.href}`);
   await canonical.close();
@@ -62,7 +63,7 @@ async function noHorizontalOverflow(page, label) {
   await noHorizontalOverflow(desktop, 'desktop homepage');
 
   await Promise.all([
-    desktop.waitForURL(url => url.pathname.endsWith('/search.html') && url.searchParams.get('q') === 'a', { timeout: 10000 }),
+    desktop.waitForURL(url => cleanPath(url) === '/search' && url.searchParams.get('q') === 'a', { timeout: 10000 }),
     (async () => { await desktop.locator('#searchBox').fill('a'); await desktop.locator('#searchBtn').click(); })()
   ]);
   await desktop.waitForFunction(() => /product/.test(document.querySelector('#count')?.textContent || ''), null, { timeout: 15000 });
@@ -70,7 +71,7 @@ async function noHorizontalOverflow(page, label) {
     await desktop.locator('#sort').selectOption('price-low');
     const details = desktop.locator('#grid a.details').first();
     if (!(await details.count())) throw new Error('search results missing DETAILS link');
-    await Promise.all([desktop.waitForURL(/product\.html\?id=/), details.click()]);
+    await Promise.all([desktop.waitForURL(url => cleanPath(url) === '/product' && Boolean(url.searchParams.get('id'))), details.click()]);
     await desktop.locator('#product').waitFor({ state: 'visible', timeout: 15000 });
     await noHorizontalOverflow(desktop, 'desktop product');
 
@@ -98,7 +99,7 @@ async function noHorizontalOverflow(page, label) {
     }
 
     await Promise.all([
-      desktop.waitForURL(url => url.pathname.endsWith('/login.html') && url.searchParams.get('redirect') === 'checkout', { timeout: 15000 }),
+      desktop.waitForURL(url => cleanPath(url) === '/login' && url.searchParams.get('redirect') === 'checkout', { timeout: 15000 }),
       desktop.locator('#place').click()
     ]);
     if (!(await desktop.locator('form').count())) throw new Error('signed-out checkout did not land on a login form');
