@@ -76,9 +76,9 @@ window.FF_API_ORIGIN='';
     addStyle('admin-seller-finance.css?v=20260924-excel','data-admin-seller-finance-style');
     add('admin-seller-finance.js?v=20260924-excel','data-admin-seller-finance');
     add('admin-seller-payout-provider.js?v=1','data-admin-seller-payout-provider');
-    add('admin-owner-center.js?v=3','data-admin-owner-center');
-    addStyle('admin-owner-overview-sheet.css?v=1','data-admin-owner-overview-sheet-style');
-    add('admin-owner-overview-sheet.js?v=1','data-admin-owner-overview-sheet');
+    add('admin-owner-center.js?v=4','data-admin-owner-center');
+    addStyle('admin-owner-support.css?v=1','data-admin-owner-support-style');
+    add('admin-owner-support.js?v=1','data-admin-owner-support');
   }
   function start(){
     if(!isAdminPage)return;
