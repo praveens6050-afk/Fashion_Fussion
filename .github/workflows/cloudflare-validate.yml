@@ -11,41 +11,94 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: customer-panel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Verify Cloudflare-only branch structure
+        run: |
+          set -euo pipefail
+          test -d customer-panel
+          test -d .github
+          test -d supabase
+          test ! -e admin-panel
+          test ! -e seller-panel
+          test ! -e api
+          test ! -e backend
+          test ! -e scripts
+          legacy='ver''cel'
+          if find . -path './.git' -prune -o -path './customer-panel/node_modules' -prune -o -iname "*${legacy}*" -print | grep -q .; then
+            echo 'Legacy hosting artifact found:' >&2
+            find . -path './.git' -prune -o -path './customer-panel/node_modules' -prune -o -iname "*${legacy}*" -print >&2
+            exit 1
+          fi
+          if grep -RIni --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist "$legacy" customer-panel .github; then
+            echo 'Legacy hosting reference found in Cloudflare Customer branch.' >&2
+            exit 1
+          fi
+
       - name: Install build dependencies
+        working-directory: customer-panel
         run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Validate customer commerce sources
+
+      - name: Validate Customer JavaScript and backend sources
+        working-directory: customer-panel
         run: |
-          node --check variant-commerce.js
-          node --check variant-cart-ui.js
-          node --check csp-cart.js
-          node --check checkout.js
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find . -type f -name '*.js' -not -path './node_modules/*' -not -path './dist/*' -not -path './functions/*' -print0)
           node backend/test-customer.js
+
       - name: Build static assets
+        working-directory: customer-panel
         run: npm run build
+
       - name: Validate Pages Functions bundle
+        working-directory: customer-panel
         run: npx --yes wrangler@latest pages functions build --compatibility-date=2026-09-22 --compatibility-flag=nodejs_compat --outdir=.cf-functions-test
+
       - name: Verify deployment artifacts
+        working-directory: customer-panel
         run: |
-          test -f dist/index.html
-          test -f dist/_headers
-          test -f dist/_redirects
-          test -f dist/_routes.json
+          set -euo pipefail
+          for f in index.html login.html signup.html cart.html checkout.html product.html search.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
-          test -s dist/homepage.bundle.css
-          test -s dist/homepage.runtime.js
+          test -s functions/_node-handler-bridge.js
+          test -s functions/api/[[path]].js
           test -s .cf-functions-test/index.js
+          test ! -e functions/_vercel-adapter.js
+          test ! -e dist/vercel.json
           grep -q 'variant-commerce.js?v=3' dist/cart.html
           grep -q 'variant-cart-ui.js?v=2' dist/cart.html
-      - name: Verify homepage performance and accessibility contract
+
+      - name: Verify Pages Functions and API boundary
+        working-directory: customer-panel
         run: |
+          set -euo pipefail
+          grep -Fq '"/api/*"' dist/_routes.json
+          ! grep -Fq '"/*"' dist/_routes.json
+          grep -Fq "runNodeHandler" functions/api/[[path]].js
+          grep -Fq "X-Razorpay-Signature" functions/_node-handler-bridge.js
+          grep -Fq "'razorpay-webhook'" functions/api/[[path]].js
+          grep -Fq "'shipping-status'" functions/api/[[path]].js
+
+      - name: Verify security headers and static caching
+        working-directory: customer-panel
+        run: |
+          set -euo pipefail
+          grep -Fq 'X-Content-Type-Options: nosniff' dist/_headers
+          grep -Fq 'X-Frame-Options: DENY' dist/_headers
+          grep -Fq 'Content-Security-Policy:' dist/_headers
+          grep -Fq 'Strict-Transport-Security:' dist/_headers
+          grep -Fq 'Cache-Control:' dist/_headers
+
+      - name: Verify homepage performance and accessibility contract
+        working-directory: customer-panel
+        run: |
+          set -euo pipefail
           grep -q 'data-supabase-sdk="local"' dist/index.html
           grep -q 'data-homepage-bundle' dist/index.html
           grep -q 'data-homepage-runtime' dist/index.html
@@ -57,3 +110,37 @@ jobs:
           grep -q 'sr-only' dist/homepage.runtime.js
           node --check dist/homepage.runtime.js
           node --check dist/supabase-config.js
+
+      - name: Verify local HTML asset integrity
+        working-directory: customer-panel
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const root=path.resolve('dist');
+          const htmlFiles=[];
+          const walk=dir=>{for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walk(p);else if(e.name.endsWith('.html'))htmlFiles.push(p)}};
+          walk(root);
+          const missing=[];
+          const attr=/(?:src|href)=["'](\/[^"'#?]+)["']/g;
+          for(const file of htmlFiles){
+            const text=fs.readFileSync(file,'utf8');
+            for(const match of text.matchAll(attr)){
+              const url=match[1];
+              if(!/\.(?:js|css|svg|png|jpg|jpeg|webp|ico|json|xml|txt)$/i.test(url))continue;
+              const target=path.join(root,url.replace(/^\//,''));
+              if(!fs.existsSync(target))missing.push(`${path.relative(root,file)} -> ${url}`);
+            }
+          }
+          if(missing.length)throw new Error(`Missing local assets:\n${missing.join('\n')}`);
+          console.log(`PASS local asset integrity across ${htmlFiles.length} HTML files`);
+          NODE
+
+      - name: Reject obvious committed privileged secrets
+        working-directory: customer-panel
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude-dir=node_modules --exclude-dir=dist --exclude='*.example' '(service_role|SUPABASE_SERVICE_ROLE_KEY)[[:space:]]*[:=][[:space:]]*["'"'][A-Za-z0-9._-]{20,}' .; then
+            echo 'Possible committed privileged Supabase credential detected.' >&2
+            exit 1
+          fi
