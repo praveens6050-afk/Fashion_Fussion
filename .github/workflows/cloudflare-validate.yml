@@ -43,6 +43,7 @@ jobs:
       - name: Verify Admin login contract
         run: |
           grep -Fq 'http-equiv="Content-Security-Policy"' dist/login.html
+          ! grep -Eq 'http-equiv="Content-Security-Policy"[^>]*frame-ancestors' dist/login.html
           grep -Eq 'defer src="/assets/supabase\.[0-9a-f]{16}\.js" data-supabase-sdk="local" integrity="sha384-[A-Za-z0-9+/=]+" crossorigin="anonymous"' dist/login.html
           grep -Eq 'defer src="/assets/admin-login\.[0-9a-f]{16}\.js" integrity="sha384-[A-Za-z0-9+/=]+" crossorigin="anonymous"' dist/login.html
           ! grep -Fq 'src="/vendor/supabase.js"' dist/login.html
@@ -89,6 +90,7 @@ jobs:
           grep -Fq '<meta name="theme-color" content="#0b1220">' dist/login.html
           grep -Fq '<meta name="theme-color" content="#f6f7f9" media="(max-width:800px)">' dist/login.html
           grep -Fq "frame-ancestors 'none'" dist/_headers
+          grep -Fq 'X-Frame-Options: DENY' dist/_headers
           grep -Fq '/assets/*' dist/_headers
           grep -Fq 'PerformanceObserver' dist/admin-login.js
           grep -Fq "storage:sessionStorage" dist/admin-login.js
@@ -111,7 +113,7 @@ jobs:
           grep -Fq 'checkLoginRateLimit(mail)' dist/admin-login.js
           node --check dist/admin-login.js
           node --check dist/supabase-config.js
-      - name: Verify login guard and runtime CSP
+      - name: Verify login guard and static security headers
         run: |
           grep -Fq "SUPABASE_SERVICE_ROLE_KEY" functions/api/admin-login-guard.js
           grep -Fq "CF-Connecting-IP" functions/api/admin-login-guard.js
@@ -121,10 +123,8 @@ jobs:
           grep -Fq "request.headers.get('Origin')" functions/api/admin-login-guard.js
           grep -Fq "request.headers.get('Sec-Fetch-Site')" functions/api/admin-login-guard.js
           grep -Fq "fetchSite!=='same-origin'" functions/api/admin-login-guard.js
-          grep -Fq "headers.set('Content-Security-Policy',LOGIN_CSP)" functions/_middleware.js
-          grep -Fq "const PROTECTED_PATHS=new Set(['/','/login','/login.html']);" functions/_middleware.js
-          grep -Fq "headers.set('X-Frame-Options','DENY')" functions/_middleware.js
-          grep -Fq "frame-ancestors 'none'" functions/_middleware.js
+          grep -Fq "frame-ancestors 'none'" dist/_headers
+          grep -Fq 'X-Frame-Options: DENY' dist/_headers
           node --check functions/api/admin-login-guard.js
           node --check functions/_middleware.js
       - name: Verify heading and visual order
@@ -158,8 +158,8 @@ jobs:
           grep -Fq "save.disabled=Boolean(busy)" admin-product-image-upload.js
       - name: Verify API routing boundary
         run: |
-          grep -Fq '"/"' dist/_routes.json
           grep -Fq '"/api/*"' dist/_routes.json
-          grep -Fq '"/login"' dist/_routes.json
-          grep -Fq '"/login.html"' dist/_routes.json
+          ! grep -Fq '"/login"' dist/_routes.json
+          ! grep -Fq '"/login.html"' dist/_routes.json
+          ! grep -Fq '"/"' dist/_routes.json
           ! grep -Fq '"/*"' dist/_routes.json
