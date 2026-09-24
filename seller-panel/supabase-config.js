@@ -2,7 +2,10 @@
 const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
 const SUPABASE_SRI='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
-const SUPABASE_FALLBACK_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
+const SUPABASE_FALLBACK_URLS=[
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js',
+  'https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js?ff-retry=1'
+];
 const SELLER_REMEMBER_KEY='ff_seller_remember_mode';
 
 const sellerAuthStorage={
@@ -27,50 +30,69 @@ function appendScriptWhenReady(script,preferred='head'){
       script.onerror=()=>reject(new Error('Seller service script failed to load'));
       target.appendChild(script);
     };
-    if((preferred==='body'&&!document.body)||(preferred==='head'&&!document.head)){
-      document.addEventListener('DOMContentLoaded',append,{once:true});
-    }else append();
+    if((preferred==='body'&&!document.body)||(preferred==='head'&&!document.head))document.addEventListener('DOMContentLoaded',append,{once:true});
+    else append();
   });
 }
 
-function loadPinnedSellerSdk(src){
+function loadSellerSdkWithTimeout(src,timeoutMs=6500){
   return new Promise((resolve,reject)=>{
-    const existing=[...document.scripts].find(script=>script.src===src);
-    if(existing){
-      if(window.supabase&&typeof window.supabase.createClient==='function'){resolve();return}
-      existing.addEventListener('load',()=>resolve(),{once:true});
-      existing.addEventListener('error',()=>reject(new Error('Supabase SDK failed to load')),{once:true});
-      return;
-    }
+    if(window.supabase&&typeof window.supabase.createClient==='function'){resolve();return}
     const script=document.createElement('script');
     script.src=src;
     script.integrity=SUPABASE_SRI;
     script.crossOrigin='anonymous';
     script.referrerPolicy='no-referrer';
-    appendScriptWhenReady(script,'head').then(resolve,reject);
+    script.async=true;
+    let settled=false;
+    const finish=error=>{
+      if(settled)return;
+      settled=true;
+      clearTimeout(timer);
+      if(error)reject(error);else resolve();
+    };
+    const timer=setTimeout(()=>finish(new Error('Seller service script timed out')),timeoutMs);
+    script.onload=()=>finish();
+    script.onerror=()=>finish(new Error('Seller service script failed to load'));
+    (document.head||document.documentElement).appendChild(script);
   });
+}
+
+const sellerPath=(location.pathname.split('/').pop()||'index.html').toLowerCase();
+const isSellerLogin=sellerPath==='login'||sellerPath==='login.html';
+
+if(!isSellerLogin){
+  document.documentElement.classList.add('seller-live-loading');
+  if(!document.getElementById('seller-live-bootstrap-style')){
+    const style=document.createElement('style');
+    style.id='seller-live-bootstrap-style';
+    style.textContent='.seller-live-loading body{visibility:visible!important}.seller-live-loading .shell{visibility:hidden!important}.seller-live-loading body::before{content:"Loading Seller Center…";position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#f6f7fb;color:#344054;font:700 15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}';
+    (document.head||document.documentElement).appendChild(style);
+  }
+  if(!document.querySelector('script[data-seller-launch-safety]')){
+    const guard=document.createElement('script');
+    guard.src='seller-launch-safety.js?v=20260924-startup-fix';
+    guard.async=false;
+    guard.setAttribute('data-seller-launch-safety','true');
+    appendScriptWhenReady(guard,'head').catch(error=>console.error('[Seller Center] Launch safety failed',error));
+  }
+  if(!localStorage.getItem('ff_seller_session_v1')&&!sessionStorage.getItem('ff_seller_session_v1'))sessionStorage.setItem('ff_seller_session_v1',JSON.stringify({sellerId:'LIVE',storeName:'Seller',email:'',name:'Seller',authProvider:'supabase-pending'}));
 }
 
 window.ffSellerSupabaseReady=(async()=>{
   let client=createSellerSupabaseClient();
   if(client)return client;
-  try{
-    await loadPinnedSellerSdk(SUPABASE_FALLBACK_URL);
-    client=createSellerSupabaseClient();
-    if(client)return client;
-  }catch(error){console.error('[Seller Center] Supabase fallback load failed',error)}
-  throw new Error('Seller services could not start. Check your connection and reload the page.');
+  let lastError=null;
+  for(const src of SUPABASE_FALLBACK_URLS){
+    try{
+      await loadSellerSdkWithTimeout(src);
+      client=createSellerSupabaseClient();
+      if(client)return client;
+    }catch(error){lastError=error;console.warn('[Seller Center] Supabase source unavailable',src,error?.message||error)}
+  }
+  throw lastError||new Error('Seller services could not start. Check your connection and reload the page.');
 })();
 window.ffSupabaseReady=window.ffSellerSupabaseReady;
-
-const sellerPath=(location.pathname.split('/').pop()||'index.html').toLowerCase();
-const isSellerLogin=sellerPath==='login'||sellerPath==='login.html';
-if(!isSellerLogin){
-  document.documentElement.classList.add('seller-live-loading');
-  if(!document.getElementById('seller-live-bootstrap-style')){const style=document.createElement('style');style.id='seller-live-bootstrap-style';style.textContent='.seller-live-loading body{visibility:hidden}';(document.head||document.documentElement).appendChild(style)}
-  if(!document.querySelector('script[data-seller-launch-safety]')){const guard=document.createElement('script');guard.src='seller-launch-safety.js';guard.async=false;guard.setAttribute('data-seller-launch-safety','true');appendScriptWhenReady(guard,'head').catch(error=>console.error('[Seller Center] Launch safety failed',error))}
-  if(!localStorage.getItem('ff_seller_session_v1')&&!sessionStorage.getItem('ff_seller_session_v1'))sessionStorage.setItem('ff_seller_session_v1',JSON.stringify({sellerId:'LIVE',storeName:'Seller',email:'',name:'Seller',authProvider:'supabase-pending'}));
-}
 
 function loadSellerPayoutProvider(){
   if(isSellerLogin||document.querySelector('script[data-seller-payout-provider]'))return;
@@ -81,13 +103,34 @@ function loadSellerPayoutProvider(){
   appendScriptWhenReady(payout,'body').catch(error=>console.error('[Seller Center] Payout provider integration failed',error));
 }
 
+let startupFailTimer=null;
+if(!isSellerLogin){
+  startupFailTimer=setTimeout(()=>{
+    if(document.documentElement.classList.contains('seller-live-loading')){
+      console.error('[Seller Center] Startup timed out');
+      document.documentElement.classList.remove('seller-live-loading');
+      location.replace('login.html?startup=timeout');
+    }
+  },18000);
+}
+
 window.ffSellerSupabaseReady.then(()=>{
-  if(isSellerLogin||window.SellerLiveIntegration){loadSellerPayoutProvider();return}
+  if(isSellerLogin){if(startupFailTimer)clearTimeout(startupFailTimer);return}
+  if(window.SellerLiveIntegration){loadSellerPayoutProvider();return}
   window.__sellerLiveIntegrationBooted=false;
   if(document.querySelector('script[data-seller-live-recovery]')){loadSellerPayoutProvider();return}
   const script=document.createElement('script');
-  script.src='seller-live-integration.js?v=20260921-supabase-recovery';
+  script.src='seller-live-integration.js?v=20260924-startup-fix';
   script.async=false;
   script.setAttribute('data-seller-live-recovery','true');
-  appendScriptWhenReady(script,'body').then(loadSellerPayoutProvider).catch(error=>{console.error('[Seller Center] Live integration recovery failed',error);document.documentElement.classList.remove('seller-live-loading')});
-}).catch(error=>{console.error('[Seller Center] Supabase startup failed',error);document.documentElement.classList.remove('seller-live-loading')});
+  appendScriptWhenReady(script,'body').then(loadSellerPayoutProvider).catch(error=>{
+    console.error('[Seller Center] Live integration recovery failed',error);
+    document.documentElement.classList.remove('seller-live-loading');
+    location.replace('login.html?startup=integration');
+  });
+}).catch(error=>{
+  console.error('[Seller Center] Supabase startup failed',error);
+  if(startupFailTimer)clearTimeout(startupFailTimer);
+  document.documentElement.classList.remove('seller-live-loading');
+  if(!isSellerLogin)location.replace('login.html?startup=service');
+});
