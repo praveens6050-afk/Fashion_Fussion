@@ -36,7 +36,7 @@ function normalizeSupabaseEnv() {
 }
 
 function allowedOrigins() {
-  return String(process.env.ALLOWED_ORIGIN || 'https://admin.fashionfussion.in,https://fashion-fussion-admin.vercel.app')
+  return String(process.env.ALLOWED_ORIGIN || 'https://admin.fashionfussion.in')
     .split(',')
     .map(value => value.trim())
     .filter(Boolean);
