@@ -117,7 +117,7 @@
 
   /* Footer remains useful but visually quieter than the buying journey. */
   footer{background:#0b1220;padding:38px 0 25px}
-  .foot{grid-template-columns:2.2fr 1fr 1fr;gap:44px}
+  .foot{grid-template-columns:2.2fr 1fr 1fr 1fr;gap:44px}
   .foot p,.foot a{font-size:11px}
   .legal{font-size:10px;color:#98a2b3}
 
