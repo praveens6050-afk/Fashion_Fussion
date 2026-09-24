@@ -61,7 +61,7 @@ window.FF_API_ORIGIN='';
   const isAdminPage=page==='admin'||page==='admin.html';
   function loadAdminModules(){
     add('admin-notifications.js?v=2','data-admin-notifications');
-    add('support-chat.js?v=11','data-support-chat');
+    add('support-chat.js?v=12','data-support-chat');
     add('admin-orders.js?v=2','data-admin-orders');
     add('admin-promotions.js?v=2','data-admin-promotions');
     add('admin-returns.js?v=1','data-admin-returns');
