@@ -59,6 +59,12 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
 
+      - name: Run Seller bootstrap diagnostic
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout --signal=TERM --kill-after=5s 60s node .github/seller-dashboard-bootstrap-diagnostic.cjs
+
       - name: Run authenticated Seller lifecycle
         shell: bash
         run: |
