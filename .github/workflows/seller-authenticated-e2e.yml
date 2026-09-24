@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cloudflare-authenticated-seller-e2e
+  group: cloudflare-authenticated-seller-e2e-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
