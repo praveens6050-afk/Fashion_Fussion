@@ -90,6 +90,19 @@ jobs:
           grep -Fq 'Fashion Fussion' account.html
           grep -Fq 'Fashion Fussion' order-details.html
 
+      - name: Validate checkout and business entry points
+        working-directory: customer-panel
+        run: |
+          set -euo pipefail
+          grep -Fq 'checkout-business.js?v=1' checkout.html
+          grep -Fq 'quote-checkout.js?v=2' quote-checkout.html
+          grep -Fq 'quote-payment-safety.js?v=1' quote-checkout.html
+          grep -Fq "'quote-checkout.html'" csp-login.js
+          grep -Fq 'business_invoice' checkout-business.js
+          grep -Fq 'purchase_order_no' checkout-business.js
+          grep -Fq "target='quote-checkout.html?quote='" quote-checkout.js
+          grep -Fq 'Fashion Fussion' quote-checkout.html
+
       - name: Build static assets
         working-directory: customer-panel
         run: npm run build
@@ -103,7 +116,7 @@ jobs:
         run: |
           set -euo pipefail
           legacy='ver''cel'
-          for f in index.html login.html signup.html cart.html checkout.html product.html search.html wishlist.html account.html order-details.html order-confirmation.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
+          for f in index.html login.html signup.html cart.html checkout.html product.html search.html wishlist.html account.html order-details.html order-confirmation.html quote-checkout.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/_node-handler-bridge.js
           test -s functions/api/[[path]].js
@@ -114,6 +127,7 @@ jobs:
           grep -q 'variant-cart-ui.js?v=4' dist/cart.html
           grep -q 'variant-commerce.js?v=4' dist/checkout.html
           grep -q 'variant-cart-ui.js?v=4' dist/checkout.html
+          grep -Fq 'checkout-business.js?v=1' dist/checkout.html
           grep -q 'variant-commerce.js?v=4' dist/product.html
           grep -q 'product-variants.js?v=4' dist/product.html
           grep -q 'catalog-cart-entry.js?v=3' dist/search.html
@@ -123,6 +137,8 @@ jobs:
           for script in order-shipping.js order-refund-tracker.js order-return-exchange.js order-cancel-promotion.js order-business-details.js; do grep -Fq "$script?v=1" dist/order-details.html; done
           grep -Fq 'csp-order-confirmation.js?v=3' dist/order-confirmation.html
           grep -Fq 'order-business-details.js?v=1' dist/order-confirmation.html
+          grep -Fq 'quote-checkout.js?v=2' dist/quote-checkout.html
+          grep -Fq 'quote-payment-safety.js?v=1' dist/quote-checkout.html
 
       - name: Verify Pages Functions and API boundary
         working-directory: customer-panel
