@@ -39,11 +39,11 @@ await Promise.all([
 
 html = html
   .replace(
-    /<script\b[^>]*src=(['"])\/vendor\/supabase\.js\1[^>]*><\/script>/i,
+    /<script\b[^>]*src=(['"])\/vendor\/supabase\.js(?:\?[^"']*)?\1[^>]*><\/script>/i,
     `<script defer src="${supabaseUrl}" data-supabase-sdk="local" integrity="${supabaseAsset.sri}" crossorigin="anonymous"></script>`
   )
   .replace(
-    /<script\b[^>]*src=(['"])\/admin-login(?:\.[^"']+)?\.js\1[^>]*><\/script>/i,
+    /<script\b[^>]*src=(['"])\/admin-login(?:\.[^"'?]+)?\.js(?:\?[^"']*)?\1[^>]*><\/script>/i,
     `<script defer src="${loginUrl}" integrity="${loginAsset.sri}" crossorigin="anonymous"></script>`
   );
 
