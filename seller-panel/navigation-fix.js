@@ -57,6 +57,16 @@ function watchWithdrawnState(){
   window.__sellerWithdrawnObserver.observe(document.body,{childList:true,subtree:true,characterData:true});
   patchWithdrawnStateUI();
 }
+function resetProductsFilterBeforeCapturedNavigation(){
+  if(window.__sellerProductsFilterCaptureBound)return;
+  window.__sellerProductsFilterCaptureBound=true;
+  window.addEventListener('click',event=>{
+    const target=event.target;
+    if(!(target instanceof Element)||!target.closest('[data-view="products"]'))return;
+    const all=document.querySelector('#statusTabs [data-status="all"]');
+    if(all&&!all.classList.contains('active'))all.click();
+  },true);
+}
 function activate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+view));
   document.querySelectorAll('.nav-item[data-view]').forEach(btn=>btn.classList.toggle('active',btn.dataset.view===view));
@@ -82,6 +92,7 @@ function openProductDrawer(){
 function bind(){
   ensureImageUploader();
   watchWithdrawnState();
+  resetProductsFilterBeforeCapturedNavigation();
   document.querySelectorAll('.nav-item[data-view]').forEach(btn=>{
     if(btn.dataset.view==='support-live')return;
     btn.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();activate(btn.dataset.view)},true);
