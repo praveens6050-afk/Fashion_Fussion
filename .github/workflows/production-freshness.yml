@@ -1,0 +1,57 @@
+name: Cloudflare Production Seller Smoke
+
+on:
+  push:
+    branches: [cloudflare-seller]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-seller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Wait for exact Cloudflare production commit
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          RELEASE_URL: https://seller.fashionfussion.in/release.json
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 48); do
+            body="$(curl --fail --silent --show-error --max-time 10 -H 'Cache-Control: no-cache' "$RELEASE_URL?check=$attempt" || true)"
+            live_sha="$(node -e "try{const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.git_sha||''))}catch{}" "$body")"
+            echo "Attempt $attempt: Cloudflare live=${live_sha:-missing} expected=$EXPECTED_SHA"
+            if [ "$live_sha" = "$EXPECTED_SHA" ]; then
+              echo 'Cloudflare production is serving the exact Seller commit.'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Cloudflare Seller production did not update to $EXPECTED_SHA." >&2
+          exit 1
+
+      - name: Verify Seller pages, assets and security headers
+        run: |
+          set -euo pipefail
+          for path in / /login; do
+            body="$(curl --fail --silent --show-error --max-time 20 -L "https://seller.fashionfussion.in$path")"
+            printf '%s' "$body" | grep -qi '<html'
+            echo "PASS $path"
+          done
+          for asset in /seller-live-integration.js /product-image-upload.js /navigation-fix.js; do
+            curl --fail --silent --show-error --max-time 20 "https://seller.fashionfussion.in$asset" > /dev/null
+            echo "PASS $asset"
+          done
+          headers="$(curl --fail --silent --show-error --max-time 20 -I https://seller.fashionfussion.in/login)"
+          printf '%s\n' "$headers" | grep -qi '^x-content-type-options: nosniff'
+          printf '%s\n' "$headers" | grep -qi '^x-frame-options: DENY'
+          printf '%s\n' "$headers" | grep -qi '^strict-transport-security:'
+          printf '%s\n' "$headers" | grep -qi '^content-security-policy:'
+          printf '%s\n' "$headers" | grep -qi '^cache-control: no-store'
