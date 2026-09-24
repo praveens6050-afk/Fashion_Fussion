@@ -18,6 +18,21 @@ function createSellerSupabaseClient(){
   return window.supabaseClient;
 }
 
+function appendScriptWhenReady(script,preferred='head'){
+  return new Promise((resolve,reject)=>{
+    const append=()=>{
+      const target=(preferred==='body'?document.body:document.head)||document.documentElement;
+      if(!target){reject(new Error('Document is not ready to load Seller services'));return}
+      script.onload=()=>resolve();
+      script.onerror=()=>reject(new Error('Seller service script failed to load'));
+      target.appendChild(script);
+    };
+    if((preferred==='body'&&!document.body)||(preferred==='head'&&!document.head)){
+      document.addEventListener('DOMContentLoaded',append,{once:true});
+    }else append();
+  });
+}
+
 function loadPinnedSellerSdk(src){
   return new Promise((resolve,reject)=>{
     const existing=[...document.scripts].find(script=>script.src===src);
@@ -32,9 +47,7 @@ function loadPinnedSellerSdk(src){
     script.integrity=SUPABASE_SRI;
     script.crossOrigin='anonymous';
     script.referrerPolicy='no-referrer';
-    script.onload=()=>resolve();
-    script.onerror=()=>reject(new Error('Supabase SDK failed to load'));
-    document.head.appendChild(script);
+    appendScriptWhenReady(script,'head').then(resolve,reject);
   });
 }
 
@@ -54,8 +67,8 @@ const sellerPath=(location.pathname.split('/').pop()||'index.html').toLowerCase(
 const isSellerLogin=sellerPath==='login'||sellerPath==='login.html';
 if(!isSellerLogin){
   document.documentElement.classList.add('seller-live-loading');
-  if(!document.getElementById('seller-live-bootstrap-style')){const style=document.createElement('style');style.id='seller-live-bootstrap-style';style.textContent='.seller-live-loading body{visibility:hidden}';document.head.appendChild(style)}
-  if(!document.querySelector('script[data-seller-launch-safety]')){const guard=document.createElement('script');guard.src='seller-launch-safety.js';guard.async=false;guard.setAttribute('data-seller-launch-safety','true');document.head.appendChild(guard)}
+  if(!document.getElementById('seller-live-bootstrap-style')){const style=document.createElement('style');style.id='seller-live-bootstrap-style';style.textContent='.seller-live-loading body{visibility:hidden}';(document.head||document.documentElement).appendChild(style)}
+  if(!document.querySelector('script[data-seller-launch-safety]')){const guard=document.createElement('script');guard.src='seller-launch-safety.js';guard.async=false;guard.setAttribute('data-seller-launch-safety','true');appendScriptWhenReady(guard,'head').catch(error=>console.error('[Seller Center] Launch safety failed',error))}
   if(!localStorage.getItem('ff_seller_session_v1')&&!sessionStorage.getItem('ff_seller_session_v1'))sessionStorage.setItem('ff_seller_session_v1',JSON.stringify({sellerId:'LIVE',storeName:'Seller',email:'',name:'Seller',authProvider:'supabase-pending'}));
 }
 
@@ -67,5 +80,5 @@ window.ffSellerSupabaseReady.then(()=>{
   script.src='seller-live-integration.js?v=20260921-supabase-recovery';
   script.async=false;
   script.setAttribute('data-seller-live-recovery','true');
-  document.body.appendChild(script);
+  appendScriptWhenReady(script,'body').catch(error=>{console.error('[Seller Center] Live integration recovery failed',error);document.documentElement.classList.remove('seller-live-loading')});
 }).catch(error=>{console.error('[Seller Center] Supabase startup failed',error);document.documentElement.classList.remove('seller-live-loading')});
