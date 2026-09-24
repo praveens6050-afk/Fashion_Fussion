@@ -1,0 +1,104 @@
+name: Cloudflare Seller Deep Audit
+
+on:
+  push:
+    branches: [cloudflare-seller]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify isolated Cloudflare branch
+        run: |
+          set -euo pipefail
+          test -d seller-panel
+          test -d .github
+          test ! -e customer-panel
+          test ! -e admin-panel
+          test ! -e api
+          test ! -e backend
+          test ! -e scripts
+          legacy='ver''cel'
+          if find . -path './.git' -prune -o -path './seller-panel/node_modules' -prune -o -iname "*${legacy}*" -print | grep -q .; then
+            echo 'Legacy hosting artifact found.' >&2
+            exit 1
+          fi
+          if grep -RIni --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist "$legacy" seller-panel .github; then
+            echo 'Legacy hosting reference found.' >&2
+            exit 1
+          fi
+
+      - name: Syntax-audit Seller sources
+        working-directory: seller-panel
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -type f -name '*.js' -not -path './dist/*' -not -path './node_modules/*' -print0)
+          node --check cloudflare-build.mjs
+
+      - name: Build Seller static package
+        working-directory: seller-panel
+        run: npm run build
+
+      - name: Verify Seller security and routing
+        working-directory: seller-panel
+        run: |
+          set -euo pipefail
+          test -s dist/index.html
+          test -s dist/login.html
+          grep -Fq 'X-Content-Type-Options: nosniff' dist/_headers
+          grep -Fq 'X-Frame-Options:' dist/_headers
+          grep -Fq 'Content-Security-Policy:' dist/_headers
+          test ! -e dist/vercel.json
+
+      - name: Verify built HTML local assets
+        working-directory: seller-panel
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const root=path.resolve('dist');
+          const htmlFiles=[];
+          const walk=dir=>{for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walk(p);else if(e.name.endsWith('.html'))htmlFiles.push(p)}};
+          walk(root);
+          const missing=[];
+          const attr=/(?:src|href)=["'](\/[^"'#?]+)["']/g;
+          for(const file of htmlFiles){
+            const text=fs.readFileSync(file,'utf8');
+            for(const match of text.matchAll(attr)){
+              const url=match[1];
+              if(!/\.(?:js|css|svg|png|jpg|jpeg|webp|ico|json|xml|txt)$/i.test(url))continue;
+              const target=path.join(root,url.replace(/^\//,''));
+              if(!fs.existsSync(target))missing.push(`${path.relative(root,file)} -> ${url}`);
+            }
+          }
+          if(missing.length)throw new Error(`Missing local assets:\n${missing.join('\n')}`);
+          console.log(`PASS local asset integrity across ${htmlFiles.length} Seller HTML files`);
+          NODE
+
+      - name: Verify catalog and image-upload integration
+        working-directory: seller-panel
+        run: |
+          set -euo pipefail
+          grep -Fq 'seller-live-integration.js' index.html
+          grep -Fq 'product-image-upload.js' navigation-fix.js
+          grep -Fq "file.type='file'" product-image-upload.js
+          grep -Fq 'submit_seller_product' seller-live-integration.js
+          grep -Fq 'register_seller_profile' seller-live-integration.js auth.js
+
+      - name: Reject obvious committed privileged secrets
+        working-directory: seller-panel
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude-dir=dist --exclude='*.example' '(service_role|SUPABASE_SERVICE_ROLE_KEY)[[:space:]]*[:=][[:space:]]*["'"'][A-Za-z0-9._-]{20,}' .; then
+            echo 'Possible committed privileged credential detected.' >&2
+            exit 1
+          fi
