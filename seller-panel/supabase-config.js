@@ -61,7 +61,43 @@ function loadSellerSdkWithTimeout(src,timeoutMs=6500){
 const sellerPath=(location.pathname.split('/').pop()||'index.html').toLowerCase();
 const isSellerLogin=sellerPath==='login'||sellerPath==='login.html';
 
+function sellerLiveNumber(value){return value===''||value==null?null:Number(value)}
+function sellerLiveVariants(){
+  return [...document.querySelectorAll('#variantRows [data-variant-row]')].map(row=>({
+    size:row.dataset.size||'',
+    color:row.dataset.color||'',
+    sku:row.querySelector('[data-v-sku]')?.value.trim().toUpperCase()||'',
+    stock:Number(row.querySelector('[data-v-stock]')?.value||0),
+    priceOverride:row.querySelector('[data-v-price]')?.value===''?null:sellerLiveNumber(row.querySelector('[data-v-price]')?.value)
+  }));
+}
+function sellerLiveProductFormData(){
+  const get=id=>document.getElementById(id);
+  const variantsEnabled=Boolean(get('variantsEnabled')?.checked);
+  return{
+    name:get('name')?.value.trim(),category:get('category')?.value.trim(),sku:get('sku')?.value.trim().toUpperCase(),description:get('description')?.value.trim(),
+    price:Number(get('price')?.value),mrp:Number(get('mrp')?.value),stock:Number(get('stock')?.value),gst:Number(get('gst')?.value||18),image:get('image')?.value.trim(),
+    brand:get('brand')?.value.trim()||'',modelCode:get('modelCode')?.value.trim()||'',hsn:get('hsn')?.value.trim()||'',countryOrigin:get('countryOrigin')?.value.trim()||'',
+    bulkEnabled:Boolean(get('bulkEnabled')?.checked),bulkMinQty:sellerLiveNumber(get('bulkMinQty')?.value),bulkPrice:sellerLiveNumber(get('bulkPrice')?.value),
+    variantsEnabled,variants:variantsEnabled?sellerLiveVariants():[],additionalImages:String(get('additionalImages')?.value||'').split(/\r?\n/).map(v=>v.trim()).filter(Boolean).slice(0,5),
+    weightGrams:sellerLiveNumber(get('weightGrams')?.value),dispatchDays:sellerLiveNumber(get('dispatchDays')?.value),lengthCm:sellerLiveNumber(get('lengthCm')?.value),widthCm:sellerLiveNumber(get('widthCm')?.value),heightCm:sellerLiveNumber(get('heightCm')?.value),
+    lowStockThreshold:Number(get('lowStockThreshold')?.value||0),returnDays:sellerLiveNumber(get('returnDays')?.value)
+  };
+}
+
 if(!isSellerLogin){
+  document.addEventListener('submit',event=>{
+    if(event.target?.id!=='productForm')return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const live=window.SellerLiveIntegration;
+    if(!live?.submit){
+      window.SellerCatalogBridge?.notify?.('Live seller catalog is still loading. Please wait a moment and try again.');
+      return;
+    }
+    live.submit(sellerLiveProductFormData(),document.getElementById('productId')?.value||null);
+  },true);
+
   document.documentElement.classList.add('seller-live-loading');
   if(!document.getElementById('seller-live-bootstrap-style')){
     const style=document.createElement('style');
