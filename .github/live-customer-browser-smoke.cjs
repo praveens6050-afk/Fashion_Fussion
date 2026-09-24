@@ -29,7 +29,12 @@ function observe(page, label) {
   });
   page.on('requestfailed', request => {
     if (!sameCustomerHost(request.url())) return;
-    failures.push(`${label} failed request: ${request.method()} ${request.url()} ${request.failure()?.errorText || ''}`);
+    const errorText = request.failure()?.errorText || '';
+    // Signed-out protected pages intentionally navigate to Login as soon as auth
+    // is resolved. Any trailing same-origin extension scripts can be aborted by
+    // that document navigation; ignore only that narrow, expected script abort.
+    if (request.resourceType() === 'script' && errorText === 'net::ERR_ABORTED' && cleanPath(new URL(page.url())) === '/login') return;
+    failures.push(`${label} failed request: ${request.method()} ${request.url()} ${errorText}`);
   });
   page.on('response', response => {
     if (!sameCustomerHost(response.url()) || response.status() < 400) return;
