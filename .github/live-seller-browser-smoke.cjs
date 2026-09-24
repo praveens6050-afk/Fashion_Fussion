@@ -21,6 +21,7 @@ function expectedAuthRedirectAbort(request) {
 }
 
 function observe(page, label) {
+  let signedOutRedirectInProgress = false;
   page.on('pageerror', error => failures.push(`${label} pageerror: ${error.message}`));
   page.on('console', message => {
     if (message.type() !== 'error') return;
@@ -32,8 +33,10 @@ function observe(page, label) {
   });
   page.on('requestfailed', request => {
     if (!sameSellerHost(request.url())) return;
+    const failure = request.failure()?.errorText || '';
+    if (signedOutRedirectInProgress && request.resourceType() === 'script' && /ERR_ABORTED/i.test(failure)) return;
     if (expectedAuthRedirectAbort(request)) return;
-    failures.push(`${label} failed request: ${request.method()} ${request.url()} ${request.failure()?.errorText || ''}`);
+    failures.push(`${label} failed request: ${request.method()} ${request.url()} ${failure}`);
   });
   page.on('response', response => {
     if (!sameSellerHost(response.url()) || response.status() < 400) return;
@@ -42,6 +45,10 @@ function observe(page, label) {
       failures.push(`${label} ${type} HTTP ${response.status()}: ${response.url()}`);
     }
   });
+  return {
+    beginSignedOutRedirect() { signedOutRedirectInProgress = true; },
+    endSignedOutRedirect() { signedOutRedirectInProgress = false; }
+  };
 }
 
 async function open(page, path) {
@@ -64,7 +71,7 @@ async function noHorizontalOverflow(page, label) {
   const browser = await chromium.launch({ headless: true });
 
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  observe(desktop, 'seller desktop');
+  const desktopObserver = observe(desktop, 'seller desktop');
   await open(desktop, '/login');
   for (const selector of ['#loginForm', '#loginEmail', '#loginPassword', '#loginSubmit', '#forgotPassword', '#loginTab', '#registerTab']) {
     if (!(await desktop.locator(selector).count())) throw new Error(`Seller login missing ${selector}`);
@@ -96,8 +103,15 @@ async function noHorizontalOverflow(page, label) {
   if (await desktop.locator('.auth-tabs').isVisible()) throw new Error('Seller recovery mode left login/register tabs visible');
   await noHorizontalOverflow(desktop, 'Seller recovery');
 
-  await desktop.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 15000 });
+  desktopObserver.beginSignedOutRedirect();
+  try {
+    await desktop.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 15000 });
+    await desktop.locator('#loginForm').waitFor({ state: 'attached', timeout: 10000 });
+    await desktop.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+  } finally {
+    desktopObserver.endSignedOutRedirect();
+  }
   if (!(await desktop.locator('#loginForm').count())) throw new Error('Signed-out Seller dashboard did not redirect to Seller login');
   await desktop.close();
 
