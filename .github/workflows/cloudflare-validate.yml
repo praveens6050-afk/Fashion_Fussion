@@ -52,6 +52,22 @@ jobs:
           done < <(find . -type f -name '*.js' -not -path './node_modules/*' -not -path './dist/*' -not -path './functions/*' -print0)
           node backend/test-customer.js
 
+      - name: Validate variant commerce entry points
+        working-directory: customer-panel
+        run: |
+          set -euo pipefail
+          grep -Fq 'variant-commerce.js?v=4' product.html
+          grep -Fq 'product-variants.js?v=2' product.html
+          grep -Fq 'variant-commerce.js?v=4' search.html
+          grep -Fq 'catalog-cart-entry.js?v=2' search.html
+          grep -Fq 'variant-commerce.js?v=4' wishlist.html
+          grep -Fq 'catalog-cart-entry.js?v=2' wishlist.html
+          grep -Fq 'has_variants' csp-product.js
+          grep -Fq 'addSyncedLine' csp-product.js
+          grep -Fq 'get_variant_availability' product-variants.js
+          grep -Fq 'syncActions' product-variants.js
+          ! grep -Fq 'captureCartAdd' product-variants.js
+
       - name: Build static assets
         working-directory: customer-panel
         run: npm run build
@@ -65,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           legacy='ver''cel'
-          for f in index.html login.html signup.html cart.html checkout.html product.html search.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
+          for f in index.html login.html signup.html cart.html checkout.html product.html search.html wishlist.html _headers _redirects _routes.json canonical-host.js release.json homepage.bundle.css homepage.runtime.js; do test -s "dist/$f"; done
           test -s dist/vendor/supabase.js
           test -s functions/_node-handler-bridge.js
           test -s functions/api/[[path]].js
@@ -74,6 +90,10 @@ jobs:
           test ! -e "dist/${legacy}.json"
           grep -q 'variant-commerce.js?v=3' dist/cart.html
           grep -q 'variant-cart-ui.js?v=2' dist/cart.html
+          grep -q 'variant-commerce.js?v=4' dist/product.html
+          grep -q 'product-variants.js?v=2' dist/product.html
+          grep -q 'catalog-cart-entry.js?v=2' dist/search.html
+          grep -q 'catalog-cart-entry.js?v=2' dist/wishlist.html
 
       - name: Verify Pages Functions and API boundary
         working-directory: customer-panel
