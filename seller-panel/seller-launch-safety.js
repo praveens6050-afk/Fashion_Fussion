@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
   const blockedViews=new Set([
-    'orders','payments','returns','inventory','analytics','shipping','onboarding','settings','support','tax','team',
+    'orders','returns','inventory','analytics','shipping','onboarding','settings','support','tax','team',
     'promotions','quotes','scorecard','bulk-tools','reports','messages','locations','sla','accounting'
   ]);
   const blockedIds=new Set([
