@@ -60,7 +60,11 @@ function watchWithdrawnState(){
 function activate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+view));
   document.querySelectorAll('.nav-item[data-view]').forEach(btn=>btn.classList.toggle('active',btn.dataset.view===view));
-  if(view==='products')document.getElementById('productSearch')?.focus({preventScroll:true});
+  if(view==='products'){
+    const all=document.querySelector('#statusTabs [data-status="all"]');
+    if(all&&!all.classList.contains('active'))all.click();
+    document.getElementById('productSearch')?.focus({preventScroll:true});
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function openProductDrawer(){
