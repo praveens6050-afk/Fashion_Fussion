@@ -120,7 +120,7 @@
     $('mediaPreview').querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.parentElement.textContent = 'IMAGE ERROR'; }, { once: true }));
   }
   function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function toggleBulk() {
     $('bulkFields').classList.toggle('advanced-hidden', !$('bulkEnabled').checked);
