@@ -113,6 +113,29 @@ async function noHorizontalOverflow(page, label) {
       desktop.locator('#place').click()
     ]);
     if (!(await desktop.locator('form').count())) throw new Error('signed-out checkout did not land on a login form');
+    const signupHref = await desktop.locator('#signupLink').getAttribute('href');
+    const signupUrl = new URL(signupHref || '', desktop.url());
+    if (cleanPath(signupUrl) !== '/signup' || signupUrl.searchParams.get('redirect') !== 'checkout.html') {
+      throw new Error(`checkout login did not preserve signup return target: ${signupHref}`);
+    }
+
+    await open(desktop, '/signup?redirect=checkout');
+    const loginHref = await desktop.locator('.links a').first().getAttribute('href');
+    const loginUrl = new URL(loginHref || '', desktop.url());
+    if (cleanPath(loginUrl) !== '/login' || loginUrl.searchParams.get('redirect') !== 'checkout.html') {
+      throw new Error(`signup did not preserve checkout return target: ${loginHref}`);
+    }
+    await desktop.locator('#fullName').fill('Checkout Test');
+    await desktop.locator('#phone').fill('9876543210');
+    await desktop.locator('#email').fill('checkout-smoke@example.com');
+    await desktop.locator('#password').fill('Password123!');
+    await desktop.locator('#confirmPassword').fill('Password456!');
+    await desktop.locator('#signupButton').click();
+    await desktop.locator('#message').waitFor({ state: 'visible', timeout: 5000 });
+    const signupValidation = (await desktop.locator('#message').innerText()).trim();
+    if (signupValidation !== 'Passwords do not match.') {
+      throw new Error(`valid signup phone was rejected before password validation: ${signupValidation}`);
+    }
   }
 
   await open(desktop, '/index.html');
@@ -153,7 +176,7 @@ async function noHorizontalOverflow(page, label) {
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   observe(mobile, 'mobile');
-  for (const path of ['/index.html', '/search', '/cart', '/login']) {
+  for (const path of ['/index.html', '/search', '/cart', '/login', '/signup?redirect=checkout']) {
     await open(mobile, path);
     await noHorizontalOverflow(mobile, `mobile ${path}`);
   }
@@ -161,7 +184,7 @@ async function noHorizontalOverflow(page, label) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, Add to Cart redirect, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
