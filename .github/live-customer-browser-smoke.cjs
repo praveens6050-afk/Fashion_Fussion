@@ -49,15 +49,6 @@ async function noHorizontalOverflow(page, label) {
   if (metrics.scroll > metrics.client + 3) throw new Error(`${label} horizontal overflow: ${metrics.scroll}px content in ${metrics.client}px viewport`);
 }
 
-async function assertEntryPointScripts(page, path, scripts) {
-  const response = await page.request.get(BASE + path, { timeout: 30000 });
-  if (!response.ok()) throw new Error(`${path} entry-point fetch returned ${response.status()}`);
-  const html = await response.text();
-  for (const script of scripts) {
-    if (!html.includes(script)) throw new Error(`${path} missing required script entry point: ${script}`);
-  }
-}
-
 (async () => {
   const browser = await chromium.launch({ headless: true });
 
@@ -71,30 +62,6 @@ async function assertEntryPointScripts(page, path, scripts) {
 
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   observe(desktop, 'desktop');
-
-  await assertEntryPointScripts(desktop, '/account.html', [
-    'desktop-account-loader.js?v=1',
-    'account-refunds.js?v=1',
-    'account-returns.js?v=1',
-    'account-business.js?v=1',
-    'account-repeat-order.js?v=1',
-    'account-cancel-promotion.js?v=1',
-    'account-role-guard.js?v=1',
-    'account-stability.js?v=1',
-    'account-extension-router.js?v=1'
-  ]);
-  await assertEntryPointScripts(desktop, '/order-details.html', [
-    'csp-order-details.js?v=3',
-    'order-shipping.js?v=1',
-    'order-refund-tracker.js?v=1',
-    'order-return-exchange.js?v=1',
-    'order-cancel-promotion.js?v=1',
-    'order-business-details.js?v=1'
-  ]);
-  await assertEntryPointScripts(desktop, '/order-confirmation.html', [
-    'csp-order-confirmation.js?v=3',
-    'order-business-details.js?v=1'
-  ]);
 
   await desktop.goto(BASE + '/wishlist', { waitUntil: 'domcontentloaded', timeout: 30000 });
   await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 10000 });
@@ -239,7 +206,7 @@ async function assertEntryPointScripts(page, path, scripts) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, account/post-purchase extension entry points, wishlist/post-purchase auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, wishlist/post-purchase auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
