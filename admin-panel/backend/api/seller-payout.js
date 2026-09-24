@@ -12,7 +12,7 @@ async function rpc(name,args){
   const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:serverHeaders(),body:JSON.stringify(args||{})});
   const d=await r.json().catch(()=>null);if(!r.ok){const e=new Error(d?.message||d?.error||'Payout database action failed');e.status=r.status;throw e}return d;
 }
-function config(){return{configured:Boolean(GATEWAY_URL||(DIRECT_ENABLED&&RAZORPAYX_KEY_ID&&RAZORPAYX_KEY_SECRET&&RAZORPAYX_ACCOUNT_NUMBER)),mode:GATEWAY_URL?'gateway':DIRECT_ENABLED?'direct':'disabled',gateway:GATEWAY_URL?new URL(GATEWAY_URL).origin:null,direct_enabled:DIRECT_ENABLED}}
+function config(){return{configured:Boolean(GATEWAY_URL||(DIRECT_ENABLED&&RAZORPAYX_KEY_ID&&RAZORPAYX_KEY_SECRET&&RAZORPAYX_ACCOUNT_NUMBER)),mode:GATEWAY_URL?'gateway':DIRECT_ENABLED?'direct':'disabled'}}
 async function callProvider(prepared){
   const payload={operation:'create_payout',settlement_id:prepared.settlement_id,amount:Number(prepared.amount_paise),currency:prepared.currency||'INR',fund_account_id:prepared.fund_account_id,mode:prepared.payout_mode||'IMPS',purpose:'payout',reference_id:'ff-settlement-'+prepared.settlement_id,narration:'Fashion Fussion seller settlement'};
   if(GATEWAY_URL){
