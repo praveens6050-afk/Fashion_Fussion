@@ -6,6 +6,7 @@ const PASSWORD = String(process.env.SELLER_E2E_PASSWORD || '');
 const RUN_ID = `${Date.now().toString(36)}-${String(process.env.GITHUB_RUN_ID || 'local').slice(-6)}`.toUpperCase();
 const TEST_NAME = `E2E Seller Catalog ${RUN_ID}`;
 const TEST_SKU = `E2E-${RUN_ID}`.replace(/[^A-Z0-9-]/g, '').slice(0, 38);
+const EXPECTED_LIVE_VERSION = '20260925-authoritative-withdraw-v2';
 const failures = [];
 
 if (!EMAIL || !PASSWORD) throw new Error('SELLER_E2E_EMAIL and SELLER_E2E_PASSWORD are required.');
@@ -50,6 +51,15 @@ async function waitForToast(page, pattern, timeout = 15000) {
     if (!toast) return false;
     return new RegExp(source, 'i').test(toast.textContent || '');
   }, pattern.source, { timeout });
+}
+
+async function waitForBridgeStatus(page, id, status, timeout = 15000) {
+  await page.waitForFunction(({ productId, expectedStatus }) => {
+    const products = window.SellerCatalogBridge?.getProducts?.();
+    if (!Array.isArray(products)) return false;
+    const product = products.find(item => String(item?.id) === String(productId));
+    return product?.status === expectedStatus;
+  }, { productId: id, expectedStatus: status }, { timeout });
 }
 
 async function noHorizontalOverflow(page, label) {
@@ -99,9 +109,11 @@ async function signIn(page) {
 
   await page.waitForFunction(() => Boolean(window.SellerLiveIntegration && window.SellerCatalogBridge) && !document.documentElement.classList.contains('seller-live-loading'), null, { timeout: 20000 });
   await page.locator('#sellerDisplayName').waitFor({ state: 'visible', timeout: 10000 });
+  const liveVersion = await page.evaluate(() => window.SellerLiveIntegration?.version || window.__sellerLiveIntegrationVersion || '');
+  if (liveVersion !== EXPECTED_LIVE_VERSION) throw new Error(`Seller live integration version mismatch: ${liveVersion || 'missing'} (expected ${EXPECTED_LIVE_VERSION}).`);
   const email = await page.locator('#profileEmail').inputValue();
   if (email.toLowerCase() !== EMAIL.toLowerCase()) throw new Error(`Signed in profile email mismatch: ${email}`);
-  console.log('PASS Seller sign-in and dashboard bootstrap.');
+  console.log(`PASS Seller sign-in and dashboard bootstrap (live=${liveVersion}).`);
 }
 
 async function testEveryWorkspace(page) {
@@ -208,8 +220,11 @@ async function testLiveCatalogLifecycle(page) {
   await copy.waitFor({ state: 'visible', timeout: 10000 });
   if (!/pending/i.test((await copy.locator('.status').textContent()) || '')) throw new Error('Duplicated Seller listing is not pending.');
 
+  const copyId = await copy.locator('[data-delete]').getAttribute('data-delete');
+  if (!copyId) throw new Error('Duplicated Seller listing has no withdrawal identifier.');
   page.once('dialog', dialog => dialog.accept());
   await copy.locator('[data-delete]').click();
+  await waitForBridgeStatus(page, copyId, 'withdrawn');
   await waitForToast(page, /Listing withdrawn\./);
   await openProductsAndSearch(page, TEST_SKU);
   const withdrawnCopy = page.locator('#productsTable tr').filter({ hasText: `${TEST_NAME} Copy` }).first();
@@ -218,8 +233,11 @@ async function testLiveCatalogLifecycle(page) {
   if (withdrawnCopyStatus !== 'Withdrawn') throw new Error(`Withdrawn duplicate rendered as “${withdrawnCopyStatus}” instead of “Withdrawn”.`);
 
   original = page.locator('#productsTable tr').filter({ hasText: TEST_SKU }).filter({ hasNotText: 'Copy' }).first();
+  const originalId = await original.locator('[data-delete]').getAttribute('data-delete');
+  if (!originalId) throw new Error('Original Seller listing has no withdrawal identifier.');
   page.once('dialog', dialog => dialog.accept());
   await original.locator('[data-delete]').click();
+  await waitForBridgeStatus(page, originalId, 'withdrawn');
   await waitForToast(page, /Listing withdrawn\./);
   await openProductsAndSearch(page, TEST_SKU);
   original = page.locator('#productsTable tr').filter({ hasText: TEST_SKU }).filter({ hasNotText: 'Copy' }).first();
