@@ -1,6 +1,7 @@
 'use strict';
 const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
+const SUPABASE_SRI='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
 window.FF_API_ORIGIN='';
 
 const form=document.getElementById('form');
@@ -14,6 +15,7 @@ const remember=document.getElementById('remember');
 const REMEMBER_KEY='ff_admin_remember';
 let db=null;
 let sdkPromise=null;
+let clientPromise=null;
 
 function show(message,type='error'){
   if(!banner)return;
@@ -54,18 +56,28 @@ function loadSupabaseSdk(){
     if(!existing){
       script.src='/vendor/supabase.js';
       script.async=true;
+      script.integrity=SUPABASE_SRI;
+      script.crossOrigin='anonymous';
       script.dataset.supabaseSdk='local';
       document.head.appendChild(script);
     }
   });
   return sdkPromise;
 }
-async function getClient(){
-  if(db?.auth)return db;
-  const sdk=await loadSupabaseSdk();
-  db=sdk.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{storage:authStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-  window.supabaseClient=db;
-  return db;
+function getClient(){
+  if(db?.auth)return Promise.resolve(db);
+  if(clientPromise)return clientPromise;
+  clientPromise=(async()=>{
+    const sdk=await loadSupabaseSdk();
+    if(db?.auth)return db;
+    db=sdk.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{storage:authStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'ff_admin_auth'}});
+    window.supabaseClient=db;
+    return db;
+  })().catch(error=>{
+    clientPromise=null;
+    throw error;
+  });
+  return clientPromise;
 }
 window.ffAdminSupabaseReady=getClient();
 window.ffAdminSupabaseReady.catch(()=>{});
