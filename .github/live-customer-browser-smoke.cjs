@@ -89,6 +89,13 @@ async function noHorizontalOverflow(page, label) {
     throw new Error(`signed-out order confirmation lost exact login return target: ${confirmationReturn}`);
   }
 
+  await desktop.goto(BASE + '/quote-checkout?quote=987654321', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 10000 });
+  const quoteCheckoutReturn = new URL(desktop.url()).searchParams.get('redirect');
+  if (quoteCheckoutReturn !== 'quote-checkout.html?quote=987654321') {
+    throw new Error(`signed-out quote checkout lost exact login return target: ${quoteCheckoutReturn}`);
+  }
+
   await open(desktop, '/index.html');
   for (const selector of ['.brand', '#searchBox', '#searchBtn', '#productsGrid']) {
     if (!(await desktop.locator(selector).count())) throw new Error(`homepage missing ${selector}`);
@@ -211,7 +218,7 @@ async function noHorizontalOverflow(page, label) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, wishlist/post-purchase auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, wishlist/post-purchase/quote-checkout auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
