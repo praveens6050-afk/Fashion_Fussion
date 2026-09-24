@@ -85,8 +85,13 @@ async function assertQuantityFiveCart(page, productId, label) {
   await open(desktop, '/');
   await noHorizontalOverflow(desktop, 'desktop home');
 
-  await desktop.goto(WWW + '/', { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await desktop.waitForURL(url => url.hostname === 'fashionfussion.in', { timeout: 10000 });
+  // Canonicalization intentionally aborts any www-page resources still in flight.
+  // Test that redirect in an isolated page so those expected aborts do not weaken
+  // the resource-failure observer on the real customer journey below.
+  const canonicalPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await canonicalPage.goto(WWW + '/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await canonicalPage.waitForURL(url => url.hostname === 'fashionfussion.in', { timeout: 10000 });
+  await canonicalPage.close();
 
   for (const path of ['/wishlist', '/order-details?id=1', '/quote-checkout?quote=1']) {
     await expectLoginRedirect(desktop, path);
