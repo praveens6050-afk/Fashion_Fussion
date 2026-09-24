@@ -43,30 +43,12 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --max-time 20 https://fashionfussion.in/ | grep -q 'Fashion Fussion'
           curl --fail --silent --show-error --max-time 20 https://www.fashionfussion.in/ | grep -q 'data-canonical-host'
+          curl --fail --silent --show-error --max-time 20 https://www.fashionfussion.in/canonical-host.js | grep -q 'www.fashionfussion.in'
 
       - name: Install Chromium smoke runtime
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-
-      - name: Verify www redirects human browsers to apex
-        run: |
-          node - <<'NODE'
-          const { chromium } = require('playwright');
-          (async()=>{
-            const browser = await chromium.launch({ headless: true });
-            try {
-              const page = await browser.newPage();
-              await page.goto('https://www.fashionfussion.in/cart.html?from=www-test#cart', { waitUntil: 'domcontentloaded', timeout: 30000 });
-              await page.waitForURL(url => url.hostname === 'fashionfussion.in' && url.pathname === '/cart.html', { timeout: 10000 });
-              const url = new URL(page.url());
-              if (url.searchParams.get('from') !== 'www-test' || url.hash !== '#cart') throw new Error(`www canonical redirect lost path/query/hash: ${url.href}`);
-              console.log(`PASS human www redirect -> ${url.href}`);
-            } finally {
-              await browser.close();
-            }
-          })().catch(err=>{console.error(err.stack||err);process.exit(1)});
-          NODE
 
       - name: Public pages browser test on Cloudflare production
         env:
@@ -77,3 +59,33 @@ jobs:
         env:
           SMOKE_BASE_URL: https://fashionfussion.in
         run: node scripts/browser_smoke.js
+
+      - name: Diagnose and verify www human browser canonicalization
+        run: |
+          node - <<'NODE'
+          const { chromium } = require('playwright');
+          (async()=>{
+            const browser = await chromium.launch({ headless: true });
+            try {
+              const page = await browser.newPage();
+              const messages=[];
+              page.on('console', msg=>messages.push(`console ${msg.type()}: ${msg.text()}`));
+              page.on('pageerror', err=>messages.push(`pageerror: ${err.message}`));
+              page.on('requestfailed', req=>messages.push(`requestfailed ${req.url()}: ${req.failure()?.errorText||''}`));
+              const response = await page.goto('https://www.fashionfussion.in/cart.html?from=www-test#cart', { waitUntil: 'domcontentloaded', timeout: 30000 });
+              console.log(`www initial response=${response?.status()} final=${page.url()}`);
+              const script = await page.locator('script[data-canonical-host]').getAttribute('src').catch(()=>null);
+              console.log(`canonical script=${script||'missing'}`);
+              const host = await page.evaluate(()=>location.hostname);
+              console.log(`browser hostname=${host}`);
+              await page.waitForTimeout(1500);
+              const final = new URL(page.url());
+              for(const message of messages) console.log(message);
+              if(final.hostname !== 'fashionfussion.in') throw new Error(`www browser remained on ${final.href}`);
+              if(final.pathname !== '/cart.html' || final.searchParams.get('from') !== 'www-test' || final.hash !== '#cart') throw new Error(`www canonical redirect lost path/query/hash: ${final.href}`);
+              console.log(`PASS human www redirect -> ${final.href}`);
+            } finally {
+              await browser.close();
+            }
+          })().catch(err=>{console.error(err.stack||err);process.exit(1)});
+          NODE
