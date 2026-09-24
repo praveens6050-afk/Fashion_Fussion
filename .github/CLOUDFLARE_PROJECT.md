@@ -16,8 +16,8 @@ Runtime variables/secrets:
 - `ALLOWED_ORIGIN`
 
 Production origin: `https://fashionfussion.in`.
-For preview testing, append the exact Customer `pages.dev` origin to `ALLOWED_ORIGIN` and Supabase Auth allowed redirects.
+For preview testing, append only the exact Customer `pages.dev` origin to `ALLOWED_ORIGIN` and Supabase Auth allowed redirects, then remove it after testing.
 
-Only `/api/*` invokes Pages Functions. Static storefront files stay on the CDN. Before production cutover verify auth, product/search/cart, COD/prepaid checkout, Razorpay verification/webhook, orders, shipping/tracking, cancellation and refund status.
+Only `/api/*` invokes Pages Functions. Static storefront files stay on the Cloudflare CDN. Production verification covers auth, product/search/cart, COD/prepaid checkout, Razorpay verification/webhook, orders, shipping/tracking, cancellation and refund status.
 
-See `.github/CLOUDFLARE_MIGRATION.md` for the full migration/cutover/rollback procedure.
+See `.github/CLOUDFLARE_MIGRATION.md` for the full Cloudflare production architecture and verification boundary.
