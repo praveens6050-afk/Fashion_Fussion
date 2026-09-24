@@ -1,0 +1,30 @@
+name: Payout Gateway Validate
+
+on:
+  push:
+    branches:
+      - payout-gateway
+    paths:
+      - 'payout-gateway/**'
+      - '.github/workflows/payout-gateway-validate.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        working-directory: payout-gateway
+        run: npm run check
+      - name: Docker build
+        working-directory: payout-gateway
+        run: docker build -t fashion-fussion-payout-gateway:test .
+      - name: Secret placeholder guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -RInE '(rzp_live_|rzp_test_|RAZORPAYX_KEY_SECRET=.+[^_]$|GATEWAY_TOKEN=[a-fA-F0-9]{32,})' payout-gateway --exclude='.env.example' --exclude='README.md'
