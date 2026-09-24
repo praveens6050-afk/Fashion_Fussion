@@ -20,6 +20,13 @@ function renderProvisionalIdentity(session){
 
 renderProvisionalIdentity(readSellerSession());
 
+function showAllProducts(){
+  activeStatus='all';
+  syncTabs();
+  switchView('products');
+  renderProducts();
+}
+
 if(!window.__sellerNavigationCaptureBound){
   window.__sellerNavigationCaptureBound=true;
   document.addEventListener('click',event=>{
@@ -36,7 +43,8 @@ if(!window.__sellerNavigationCaptureBound){
     if(view&&view.dataset.view&&view.dataset.view!=='support-live'){
       event.preventDefault();
       event.stopImmediatePropagation();
-      switchView(view.dataset.view);
+      if(view.dataset.view==='products')showAllProducts();
+      else switchView(view.dataset.view);
     }
   },true);
 }
@@ -47,6 +55,7 @@ window.SellerCatalogBridge={
   notify:message=>toast(message),
   commit:next=>{products=Array.isArray(next)?next:[];renderAll()},
   close:()=>closeDrawer(),
+  showAllProducts,
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
 
