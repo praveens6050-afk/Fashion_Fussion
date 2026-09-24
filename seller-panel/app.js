@@ -23,8 +23,8 @@ const safeImage=url=>{try{const parsed=new URL(url);return ['http:','https:'].in
 function loadProducts(){
   try{
     const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    return Array.isArray(stored)&&stored.length?stored:structuredClone(starterProducts);
-  }catch{return structuredClone(starterProducts)}
+    return Array.isArray(stored)?stored:[];
+  }catch{return []}
 }
 function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(products))}
 function uid(){return 'SP-'+String(Math.max(1000,...products.map(p=>Number(String(p.id).replace(/\D/g,''))||0))+1)}
