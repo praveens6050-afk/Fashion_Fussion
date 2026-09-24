@@ -21,21 +21,17 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Detect dedicated Seller E2E credentials
-        id: credentials
+      - name: Require dedicated Seller E2E credentials
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "${SELLER_E2E_EMAIL:-}" ] && [ -n "${SELLER_E2E_PASSWORD:-}" ]; then
-            echo 'enabled=true' >> "$GITHUB_OUTPUT"
-            echo 'Dedicated Seller E2E credentials are configured.'
-          else
-            echo 'enabled=false' >> "$GITHUB_OUTPUT"
-            echo '::notice::Authenticated Seller E2E skipped. Add repository secrets SELLER_E2E_EMAIL and SELLER_E2E_PASSWORD for a dedicated active test seller account.'
+          if [ -z "${SELLER_E2E_EMAIL:-}" ] || [ -z "${SELLER_E2E_PASSWORD:-}" ]; then
+            echo '::error::Authenticated Seller E2E is not configured. Add repository secrets SELLER_E2E_EMAIL and SELLER_E2E_PASSWORD for a dedicated active test seller account. Do not put credentials in source code or chat.'
+            exit 1
           fi
+          echo 'Dedicated Seller E2E credentials are configured.'
 
       - name: Wait for exact Cloudflare Seller deployment
-        if: steps.credentials.outputs.enabled == 'true'
         env:
           EXPECTED_SHA: ${{ github.sha }}
           RELEASE_URL: https://seller.fashionfussion.in/release.json
@@ -55,11 +51,9 @@ jobs:
           exit 1
 
       - name: Install Chromium runtime
-        if: steps.credentials.outputs.enabled == 'true'
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
 
       - name: Run authenticated Seller lifecycle
-        if: steps.credentials.outputs.enabled == 'true'
         run: node .github/live-seller-authenticated-smoke.cjs
