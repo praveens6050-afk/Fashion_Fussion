@@ -96,11 +96,6 @@ jobs:
           console.log(`PASS local asset integrity across ${htmlFiles.length} Admin HTML files`);
           NODE
 
-      - name: Reject obvious committed privileged secrets
+      - name: Reject committed privileged secrets
         working-directory: admin-panel
-        run: |
-          set -euo pipefail
-          if grep -RInE --exclude-dir=node_modules --exclude-dir=dist --exclude='*.example' "(service_role|SUPABASE_SERVICE_ROLE_KEY)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9._-]{20,}" .; then
-            echo 'Possible committed privileged credential detected.' >&2
-            exit 1
-          fi
+        run: node ../.github/scan-privileged-secrets.mjs .
