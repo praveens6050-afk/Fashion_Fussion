@@ -143,8 +143,8 @@ function handleAction(target){
   const add=target.closest('[data-action="add-product"]');if(add){openDrawer();return true}
   const view=target.closest('[data-view]');if(view){switchView(view.dataset.view);return true}
   const edit=target.closest('[data-edit]');if(edit){openDrawer(edit.dataset.edit);return true}
-  const duplicate=target.closest('[data-duplicate]');if(duplicate){duplicateProduct(duplicate.dataset.duplicate);return true}
-  const del=target.closest('[data-delete]');if(del){deleteProduct(del.dataset.delete);return true}
+  const duplicate=target.closest('[data-duplicate]');if(duplicate){if(window.SellerLiveIntegration)return false;duplicateProduct(duplicate.dataset.duplicate);return true}
+  const del=target.closest('[data-delete]');if(del){if(window.SellerLiveIntegration)return false;deleteProduct(del.dataset.delete);return true}
   return false;
 }
 
