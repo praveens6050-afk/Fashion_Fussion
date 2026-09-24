@@ -34,7 +34,8 @@ function observe(page, label) {
   page.on('requestfailed', request => {
     if (!sameSellerHost(request.url())) return;
     const failure = request.failure()?.errorText || '';
-    if (signedOutRedirectInProgress && request.resourceType() === 'script' && /ERR_ABORTED/i.test(failure)) return;
+    const redirectAbort = signedOutRedirectInProgress && ['script', 'stylesheet'].includes(request.resourceType()) && /ERR_ABORTED/i.test(failure);
+    if (redirectAbort) return;
     if (expectedAuthRedirectAbort(request)) return;
     failures.push(`${label} failed request: ${request.method()} ${request.url()} ${failure}`);
   });
