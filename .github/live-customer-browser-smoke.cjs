@@ -18,11 +18,6 @@ function observe(page, label) {
     if (message.type() !== 'error') return;
     const text = message.text();
     if (/favicon/i.test(text)) return;
-    // Cloudflare Browser Insights/RUM is third-party telemetry. Its collector can
-    // emit transient CORS/ERR_FAILED console noise in headless CI even while the
-    // application itself is healthy. Same-origin failures are still enforced by
-    // the requestfailed/response handlers below, so ignoring only this telemetry
-    // noise does not weaken application resource checks.
     if (/cloudflareinsights\.com\/cdn-cgi\/rum/i.test(text)) return;
     if (/^Failed to load resource:\s*net::ERR_FAILED\s*$/i.test(text)) return;
     failures.push(`${label} console error: ${text}`);
@@ -30,10 +25,6 @@ function observe(page, label) {
   page.on('requestfailed', request => {
     if (!sameCustomerHost(request.url())) return;
     const errorText = request.failure()?.errorText || '';
-    // Signed-out protected pages intentionally navigate to Login as soon as auth
-    // is resolved. Trailing same-origin scripts/styles from the protected page can
-    // be aborted by that document navigation. Ignore only those navigation aborts
-    // after the browser has reached Login; real HTTP/resource failures still fail.
     if (['script','stylesheet'].includes(request.resourceType()) && errorText === 'net::ERR_ABORTED' && cleanPath(new URL(page.url())) === '/login') return;
     failures.push(`${label} failed request: ${request.method()} ${request.url()} ${errorText}`);
   });
@@ -55,6 +46,37 @@ async function noHorizontalOverflow(page, label) {
   if (metrics.scroll > metrics.client + 3) throw new Error(`${label} horizontal overflow: ${metrics.scroll}px content in ${metrics.client}px viewport`);
 }
 
+async function expectLoginRedirect(page, path) {
+  await open(page, path);
+  try {
+    await page.waitForURL(url => cleanPath(url) === '/login', { timeout: 15000 });
+  } catch (error) {
+    throw new Error(`${path} did not redirect signed-out customer to Login; current URL=${page.url()}`);
+  }
+}
+
+async function waitForCartReady(page) {
+  await page.locator('#cart').waitFor({ state: 'visible', timeout: 15000 });
+  await page.waitForFunction(() => {
+    const box = document.getElementById('cart');
+    return box && !box.querySelector('.loading');
+  }, null, { timeout: 15000 });
+}
+
+async function assertQuantityFiveCart(page, productId, label) {
+  await waitForCartReady(page);
+  const input = page.locator(`[data-qty="${productId}"]`);
+  await input.waitFor({ state: 'visible', timeout: 15000 });
+  if (await input.inputValue() !== '5') throw new Error(`${label} cart line did not hydrate quantity 5`);
+  const subtitle = await page.locator('#cartSub').innerText();
+  if (!/^5 items in your cart\./i.test(subtitle.trim())) throw new Error(`${label} cart summary count mismatch: ${subtitle}`);
+  const storedQty = await page.evaluate(id => {
+    const legacy = JSON.parse(localStorage.getItem('fashion_fussion_cart') || '{}');
+    return Number(legacy[id] || 0);
+  }, String(productId));
+  if (storedQty !== 5) throw new Error(`${label} legacy cart quantity was not reconciled to 5; got ${storedQty}`);
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -66,14 +88,52 @@ async function noHorizontalOverflow(page, label) {
   await desktop.goto(WWW + '/', { waitUntil: 'domcontentloaded', timeout: 30000 });
   await desktop.waitForURL(url => url.hostname === 'fashionfussion.in', { timeout: 10000 });
 
-  for (const path of ['/wishlist', '/order-details?id=1', '/quote-checkout']) {
-    await open(desktop, path);
-    await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 15000 });
+  for (const path of ['/wishlist', '/order-details?id=1', '/quote-checkout?quote=1']) {
+    await expectLoginRedirect(desktop, path);
   }
 
   for (const path of ['/search?q=shirt', '/cart', '/login', '/signup?redirect=checkout']) {
     await open(desktop, path);
     await noHorizontalOverflow(desktop, `desktop ${path}`);
+  }
+
+  // Find a live non-variant product so homepage Add-to-Cart and the quantity
+  // reconciliation regression can be tested without an option-selection branch.
+  await open(desktop, '/');
+  await desktop.waitForFunction(() => window.supabaseClient && document.querySelector('#productsGrid'), null, { timeout: 15000 });
+  const baseProductId = await desktop.evaluate(async () => {
+    const { data, error } = await window.supabaseClient
+      .from('products')
+      .select('id,has_variants')
+      .eq('is_active', true)
+      .order('id')
+      .limit(50);
+    if (error) throw error;
+    const product = (data || []).find(row => row.has_variants !== true);
+    return product ? Number(product.id) : null;
+  });
+
+  if (baseProductId) {
+    const homeAdd = desktop.locator(`[data-add="${baseProductId}"]`);
+    await homeAdd.waitFor({ state: 'visible', timeout: 15000 });
+    await Promise.all([
+      desktop.waitForURL(url => cleanPath(url) === '/cart', { timeout: 15000 }),
+      homeAdd.click()
+    ]);
+
+    // Reproduce the reported stale dual-cart state: legacy says 1 while the
+    // authoritative persisted cart line says 5. Fresh load and reload must both
+    // render and persist quantity 5.
+    await desktop.evaluate(id => {
+      localStorage.setItem('fashion_fussion_cart', JSON.stringify({ [id]: 1 }));
+      localStorage.setItem('fashion_fussion_cart_lines_v2', JSON.stringify([{ id: Number(id), variant_id: null, qty: 5 }]));
+      localStorage.removeItem('fashion_fussion_cart_variants');
+      sessionStorage.removeItem('fashion_fussion_checkout_key');
+    }, baseProductId);
+    await open(desktop, '/cart');
+    await assertQuantityFiveCart(desktop, baseProductId, 'desktop fresh-load');
+    await desktop.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await assertQuantityFiveCart(desktop, baseProductId, 'desktop reload');
   }
 
   await open(desktop, '/search?q=shirt');
@@ -90,8 +150,7 @@ async function noHorizontalOverflow(page, label) {
     }
   }
 
-  await open(desktop, '/checkout');
-  await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 15000 });
+  await expectLoginRedirect(desktop, '/checkout');
 
   await open(desktop, '/signup?redirect=checkout');
   const phone = desktop.locator('input[type="tel"]');
@@ -143,11 +202,22 @@ async function noHorizontalOverflow(page, label) {
     await open(mobile, path);
     await noHorizontalOverflow(mobile, `mobile ${path}`);
   }
+  if (baseProductId) {
+    await mobile.evaluate(id => {
+      localStorage.setItem('fashion_fussion_cart', JSON.stringify({ [id]: 1 }));
+      localStorage.setItem('fashion_fussion_cart_lines_v2', JSON.stringify([{ id: Number(id), variant_id: null, qty: 5 }]));
+      localStorage.removeItem('fashion_fussion_cart_variants');
+      sessionStorage.removeItem('fashion_fussion_checkout_key');
+    }, baseProductId);
+    await open(mobile, '/cart');
+    await assertQuantityFiveCart(mobile, baseProductId, 'mobile fresh-load');
+    await noHorizontalOverflow(mobile, 'mobile reconciled cart');
+  }
   await mobile.close();
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, wishlist/post-purchase/quote-checkout auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, protected-route auth return, homepage Add-to-Cart redirect, desktop/mobile quantity reconciliation, desktop shopping/cart/login, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
