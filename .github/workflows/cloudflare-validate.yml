@@ -64,9 +64,9 @@ jobs:
           grep -Fq 'variant-commerce.js?v=4' wishlist.html
           grep -Fq 'catalog-cart-entry.js?v=3' wishlist.html
           grep -Fq 'variant-commerce.js?v=4' cart.html
-          grep -Fq 'variant-cart-ui.js?v=3' cart.html
+          grep -Fq 'variant-cart-ui.js?v=4' cart.html
           grep -Fq 'variant-commerce.js?v=4' checkout.html
-          grep -Fq 'variant-cart-ui.js?v=3' checkout.html
+          grep -Fq 'variant-cart-ui.js?v=4' checkout.html
           grep -Fq 'has_variants' csp-product.js
           grep -Fq 'addSyncedLine' csp-product.js
           grep -Fq 'selectedBasePrice' csp-product.js
@@ -98,9 +98,9 @@ jobs:
           test ! -e "functions/_${legacy}-adapter.js"
           test ! -e "dist/${legacy}.json"
           grep -q 'variant-commerce.js?v=4' dist/cart.html
-          grep -q 'variant-cart-ui.js?v=3' dist/cart.html
+          grep -q 'variant-cart-ui.js?v=4' dist/cart.html
           grep -q 'variant-commerce.js?v=4' dist/checkout.html
-          grep -q 'variant-cart-ui.js?v=3' dist/checkout.html
+          grep -q 'variant-cart-ui.js?v=4' dist/checkout.html
           grep -q 'variant-commerce.js?v=4' dist/product.html
           grep -q 'product-variants.js?v=4' dist/product.html
           grep -q 'catalog-cart-entry.js?v=3' dist/search.html
