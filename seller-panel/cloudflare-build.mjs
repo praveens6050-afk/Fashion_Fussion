@@ -1,4 +1,4 @@
-import { rm, mkdir, readdir, copyFile } from 'node:fs/promises';
+import { rm, mkdir, readdir, copyFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -19,6 +19,17 @@ async function copyTree(src, dest, relative = '') {
   }
 }
 
+async function writeReleaseMetadata() {
+  const gitSha = String(process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA || '').trim();
+  const branch = String(process.env.CF_PAGES_BRANCH || process.env.GITHUB_REF_NAME || '').trim();
+  await writeFile(
+    path.join(dist, 'release.json'),
+    JSON.stringify({ git_sha: gitSha || null, branch: branch || null, built_at: new Date().toISOString() }, null, 2) + '\n',
+    'utf8'
+  );
+}
+
 await rm(dist, { recursive: true, force: true });
 await copyTree(root, dist);
+await writeReleaseMetadata();
 console.log('Cloudflare static build ready:', dist);
