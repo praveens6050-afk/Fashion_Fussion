@@ -4,34 +4,45 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-Robots-Tag: noindex, nofollow, noarchive
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 /login
   Cache-Control: no-store, max-age=0, no-transform
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /login.html
   Cache-Control: no-store, max-age=0, no-transform
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /admin
   Cache-Control: no-store, max-age=0
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /admin.html
   Cache-Control: no-store, max-age=0
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /admin-account
   Cache-Control: no-store, max-age=0
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /admin-account.html
   Cache-Control: no-store, max-age=0
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /account
   Cache-Control: no-store, max-age=0
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /reset-password
   Cache-Control: no-store, max-age=0
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /reset-password.html
   Cache-Control: no-store, max-age=0
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests
 
 /api/admin-login-guard
   Cache-Control: no-store, max-age=0
