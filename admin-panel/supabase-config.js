@@ -79,6 +79,8 @@ window.FF_API_ORIGIN='';
     add('admin-owner-center.js?v=4','data-admin-owner-center');
     addStyle('admin-owner-support.css?v=1','data-admin-owner-support-style');
     add('admin-owner-support.js?v=1','data-admin-owner-support');
+    addStyle('admin-business-shell.css?v=1','data-admin-business-shell-style');
+    add('admin-business-shell.js?v=1','data-admin-business-shell');
   }
   function start(){
     if(!isAdminPage)return;
