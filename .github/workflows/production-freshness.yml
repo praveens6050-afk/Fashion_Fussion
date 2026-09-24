@@ -11,7 +11,7 @@ permissions:
 jobs:
   live-customer:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,39 +49,43 @@ jobs:
       - name: Customer critical-page smoke
         run: |
           node - <<'NODE'
-          const pages=[
-            ['/',/Fashion[ _]Fussion/i],
-            ['/search?q=shirt',/(Search|Browse products)/i],
-            ['/cart',/(Cart|Shopping cart)/i],
-            ['/login',/(Sign in|Login)/i],
-            ['/signup',/(Create|Sign up|Register)/i],
-            ['/product',/(Product|Loading)/i]
-          ];
-          for (const [path,marker] of pages) {
-            const response=await fetch('https://fashionfussion.in'+path,{redirect:'follow'});
-            if(!response.ok) throw new Error(`${path} returned ${response.status}`);
-            const text=await response.text();
-            if(!marker.test(text)) throw new Error(`${path} missing expected page marker ${marker}`);
-            if(!/<html/i.test(text)||!/<body/i.test(text)) throw new Error(`${path} did not return an HTML document`);
-            console.log(`PASS ${path}: ${response.status}`);
-          }
+          (async()=>{
+            const pages=[
+              ['/',/Fashion[ _]Fussion/i],
+              ['/search?q=shirt',/(Search|Browse products)/i],
+              ['/cart',/(Cart|Shopping cart)/i],
+              ['/login',/(Sign in|Login)/i],
+              ['/signup',/(Create|Sign up|Register)/i],
+              ['/product',/(Product|Loading)/i]
+            ];
+            for (const [path,marker] of pages) {
+              const response=await fetch('https://fashionfussion.in'+path,{redirect:'follow'});
+              if(!response.ok) throw new Error(`${path} returned ${response.status}`);
+              const text=await response.text();
+              if(!marker.test(text)) throw new Error(`${path} missing expected page marker ${marker}`);
+              if(!/<html/i.test(text)||!/<body/i.test(text)) throw new Error(`${path} did not return an HTML document`);
+              console.log(`PASS ${path}: ${response.status}`);
+            }
+          })().catch(error=>{console.error(error);process.exit(1)});
           NODE
 
       - name: Customer API boundary smoke
         run: |
           node - <<'NODE'
-          const base='https://fashionfussion.in';
-          const shipping=await fetch(base+'/api/shipping-status',{
-            method:'POST',
-            headers:{'content-type':'application/json',authorization:'Bearer invalid-production-smoke-token'},
-            body:'{}'
-          });
-          const body=await shipping.text();
-          if(shipping.status>=500) throw new Error(`shipping-status server error ${shipping.status}: ${body}`);
-          if(/configuration is missing/i.test(body)) throw new Error(`Customer runtime configuration missing: ${body}`);
-          const unknown=await fetch(base+'/api/cloudflare-smoke-not-found',{method:'POST'});
-          if(unknown.status!==404) throw new Error(`Unknown API route expected 404, got ${unknown.status}`);
-          console.log(`PASS API auth/config boundary: ${shipping.status}; unknown route 404`);
+          (async()=>{
+            const base='https://fashionfussion.in';
+            const shipping=await fetch(base+'/api/shipping-status',{
+              method:'POST',
+              headers:{'content-type':'application/json',authorization:'Bearer invalid-production-smoke-token'},
+              body:'{}'
+            });
+            const body=await shipping.text();
+            if(shipping.status>=500) throw new Error(`shipping-status server error ${shipping.status}: ${body}`);
+            if(/configuration is missing/i.test(body)) throw new Error(`Customer runtime configuration missing: ${body}`);
+            const unknown=await fetch(base+'/api/cloudflare-smoke-not-found',{method:'POST'});
+            if(unknown.status!==404) throw new Error(`Unknown API route expected 404, got ${unknown.status}`);
+            console.log(`PASS API auth/config boundary: ${shipping.status}; unknown route 404`);
+          })().catch(error=>{console.error(error);process.exit(1)});
           NODE
 
       - name: Cross-panel Cloudflare smoke
@@ -90,3 +94,11 @@ jobs:
           ADMIN_URL: https://admin.fashionfussion.in
           SELLER_URL: https://seller.fashionfussion.in
         run: node .github/cloudflare-smoke.mjs
+
+      - name: Install Chromium human-smoke runtime
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Human browser journey on live Customer production
+        run: node .github/live-customer-browser-smoke.cjs
