@@ -63,6 +63,13 @@ async function noHorizontalOverflow(page, label) {
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   observe(desktop, 'desktop');
 
+  await desktop.goto(BASE + '/wishlist', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 10000 });
+  const wishlistReturn = new URL(desktop.url()).searchParams.get('redirect');
+  if (wishlistReturn !== 'wishlist.html') {
+    throw new Error(`signed-out wishlist lost login return target: ${wishlistReturn}`);
+  }
+
   await desktop.goto(BASE + '/order-details?id=987654321#tracking', { waitUntil: 'domcontentloaded', timeout: 30000 });
   await desktop.waitForURL(url => cleanPath(url) === '/login', { timeout: 10000 });
   const orderDetailsReturn = new URL(desktop.url()).searchParams.get('redirect');
@@ -199,7 +206,7 @@ async function noHorizontalOverflow(page, label) {
 
   await browser.close();
   if (failures.length) throw new Error(failures.join('\n'));
-  console.log('PASS live human browser smoke: www canonicalization, post-purchase auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
+  console.log('PASS live human browser smoke: www canonicalization, wishlist/post-purchase auth return, desktop shopping/cart/login, Add to Cart redirect, checkout auth return, signup phone validation, live variant persistence, stale-variant blocking, extensionless routes, and mobile overflow checks.');
 })().catch(error => {
   console.error(error.stack || error);
   process.exit(1);
