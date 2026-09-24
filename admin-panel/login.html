@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#0b1220">
   <meta name="theme-color" content="#f6f7f9" media="(max-width:800px)">
-  <meta name="theme-color" content="#0b1220" media="(min-width:801px)">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co; upgrade-insecure-requests">
   <title>Admin Sign In — Fashion Fussion</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -53,10 +54,7 @@
     .password-toggle:hover{background:#f7f8fa}
     .password-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
     .password-toggle:focus-visible{outline:0;background:#e8efff;color:#123a8c;box-shadow:inset 0 0 0 3px var(--focus);position:relative;z-index:2}
-    .session-row{display:flex;justify-content:space-between;align-items:center;gap:18px;margin:4px 0 18px}
-    .remember{min-height:44px;padding:8px 6px 8px 0;display:inline-flex;align-items:center;gap:8px;color:#344054;font-size:14px;font-weight:600;cursor:pointer}
-    .remember input{width:20px;height:20px;margin:0;accent-color:var(--navy)}
-    .remember input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    .session-row{display:flex;justify-content:flex-end;align-items:center;margin:4px 0 18px}
     .link{min-height:44px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center;color:#263f68;font-size:14px;font-weight:700;text-decoration:none;border-radius:6px}
     .link:hover{text-decoration:underline;text-underline-offset:3px}
     .link:focus-visible,.foot a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
@@ -71,9 +69,10 @@
     .external-mark{display:inline-flex;width:14px;height:14px;margin-left:5px;vertical-align:-2px}
     .external-mark svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
     .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-    @media(max-width:800px){.shell{min-height:auto;grid-template-columns:1fr;grid-template-areas:"form" "brand"}.form-side{min-height:auto;padding:30px 22px 24px}.mobile-brand{display:block}.card h1{font-size:30px}.brand{min-height:190px;padding:30px 25px}.brand .brand-logo{display:none}.brand-title{font-size:clamp(30px,9vw,42px);letter-spacing:-1.2px}.brand-copy{font-size:15px}.session-row{align-items:flex-start;flex-direction:column;gap:6px}}
+    @media(max-width:800px){.shell{min-height:auto;grid-template-columns:1fr;grid-template-areas:"form" "brand"}.form-side{min-height:auto;padding:30px 22px 24px}.mobile-brand{display:block}.card h1{font-size:30px}.brand{min-height:190px;padding:30px 25px}.brand .brand-logo{display:none}.brand-title{font-size:clamp(30px,9vw,42px);letter-spacing:-1.2px}.brand-copy{font-size:15px}.session-row{justify-content:flex-start}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
+  <script defer src="/vendor/supabase.js" data-supabase-sdk="local"></script>
   <script defer src="/admin-login.js"></script>
 </head>
 <body>
@@ -84,8 +83,8 @@
         <h1 id="admin-sign-in-title">Admin sign in</h1>
         <p class="sub">Enter your administrator credentials</p>
         <noscript><p class="noscript" role="alert">JavaScript is required to securely sign in to the administrator portal.</p></noscript>
-        <form id="form" method="post" action="/login" autocomplete="on" aria-labelledby="admin-sign-in-title" data-security-control="server-side-rate-limit">
-          <div id="banner" class="banner" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="form" role="form" aria-labelledby="admin-sign-in-title" data-security-control="server-side-rate-limit">
+          <div id="banner" class="banner" role="alert" aria-live="assertive" aria-atomic="true"></div>
           <div class="field">
             <label for="email">Email address</label>
             <span id="emailHint" class="sr-only">Enter the email address assigned to your administrator account in email format, for example name@company.com.</span>
@@ -95,23 +94,22 @@
             <label for="password">Password</label>
             <div class="password-control">
               <input id="password" name="password" type="password" autocomplete="current-password" required>
-              <button id="passwordToggle" class="password-toggle" type="button" aria-controls="password" aria-pressed="false" aria-label="Show administrator password" title="Show administrator password" data-i18n-key="admin.password.visibility" hidden>
+              <button id="passwordToggle" class="password-toggle" type="button" aria-controls="password" aria-pressed="false" data-i18n-key="admin.password.visibility" hidden>
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
               </button>
             </div>
           </div>
           <div class="session-row">
-            <label class="remember"><input id="remember" name="remember" type="checkbox">Remember me</label>
             <a id="forgot" class="link" href="/reset-password">Forgot password?</a>
           </div>
-          <button id="submit" class="btn" type="submit">Sign in to Admin</button>
-          <p class="security-note" id="securityNote">Protected by server-side rate limiting. Repeated sign-in attempts are temporarily blocked.</p>
-        </form>
+          <button id="submit" class="btn" type="button">Sign in to Admin</button>
+          <p class="security-note" id="securityNote">Session-only admin access with server-side rate limiting. Closing this tab ends local session persistence.</p>
+        </div>
         <p class="foot">Customer website: <a href="https://fashionfussion.in" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab">fashionfussion.in<span class="external-mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 4h6v6"></path><path d="M12 4 5 11"></path><path d="M11 9v3H4V5h3"></path></svg></span></a></p>
       </div>
     </section>
     <section class="brand" aria-labelledby="admin-hero-title">
-      <a class="brand-logo" href="https://fashionfussion.in/" target="_blank" rel="noopener noreferrer" aria-label="Open Fashion Fussion customer website in a new tab" translate="no" spellcheck="false" data-brand-name="true">Fashion Fussion<span class="external-mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 4h6v6"></path><path d="M12 4 5 11"></path><path d="M11 9v3H4V5h3"></path></svg></span></a>
+      <a class="brand-logo" href="/login" translate="no" spellcheck="false" data-brand-name="true">Fashion Fussion</a>
       <span class="stamp">Administrator access</span>
       <h2 id="admin-hero-title" class="brand-title">Secure Admin Center</h2>
       <p class="brand-copy">Sign in with an administrator account. Customer and seller accounts cannot access this panel.</p>
