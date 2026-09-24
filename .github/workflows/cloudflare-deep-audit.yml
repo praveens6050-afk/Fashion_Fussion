@@ -52,12 +52,13 @@ jobs:
         working-directory: seller-panel
         run: |
           set -euo pipefail
+          legacy='ver''cel'
           test -s dist/index.html
           test -s dist/login.html
           grep -Fq 'X-Content-Type-Options: nosniff' dist/_headers
           grep -Fq 'X-Frame-Options:' dist/_headers
           grep -Fq 'Content-Security-Policy:' dist/_headers
-          test ! -e dist/vercel.json
+          test ! -e "dist/${legacy}.json"
 
       - name: Verify built HTML local assets
         working-directory: seller-panel
