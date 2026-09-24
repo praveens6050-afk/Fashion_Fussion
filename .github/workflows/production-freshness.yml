@@ -11,7 +11,7 @@ permissions:
 jobs:
   live-admin:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,3 +59,11 @@ jobs:
           unknown="$(curl --silent --show-error --output /tmp/admin-unknown-body --write-out '%{http_code}' --max-time 20 https://admin.fashionfussion.in/api/cloudflare-smoke-not-found)"
           test "$unknown" = '404'
           echo 'PASS Admin API method and unknown-route boundaries'
+
+      - name: Install Chromium human-smoke runtime
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Human browser journey on live Admin production
+        run: node .github/live-admin-browser-smoke.cjs
