@@ -1,0 +1,105 @@
+name: Cloudflare Admin Deep Audit
+
+on:
+  push:
+    branches: [cloudflare-admin]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify isolated Cloudflare branch
+        run: |
+          set -euo pipefail
+          test -d admin-panel
+          test -d .github
+          test -d supabase
+          test ! -e customer-panel
+          test ! -e seller-panel
+          test ! -e api
+          test ! -e backend
+          test ! -e scripts
+          legacy='ver''cel'
+          if find . -path './.git' -prune -o -path './admin-panel/node_modules' -prune -o -iname "*${legacy}*" -print | grep -q .; then
+            echo 'Legacy hosting artifact found.' >&2
+            exit 1
+          fi
+          if grep -RIni --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist "$legacy" admin-panel .github; then
+            echo 'Legacy hosting reference found.' >&2
+            exit 1
+          fi
+
+      - name: Install and syntax-audit Admin sources
+        working-directory: admin-panel
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -type f -name '*.js' -not -path './node_modules/*' -not -path './dist/*' -not -path './functions/*' -print0)
+          node --check cloudflare-build.mjs
+          node --check login-hardening.mjs
+
+      - name: Build and bundle Cloudflare Pages Functions
+        working-directory: admin-panel
+        run: |
+          set -euo pipefail
+          npm run build
+          npx --yes wrangler@latest pages functions build --compatibility-date=2026-09-22 --compatibility-flag=nodejs_compat --outdir=.cf-functions-deep-audit
+          test -s .cf-functions-deep-audit/index.js
+
+      - name: Verify Admin deployment boundary
+        working-directory: admin-panel
+        run: |
+          set -euo pipefail
+          grep -Fq '"/api/*"' dist/_routes.json
+          ! grep -Fq '"/*"' dist/_routes.json
+          test -s functions/_node-handler-bridge.js
+          test ! -e functions/_vercel-adapter.js
+          test ! -e dist/vercel.json
+          test "$(find . -maxdepth 1 -type f -name 'admin-login.20260923*.js' | wc -l)" -eq 0
+          grep -Fq "frame-ancestors 'none'" dist/_headers
+          grep -Fq 'X-Frame-Options: DENY' dist/_headers
+          grep -Fq 'Strict-Transport-Security:' dist/_headers
+          grep -Fq 'https://static.cloudflareinsights.com' dist/_headers
+
+      - name: Verify built HTML local assets
+        working-directory: admin-panel
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const root=path.resolve('dist');
+          const htmlFiles=[];
+          const walk=dir=>{for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walk(p);else if(e.name.endsWith('.html'))htmlFiles.push(p)}};
+          walk(root);
+          const missing=[];
+          const attr=/(?:src|href)=["'](\/[^"'#?]+)["']/g;
+          for(const file of htmlFiles){
+            const text=fs.readFileSync(file,'utf8');
+            for(const match of text.matchAll(attr)){
+              const url=match[1];
+              if(!/\.(?:js|css|svg|png|jpg|jpeg|webp|ico|json|xml|txt)$/i.test(url))continue;
+              const target=path.join(root,url.replace(/^\//,''));
+              if(!fs.existsSync(target))missing.push(`${path.relative(root,file)} -> ${url}`);
+            }
+          }
+          if(missing.length)throw new Error(`Missing local assets:\n${missing.join('\n')}`);
+          console.log(`PASS local asset integrity across ${htmlFiles.length} Admin HTML files`);
+          NODE
+
+      - name: Reject obvious committed privileged secrets
+        working-directory: admin-panel
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude-dir=node_modules --exclude-dir=dist --exclude='*.example' '(service_role|SUPABASE_SERVICE_ROLE_KEY)[[:space:]]*[:=][[:space:]]*["'"'][A-Za-z0-9._-]{20,}' .; then
+            echo 'Possible committed privileged credential detected.' >&2
+            exit 1
+          fi
