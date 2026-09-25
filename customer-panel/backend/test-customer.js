@@ -101,4 +101,10 @@ assert.ok(businessOrderSource.includes('auth.getSession()'),'Business order deta
 const confirmationSource=fs.readFileSync(path.join(__dirname,'..','csp-order-confirmation.js'),'utf8');
 for(const required of ['resolvedUser','auth.getSession()','order-confirmation.html','location.search','location.hash'])assert.ok(confirmationSource.includes(required),`Order confirmation auth recovery must preserve ${required}`);
 
-console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth/post-purchase audit tests passed');
+const returnExchangeSource=fs.readFileSync(path.join(__dirname,'..','order-return-exchange.js'),'utf8');
+for(const required of ['rrError','historyError','Request history unavailable','could not be loaded'])assert.ok(returnExchangeSource.includes(required),`Order return history failures must surface ${required}`);
+
+const orderShippingSource=fs.readFileSync(path.join(__dirname,'..','order-shipping.js'),'utf8');
+for(const required of ['failureCount','retryPending','failureCount>=3','setTimeout'])assert.ok(orderShippingSource.includes(required),`Customer shipping status must bounded-retry transient failures via ${required}`);
+
+console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth/post-purchase resilience audit tests passed');
