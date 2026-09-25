@@ -5,7 +5,7 @@ const root = process.cwd();
 const dist = path.join(root, 'dist');
 const excludedDirs = new Set(['dist', 'backend', 'api', 'functions', 'node_modules', '.git', '.github']);
 const excludedFiles = new Set(['package.json', 'package-lock.json', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc', 'cloudflare-build.mjs', 'README.md']);
-const RELEASE_TAG = '20260925-cashfree-bank-verification-v1';
+const RELEASE_TAG = '20260925-profile-action-fix-v1';
 
 async function copyTree(src, dest, relative = '') {
   await mkdir(dest, { recursive: true });
@@ -51,6 +51,14 @@ async function hardenSellerDashboardBootstrap() {
     );
   }
 
+  // Keep provider-unavailable verification actions responsive instead of leaving dead-looking disabled controls.
+  if (!/seller-profile-actions-hotfix\.js/i.test(html)) {
+    html = html.replace(
+      /<\/body>/i,
+      `  <script src="seller-profile-actions-hotfix.js?v=${RELEASE_TAG}"></script>\n</body>`
+    );
+  }
+
   await writeFile(indexPath, html, 'utf8');
 }
 
@@ -59,6 +67,11 @@ async function hardenRuntimeAssetVersions() {
   let source = await readFile(configPath, 'utf8');
   source = source.replace(/seller-payout-provider\.js\?v=[^'"\s]+/g, `seller-payout-provider.js?v=${RELEASE_TAG}`);
   await writeFile(configPath, source, 'utf8');
+
+  const portalPath = path.join(dist, 'portal.js');
+  let portalSource = await readFile(portalPath, 'utf8');
+  portalSource = portalSource.replace(/seller-finance-compliance-live\.js\?v=[^'"\s]+/g, `seller-finance-compliance-live.js?v=${RELEASE_TAG}`);
+  await writeFile(portalPath, portalSource, 'utf8');
 }
 
 async function writeReleaseMetadata() {
