@@ -133,4 +133,21 @@ for(const required of ["returnKind!=='quote-checkout'",'/^\\d+$/','quote-checkou
 for(const required of ['/^\\d+$/','account.html?return=quote-checkout&quote=','MutationObserver','account.html#addresses'])assert.ok(quoteAddressReturnSource.includes(required),`Quote address helper must preserve ${required}`);
 assert.ok(quoteCheckoutHtml.includes('quote-address-return.js?v=1'),'Quote checkout must load address return helper');
 
+const resetPasswordSource=clientSource('csp-reset-password.js');
+for(const required of ['ffSupabaseReady','waitForRecoverySession','attempt<20','await sleep(500)','auth.getSession()','PASSWORD_RECOVERY'])assert.ok(resetPasswordSource.includes(required),`Password recovery must wait safely for ${required}`);
+const resetPasswordHtml=clientSource('reset-password.html');
+assert.ok(resetPasswordHtml.includes('csp-reset-password.js?v=2'),'Password reset page must load the hardened recovery runtime');
+
+const repeatOrderSource=clientSource('account-repeat-order.js');
+for(const required of ['validateRepeatLines','/api/quote-order','Authorization','Bearer ','pricing?.items','await validateRepeatLines(candidateLines,session)','writeRepeatCart(lines)'])assert.ok(repeatOrderSource.includes(required),`Buy Again must validate current quantity/pricing via ${required}`);
+assert.ok(repeatOrderSource.indexOf('await validateRepeatLines(candidateLines,session)')<repeatOrderSource.indexOf('writeRepeatCart(lines)'),'Buy Again must validate authoritative quantity before restoring the cart');
+
+const orderSupportSource=clientSource('order-support-link.js');
+for(const required of ['#ffSupportLauncher','#ffNewAdmin','#ffOrder','order_help','Help with order','ffMessage'])assert.ok(orderSupportSource.includes(required),`Order support intent must preserve ${required}`);
+const orderDetailsHtml=clientSource('order-details.html');
+assert.ok(orderDetailsHtml.includes('support-chat.js?v=12'),'Order Details must load the existing support ticket interface');
+assert.ok(orderDetailsHtml.includes('order-support-link.js?v=1'),'Order Details must load the order-linked support adapter');
+const supportCoreSource=clientSource('support-chat-core.js');
+for(const required of ['create_support_ticket','support_tickets','p_order_id'])assert.ok(supportCoreSource.includes(required),`Order support must continue using the existing ticket security model via ${required}`);
+
 console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth/post-purchase resilience audit tests passed');
