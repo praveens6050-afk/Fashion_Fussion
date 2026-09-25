@@ -10,12 +10,22 @@
   }[char]));
   const money = value => '₹' + Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
-  // supabase-config.js initializes the client asynchronously. Protected pages must
-  // wait for that shared readiness promise instead of racing window.supabaseClient.
   const client = window.supabaseClient || await window.ffSupabaseReady;
-  const { data: { user }, error: userError } = await client.auth.getUser();
-  if (userError || !user) {
-    location.replace('login.html?redirect=' + encodeURIComponent('wishlist.html'));
+  async function resolvedUser() {
+    const { data: { user }, error } = await client.auth.getUser();
+    if (user) return user;
+    if (error) {
+      try {
+        const { data: { session } } = await client.auth.getSession();
+        if (session?.user) return session.user;
+      } catch {}
+    }
+    return null;
+  }
+  const user = await resolvedUser();
+  if (!user) {
+    const target = 'wishlist.html' + location.search + location.hash;
+    location.replace('login.html?redirect=' + encodeURIComponent(target));
     return;
   }
 
@@ -44,7 +54,7 @@
 
     if (error) {
       list.className = 'empty';
-      list.textContent = 'Unable to load wishlist.';
+      list.textContent = 'Unable to load wishlist. Please refresh and try again.';
       return;
     }
     if (!rows?.length) {
@@ -61,7 +71,7 @@
 
     if (productError) {
       list.className = 'empty';
-      list.textContent = 'Unable to load saved products.';
+      list.textContent = 'Unable to load saved products. Please refresh and try again.';
       return;
     }
 
@@ -76,8 +86,6 @@
     }).join('');
 
     bindImageFallbacks();
-    // Add-to-cart clicks are handled centrally by catalog-cart-entry.js so wishlist
-    // products follow the same variant availability rules as search and homepage.
     list.querySelectorAll('[data-remove]').forEach(button => {
       button.onclick = async () => {
         button.disabled = true;
@@ -90,7 +98,7 @@
           alert(removeError.message);
           button.disabled = false;
         } else {
-          load();
+          await load();
         }
       };
     });
@@ -99,5 +107,5 @@
   await load();
 })().catch(error => {
   console.error(error);
-  document.getElementById('list').textContent = 'Wishlist could not be loaded.';
+  document.getElementById('list').textContent = 'Wishlist could not be loaded. Please refresh and try again.';
 });
