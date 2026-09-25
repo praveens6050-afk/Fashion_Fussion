@@ -22,6 +22,7 @@ const badRes=fakeRes();
 assert.strictEqual(cors({headers:{origin:'https://evil.example'}},badRes),false);
 
 const read=name=>fs.readFileSync(path.join(__dirname,'api',name),'utf8');
+const clientSource=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
 const lib=fs.readFileSync(path.join(__dirname,'lib.js'),'utf8');
 for(const required of ['has_variants','getVariantsByIds','getInventoryByVariantIds','variant_id','product_variants','inventory_levels'])assert.ok(lib.includes(required),`Variant pricing must enforce ${required}`);
 
@@ -51,9 +52,6 @@ const shippingStatus=read('customer-shipping-status.js');
 for(const required of ['getSupabaseUser','user_id','order_shipments','direction=eq.forward'])assert.ok(shippingStatus.includes(required),`Customer shipment status must enforce ${required}`);
 assert.ok(!shippingStatus.includes('requireAdminUser'),'Customer shipment status must not depend on admin authorization');
 
-// Direct Checkout must use the authoritative variant-line quantities even if an
-// older legacy cart object is stale. This regression reproduces the customer
-// report where the line showed quantity 5 while the initial summary used qty 1.
 function storage(initial={}){
   const values=new Map(Object.entries(initial));
   return{
@@ -63,7 +61,7 @@ function storage(initial={}){
     dump(){return Object.fromEntries(values)}
   };
 }
-const reconcileSource=fs.readFileSync(path.join(__dirname,'..','checkout-cart-reconcile.js'),'utf8');
+const reconcileSource=clientSource('checkout-cart-reconcile.js');
 const reconcileLocal=storage({fashion_fussion_cart:JSON.stringify({42:1})});
 const reconcileSession=storage({fashion_fussion_checkout_key:'stale-checkout'});
 vm.runInNewContext(reconcileSource,{
@@ -83,28 +81,47 @@ vm.runInNewContext(reconcileSource,{
 });
 assert.deepStrictEqual(JSON.parse(multiLineLocal.getItem('fashion_fussion_cart')),{'42':5},'Checkout must aggregate multiple variant lines for legacy product quantity');
 
-const signupSource=fs.readFileSync(path.join(__dirname,'..','csp-signup.js'),'utf8');
-for(const route of ['order-details.html','order-confirmation.html','quote-checkout.html'])assert.ok(signupSource.includes(`'${route}'`),`Signup must preserve protected return target ${route}`);
+const loginSource=clientSource('csp-login.js');
+const signupSource=clientSource('csp-signup.js');
+for(const route of ['wishlist.html','notifications.html','coupons.html','gift-cards.html','order-details.html','order-confirmation.html','quote-checkout.html']){
+  assert.ok(loginSource.includes(`'${route}'`),`Login must preserve protected return target ${route}`);
+  assert.ok(signupSource.includes(`'${route}'`),`Signup must preserve protected return target ${route}`);
+}
 
-const desktopAccountLoader=fs.readFileSync(path.join(__dirname,'..','desktop-account-loader.js'),'utf8');
+const desktopAccountLoader=clientSource('desktop-account-loader.js');
 assert.ok(desktopAccountLoader.includes("leaf.includes('.')?leaf:leaf+'.html'"),'Desktop account loader must normalize extensionless production routes');
-const accountStability=fs.readFileSync(path.join(__dirname,'..','account-stability.js'),'utf8');
+const accountStability=clientSource('account-stability.js');
 assert.ok(accountStability.includes("leaf.includes('.')?leaf:leaf+'.html'"),'Account stability fallback must normalize extensionless production route');
 
-const accountSource=fs.readFileSync(path.join(__dirname,'..','csp-account.js'),'utf8');
+const accountSource=clientSource('csp-account.js');
 for(const required of ['accountLoginHref','account.html','location.search','location.hash','auth.getSession()'])assert.ok(accountSource.includes(required),`Account auth recovery must preserve ${required}`);
 
-const businessOrderSource=fs.readFileSync(path.join(__dirname,'..','order-business-details.js'),'utf8');
+const businessOrderSource=clientSource('order-business-details.js');
 assert.ok(businessOrderSource.includes("leaf.includes('.')?leaf:leaf+'.html'"),'Business order details must normalize extensionless production routes');
 assert.ok(businessOrderSource.includes('auth.getSession()'),'Business order details must recover from transient verified-user errors when a browser session exists');
 
-const confirmationSource=fs.readFileSync(path.join(__dirname,'..','csp-order-confirmation.js'),'utf8');
+const confirmationSource=clientSource('csp-order-confirmation.js');
 for(const required of ['resolvedUser','auth.getSession()','order-confirmation.html','location.search','location.hash'])assert.ok(confirmationSource.includes(required),`Order confirmation auth recovery must preserve ${required}`);
 
-const returnExchangeSource=fs.readFileSync(path.join(__dirname,'..','order-return-exchange.js'),'utf8');
+const returnExchangeSource=clientSource('order-return-exchange.js');
 for(const required of ['rrError','historyError','Request history unavailable','could not be loaded'])assert.ok(returnExchangeSource.includes(required),`Order return history failures must surface ${required}`);
 
-const orderShippingSource=fs.readFileSync(path.join(__dirname,'..','order-shipping.js'),'utf8');
+const orderShippingSource=clientSource('order-shipping.js');
 for(const required of ['failureCount','retryPending','failureCount>=3','setTimeout'])assert.ok(orderShippingSource.includes(required),`Customer shipping status must bounded-retry transient failures via ${required}`);
+
+const notificationSource=clientSource('csp-notifications.js');
+for(const required of ['resolvedUser','auth.getSession()','notifications.html','location.search','location.hash'])assert.ok(notificationSource.includes(required),`Notifications auth recovery must preserve ${required}`);
+
+const wishlistSource=clientSource('csp-wishlist.js');
+for(const required of ['resolvedUser','auth.getSession()','wishlist.html','location.search','location.hash'])assert.ok(wishlistSource.includes(required),`Wishlist auth recovery must preserve ${required}`);
+
+const promotionSource=clientSource('promotions.js');
+for(const required of ['auth.getSession()','coupons.html','gift-cards.html','id,code,title,description,discount_type,discount_value','id,title,amount,description,validity_days'])assert.ok(promotionSource.includes(required),`Promotion catalog auth/query hardening must preserve ${required}`);
+assert.ok(!promotionSource.includes("select('*')"),'Promotion catalog must not use unrestricted select(*)');
+const couponsHtml=clientSource('coupons.html'),giftCardsHtml=clientSource('gift-cards.html'),notificationsHtml=clientSource('notifications.html'),wishlistHtml=clientSource('wishlist.html');
+assert.ok(couponsHtml.includes('promotions.js?v=2'),'Coupons must load hardened promotion runtime');
+assert.ok(giftCardsHtml.includes('promotions.js?v=2'),'Gift Cards must load hardened promotion runtime');
+assert.ok(notificationsHtml.includes('csp-notifications.js?v=2'),'Notifications must load hardened auth runtime');
+assert.ok(wishlistHtml.includes('csp-wishlist.js?v=3'),'Wishlist must load hardened auth runtime');
 
 console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth/post-purchase resilience audit tests passed');
