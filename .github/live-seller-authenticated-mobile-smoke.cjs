@@ -80,7 +80,10 @@ async function signIn(page) {
     return !['/login', '/login/'].includes(path);
   }, null, { timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.SellerLiveIntegration && window.SellerCatalogBridge) && !document.documentElement.classList.contains('seller-live-loading'), null, { timeout: 20000 });
-  await page.locator('#sellerDisplayName').waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('.shell').waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('#sellerAvatar').waitFor({ state: 'visible', timeout: 10000 });
+  const sellerName = ((await page.locator('#sellerDisplayName').textContent()) || '').trim();
+  if (!sellerName) throw new Error('Seller mobile dashboard loaded without seller identity text.');
   await noHorizontalOverflow(page, 'Seller mobile dashboard');
   console.log('PASS Seller mobile sign-in and dashboard bootstrap.');
 }
