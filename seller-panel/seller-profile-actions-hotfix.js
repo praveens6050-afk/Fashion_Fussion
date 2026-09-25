@@ -8,6 +8,7 @@
   const setText = (node, value) => { if (node && node.textContent !== value) node.textContent = value; };
   const setTitle = (node, value) => { if (node && node.title !== value) node.title = value; };
   const setDisabled = (node, value) => { if (node && node.disabled !== value) node.disabled = value; };
+  const setHidden = (node, value) => { if (node && node.hidden !== value) node.hidden = value; };
   let identity = { pan:false, gst:false, address:false };
   let payout = { verification_supported:false, payout_configured:false, provider:null };
 
@@ -47,9 +48,10 @@
       setTitle(bankVerify,'Bank verification provider is not configured yet');
     }
     const payoutLink=$('ffLinkPayoutProvider');
-    if(payoutLink&&!payout.payout_configured){
-      setDisabled(payoutLink,false);
-      setTitle(payoutLink,'Payout account linking is not configured yet');
+    if(payoutLink){
+      setHidden(payoutLink,!payout.payout_configured);
+      setDisabled(payoutLink,!payout.payout_configured);
+      if(!payout.payout_configured)setTitle(payoutLink,'Payout account linking is not configured yet');
     }
   }
 
@@ -98,7 +100,7 @@
     queueMicrotask(()=>{ scheduled=false; syncUi(); });
   });
   const start=()=>{
-    if(document.body) observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled']});
+    if(document.body) observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','hidden']});
     refreshReadiness().catch(()=>syncUi());
     setTimeout(()=>refreshReadiness().catch(()=>syncUi()),1500);
   };
