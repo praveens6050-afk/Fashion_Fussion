@@ -83,23 +83,22 @@ vm.runInNewContext(reconcileSource,{
 });
 assert.deepStrictEqual(JSON.parse(multiLineLocal.getItem('fashion_fussion_cart')),{'42':5},'Checkout must aggregate multiple variant lines for legacy product quantity');
 
-// Authentication return targets must stay consistent between Login and Signup.
-// Customers coming from protected order/quote pages must not lose their intended
-// destination just because they create an account instead of signing in.
 const signupSource=fs.readFileSync(path.join(__dirname,'..','csp-signup.js'),'utf8');
 for(const route of ['order-details.html','order-confirmation.html','quote-checkout.html'])assert.ok(signupSource.includes(`'${route}'`),`Signup must preserve protected return target ${route}`);
 
-// Extensionless Cloudflare routes are the production URLs. Premium account CSS
-// and the stability fallback must therefore recognize /account and /order-details,
-// not only their .html source filenames.
 const desktopAccountLoader=fs.readFileSync(path.join(__dirname,'..','desktop-account-loader.js'),'utf8');
 assert.ok(desktopAccountLoader.includes("leaf.includes('.')?leaf:leaf+'.html'"),'Desktop account loader must normalize extensionless production routes');
 const accountStability=fs.readFileSync(path.join(__dirname,'..','account-stability.js'),'utf8');
 assert.ok(accountStability.includes("leaf.includes('.')?leaf:leaf+'.html'"),'Account stability fallback must normalize extensionless production route');
 
-// Account auth recovery should preserve the current account intent and tolerate a
-// transient verified-user request failure when a browser session is still present.
 const accountSource=fs.readFileSync(path.join(__dirname,'..','csp-account.js'),'utf8');
 for(const required of ['accountLoginHref','account.html','location.search','location.hash','auth.getSession()'])assert.ok(accountSource.includes(required),`Account auth recovery must preserve ${required}`);
 
-console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth audit tests passed');
+const businessOrderSource=fs.readFileSync(path.join(__dirname,'..','order-business-details.js'),'utf8');
+assert.ok(businessOrderSource.includes("leaf.includes('.')?leaf:leaf+'.html'"),'Business order details must normalize extensionless production routes');
+assert.ok(businessOrderSource.includes('auth.getSession()'),'Business order details must recover from transient verified-user errors when a browser session exists');
+
+const confirmationSource=fs.readFileSync(path.join(__dirname,'..','csp-order-confirmation.js'),'utf8');
+for(const required of ['resolvedUser','auth.getSession()','order-confirmation.html','location.search','location.hash'])assert.ok(confirmationSource.includes(required),`Order confirmation auth recovery must preserve ${required}`);
+
+console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth/post-purchase audit tests passed');
