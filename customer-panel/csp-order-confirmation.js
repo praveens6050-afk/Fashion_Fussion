@@ -49,14 +49,10 @@ function prepaidPaymentState(order) {
 function badge(order) {
   const status = String(order.status || '').toLowerCase();
   const fulfillment = String(order.fulfillment_status || 'ordered').toLowerCase();
-
-  // Closed/refund states must win over the historical payment state. A paid order can
-  // later be cancelled, so showing "Payment confirmed" as the order badge is misleading.
   if (status === 'refunded') return ['Refunded', 'good'];
   if (status === 'refund_failed') return ['Refund needs attention', 'warn'];
   if (['refund_pending', 'refund_initiated'].includes(status)) return ['Refund in progress', 'warn'];
   if (['cancelled', 'cod_cancelled'].includes(status) || fulfillment === 'cancelled') return ['Cancelled', 'warn'];
-
   const paymentState = prepaidPaymentState(order);
   if (paymentState === 'failed') return ['Payment failed', 'warn'];
   if (paymentState === 'expired') return ['Payment expired', 'warn'];
@@ -73,7 +69,6 @@ function hero(order) {
   const fulfillment = String(order.fulfillment_status || '').toLowerCase();
   const paymentState = prepaidPaymentState(order);
   if (!heading || !paragraph) return;
-
   if (status === 'refunded') {
     heading.textContent = 'Order refunded';
     paragraph.textContent = 'This order is closed and the refund has been processed. Review Order Details for the latest refund information.';
@@ -131,7 +126,6 @@ function render(order) {
   const coupon = Number(order.coupon_discount || 0);
   const gift = Number(order.gift_card_discount || 0);
   const delivery = Math.max(0, Number(order.total_amount) - subtotal - gst + coupon + gift);
-
   hero(order);
   document.getElementById('orderRef').innerHTML = 'Order <strong>#' + esc(display) + '</strong> &nbsp; <span class="badge ' + stateBadge[1] + '">' + esc(stateBadge[0]) + '</span>';
   document.getElementById('items').innerHTML = items.length
@@ -151,11 +145,23 @@ function render(order) {
   document.getElementById('content').hidden = false;
 }
 
+async function resolvedUser() {
+  const { data: { user }, error } = await supabaseClient.auth.getUser();
+  if (user) return user;
+  if (error) {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user) return session.user;
+    } catch {}
+  }
+  return null;
+}
+
 async function init() {
   const id = new URLSearchParams(location.search).get('id');
   if (!/^\d+$/.test(String(id || ''))) throw new Error('Order reference is missing.');
-  const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-  if (userError || !user) {
+  const user = await resolvedUser();
+  if (!user) {
     const target = 'order-confirmation.html' + location.search + location.hash;
     location.href = 'login.html?redirect=' + encodeURIComponent(target);
     return;
