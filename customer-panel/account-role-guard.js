@@ -1,6 +1,8 @@
 (function(){
   'use strict';
-  if((location.pathname.split('/').pop()||'index.html')==='account.html'&&!document.querySelector('script[data-desktop-account-loader]')){
+  const leaf=location.pathname.replace(/\/+$/,'').split('/').pop()||'account';
+  const page=leaf.includes('.')?leaf:leaf+'.html';
+  if(page==='account.html'&&!document.querySelector('script[data-desktop-account-loader]')){
     const s=document.createElement('script');
     s.src='desktop-account-loader.js?v=1';
     s.async=false;
@@ -14,9 +16,21 @@
     return origin+'/';
   }
 
+  async function resolvedUser(){
+    const {data:{user},error}=await window.supabaseClient.auth.getUser();
+    if(user)return user;
+    if(error){
+      try{
+        const {data:{session}}=await window.supabaseClient.auth.getSession();
+        return session?.user||null;
+      }catch{}
+    }
+    return null;
+  }
+
   async function guard(){
     try{
-      const {data:{user}}=await window.supabaseClient.auth.getUser();
+      const user=await resolvedUser();
       if(!user)return;
 
       const {data:profile,error}=await window.supabaseClient
