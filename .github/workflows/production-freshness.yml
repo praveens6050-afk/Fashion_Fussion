@@ -60,8 +60,15 @@ jobs:
         run: |
           set -euo pipefail
           body="$(curl --fail --silent --show-error --max-time 20 https://seller.fashionfussion.in/api/payout-profile)"
-          node -e "const x=JSON.parse(process.argv[1]);if(x.ok!==true||typeof x.configured!=='boolean'||!['disabled','gateway','direct'].includes(x.mode))process.exit(1)" "$body"
+          node -e "const x=JSON.parse(process.argv[1]);if(x.ok!==true||typeof x.configured!=='boolean'||!['disabled','gateway','direct'].includes(x.mode))process.exit(1);console.log('Payout provider configured='+x.configured+' mode='+x.mode)" "$body"
           echo 'PASS Seller payout readiness route (GET only; no payout/tokenization performed)'
+
+      - name: Verify Seller identity provider readiness boundary
+        run: |
+          set -euo pipefail
+          body="$(curl --fail --silent --show-error --max-time 20 https://seller.fashionfussion.in/api/identity-verify)"
+          node -e "const x=JSON.parse(process.argv[1]);const p=x.providers||{};if(x.ok!==true||typeof p.pan!=='boolean'||typeof p.gst!=='boolean'||typeof p.address!=='boolean'||p.address_provider!=='google_address_validation')process.exit(1);console.log('Identity providers: PAN='+p.pan+' GST='+p.gst+' Address='+p.address+' ('+p.address_provider+')')" "$body"
+          echo 'PASS Seller identity verification readiness route (GET only; no identity verification performed)'
 
       - name: Install Chromium human-smoke runtime
         run: |
