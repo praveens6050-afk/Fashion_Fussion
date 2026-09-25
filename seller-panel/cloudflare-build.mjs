@@ -5,7 +5,7 @@ const root = process.cwd();
 const dist = path.join(root, 'dist');
 const excludedDirs = new Set(['dist', 'backend', 'api', 'functions', 'node_modules', '.git', '.github']);
 const excludedFiles = new Set(['package.json', 'package-lock.json', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc', 'cloudflare-build.mjs', 'README.md']);
-const RELEASE_TAG = '20260925-profile-action-fix-v1';
+const RELEASE_TAG = '20260925-profile-action-loop-fix-v2';
 
 async function copyTree(src, dest, relative = '') {
   await mkdir(dest, { recursive: true });
@@ -57,6 +57,8 @@ async function hardenSellerDashboardBootstrap() {
       /<\/body>/i,
       `  <script src="seller-profile-actions-hotfix.js?v=${RELEASE_TAG}"></script>\n</body>`
     );
+  } else {
+    html = html.replace(/seller-profile-actions-hotfix\.js\?v=[^'"\s]+/g, `seller-profile-actions-hotfix.js?v=${RELEASE_TAG}`);
   }
 
   await writeFile(indexPath, html, 'utf8');
