@@ -55,7 +55,7 @@ function restoreSellerShell(){
   if(!document.querySelector('.content.view.active')){document.getElementById('view-overview')?.classList.add('active');document.querySelector('.nav-item[data-view="overview"]')?.classList.add('active');}
 }
 
-loadSellerStyle('sidebar-compact.css?v=20260924-shell-fix');
+loadSellerStyle('sidebar-compact.css?v=20260925-staged-nav-fix');
 loadSellerStyle('seller-hub-premium.css?v=20260924-shell-fix');
 loadSellerStyle('seller-shell-recovery.css?v=20260924-shell-fix');
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreSellerShell,1800)},{once:true});
