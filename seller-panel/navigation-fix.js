@@ -67,6 +67,22 @@ function resetProductsFilterBeforeCapturedNavigation(){
     if(all&&!all.classList.contains('active'))all.click();
   },true);
 }
+function hardenSellerSku(){
+  const sku=document.getElementById('sku');
+  if(sku){sku.removeAttribute('value');sku.setAttribute('placeholder','Enter your unique seller SKU');sku.setAttribute('autocomplete','off');}
+  if(window.__sellerSkuGuardBound)return;
+  window.__sellerSkuGuardBound=true;
+  window.addEventListener('click',event=>{
+    const target=event.target;
+    if(!(target instanceof Element)||!target.closest('#generateVariants'))return;
+    const input=document.getElementById('sku');
+    if(input?.value.trim())return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    input?.focus();
+    window.SellerCatalogBridge?.notify?.('Enter your unique Seller SKU before generating variants.');
+  },true);
+}
 function clearSellerAuthStorage(){
   for(const storage of [localStorage,sessionStorage]){
     try{
@@ -107,6 +123,8 @@ function activate(view){
 function openProductDrawer(){
   const form=document.getElementById('productForm');
   if(form)form.reset();
+  const sku=document.getElementById('sku');
+  if(sku)sku.value='';
   const title=document.getElementById('drawerTitle');
   if(title)title.textContent='Add product';
   const submit=document.getElementById('submitProduct');
@@ -120,6 +138,7 @@ function bind(){
   ensureImageUploader();
   watchWithdrawnState();
   resetProductsFilterBeforeCapturedNavigation();
+  hardenSellerSku();
   bindLogoutGuard();
   document.querySelectorAll('.nav-item[data-view]').forEach(btn=>{
     if(btn.dataset.view==='support-live')return;

@@ -26,18 +26,9 @@ if(!window.__sellerNavigationCaptureBound){
     const target=event.target;
     if(!(target instanceof Element))return;
     const add=target.closest('[data-action="add-product"]');
-    if(add){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      openDrawer();
-      return;
-    }
+    if(add){event.preventDefault();event.stopImmediatePropagation();openDrawer();return;}
     const view=target.closest('[data-view]');
-    if(view&&view.dataset.view&&view.dataset.view!=='support-live'){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      switchView(view.dataset.view);
-    }
+    if(view&&view.dataset.view&&view.dataset.view!=='support-live'){event.preventDefault();event.stopImmediatePropagation();switchView(view.dataset.view);}
   },true);
 }
 
@@ -50,53 +41,23 @@ window.SellerCatalogBridge={
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
 
-function loadSellerModule(src){
-  const script=document.createElement('script');
-  script.src=src;
-  script.async=false;
-  document.body.appendChild(script);
-}
-
-function loadSellerStyle(href){
-  if(document.querySelector(`link[href="${href}"]`))return;
-  const link=document.createElement('link');
-  link.rel='stylesheet';
-  link.href=href;
-  document.head.appendChild(link);
-}
-
+function loadSellerModule(src){const script=document.createElement('script');script.src=src;script.async=false;document.body.appendChild(script);}
+function loadSellerStyle(href){if(document.querySelector(`link[href="${href}"]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.appendChild(link);}
 function restoreSellerShell(){
   if(document.documentElement.classList.contains('seller-live-loading'))return;
-  const main=document.querySelector('.main');
-  const sidebar=document.querySelector('.sidebar');
-  const topbar=document.querySelector('.topbar');
-  [main,sidebar,topbar].forEach(el=>{
-    if(!el)return;
-    el.style.setProperty('visibility','visible','important');
-    el.style.setProperty('opacity','1','important');
-  });
+  const main=document.querySelector('.main'),sidebar=document.querySelector('.sidebar'),topbar=document.querySelector('.topbar');
+  [main,sidebar,topbar].forEach(el=>{if(!el)return;el.style.setProperty('visibility','visible','important');el.style.setProperty('opacity','1','important');});
   if(main)main.style.setProperty('display','block','important');
-  if(sidebar){
-    sidebar.style.setProperty('display','flex','important');
-    sidebar.style.setProperty('background','#101828','important');
-  }
+  if(sidebar){sidebar.style.setProperty('display','flex','important');sidebar.style.setProperty('background','#101828','important');}
   if(topbar)topbar.style.setProperty('display','flex','important');
-
   const core=['overview','products','review','payments','profile'];
-  core.forEach(view=>{
-    const button=document.querySelector(`.nav-item[data-view="${view}"]`);
-    if(button){button.hidden=false;button.removeAttribute('aria-hidden');button.removeAttribute('tabindex')}
-  });
-  if(!document.querySelector('.content.view.active')){
-    document.getElementById('view-overview')?.classList.add('active');
-    document.querySelector('.nav-item[data-view="overview"]')?.classList.add('active');
-  }
+  core.forEach(view=>{const button=document.querySelector(`.nav-item[data-view="${view}"]`);if(button){button.hidden=false;button.removeAttribute('aria-hidden');button.removeAttribute('tabindex')}});
+  if(!document.querySelector('.content.view.active')){document.getElementById('view-overview')?.classList.add('active');document.querySelector('.nav-item[data-view="overview"]')?.classList.add('active');}
 }
 
 loadSellerStyle('sidebar-compact.css?v=20260924-shell-fix');
 loadSellerStyle('seller-hub-premium.css?v=20260924-shell-fix');
 loadSellerStyle('seller-shell-recovery.css?v=20260924-shell-fix');
-
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreSellerShell,1800)},{once:true});
 else{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreSellerShell,1800)}
 
@@ -107,6 +68,6 @@ loadSellerModule('seller-catalog-drawer-hydration.js?v=20260925-edit-hydration-v
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
 loadSellerModule('seller-support.js?v=2');
 loadSellerModule('seller-operations-live.js?v=20260924-live');
-loadSellerModule('seller-finance-compliance-live.js?v=20260924-live');
+loadSellerModule('seller-finance-compliance-live.js?v=20260925-external-verification-v1');
 loadSellerModule('seller-settlement-live.js?v=20260924-deduction-breakdown-v2');
 loadSellerModule('seller-hub-premium.js?v=20260924-shell-fix');
