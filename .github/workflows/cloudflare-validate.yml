@@ -60,7 +60,7 @@ jobs:
           grep -Fq 'catalog-cart-entry.js?v=3' index.html
           grep -Fq 'variant-commerce.js?v=4' product.html
           grep -Fq 'product-variants.js?v=4' product.html
-          grep -Fq 'csp-product.js?v=3' product.html
+          grep -Fq 'csp-product.js?v=4' product.html
           grep -Fq 'variant-commerce.js?v=4' search.html
           grep -Fq 'catalog-cart-entry.js?v=3' search.html
           grep -Fq 'variant-commerce.js?v=4' wishlist.html
