@@ -140,7 +140,9 @@ assert.ok(resetPasswordHtml.includes('csp-reset-password.js?v=2'),'Password rese
 
 const repeatOrderSource=clientSource('account-repeat-order.js');
 for(const required of ['validateRepeatLines','/api/quote-order','Authorization','Bearer ','pricing?.items','await validateRepeatLines(candidateLines,session)','writeRepeatCart(lines)'])assert.ok(repeatOrderSource.includes(required),`Buy Again must validate current quantity/pricing via ${required}`);
-assert.ok(repeatOrderSource.indexOf('await validateRepeatLines(candidateLines,session)')<repeatOrderSource.indexOf('writeRepeatCart(lines)'),'Buy Again must validate authoritative quantity before restoring the cart');
+const repeatValidationCall=repeatOrderSource.indexOf('await validateRepeatLines(candidateLines,session)');
+const repeatCartWriteCall=repeatOrderSource.lastIndexOf('writeRepeatCart(lines)');
+assert.ok(repeatValidationCall>=0&&repeatCartWriteCall>repeatValidationCall,'Buy Again must validate authoritative quantity before restoring the cart');
 
 const orderSupportSource=clientSource('order-support-link.js');
 for(const required of ['#ffSupportLauncher','#ffNewAdmin','#ffOrder','order_help','Help with order','ffMessage'])assert.ok(orderSupportSource.includes(required),`Order support intent must preserve ${required}`);
