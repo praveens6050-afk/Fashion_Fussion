@@ -5,7 +5,7 @@ const root = process.cwd();
 const dist = path.join(root, 'dist');
 const excludedDirs = new Set(['dist', 'backend', 'api', 'functions', 'node_modules', '.git', '.github']);
 const excludedFiles = new Set(['package.json', 'package-lock.json', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc', 'cloudflare-build.mjs', 'README.md']);
-const RELEASE_TAG = '20260925-direct-bank-verification-v1';
+const RELEASE_TAG = '20260925-cashfree-bank-verification-v1';
 
 async function copyTree(src, dest, relative = '') {
   await mkdir(dest, { recursive: true });
