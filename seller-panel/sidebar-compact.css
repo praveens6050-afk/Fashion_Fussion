@@ -1,4 +1,4 @@
-/* Seller navigation usability patch: keep every core action visible without scrolling. */
+/* Seller navigation usability patch: keep every production-ready core action visible without scrolling. */
 .sidebar{
   padding:14px 12px!important;
   overflow:visible!important;
@@ -27,14 +27,19 @@
 .nav-item[data-view="products"],
 .nav-item[data-view="review"],
 .nav-item[data-view="support-live"],
-.nav-item[data-view="orders"],
 .nav-item[data-view="payments"],
-.nav-item[data-view="returns"],
 .nav-item[data-view="profile"],
 .nav-item[data-action="add-product"]{
   display:flex!important;
   visibility:visible!important;
   opacity:1!important;
+}
+/* Respect the staged launch boundary even on mobile: hidden Orders/Returns must stay physically hidden. */
+.nav-item[data-view="orders"][hidden],
+.nav-item[data-view="returns"][hidden]{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
 }
 .sidebar-foot{
   margin-top:auto!important;
