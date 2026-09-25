@@ -124,4 +124,13 @@ assert.ok(giftCardsHtml.includes('promotions.js?v=2'),'Gift Cards must load hard
 assert.ok(notificationsHtml.includes('csp-notifications.js?v=2'),'Notifications must load hardened auth runtime');
 assert.ok(wishlistHtml.includes('csp-wishlist.js?v=3'),'Wishlist must load hardened auth runtime');
 
+const accountHtml=clientSource('account.html');
+const accountReturnSource=clientSource('account-return-context.js');
+const quoteAddressReturnSource=clientSource('quote-address-return.js');
+const quoteCheckoutHtml=clientSource('quote-checkout.html');
+assert.ok(accountHtml.includes('account-return-context.js?v=1'),'Account must load quote checkout return context helper');
+for(const required of ["returnKind!=='quote-checkout'",'/^\\d+$/','quote-checkout.html?quote=','form.onsubmit','location.assign(target)','Return to quote checkout'])assert.ok(accountReturnSource.includes(required),`Account quote return helper must preserve ${required}`);
+for(const required of ['/^\\d+$/','account.html?return=quote-checkout&quote=','MutationObserver','account.html#addresses'])assert.ok(quoteAddressReturnSource.includes(required),`Quote address helper must preserve ${required}`);
+assert.ok(quoteCheckoutHtml.includes('quote-address-return.js?v=1'),'Quote checkout must load address return helper');
+
 console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth/post-purchase resilience audit tests passed');
