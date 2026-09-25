@@ -54,6 +54,13 @@ async function hardenSellerDashboardBootstrap() {
   await writeFile(indexPath, html, 'utf8');
 }
 
+async function hardenRuntimeAssetVersions() {
+  const configPath = path.join(dist, 'supabase-config.js');
+  let source = await readFile(configPath, 'utf8');
+  source = source.replace(/seller-payout-provider\.js\?v=[^'"\s]+/g, `seller-payout-provider.js?v=${RELEASE_TAG}`);
+  await writeFile(configPath, source, 'utf8');
+}
+
 async function writeReleaseMetadata() {
   const gitSha = String(process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA || '').trim();
   const branch = String(process.env.CF_PAGES_BRANCH || process.env.GITHUB_REF_NAME || '').trim();
@@ -67,5 +74,6 @@ async function writeReleaseMetadata() {
 await rm(dist, { recursive: true, force: true });
 await copyTree(root, dist);
 await hardenSellerDashboardBootstrap();
+await hardenRuntimeAssetVersions();
 await writeReleaseMetadata();
 console.log('Cloudflare static build ready:', dist);
