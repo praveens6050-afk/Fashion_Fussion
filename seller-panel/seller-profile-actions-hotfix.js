@@ -5,6 +5,9 @@
 
   const $ = id => document.getElementById(id);
   const notify = message => window.SellerCatalogBridge?.notify?.(message) || console.info(message);
+  const setText = (node, value) => { if (node && node.textContent !== value) node.textContent = value; };
+  const setTitle = (node, value) => { if (node && node.title !== value) node.title = value; };
+  const setDisabled = (node, value) => { if (node && node.disabled !== value) node.disabled = value; };
   let identity = { pan:false, gst:false, address:false };
   let payout = { verification_supported:false, payout_configured:false, provider:null };
 
@@ -24,29 +27,29 @@
 
   function syncUi(){
     const pan=$('ffVerifyPan');
-    if(pan&&!identity.pan){pan.disabled=false;pan.title='PAN verification provider is not configured yet';}
+    if(pan&&!identity.pan){setDisabled(pan,false);setTitle(pan,'PAN verification provider is not configured yet');}
     const gst=$('ffVerifyGst');
-    if(gst&&!identity.gst){gst.disabled=false;gst.title='GST verification provider is not configured yet';}
+    if(gst&&!identity.gst){setDisabled(gst,false);setTitle(gst,'GST verification provider is not configured yet');}
 
     const pickupForm=$('ffPickupForm');
     const pickupSubmit=pickupForm?.querySelector('button[type="submit"]');
     if(pickupSubmit){
-      pickupSubmit.textContent=identity.address?'Save & verify pickup location':'Save pickup location';
-      pickupSubmit.title=identity.address?'Save and verify with Google Maps':'Google Maps is not configured; this will save for admin review';
+      setText(pickupSubmit,identity.address?'Save & verify pickup location':'Save pickup location');
+      setTitle(pickupSubmit,identity.address?'Save and verify with Google Maps':'Google Maps is not configured; this will save for admin review');
     }
     document.querySelectorAll('[data-ff-verify-address]').forEach(button=>{
-      if(!identity.address){button.disabled=false;button.title='Google Maps verification is not configured yet';}
+      if(!identity.address){setDisabled(button,false);setTitle(button,'Google Maps verification is not configured yet');}
     });
 
     const bankVerify=$('ffVerifyPayoutProvider');
     if(bankVerify&&!payout.verification_supported){
-      bankVerify.disabled=false;
-      bankVerify.title='Bank verification provider is not configured yet';
+      setDisabled(bankVerify,false);
+      setTitle(bankVerify,'Bank verification provider is not configured yet');
     }
     const payoutLink=$('ffLinkPayoutProvider');
     if(payoutLink&&!payout.payout_configured){
-      payoutLink.disabled=false;
-      payoutLink.title='Payout account linking is not configured yet';
+      setDisabled(payoutLink,false);
+      setTitle(payoutLink,'Payout account linking is not configured yet');
     }
   }
 
@@ -88,9 +91,14 @@
     if(form?.id==='ffComplianceForm') notify('Complete the required verification fields before saving the setup.');
   },true);
 
-  const observer=new MutationObserver(()=>syncUi());
+  let scheduled=false;
+  const observer=new MutationObserver(()=>{
+    if(scheduled) return;
+    scheduled=true;
+    queueMicrotask(()=>{ scheduled=false; syncUi(); });
+  });
   const start=()=>{
-    observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled']});
+    if(document.body) observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled']});
     refreshReadiness().catch(()=>syncUi());
     setTimeout(()=>refreshReadiness().catch(()=>syncUi()),1500);
   };
