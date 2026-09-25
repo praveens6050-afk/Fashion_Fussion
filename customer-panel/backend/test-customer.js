@@ -47,6 +47,11 @@ for(const required of ['getSupabaseUser','user_id=eq.','return_refund','refund_i
 
 const quoteOrder=read('create-quote-order.js');
 for(const field of ['bulk_quote_id','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','accepted_at'])assert.ok(quoteOrder.includes(field),`Accepted quote order must enforce ${field}`);
+for(const required of ['reserve_order_inventory','release_order_inventory','finalize_cod_order_inventory','reserveQuoteInventory','failQuoteCheckout'])assert.ok(quoteOrder.includes(required),`Accepted quote inventory lifecycle must enforce ${required}`);
+const quoteReserveCall=quoteOrder.indexOf('await reserveQuoteInventory(saved.id)');
+const quoteCodFinalizeCall=quoteOrder.indexOf("await finalizeQuoteCod(saved.id, user.id, 'quote_cod')");
+const quoteRazorpayCall=quoteOrder.lastIndexOf('razorpayOrder = await createRazorpayOrder(saved, user.id, quoteId)');
+assert.ok(quoteReserveCall>=0&&quoteCodFinalizeCall>quoteReserveCall&&quoteRazorpayCall>quoteReserveCall,'Accepted quote checkout must reserve inventory before COD finalization or Razorpay order creation');
 
 const shippingStatus=read('customer-shipping-status.js');
 for(const required of ['getSupabaseUser','user_id','order_shipments','direction=eq.forward'])assert.ok(shippingStatus.includes(required),`Customer shipment status must enforce ${required}`);
