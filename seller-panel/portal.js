@@ -66,7 +66,7 @@ loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
 loadSellerModule('seller-catalog-drawer-hydration.js?v=20260925-edit-hydration-v2');
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
-loadSellerModule('seller-support.js?v=2');
+loadSellerModule('seller-support.js?v=20260927-seller-support-email-v1');
 loadSellerModule('seller-operations-live.js?v=20260924-live');
 loadSellerModule('seller-finance-compliance-live.js?v=20260925-external-verification-v1');
 loadSellerModule('seller-settlement-live.js?v=20260924-deduction-breakdown-v2');
