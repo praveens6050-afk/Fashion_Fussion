@@ -66,7 +66,7 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
     if(page==='account.html'){
       add('account-stability.js?v=3','data-account-stability');
       add('account-role-guard.js?v=3','data-account-role-guard');
-      add('support-chat.js?v=12','data-support-chat');
+      add('support-chat.js?v=13','data-support-chat');
       add('account-refunds.js?v=2','data-account-refunds');
       add('account-returns.js?v=2','data-account-returns');
       add('account-business.js?v=4','data-account-business');
@@ -84,7 +84,7 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
     if(page==='order-confirmation.html')add('order-business-details.js?v=1','data-order-business-details');
     if(page==='cart.html')add('commerce-bulk-display.js?v=1','data-commerce-bulk-display');
     if(page==='checkout.html'){add('commerce-bulk-display.js?v=1','data-commerce-bulk-display');add('checkout-business.js?v=1','data-checkout-business');}
-    if(page==='index.html')add('support-chat.js?v=12','data-support-chat');
+    if(page==='index.html')add('support-chat.js?v=13','data-support-chat');
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
