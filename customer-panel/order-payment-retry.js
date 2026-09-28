@@ -4,15 +4,30 @@ const BACKEND_URL=window.FF_API_ORIGIN||'';
 const ACTIVE=new Set(['creating','created','pending','payment_pending']);
 const RESTART=new Set(['payment_failed','failed','expired']);
 const safe=(e,fallback='We could not complete this action. Please try again.')=>window.ffCustomerMessage?window.ffCustomerMessage(e,fallback):fallback;
-let order=null,session=null,busy=false;
+let order=null,session=null,busy=false,autoRetryStarted=false;
 
-function orderId(){
-  const p=new URLSearchParams(location.search),v=p.get('id')||p.get('order');
-  return /^\d+$/.test(String(v||''))?Number(v):null;
+function params(){return new URLSearchParams(location.search);}
+function orderId(){const v=params().get('id')||params().get('order');return /^\d+$/.test(String(v||''))?Number(v):null;}
+function autoRetryRequested(){return params().get('autopay')==='1';}
+function paymentFocusRequested(){return location.hash==='#payment'||params().get('payment')==='1';}
+function clearAutoRetryFlag(){
+  const url=new URL(location.href);url.searchParams.delete('autopay');
+  history.replaceState(null,'',url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():'')+url.hash);
+}
+function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+
+async function authSession(){
+  if(!window.supabaseClient)return null;
+  for(let i=0;i<16;i++){
+    const {data:{session:s}}=await supabaseClient.auth.getSession();
+    if(s?.user)return s;
+    if(i<15)await wait(150);
+  }
+  return null;
 }
 
 async function api(path,body){
-  if(!session?.access_token)throw new Error('Your session has expired. Please sign in again.');
+  if(!session?.access_token)throw new Error('Your secure sign-in session could not be confirmed. Please open the payment email link again.');
   const response=await fetch(BACKEND_URL+path,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify(body)});
   const data=await response.json().catch(()=>({}));
   if(!response.ok){const e=new Error(data.error||'Request failed');e.data=data;throw e;}
@@ -43,7 +58,12 @@ function render(){
   box.innerHTML='<div class="ff-payment-retry-head"><h2>'+(active?'Complete online payment':'Payment needs a new checkout')+'</h2><strong>'+(active?'Payment pending':'Payment not completed')+'</strong></div><div class="ff-payment-retry-body"><p>'+(active?'Your order is waiting for payment. You can safely continue payment from this same order. The order is confirmed only after payment verification.':'This payment session is no longer active. Return to your cart to start a fresh checkout.')+'</p><div class="ff-payment-retry-actions">'+(active?'<button id="ffResumePayment" class="ff-payment-retry-btn" type="button">Complete payment</button>':'<a class="ff-payment-retry-btn" href="cart.html">Return to cart</a>')+'<a class="ff-payment-retry-btn secondary" href="account.html#orders">My Orders</a></div><div id="ffPaymentRetryStatus" class="ff-payment-retry-status" aria-live="polite"></div></div>';
   t.parentNode.insertBefore(box,t);
   if(active)document.getElementById('ffResumePayment').addEventListener('click',resume);
-  if(location.hash==='#payment')setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'center'}),100);
+  if(paymentFocusRequested())setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'center'}),100);
+  if(active&&autoRetryRequested()&&!autoRetryStarted){
+    autoRetryStarted=true;clearAutoRetryFlag();
+    message('Secure email sign-in confirmed. Opening payment…','good');
+    setTimeout(resume,350);
+  }
 }
 
 function loadRazorpay(){
@@ -114,7 +134,7 @@ async function resume(){
 
 async function init(){
   const id=orderId();if(!id||!window.supabaseClient)return;
-  const {data:{session:s}}=await supabaseClient.auth.getSession();session=s;if(!session?.user)return;
+  session=await authSession();if(!session?.user)return;
   const {data,error}=await supabaseClient.from('orders').select('id,display_order_id,status,payment_method,payment_verified_at,total_amount,currency,razorpay_order_id,customer_name,customer_email,customer_phone').eq('id',id).eq('user_id',session.user.id).maybeSingle();
   if(error||!data)return;order=data;
   let tries=0;const timer=setInterval(()=>{tries++;if(target()){clearInterval(timer);render();}else if(tries>80)clearInterval(timer);},100);
