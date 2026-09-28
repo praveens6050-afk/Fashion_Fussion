@@ -9,10 +9,12 @@ const {
   roundMoney
 } = require('../lib');
 const { isZohoMailConfigured, sendZohoMail } = require('../zoho-mail');
+const { getConfirmedAuthEmail, generatePaymentRetryMagicLink } = require('../supabase-magic-link');
 
 const ACTIVE_CHECKOUT_STATUSES = new Set(['creating', 'created']);
 const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || 'https://fashionfussion.in').replace(/\/+$/, '');
 const PAYMENT_EMAIL_CLAIM_TTL_MS = 5 * 60 * 1000;
+const MAX_PAYMENT_AGE_MS = 60 * 60 * 1000;
 
 async function rest(path, options = {}) {
   const response = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
@@ -168,11 +170,18 @@ function money(value, currency = 'INR') {
   return String(currency || '') + ' ' + amount.toFixed(2);
 }
 
-function paymentRecoveryLink(order) {
-  return PUBLIC_SITE_URL + '/order-details.html?id=' + encodeURIComponent(order.id) + '#payment';
+function paymentWindowActive(order) {
+  const createdAt = new Date(order?.created_at || '').getTime();
+  if (!Number.isFinite(createdAt)) return false;
+  const age = Date.now() - createdAt;
+  return age >= 0 && age <= MAX_PAYMENT_AGE_MS;
 }
 
-function paymentFailureEmail(order) {
+function paymentRecoveryRedirect(order) {
+  return PUBLIC_SITE_URL + '/order-details.html?id=' + encodeURIComponent(order.id) + '&payment=1&autopay=1';
+}
+
+function paymentFailureEmail(order, retryUrl) {
   const displayOrderId = String(order.display_order_id || order.id);
   const items = Array.isArray(order.items) ? order.items : [];
   const rows = items.slice(0, 30).map(item => {
@@ -189,7 +198,6 @@ function paymentFailureEmail(order) {
     '</tr>';
   }).join('');
   const hiddenCount = Math.max(0, items.length - 30);
-  const retryUrl = paymentRecoveryLink(order);
 
   return {
     subject: 'Payment failed for order ' + displayOrderId + ' — complete your payment',
@@ -212,7 +220,7 @@ function paymentFailureEmail(order) {
             '<div style="text-align:center;margin:26px 0">' +
               '<a href="' + escapeHtml(retryUrl) + '" style="display:inline-block;background:#5b35e5;color:#ffffff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:10px">Retry payment</a>' +
             '</div>' +
-            '<p style="margin:0;color:#667085;font-size:13px;line-height:1.6">For your security, this button opens Fashion Fussion first. You may be asked to sign in before payment continues. We never send card, UPI PIN, OTP, or banking credentials by email.</p>' +
+            '<p style="margin:0;color:#667085;font-size:13px;line-height:1.6">This is a secure one-time sign-in link for the account that placed the order. Clicking it signs you in automatically and opens the same order for payment. Do not forward this email. We never ask for card details, UPI PIN, OTP, or banking credentials by email.</p>' +
           '</div>' +
         '</div>' +
         '<p style="text-align:center;color:#98a2b3;font-size:12px;line-height:1.5;margin:16px 0 0">If you already completed the payment, please check My Orders before trying again.</p>' +
@@ -229,7 +237,7 @@ async function loadPaymentRecoveryNotification(paymentId) {
   return rows?.[0] || null;
 }
 
-async function claimPaymentRecoveryNotification(order, payment) {
+async function claimPaymentRecoveryNotification(order, payment, recipient) {
   const now = new Date();
   const existing = await loadPaymentRecoveryNotification(payment.id);
   if (existing?.status === 'sent') return { send: false, reason: 'already_sent', notification: existing };
@@ -240,7 +248,6 @@ async function claimPaymentRecoveryNotification(order, payment) {
     }
   }
 
-  const recipient = String(order.customer_email || '').trim().toLowerCase();
   if (existing) {
     const rows = await rest('payment_recovery_notifications?id=eq.' + encodeURIComponent(existing.id), {
       method: 'PATCH',
@@ -308,23 +315,33 @@ async function handlePaymentFailed(event) {
   if (!ACTIVE_CHECKOUT_STATUSES.has(orderStatus)) {
     return { received: true, ignored: true, reason: 'order_not_in_active_checkout' };
   }
+  if (!paymentWindowActive(order)) {
+    return { received: true, payment_failed: true, email_skipped: true, reason: 'payment_window_expired' };
+  }
   if (!isZohoMailConfigured()) {
     console.warn('Zoho Mail payment recovery email skipped because configuration is missing', { store_order_id: order.id });
     return { received: true, payment_failed: true, email_skipped: true, reason: 'zoho_not_configured' };
   }
 
-  const recipient = String(order.customer_email || '').trim();
-  if (!recipient || !recipient.includes('@')) {
-    return { received: true, payment_failed: true, email_skipped: true, reason: 'customer_email_missing' };
+  let recipient;
+  try {
+    recipient = await getConfirmedAuthEmail(order.user_id);
+  } catch (error) {
+    console.error('Payment recovery account lookup failed', { store_order_id: order.id, error: error.message });
+    return { received: true, payment_failed: true, email_skipped: true, reason: 'customer_auth_email_missing' };
   }
 
-  const claim = await claimPaymentRecoveryNotification(order, payment);
+  const claim = await claimPaymentRecoveryNotification(order, payment, recipient);
   if (!claim.send) {
     return { received: true, payment_failed: true, email_deduplicated: true, reason: claim.reason };
   }
 
   try {
-    const message = paymentFailureEmail(order);
+    const retryUrl = await generatePaymentRetryMagicLink({
+      email: recipient,
+      redirectTo: paymentRecoveryRedirect(order)
+    });
+    const message = paymentFailureEmail(order, retryUrl);
     const sent = await sendZohoMail({ to: recipient, subject: message.subject, html: message.html });
     await markPaymentRecoveryNotification(claim.notification?.id, {
       status: 'sent',
@@ -336,13 +353,14 @@ async function handlePaymentFailed(event) {
       received: true,
       payment_failed: true,
       email_sent: true,
+      passwordless_retry: true,
       store_order_id: order.id
     };
   } catch (error) {
-    console.error('Zoho payment recovery email failed', { store_order_id: order.id, error: error.message });
+    console.error('Payment recovery email failed', { store_order_id: order.id, error: error.message });
     await markPaymentRecoveryNotification(claim.notification?.id, {
       status: 'failed',
-      last_error: String(error.message || 'Zoho Mail send failed').slice(0, 500)
+      last_error: String(error.message || 'Payment recovery email failed').slice(0, 500)
     }).catch(() => null);
     return {
       received: true,
