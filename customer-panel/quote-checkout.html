@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Business Quote Checkout | Fashion Fussion</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
-<script src="supabase-config.js?v=20260912-quote1"></script>
+<script src="supabase-config.js?v=20260928-privacy-ui"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="desktop-business-loader.js?v=1"></script>
 <script src="business-registration-trust.js?v=1"></script>
@@ -23,11 +23,11 @@
 <div class="card"><div class="head"><h2>Quoted items</h2></div><div class="body"><div id="itemsBox" class="items"></div></div></div>
 <div class="card"><div class="head"><h2>Payment method</h2></div><div class="body"><div class="pay"><label><input type="radio" name="payment" value="prepaid" checked><div><strong>Pay online securely</strong><div class="note">UPI, cards and supported methods via Razorpay.</div></div></label><label><input type="radio" name="payment" value="cod"><div><strong>Cash on Delivery</strong><div class="note">Pay on delivery. No separate COD handling fee.</div></div></label></div></div></div>
 </section>
-<aside class="side"><div class="card"><div class="head"><h2>Accepted quote</h2></div><div class="body"><div id="priceBox"></div><div class="note quote-snapshot-note">This checkout uses the accepted negotiated quote snapshot, not current cart pricing. Coupons and gift cards are not applied to negotiated quotes.</div><button id="payBtn" class="btn" disabled>PAY SECURELY</button><div id="status" class="status" aria-live="polite"></div><div class="trust">Your quote can create only one order. Payment amount is verified server-side before the order is marked paid.</div></div></div></aside>
+<aside class="side"><div class="card"><div class="head"><h2>Accepted quote</h2></div><div class="body"><div id="priceBox"></div><div class="note quote-snapshot-note">This checkout uses your accepted negotiated quote. Coupons and gift cards are not applied to negotiated quotes.</div><button id="payBtn" class="btn" disabled>PAY SECURELY</button><div id="status" class="status" aria-live="polite"></div><div class="trust">Your quote can create only one order. The final payment amount is confirmed before the order is completed.</div></div></div></aside>
 </div>
 </main>
-<script src="quote-checkout.js?v=2"></script>
+<script src="quote-checkout.js?v=3"></script>
 <script src="quote-address-return.js?v=1"></script>
-<script src="quote-payment-safety.js?v=2"></script>
+<script src="quote-payment-safety.js?v=3"></script>
 </body>
 </html>
