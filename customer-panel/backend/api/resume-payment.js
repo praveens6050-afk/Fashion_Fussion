@@ -10,6 +10,8 @@ const {
   getSupabaseUser
 } = require('../lib');
 
+const MAX_PAYMENT_AGE_MS = 60 * 60 * 1000;
+
 async function rest(path, options = {}) {
   const response = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
     ...options,
@@ -20,11 +22,20 @@ async function rest(path, options = {}) {
   return data;
 }
 
+async function rpc(name, args) {
+  const response = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, {
+    method: 'POST',
+    headers: { ...serverHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  if (!response.ok) throw new Error('Could not update this payment session.');
+}
+
 async function loadOrder(userId, orderId) {
   const rows = await rest(
     'orders?id=eq.' + encodeURIComponent(orderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,display_order_id,total_amount,currency,status,payment_method,payment_verified_at,razorpay_order_id,customer_name,customer_email,customer_phone&limit=1'
+    '&select=id,display_order_id,total_amount,currency,status,payment_method,payment_verified_at,razorpay_order_id,customer_name,customer_email,customer_phone,created_at&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -37,6 +48,24 @@ async function loadRazorpayOrder(orderId) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data?.id) throw new Error('Online payment is temporarily unavailable. Please try again.');
   return data;
+}
+
+async function expireOrder(order) {
+  const rows = await rest(
+    'orders?id=eq.' + encodeURIComponent(order.id) +
+    '&user_id=eq.' + encodeURIComponent(order.user_id || '') +
+    '&status=in.(creating,created,pending,payment_pending)',
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ status: 'expired' })
+    }
+  ).catch(() => []);
+  if (!rows?.[0]) return;
+  await Promise.allSettled([
+    rpc('release_order_inventory', { p_order_id: order.id }),
+    rpc('release_order_promotions', { p_order_id: order.id, p_user_id: order.user_id })
+  ]);
 }
 
 module.exports = async function resumePayment(req, res) {
@@ -55,6 +84,7 @@ module.exports = async function resumePayment(req, res) {
 
     const order = await loadOrder(user.id, storeOrderId);
     if (!order) return json(req, res, 404, { error: 'Order not found.' });
+    order.user_id = user.id;
     if (String(order.payment_method || '').toLowerCase() !== 'prepaid') {
       return json(req, res, 400, { error: 'This order does not need an online payment.' });
     }
@@ -103,6 +133,17 @@ module.exports = async function resumePayment(req, res) {
         store_order_id: order.id,
         display_order_id: order.display_order_id,
         message: 'Payment has been received and is being confirmed. Please do not pay again.'
+      });
+    }
+
+    const createdAt = new Date(order.created_at).getTime();
+    if (Number.isFinite(createdAt) && Date.now() - createdAt > MAX_PAYMENT_AGE_MS) {
+      await expireOrder(order);
+      return json(req, res, 409, {
+        error: 'This payment session has expired. Return to your cart to start a new checkout.',
+        restart_checkout: true,
+        store_order_id: order.id,
+        display_order_id: order.display_order_id
       });
     }
 
