@@ -143,7 +143,7 @@ function render() {
   if (!products.length) {
     box.innerHTML = '<div class="empty"><h2>Your cart is empty</h2><div>Add products to continue shopping.</div><br><a class="btn" href="index.html#products">Shop products</a></div>';
     $('place').disabled = true;
-    $('verifyBox').textContent = 'No items to verify.';
+    $('verifyBox').textContent = 'No items to check.';
     $('verifyBox').className = 'verify';
     renderPrices();
     return;
@@ -226,13 +226,13 @@ async function refreshQuote() {
   session = fresh || null;
   if (!session?.access_token) {
     serverQuote = null;
-    $('verifyBox').textContent = 'Sign in to verify cart totals before checkout.';
+    $('verifyBox').textContent = 'Sign in to confirm cart totals before checkout.';
     $('verifyBox').className = 'verify';
     renderPrices();
     return;
   }
 
-  $('verifyBox').textContent = 'Verifying current pricing with checkout…';
+  $('verifyBox').textContent = 'Confirming current pricing…';
   $('verifyBox').className = 'verify';
   try {
     const response = await fetch(BACKEND_URL + '/api/quote-order', {
@@ -245,15 +245,15 @@ async function refreshQuote() {
     });
     const data = await response.json().catch(() => ({}));
     if (seq !== quoteSeq) return;
-    if (!response.ok) throw new Error(data.error || 'Unable to verify pricing');
+    if (!response.ok) throw new Error(data.error || 'Unable to confirm pricing');
     serverQuote = data.pricing || null;
-    $('verifyBox').textContent = '✓ Pricing verified by checkout backend';
+    $('verifyBox').textContent = '✓ Current pricing confirmed';
     $('verifyBox').className = 'verify ok';
     renderPrices();
   } catch (error) {
     if (seq !== quoteSeq) return;
     serverQuote = null;
-    $('verifyBox').textContent = 'Could not verify now — checkout will recalculate securely.';
+    $('verifyBox').textContent = 'Pricing could not be confirmed right now. It will be checked again at checkout.';
     $('verifyBox').className = 'verify err';
     renderPrices();
     console.error(error);
