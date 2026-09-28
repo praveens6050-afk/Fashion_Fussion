@@ -4,6 +4,26 @@ window.FF_API_ORIGIN='';
 window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
 
 (function(){'use strict';
+  function customerSafeMessage(error,fallback='We could not complete this action. Please try again or contact Customer Care.'){
+    const raw=String(error?.message||error||'').trim();
+    const known=[
+      [/invalid login credentials/i,'Incorrect email or password.'],
+      [/email not confirmed/i,'Please verify your email before signing in.'],
+      [/user already registered|already registered/i,'An account with this email already exists.'],
+      [/rate limit|too many requests/i,'Please wait a moment and try again.'],
+      [/network|failed to fetch|fetch failed|networkerror/i,'Connection problem. Please check your internet and try again.'],
+      [/session.*expired|jwt.*expired|refresh token/i,'Your session has expired. Please sign in again.']
+    ];
+    for(const [pattern,message] of known)if(pattern.test(raw))return message;
+    if(!raw)return fallback;
+    const technical=/(supabase|postgrest|postgres|schema cache|row level security|\brls\b|\brpc\b|service[_ -]?role|edge function|functions\.invoke|relation .* does not exist|column .* does not exist|permission denied|violates .* constraint|duplicate key|foreign key|invalid input syntax|jwt|cashfree secure id|credentials? .*configur|not configured|non-2xx|stack trace|backend|database|server-side|anon key|api key|service key)/i;
+    if(technical.test(raw)||raw.length>180)return fallback;
+    return raw;
+  }
+  window.ffCustomerMessage=customerSafeMessage;
+  const nativeAlert=window.alert?.bind(window);
+  if(nativeAlert)window.alert=message=>nativeAlert(customerSafeMessage(message));
+
   function add(src,marker){
     if(document.querySelector('script['+marker+']'))return;
     const s=document.createElement('script');
@@ -32,12 +52,9 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
       if(window.supabase&&typeof window.supabase.createClient==='function')return window.supabase;
       await sleep(25);
     }
-    throw new Error('Local Supabase SDK is unavailable');
+    throw new Error('Store service is unavailable');
   }
 
-  // Most pages load the SDK immediately before this file. Initialize synchronously
-  // in that common path so following page scripts can safely use supabaseClient.
-  // Keep the readiness promise for deferred/dynamically loaded SDK scenarios.
   if(window.supabase&&typeof window.supabase.createClient==='function'){
     createClient(window.supabase);
     window.ffSupabaseReady=Promise.resolve(window.supabaseClient);
@@ -56,20 +73,20 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
   }
 
   async function start(){
-    try{await window.ffSupabaseReady;}catch(error){console.error('Supabase initialization failed',error);return;}
+    try{await window.ffSupabaseReady;}catch(error){console.error('Store initialization failed',error);return;}
     if(homepageBundled)return;
     if(['index.html','search.html','wishlist.html','product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
     if(['index.html','search.html','wishlist.html'].includes(page))add('catalog-cart-entry.js?v=1','data-catalog-cart-entry');
     if(['index.html','account.html','quote-checkout.html'].includes(page))add('business-registration-trust.js?v=3','data-business-registration-trust');
-    if(page==='product.html')add('product-variants.js?v=2','data-product-variants');
+    if(page==='product.html')add('product-variants.js?v=3','data-product-variants');
     if(['cart.html','checkout.html'].includes(page))add('variant-cart-ui.js?v=1','data-variant-cart-ui');
     if(page==='account.html'){
       add('account-stability.js?v=3','data-account-stability');
       add('account-role-guard.js?v=3','data-account-role-guard');
       add('support-chat.js?v=13','data-support-chat');
-      add('account-refunds.js?v=2','data-account-refunds');
+      add('account-refunds.js?v=3','data-account-refunds');
       add('account-returns.js?v=2','data-account-returns');
-      add('account-business.js?v=4','data-account-business');
+      add('account-business.js?v=5','data-account-business');
       add('account-repeat-order.js?v=2','data-account-repeat-order');
       add('account-cancel-promotion.js?v=1','data-account-cancel-promotion');
       add('account-extension-router.js?v=1','data-account-extension-router');
@@ -77,13 +94,13 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
     if(page==='order-details.html'){
       add('order-refund-tracker.js?v=1','data-order-refund-tracker');
       add('order-return-exchange.js?v=1','data-order-return-exchange');
-      add('order-business-details.js?v=1','data-order-business-details');
+      add('order-business-details.js?v=2','data-order-business-details');
       add('order-cancel-promotion.js?v=1','data-order-cancel-promotion');
       add('order-shipping.js?v=1','data-order-shipping');
     }
-    if(page==='order-confirmation.html')add('order-business-details.js?v=1','data-order-business-details');
-    if(page==='cart.html')add('commerce-bulk-display.js?v=1','data-commerce-bulk-display');
-    if(page==='checkout.html'){add('commerce-bulk-display.js?v=1','data-commerce-bulk-display');add('checkout-business.js?v=1','data-checkout-business');}
+    if(page==='order-confirmation.html')add('order-business-details.js?v=2','data-order-business-details');
+    if(page==='cart.html')add('commerce-bulk-display.js?v=2','data-commerce-bulk-display');
+    if(page==='checkout.html'){add('commerce-bulk-display.js?v=2','data-commerce-bulk-display');add('checkout-business.js?v=2','data-checkout-business');}
     if(page==='index.html')add('support-chat.js?v=13','data-support-chat');
   }
 
