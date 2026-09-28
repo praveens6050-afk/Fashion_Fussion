@@ -13,12 +13,14 @@ async function signedIn(){
 function rewriteSignedOutCartCopy(){
   const address=document.getElementById('address');
   if(!address)return;
-  address.querySelectorAll('a[href*="login.html"]').forEach(link=>{
+  const loginLinks=[...address.querySelectorAll('a[href*="login.html"]')];
+  if(!loginLinks.length)return;
+  loginLinks.forEach(link=>{
     link.href=loginHref;
     link.textContent='Sign in';
   });
   const muted=address.querySelector('.muted');
-  if(muted&&/sign in|checkout/i.test(muted.textContent||'')){
+  if(muted){
     muted.textContent='After sign in, you’ll return to this cart before checkout.';
   }
 }
