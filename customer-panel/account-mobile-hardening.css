@@ -1,0 +1,175 @@
+/* Mobile hardening for the authenticated customer account area. */
+@media (max-width: 900px) {
+  .topin {
+    height: auto;
+    min-height: 0;
+    padding: 13px 16px;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+
+  .topnav {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .subin {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .layout,
+  .layout > section,
+  .side,
+  .view,
+  .panel,
+  .panel-body,
+  .orders,
+  .order,
+  .address-list,
+  .address-card,
+  .profile-mini,
+  form {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .layout > section {
+    width: 100%;
+  }
+
+  .profile-mini > div:last-child {
+    min-width: 0;
+  }
+
+  .menu {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .menu::-webkit-scrollbar,
+  .topnav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .order-head,
+  .order-body,
+  .order-meta,
+  .itemrow,
+  .address-top,
+  .address-actions,
+  .panel-head,
+  .actions,
+  .return-top,
+  .return-main,
+  .quote-head,
+  .quote-body,
+  .business-grid,
+  .business-actions {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .meta-value,
+  .pname,
+  .muted,
+  .address-text,
+  .business-note,
+  .business-status,
+  .quote-meta,
+  .quote-title,
+  .return-title,
+  .return-meta,
+  .return-reason,
+  .return-refund {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  input,
+  textarea,
+  select,
+  button,
+  .btn {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    margin-top: 18px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .panel-body {
+    padding: 16px;
+  }
+
+  .order-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+  }
+
+  .order-meta > * {
+    min-width: 0;
+  }
+
+  .order-head,
+  .panel-head,
+  .address-top,
+  .return-top,
+  .quote-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .order-actions,
+  .address-actions,
+  .actions,
+  .business-actions,
+  .return-refund-actions {
+    flex-wrap: wrap;
+  }
+
+  .order-actions .btn,
+  .address-actions .btn,
+  .actions .btn,
+  .business-actions .btn {
+    flex: 1 1 140px;
+  }
+
+  .grid,
+  .business-grid,
+  .return-main,
+  .quote-body {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .field.full,
+  .business-grid .full {
+    grid-column: auto !important;
+  }
+
+  .return-link {
+    width: 100%;
+    text-align: center;
+  }
+
+  .quote-price {
+    text-align: left;
+  }
+}
