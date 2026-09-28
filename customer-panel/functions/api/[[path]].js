@@ -6,6 +6,7 @@ import razorpayWebhook from '../../api/razorpay-webhook.js';
 import reconcilePayment from '../../api/reconcile-payment.js';
 import refundStatus from '../../api/refund-status.js';
 import release from '../../api/release.js';
+import resumePayment from '../../api/resume-payment.js';
 import shippingStatus from '../../api/shipping-status.js';
 import verifyPayment from '../../api/verify-payment.js';
 import { runNodeHandler } from '../_node-handler-bridge.js';
@@ -19,6 +20,7 @@ const handlers = {
   'reconcile-payment': reconcilePayment,
   'refund-status': refundStatus,
   'release': release,
+  'resume-payment': resumePayment,
   'shipping-status': shippingStatus,
   'verify-payment': verifyPayment
 };
