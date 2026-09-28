@@ -4,7 +4,6 @@ const BACKEND_URL=window.FF_API_ORIGIN||'';
 const ACTIVE=new Set(['creating','created','pending','payment_pending']);
 const RESTART=new Set(['payment_failed','failed','expired']);
 const safe=(e,fallback='We could not complete this action. Please try again.')=>window.ffCustomerMessage?window.ffCustomerMessage(e,fallback):fallback;
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let order=null,session=null,busy=false;
 
 function orderId(){
@@ -22,7 +21,7 @@ async function api(path,body){
 
 function ensureStyles(){
   if(document.getElementById('ffPaymentRetryStyles'))return;
-  const style=document.createElement('style');style.id='ffPaymentRetryStyles';style.textContent='.ff-payment-retry{margin:0 0 24px;border:1px solid #e4e7ec;border-radius:16px;background:#fff;overflow:hidden}.ff-payment-retry-head{padding:18px 20px;border-bottom:1px solid #eaecf0;display:flex;justify-content:space-between;gap:12px;align-items:center}.ff-payment-retry-head h2{margin:0;font-size:18px}.ff-payment-retry-body{padding:20px}.ff-payment-retry-body p{margin:0 0 14px;color:#667085;line-height:1.55}.ff-payment-retry-actions{display:flex;gap:10px;flex-wrap:wrap}.ff-payment-retry-btn{border:0;border-radius:10px;padding:12px 18px;font-weight:800;cursor:pointer;background:#5b35e5;color:#fff}.ff-payment-retry-btn.secondary{background:#fff;color:#344054;border:1px solid #d0d5dd}.ff-payment-retry-btn:disabled{opacity:.55;cursor:not-allowed}.ff-payment-retry-status{margin-top:12px;padding:10px 12px;border-radius:9px;background:#f8fafc;color:#475467;font-size:13px;display:none}.ff-payment-retry-status.show{display:block}.ff-payment-retry-status.good{background:#ecfdf3;color:#067647}.ff-payment-retry-status.bad{background:#fff1f0;color:#b42318}@media(max-width:640px){.ff-payment-retry-actions{display:grid}.ff-payment-retry-btn{width:100%}}';document.head.appendChild(style);
+  const style=document.createElement('style');style.id='ffPaymentRetryStyles';style.textContent='.ff-payment-retry{margin:0 0 24px;border:1px solid #e4e7ec;border-radius:16px;background:#fff;overflow:hidden}.ff-payment-retry-head{padding:18px 20px;border-bottom:1px solid #eaecf0;display:flex;justify-content:space-between;gap:12px;align-items:center}.ff-payment-retry-head h2{margin:0;font-size:18px}.ff-payment-retry-body{padding:20px}.ff-payment-retry-body p{margin:0 0 14px;color:#667085;line-height:1.55}.ff-payment-retry-actions{display:flex;gap:10px;flex-wrap:wrap}.ff-payment-retry-btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:0;border-radius:10px;padding:12px 18px;font-weight:800;cursor:pointer;background:#5b35e5;color:#fff}.ff-payment-retry-btn.secondary{background:#fff;color:#344054;border:1px solid #d0d5dd}.ff-payment-retry-btn:disabled{opacity:.55;cursor:not-allowed}.ff-payment-retry-status{margin-top:12px;padding:10px 12px;border-radius:9px;background:#f8fafc;color:#475467;font-size:13px;display:none}.ff-payment-retry-status.show{display:block}.ff-payment-retry-status.good{background:#ecfdf3;color:#067647}.ff-payment-retry-status.bad{background:#fff1f0;color:#b42318}@media(max-width:640px){.ff-payment-retry-actions{display:grid}.ff-payment-retry-btn{width:100%;box-sizing:border-box}}';document.head.appendChild(style);
 }
 
 function message(text,type='info'){
@@ -30,18 +29,18 @@ function message(text,type='info'){
   el.textContent=text||'';el.className='ff-payment-retry-status'+(text?' show '+type:'');
 }
 
-function target(){return document.querySelector('#root .layout')||document.getElementById('root');}
+function target(){return document.querySelector('#root .layout');}
 
 function render(){
   if(!order||document.getElementById('ffPaymentRetry'))return;
   const status=String(order.status||'').toLowerCase();
   if(String(order.payment_method||'').toLowerCase()!=='prepaid'||order.payment_verified_at||status==='paid')return;
   if(!ACTIVE.has(status)&&!RESTART.has(status))return;
+  const t=target();if(!t)return;
   ensureStyles();
   const box=document.createElement('section');box.id='ffPaymentRetry';box.className='ff-payment-retry';
   const active=ACTIVE.has(status);
   box.innerHTML='<div class="ff-payment-retry-head"><h2>'+(active?'Complete online payment':'Payment needs a new checkout')+'</h2><strong>'+(active?'Payment pending':'Payment not completed')+'</strong></div><div class="ff-payment-retry-body"><p>'+(active?'Your order is waiting for payment. You can safely continue payment from this same order. The order is confirmed only after payment verification.':'This payment session is no longer active. Return to your cart to start a fresh checkout.')+'</p><div class="ff-payment-retry-actions">'+(active?'<button id="ffResumePayment" class="ff-payment-retry-btn" type="button">Complete payment</button>':'<a class="ff-payment-retry-btn" href="cart.html">Return to cart</a>')+'<a class="ff-payment-retry-btn secondary" href="account.html#orders">My Orders</a></div><div id="ffPaymentRetryStatus" class="ff-payment-retry-status" aria-live="polite"></div></div>';
-  const t=target();if(!t)return;
   t.parentNode.insertBefore(box,t);
   if(active)document.getElementById('ffResumePayment').addEventListener('click',resume);
   if(location.hash==='#payment')setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'center'}),100);
@@ -61,7 +60,10 @@ async function reconcile(){
     const d=await api('/api/reconcile-payment',{store_order_id:order.id});
     if(d?.reconciled&&d.status==='paid'){location.href='order-confirmation.html?id='+encodeURIComponent(d.store_order_id||order.id);return true;}
     if(d?.captured){message(d.message||'Payment has been received and is being confirmed. Please do not pay again.','good');return true;}
-  }catch(e){console.warn('payment status check unavailable',e);}
+  }catch(e){
+    if(e.data?.captured){message(e.data.message||'Payment has been received and needs confirmation. Please do not pay again.','good');return true;}
+    console.warn('payment status check unavailable');
+  }
   return false;
 }
 
@@ -82,6 +84,11 @@ async function confirmPayment(details,resumeData){
   if(!(await reconcile()))message('Payment confirmation is still pending. Please do not pay again yet. Check My Orders shortly.','good');
 }
 
+function replaceWithCartAction(){
+  const btn=document.getElementById('ffResumePayment');if(!btn)return;
+  const link=document.createElement('a');link.className='ff-payment-retry-btn';link.href='cart.html';link.textContent='Return to cart';btn.replaceWith(link);
+}
+
 async function resume(){
   if(busy||!order)return;busy=true;
   const btn=document.getElementById('ffResumePayment');if(btn){btn.disabled=true;btn.textContent='Checking payment…';}
@@ -98,10 +105,10 @@ async function resume(){
     rz.on('payment.failed',()=>message('Payment was not completed. You can safely try again from this same order.','bad'));
     rz.open();
   }catch(e){
-    if(e.data?.restart_checkout){message('This payment session is no longer active. Return to your cart to start a new checkout.','bad');setTimeout(()=>{const b=document.getElementById('ffResumePayment');if(b){b.textContent='Return to cart';b.onclick=()=>location.href='cart.html';}},0);}
+    if(e.data?.restart_checkout){message('This payment session is no longer active. Return to your cart to start a new checkout.','bad');replaceWithCartAction();}
     else message(safe(e,'Unable to continue payment. Please try again.'),'bad');
   }finally{
-    busy=false;if(btn){btn.disabled=false;if(btn.textContent==='Checking payment…')btn.textContent='Complete payment';}
+    busy=false;const current=document.getElementById('ffResumePayment');if(current){current.disabled=false;if(current.textContent==='Checking payment…')current.textContent='Complete payment';}
   }
 }
 
