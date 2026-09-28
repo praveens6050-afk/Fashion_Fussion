@@ -4,6 +4,7 @@ window.FF_API_ORIGIN='';
 window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
 
 (function(){'use strict';
+  const TECHNICAL_PATTERN=/(supabase|postgrest|postgres|schema cache|row level security|\brls\b|\brpc\b|service[_ -]?role|edge function|functions\.invoke|relation .* does not exist|column .* does not exist|permission denied|violates .* constraint|duplicate key|foreign key|invalid input syntax|jwt|cashfree secure id|credentials? .*configur|not configured|non-2xx|stack trace|backend|database|server-side|anon key|api key|service key)/i;
   function customerSafeMessage(error,fallback='We could not complete this action. Please try again or contact Customer Care.'){
     const raw=String(error?.message||error||'').trim();
     const known=[
@@ -16,13 +17,28 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
     ];
     for(const [pattern,message] of known)if(pattern.test(raw))return message;
     if(!raw)return fallback;
-    const technical=/(supabase|postgrest|postgres|schema cache|row level security|\brls\b|\brpc\b|service[_ -]?role|edge function|functions\.invoke|relation .* does not exist|column .* does not exist|permission denied|violates .* constraint|duplicate key|foreign key|invalid input syntax|jwt|cashfree secure id|credentials? .*configur|not configured|non-2xx|stack trace|backend|database|server-side|anon key|api key|service key)/i;
-    if(technical.test(raw)||raw.length>180)return fallback;
+    if(TECHNICAL_PATTERN.test(raw)||raw.length>180)return fallback;
     return raw;
   }
   window.ffCustomerMessage=customerSafeMessage;
   const nativeAlert=window.alert?.bind(window);
   if(nativeAlert)window.alert=message=>nativeAlert(customerSafeMessage(message));
+
+  function sanitizeVisibleText(root){
+    if(!root)return;
+    const fix=node=>{const value=String(node.nodeValue||'');if(TECHNICAL_PATTERN.test(value))node.nodeValue=customerSafeMessage(value);};
+    if(root.nodeType===Node.TEXT_NODE){fix(root);return;}
+    if(root.nodeType!==Node.ELEMENT_NODE&&root.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;while((node=walker.nextNode()))fix(node);
+  }
+  function installCustomerCopyGuard(){
+    if(window.__ffCustomerCopyGuard||!document.body)return;
+    window.__ffCustomerCopyGuard=true;
+    sanitizeVisibleText(document.body);
+    const observer=new MutationObserver(mutations=>{for(const mutation of mutations){if(mutation.type==='characterData')sanitizeVisibleText(mutation.target);for(const node of mutation.addedNodes||[])sanitizeVisibleText(node)}});
+    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+    window.addEventListener('pagehide',()=>observer.disconnect(),{once:true});
+  }
 
   function add(src,marker){
     if(document.querySelector('script['+marker+']'))return;
@@ -73,6 +89,7 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
   }
 
   async function start(){
+    installCustomerCopyGuard();
     try{await window.ffSupabaseReady;}catch(error){console.error('Store initialization failed',error);return;}
     if(homepageBundled)return;
     if(['index.html','search.html','wishlist.html','product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
