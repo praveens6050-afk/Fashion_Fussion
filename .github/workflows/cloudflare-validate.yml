@@ -97,7 +97,7 @@ jobs:
           for script in order-shipping.js order-refund-tracker.js order-return-exchange.js order-cancel-promotion.js; do grep -Fq "$script?v=1" order-details.html; done
           grep -Fq 'order-business-details.js?v=2' order-details.html
           grep -Fq 'csp-order-confirmation.js?v=3' order-confirmation.html
-          grep -Fq 'order-business-details.js?v=1' order-confirmation.html
+          grep -Fq 'order-business-details.js?v=2' order-confirmation.html
           grep -Fq 'Fashion Fussion' account.html
           grep -Fq 'Fashion Fussion' order-details.html
 
@@ -172,7 +172,7 @@ jobs:
           for script in order-shipping.js order-refund-tracker.js order-return-exchange.js order-cancel-promotion.js; do grep -Fq "$script?v=1" dist/order-details.html; done
           grep -Fq 'order-business-details.js?v=2' dist/order-details.html
           grep -Fq 'csp-order-confirmation.js?v=3' dist/order-confirmation.html
-          grep -Fq 'order-business-details.js?v=1' dist/order-confirmation.html
+          grep -Fq 'order-business-details.js?v=2' dist/order-confirmation.html
           grep -Fq 'quote-checkout.js?v=3' dist/quote-checkout.html
           grep -Fq 'quote-payment-safety.js?v=3' dist/quote-checkout.html
 
