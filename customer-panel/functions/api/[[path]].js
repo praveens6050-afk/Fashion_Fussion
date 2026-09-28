@@ -1,6 +1,7 @@
 import cancelOrder from '../../api/cancel-order.js';
 import createOrder from '../../api/create-order.js';
 import createQuoteOrder from '../../api/create-quote-order.js';
+import productSitemap from '../../api/product-sitemap.js';
 import quoteOrder from '../../api/quote-order.js';
 import razorpayWebhook from '../../api/razorpay-webhook.js';
 import reconcilePayment from '../../api/reconcile-payment.js';
@@ -15,6 +16,7 @@ const handlers = {
   'cancel-order': cancelOrder,
   'create-order': createOrder,
   'create-quote-order': createQuoteOrder,
+  'product-sitemap': productSitemap,
   'quote-order': quoteOrder,
   'razorpay-webhook': razorpayWebhook,
   'reconcile-payment': reconcilePayment,
