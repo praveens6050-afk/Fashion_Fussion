@@ -12,7 +12,7 @@ function autoRetryRequested(){return params().get('autopay')==='1';}
 function paymentFocusRequested(){return location.hash==='#payment'||params().get('payment')==='1';}
 function clearAutoRetryFlag(){
   const url=new URL(location.href);url.searchParams.delete('autopay');
-  history.replaceState(null,'',url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():'')+url.hash);
+  history.replaceState(null,'',url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():''));
 }
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 
