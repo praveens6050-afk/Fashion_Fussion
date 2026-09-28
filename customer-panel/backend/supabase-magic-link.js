@@ -14,11 +14,19 @@ async function getAuthUserById(userId) {
   return data;
 }
 
-async function generatePaymentRetryMagicLink({ userId, redirectTo }) {
+async function getConfirmedAuthEmail(userId) {
   const user = await getAuthUserById(userId);
   const email = String(user.email || '').trim().toLowerCase();
   if (!email || !email.includes('@') || !user.email_confirmed_at) {
     throw new Error('The customer account does not have a confirmed email address.');
+  }
+  return email;
+}
+
+async function generatePaymentRetryMagicLink({ email, redirectTo }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail || !normalizedEmail.includes('@')) {
+    throw new Error('A confirmed customer email is required for payment recovery.');
   }
 
   const response = await fetch(SUPABASE_URL + '/auth/v1/admin/generate_link', {
@@ -30,7 +38,7 @@ async function generatePaymentRetryMagicLink({ userId, redirectTo }) {
     },
     body: JSON.stringify({
       type: 'magiclink',
-      email,
+      email: normalizedEmail,
       redirect_to: String(redirectTo || '')
     })
   });
@@ -40,7 +48,7 @@ async function generatePaymentRetryMagicLink({ userId, redirectTo }) {
     throw new Error(data?.msg || data?.message || data?.error_description || 'Could not create the secure payment link.');
   }
 
-  return { email, actionLink };
+  return actionLink;
 }
 
-module.exports = { generatePaymentRetryMagicLink };
+module.exports = { getConfirmedAuthEmail, generatePaymentRetryMagicLink };
