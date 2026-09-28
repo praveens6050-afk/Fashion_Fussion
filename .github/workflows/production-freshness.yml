@@ -126,6 +126,55 @@ jobs:
           })().catch(error=>{console.error(error);process.exit(1)});
           NODE
 
+      - name: Product SEO and sitemap smoke
+        run: |
+          node - <<'NODE'
+          (async()=>{
+            const base='https://fashionfussion.in';
+            const sitemap=await fetch(base+'/api/product-sitemap',{redirect:'follow'});
+            const sitemapText=await sitemap.text();
+            if(!sitemap.ok) throw new Error(`product sitemap returned ${sitemap.status}: ${sitemapText.slice(0,200)}`);
+            const sitemapType=String(sitemap.headers.get('content-type')||'').toLowerCase();
+            if(!sitemapType.includes('application/xml')) throw new Error(`product sitemap content-type is ${sitemapType}`);
+            if(!/<urlset\b/i.test(sitemapText)) throw new Error('product sitemap missing urlset');
+            const loc=sitemapText.match(/<loc>(https:\/\/fashionfussion\.in\/product\?id=(\d+))<\/loc>/i);
+            if(!loc) throw new Error('product sitemap has no canonical product URL');
+            const productUrl=loc[1];
+            const productId=loc[2];
+
+            const product=await fetch(productUrl,{redirect:'follow'});
+            const html=await product.text();
+            if(!product.ok) throw new Error(`indexed product returned ${product.status}`);
+            const robots=String(product.headers.get('x-robots-tag')||'').toLowerCase();
+            if(robots.includes('noindex')||!robots.includes('index')||!robots.includes('follow')) throw new Error(`indexed product robots header is ${robots}`);
+            const link=String(product.headers.get('link')||'');
+            if(!link.includes(`<${productUrl}>`)||!/rel="?canonical"?/i.test(link)) throw new Error(`indexed product canonical header is ${link}`);
+            const csp=String(product.headers.get('content-security-policy')||'');
+            if(!/script-src[^;]*'nonce-[^']+'/i.test(csp)) throw new Error('indexed product CSP missing JSON-LD nonce');
+            if(!html.includes('data-seo-rendered="true"')) throw new Error('indexed product was not edge-rendered');
+            if(!html.includes(`data-seo-product-id="${productId}"`)) throw new Error('indexed product id marker mismatch');
+            if(!html.includes(`href="${productUrl}" data-product-seo="canonical"`)) throw new Error('indexed product HTML canonical mismatch');
+            if(!/property="og:title"/i.test(html)||!/property="og:description"/i.test(html)) throw new Error('indexed product missing Open Graph metadata');
+            const schemaMatch=html.match(/<script[^>]*data-product-schema[^>]*>([\s\S]*?)<\/script>/i);
+            if(!schemaMatch) throw new Error('indexed product missing Product JSON-LD');
+            const schema=JSON.parse(schemaMatch[1]);
+            if(schema['@type']!=='Product'||!schema.name||schema.url!==productUrl) throw new Error('Product JSON-LD identity is invalid');
+            for(const forbidden of ['aggregateRating','review','offers','cost']){
+              if(Object.prototype.hasOwnProperty.call(schema,forbidden)) throw new Error(`Product JSON-LD unexpectedly exposes ${forbidden}`);
+            }
+
+            const missing=await fetch(base+'/product?id=999999999999',{redirect:'manual'});
+            if(missing.status!==404) throw new Error(`missing product expected 404, got ${missing.status}`);
+            const missingRobots=String(missing.headers.get('x-robots-tag')||'').toLowerCase();
+            if(!missingRobots.includes('noindex')) throw new Error(`missing product is indexable: ${missingRobots}`);
+
+            const robotsTxt=await fetch(base+'/robots.txt');
+            const robotsText=await robotsTxt.text();
+            if(!robotsTxt.ok||!robotsText.includes('Sitemap: https://fashionfussion.in/api/product-sitemap')) throw new Error('robots.txt missing product sitemap declaration');
+            console.log(`PASS product SEO ${productUrl}, dynamic sitemap, missing-product noindex`);
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
+
       - name: Cross-panel Cloudflare smoke
         env:
           CUSTOMER_URL: https://fashionfussion.in
