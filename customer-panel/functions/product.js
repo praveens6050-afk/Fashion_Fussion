@@ -26,7 +26,7 @@ function escapeHtml(value) {
 function safeImageUrl(value) {
   try {
     const url = new URL(clean(value));
-    return ['https:', 'http:'].includes(url.protocol) ? url.toString() : '';
+    return url.protocol === 'https:' ? url.toString() : '';
   } catch {
     return '';
   }
@@ -175,6 +175,17 @@ function rewriteProductPage(asset, product, id) {
       }
     });
   }
+  if (product.has_variants === true) {
+    const disableUntilVariantLoads = {
+      element(element) {
+        element.setAttribute('disabled', '');
+        element.setAttribute('title', 'Select an available product option first');
+      }
+    };
+    rewriter = rewriter
+      .on('#add', disableUntilVariantLoads)
+      .on('#buy', disableUntilVariantLoads);
+  }
 
   return rewriter.transform(response);
 }
@@ -186,20 +197,23 @@ export async function onRequest(context) {
   const id = String(url.searchParams.get('id') || '').trim();
   if (!/^\d+$/.test(id) || id === '0') return context.next();
 
+  let product;
   try {
-    const product = await loadProduct(context.env, id);
-    if (!product) {
-      const asset = await context.next();
-      const headers = new Headers(asset.headers);
-      headers.set('X-Robots-Tag', 'noindex, follow');
-      headers.delete('content-length');
-      return new Response(asset.body, { status: 404, headers });
-    }
-    const asset = await context.next();
-    if (!asset.ok) return asset;
-    return rewriteProductPage(asset, product, id);
+    product = await loadProduct(context.env, id);
   } catch (error) {
-    console.error('Product SEO render failed', error?.message || error);
+    console.error('Product SEO lookup failed', error?.message || error);
     return context.next();
   }
+
+  if (!product) {
+    const asset = await context.next();
+    const headers = new Headers(asset.headers);
+    headers.set('X-Robots-Tag', 'noindex, follow');
+    headers.delete('content-length');
+    return new Response(asset.body, { status: 404, headers });
+  }
+
+  const asset = await context.next();
+  if (!asset.ok) return asset;
+  return rewriteProductPage(asset, product, id);
 }
