@@ -22,5 +22,5 @@ Disallow: /order-details.html
 Disallow: /order-status.html
 Disallow: /order-tracking.html
 
-Sitemap: https://fashionfussion.in/sitemap.xml
-Sitemap: https://fashionfussion.in/api/product-sitemap
+Sitemap: https://www.fashionfussion.in/sitemap.xml
+Sitemap: https://www.fashionfussion.in/api/product-sitemap
