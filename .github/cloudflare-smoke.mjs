@@ -23,6 +23,31 @@ async function checkPage(label, url, expectedText) {
   console.log(`PASS ${label}: ${response.status}`);
 }
 
+async function checkCrawlerRoute(label, url) {
+  const userAgent = 'Mozilla/5.0 (compatible; CashfreeLinkChecker/1.0; +https://www.cashfree.com/)';
+  const getResponse = await fetch(url, {
+    method: 'GET',
+    redirect: 'manual',
+    headers: { 'user-agent': userAgent, accept: 'text/html,application/xhtml+xml' }
+  });
+  const text = await getResponse.text();
+  if (getResponse.status !== 200) throw new Error(`${label} crawler GET returned ${getResponse.status}; location=${getResponse.headers.get('location') || ''}`);
+  if (!text.includes('About Fashion_Fussion')) throw new Error(`${label} crawler GET missing About marker`);
+  const canonical = String(getResponse.headers.get('link') || '');
+  if (!canonical.includes('<https://fashionfussion.in/about>') || !/rel="?canonical"?/i.test(canonical)) {
+    throw new Error(`${label} crawler GET canonical header is ${canonical}`);
+  }
+
+  const headResponse = await fetch(url, {
+    method: 'HEAD',
+    redirect: 'manual',
+    headers: { 'user-agent': userAgent, accept: 'text/html,application/xhtml+xml' }
+  });
+  if (headResponse.status !== 200) throw new Error(`${label} crawler HEAD returned ${headResponse.status}; location=${headResponse.headers.get('location') || ''}`);
+  if (headResponse.headers.get('location')) throw new Error(`${label} crawler HEAD unexpectedly redirects to ${headResponse.headers.get('location')}`);
+  console.log(`PASS ${label}: crawler GET 200, HEAD 200, no redirect, canonical /about`);
+}
+
 async function checkApi(label, url) {
   const response = await fetch(url, {
     method: 'POST',
@@ -38,6 +63,8 @@ async function checkApi(label, url) {
 await checkPage('Customer homepage', `${bases.customer}/`, 'Fashion Fussion');
 await checkPage('Customer About clean route', `${bases.customer}/about`, 'About Fashion_Fussion');
 await checkPage('Customer About HTML route', `${bases.customer}/about.html`, 'About Fashion_Fussion');
+await checkCrawlerRoute('Customer About clean crawler route', `${bases.customer}/about`);
+await checkCrawlerRoute('Customer About HTML crawler route', `${bases.customer}/about.html`);
 await checkPage('Admin login', `${bases.admin}/login.html`, 'Admin');
 await checkPage('Seller login', `${bases.seller}/login.html`, 'Seller');
 await checkApi('Customer API', `${bases.customer}/api/shipping-status`);
