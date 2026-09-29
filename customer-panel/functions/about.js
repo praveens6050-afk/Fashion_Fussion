@@ -12,7 +12,7 @@ export async function onRequest(context) {
   }));
 
   const headers = new Headers(assetResponse.headers);
-  headers.set('Link', '<https://fashionfussion.in/about>; rel="canonical"');
+  headers.set('Link', '<https://www.fashionfussion.in/about>; rel="canonical"');
   headers.set('Cache-Control', 'public, max-age=0, must-revalidate, no-transform');
 
   return new Response(method === 'HEAD' ? null : assetResponse.body, {
