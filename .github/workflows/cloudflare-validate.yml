@@ -68,7 +68,7 @@ jobs:
           grep -Fq 'catalog-cart-entry.js?v=3' wishlist.html
           grep -Fq 'variant-commerce.js?v=5' cart.html
           grep -Fq 'variant-cart-ui.js?v=5' cart.html
-          grep -Fq 'cart-login-return.js?v=1' cart.html
+          grep -Fq 'cart-login-return.js?v=2' cart.html
           grep -Fq 'variant-commerce.js?v=5' checkout.html
           grep -Fq 'checkout-cart-reconcile.js?v=1' checkout.html
           grep -Fq 'variant-cart-ui.js?v=4' checkout.html
@@ -87,8 +87,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq 'account-refunds.js?v=3' account.html
-          grep -Fq 'account-returns.js?v=1' account.html
-          grep -Fq 'account-business.js?v=5' account.html
+          grep -Fq 'account-returns.js?v=3' account.html
+          grep -Fq 'account-business.js?v=6' account.html
           grep -Fq 'business-bank-verification.js?v=2' account.html
           grep -Fq 'account-payment-actions.js?v=1' account.html
           for script in account-repeat-order.js account-cancel-promotion.js account-role-guard.js account-stability.js account-extension-router.js; do grep -Fq "$script?v=1" account.html; done
@@ -152,7 +152,7 @@ jobs:
           grep -q 'catalog-cart-entry.js?v=3' dist/index.html
           grep -q 'variant-commerce.js?v=5' dist/cart.html
           grep -q 'variant-cart-ui.js?v=5' dist/cart.html
-          grep -Fq 'cart-login-return.js?v=1' dist/cart.html
+          grep -Fq 'cart-login-return.js?v=2' dist/cart.html
           grep -q 'variant-commerce.js?v=5' dist/checkout.html
           grep -q 'checkout-cart-reconcile.js?v=1' dist/checkout.html
           grep -q 'variant-cart-ui.js?v=4' dist/checkout.html
@@ -163,8 +163,8 @@ jobs:
           grep -q 'catalog-cart-entry.js?v=3' dist/search.html
           grep -q 'catalog-cart-entry.js?v=3' dist/wishlist.html
           grep -Fq 'account-refunds.js?v=3' dist/account.html
-          grep -Fq 'account-returns.js?v=1' dist/account.html
-          grep -Fq 'account-business.js?v=5' dist/account.html
+          grep -Fq 'account-returns.js?v=3' dist/account.html
+          grep -Fq 'account-business.js?v=6' dist/account.html
           grep -Fq 'business-bank-verification.js?v=2' dist/account.html
           grep -Fq 'account-payment-actions.js?v=1' dist/account.html
           for script in account-repeat-order.js account-cancel-promotion.js account-role-guard.js account-stability.js account-extension-router.js; do grep -Fq "$script?v=1" dist/account.html; done
