@@ -1,6 +1,6 @@
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, serverHeaders } = require('../lib');
 
-const SITE_ORIGIN = 'https://fashionfussion.in';
+const SITE_ORIGIN = 'https://www.fashionfussion.in';
 
 function escapeXml(value) {
   return String(value ?? '').replace(/[<>&"']/g, char => ({
