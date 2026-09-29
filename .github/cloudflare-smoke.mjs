@@ -36,6 +36,8 @@ async function checkApi(label, url) {
 }
 
 await checkPage('Customer homepage', `${bases.customer}/`, 'Fashion Fussion');
+await checkPage('Customer About clean route', `${bases.customer}/about`, 'About Fashion_Fussion');
+await checkPage('Customer About HTML route', `${bases.customer}/about.html`, 'About Fashion_Fussion');
 await checkPage('Admin login', `${bases.admin}/login.html`, 'Admin');
 await checkPage('Seller login', `${bases.seller}/login.html`, 'Seller');
 await checkApi('Customer API', `${bases.customer}/api/shipping-status`);
