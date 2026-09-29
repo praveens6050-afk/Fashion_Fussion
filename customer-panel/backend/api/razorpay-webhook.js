@@ -333,7 +333,13 @@ async function handlePaymentFailed(event) {
 
   const claim = await claimPaymentRecoveryNotification(order, payment, recipient);
   if (!claim.send) {
-    return { received: true, payment_failed: true, email_deduplicated: true, reason: claim.reason };
+    return {
+      received: true,
+      payment_failed: true,
+      email_deduplicated: true,
+      retryable: claim.reason === 'in_progress',
+      reason: claim.reason
+    };
   }
 
   try {
@@ -366,6 +372,7 @@ async function handlePaymentFailed(event) {
       received: true,
       payment_failed: true,
       email_failed: true,
+      retryable: true,
       store_order_id: order.id
     };
   }
@@ -512,7 +519,7 @@ module.exports = async function razorpayWebhook(req, res) {
     else if (event.event === 'payment.failed') result = await handlePaymentFailed(event);
     else if (['refund.created', 'refund.processed', 'refund.failed'].includes(event.event)) result = await handleRefundEvent(event);
     else result = { received: true, ignored: true };
-    return json(req, res, 200, result);
+    return json(req, res, result?.retryable ? 503 : 200, result);
   } catch (error) {
     console.error('razorpay-webhook error:', error);
     return json(req, res, error.status || 500, { error: error.message || 'Webhook processing failed' });
