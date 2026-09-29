@@ -1,6 +1,8 @@
 import cancelOrder from '../../api/cancel-order.js';
 import createOrder from '../../api/create-order.js';
+import createPayUOrder from '../../api/create-payu-order.js';
 import createQuoteOrder from '../../api/create-quote-order.js';
+import payuCallback from '../../api/payu-callback.js';
 import productSitemap from '../../api/product-sitemap.js';
 import quoteOrder from '../../api/quote-order.js';
 import razorpayWebhook from '../../api/razorpay-webhook.js';
@@ -15,7 +17,9 @@ import { runNodeHandler } from '../_node-handler-bridge.js';
 const handlers = {
   'cancel-order': cancelOrder,
   'create-order': createOrder,
+  'create-payu-order': createPayUOrder,
   'create-quote-order': createQuoteOrder,
+  'payu-callback': payuCallback,
   'product-sitemap': productSitemap,
   'quote-order': quoteOrder,
   'razorpay-webhook': razorpayWebhook,
