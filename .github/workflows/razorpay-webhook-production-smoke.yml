@@ -1,0 +1,47 @@
+name: Razorpay Webhook Production Smoke
+
+on:
+  push:
+    branches: [cloudflare-customer]
+    paths:
+      - 'customer-panel/backend/api/razorpay-webhook.js'
+      - 'customer-panel/backend/lib.js'
+      - 'customer-panel/api/razorpay-webhook.js'
+      - 'customer-panel/functions/api/**'
+      - '.github/workflows/razorpay-webhook-production-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  webhook-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify live Razorpay webhook route and secret boundary
+        run: |
+          set -euo pipefail
+          url='https://www.fashionfussion.in/api/razorpay-webhook'
+          body='{"entity":"event","event":"payment.failed","payload":{}}'
+          code="$(curl --silent --show-error --output /tmp/razorpay-webhook-smoke.json --write-out '%{http_code}' \
+            --max-time 20 \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --header 'X-Razorpay-Signature: intentionally-invalid-production-smoke-signature' \
+            --data "$body" \
+            "$url")"
+          response="$(cat /tmp/razorpay-webhook-smoke.json)"
+          if [ "$code" = '503' ] && grep -qi 'webhook secret is not configured' <<<"$response"; then
+            echo 'RAZORPAY_WEBHOOK_SECRET is missing from the live Cloudflare runtime.' >&2
+            exit 1
+          fi
+          if [ "$code" != '401' ]; then
+            echo "Expected invalid Razorpay signature to return 401, got $code: $response" >&2
+            exit 1
+          fi
+          if ! grep -qi 'invalid webhook signature' <<<"$response"; then
+            echo "Webhook returned 401 but not the expected signature rejection: $response" >&2
+            exit 1
+          fi
+          echo 'PASS: live webhook route is reachable and RAZORPAY_WEBHOOK_SECRET is configured.'
