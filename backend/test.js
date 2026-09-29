@@ -30,9 +30,10 @@ assert.strictEqual(cors({headers:{origin:'https://evil.example'}},badRes),false)
 assert.strictEqual(badRes.headers['Access-Control-Allow-Origin'],undefined);
 
 const lib=fs.readFileSync(path.join(__dirname,'lib.js'),'utf8');
+const compactLib=lib.replace(/\s+/g,'');
 for(const required of ['has_variants','getVariantsByIds','getInventoryByVariantIds','variant_id','product_variants','inventory_levels','Selected variant does not have enough stock','Please select a product variant'])assert.ok(lib.includes(required),`Variant pricing must enforce ${required}`);
-assert.ok(lib.includes("variant_id: variant ? variant.id : null"),'Order item snapshot must persist variant ID');
-for(const required of ['sku: variant?.sku','size: variant?.size','color: variant?.color','variant_title: variant?.title'])assert.ok(lib.includes(required),`Order item snapshot must persist ${required}`);
+assert.ok(compactLib.includes('variant_id:variant?variant.id:null'),'Order item snapshot must persist variant ID');
+for(const required of ['sku:variant?.sku','size:variant?.size','color:variant?.color','variant_title:variant?.title'])assert.ok(compactLib.includes(required),`Order item snapshot must persist ${required}`);
 
 const createOrder=fs.readFileSync(path.join(__dirname,'api/create-order.js'),'utf8');
 for(const required of ['reserve_order_inventory','release_order_inventory','reserveCheckout','failCheckout','finalize_cod_order_inventory','finalize_zero_value_order_inventory','finalizeCod','finalizeZeroValue'])assert.ok(createOrder.includes(required),`Checkout inventory lifecycle must enforce ${required}`);
