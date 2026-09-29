@@ -51,6 +51,7 @@ jobs:
             node --check "$file"
           done < <(find . -type f -name '*.js' -not -path './node_modules/*' -not -path './dist/*' -not -path './functions/*' -print0)
           node backend/test-customer.js
+          node ../.github/cart-login-return.test.cjs
 
       - name: Validate variant commerce entry points
         working-directory: customer-panel

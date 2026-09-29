@@ -1,5 +1,7 @@
 (function(){
 'use strict';
+if(window.__ffCartLoginReturnInstalled)return;
+window.__ffCartLoginReturnInstalled=true;
 const CART_RETURN='cart.html';
 const loginHref='login.html?redirect='+encodeURIComponent(CART_RETURN);
 
@@ -16,12 +18,13 @@ function rewriteSignedOutCartCopy(){
   const loginLinks=[...address.querySelectorAll('a[href*="login.html"]')];
   if(!loginLinks.length)return;
   loginLinks.forEach(link=>{
-    link.href=loginHref;
-    link.textContent='Sign in';
+    if(link.getAttribute('href')!==loginHref)link.setAttribute('href',loginHref);
+    if(link.textContent!=='Sign in')link.textContent='Sign in';
   });
   const muted=address.querySelector('.muted');
-  if(muted){
-    muted.textContent='After sign in, you’ll return to this cart before checkout.';
+  const returnCopy='After sign in, you’ll return to this cart before checkout.';
+  if(muted&&muted.textContent!==returnCopy){
+    muted.textContent=returnCopy;
   }
 }
 

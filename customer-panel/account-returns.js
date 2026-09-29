@@ -1,5 +1,7 @@
 (function(){
 'use strict';
+if(window.__ffAccountReturnsLoaded)return;
+window.__ffAccountReturnsLoaded=true;
 const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
 const fmt=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'':d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})};
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
