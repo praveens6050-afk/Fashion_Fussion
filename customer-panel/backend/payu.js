@@ -110,7 +110,7 @@ function responseHashSequence(payload) {
   const sequence = [
     PAYU_SALT,
     status,
-    '', '', '', '', '', '',
+    '', '', '', '', '',
     String(payload.udf5 || ''),
     String(payload.udf4 || ''),
     String(payload.udf3 || ''),
