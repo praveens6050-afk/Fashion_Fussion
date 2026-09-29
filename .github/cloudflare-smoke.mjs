@@ -24,7 +24,7 @@ async function checkPage(label, url, expectedText) {
 }
 
 async function checkCrawlerRoute(label, url) {
-  const userAgent = 'Mozilla/5.0 (compatible; CashfreeLinkChecker/1.0; +https://www.cashfree.com/)';
+  const userAgent = 'Mozilla/5.0 (compatible; PayULinkChecker/1.0; +https://payu.in/)';
   const getResponse = await fetch(url, {
     method: 'GET',
     redirect: 'manual',
@@ -34,7 +34,7 @@ async function checkCrawlerRoute(label, url) {
   if (getResponse.status !== 200) throw new Error(`${label} crawler GET returned ${getResponse.status}; location=${getResponse.headers.get('location') || ''}`);
   if (!text.includes('About Fashion_Fussion')) throw new Error(`${label} crawler GET missing About marker`);
   const canonical = String(getResponse.headers.get('link') || '');
-  if (!canonical.includes('<https://fashionfussion.in/about>') || !/rel="?canonical"?/i.test(canonical)) {
+  if (!canonical.includes('<https://www.fashionfussion.in/about>') || !/rel="?canonical"?/i.test(canonical)) {
     throw new Error(`${label} crawler GET canonical header is ${canonical}`);
   }
 
@@ -45,7 +45,7 @@ async function checkCrawlerRoute(label, url) {
   });
   if (headResponse.status !== 200) throw new Error(`${label} crawler HEAD returned ${headResponse.status}; location=${headResponse.headers.get('location') || ''}`);
   if (headResponse.headers.get('location')) throw new Error(`${label} crawler HEAD unexpectedly redirects to ${headResponse.headers.get('location')}`);
-  console.log(`PASS ${label}: crawler GET 200, HEAD 200, no redirect, canonical /about`);
+  console.log(`PASS ${label}: crawler GET 200, HEAD 200, no redirect, canonical www /about`);
 }
 
 async function checkApi(label, url) {
