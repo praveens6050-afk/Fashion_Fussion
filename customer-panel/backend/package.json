@@ -1,11 +1,11 @@
 {
   "name":"fashion-fussion-payment-api",
-  "version":"1.1.0",
+  "version":"1.2.0",
   "private":true,
   "engines":{"node":"24.x"},
   "scripts":{
     "test":"node test-customer.js",
-    "check":"node --check lib.js && node --check api/quote-order.js && node --check api/create-order.js && node --check api/verify-payment.js && node --check api/reconcile-payment.js && node --check api/resume-payment.js && node --check api/razorpay-webhook.js && node --check api/cancel-order.js && node --check api/refund-status.js && node --check api/return-refund-status.js && node --check api/customer-shipping-status.js"
+    "check":"node --check lib.js && node --check payu.js && node --check api/quote-order.js && node --check api/create-order.js && node --check api/create-payu-order.js && node --check api/payment-config.js && node --check api/payu-callback.js && node --check api/payu-refund-callback.js && node --check api/verify-payment.js && node --check api/reconcile-payment.js && node --check api/resume-payment.js && node --check api/razorpay-webhook.js && node --check api/cancel-order.js && node --check api/refund-status.js && node --check api/return-refund-status.js && node --check api/customer-shipping-status.js"
   },
   "dependencies":{}
 }
