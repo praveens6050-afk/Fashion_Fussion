@@ -28,14 +28,10 @@ to anon, authenticated
 using (false)
 with check (false);
 
-alter policy seller_compliance_read_own on public.seller_compliance_profiles
-  using (seller_id = (select auth.uid()));
-alter policy seller_payout_read_own on public.seller_payout_profiles
-  using (seller_id = (select auth.uid()));
-alter policy seller_pickup_read_own on public.seller_pickup_locations
-  using (seller_id = (select auth.uid()));
-alter policy seller_settlement_read_own on public.seller_settlements
-  using (seller_id = (select auth.uid()));
+alter policy seller_compliance_read_own on public.seller_compliance_profiles using (seller_id = (select auth.uid()));
+alter policy seller_payout_read_own on public.seller_payout_profiles using (seller_id = (select auth.uid()));
+alter policy seller_pickup_read_own on public.seller_pickup_locations using (seller_id = (select auth.uid()));
+alter policy seller_settlement_read_own on public.seller_settlements using (seller_id = (select auth.uid()));
 
 create index if not exists payment_recovery_notifications_order_id_idx on public.payment_recovery_notifications(order_id);
 create index if not exists seller_compliance_profiles_reviewed_by_idx on public.seller_compliance_profiles(reviewed_by);
