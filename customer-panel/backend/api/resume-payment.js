@@ -9,12 +9,6 @@ const {
   basicAuth,
   getSupabaseUser
 } = require('../lib');
-const {
-  buildHostedCheckout,
-  verifyPayment: verifyPayUPayment,
-  transactionFromVerification,
-  verifiedSuccess
-} = require('../payu');
 
 const MAX_PAYMENT_AGE_MS = 60 * 60 * 1000;
 
@@ -41,7 +35,7 @@ async function loadOrder(userId, orderId) {
   const rows = await rest(
     'orders?id=eq.' + encodeURIComponent(orderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,display_order_id,total_amount,currency,status,payment_method,payment_provider,payment_verified_at,razorpay_order_id,payu_txnid,payu_mihpayid,customer_name,customer_email,customer_phone,shipping_address,created_at&limit=1'
+    '&select=id,display_order_id,total_amount,currency,status,payment_method,payment_verified_at,razorpay_order_id,customer_name,customer_email,customer_phone,created_at&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -74,118 +68,6 @@ async function expireOrder(order) {
   ]);
 }
 
-function expired(order) {
-  const createdAt = new Date(order.created_at).getTime();
-  return Number.isFinite(createdAt) && Date.now() - createdAt > MAX_PAYMENT_AGE_MS;
-}
-
-async function resumePayU(req, res, order) {
-  if (!order.payu_txnid) {
-    return json(req, res, 409, {
-      error: 'The PayU payment session is still being prepared. Please wait a moment and try again.',
-      recoverable: true
-    });
-  }
-
-  try {
-    const verification = await verifyPayUPayment(order.payu_txnid);
-    const transaction = transactionFromVerification(verification, order.payu_txnid);
-    if (transaction && verifiedSuccess(transaction)) {
-      return json(req, res, 202, {
-        captured: true,
-        recoverable: true,
-        provider: 'payu',
-        store_order_id: order.id,
-        display_order_id: order.display_order_id,
-        message: 'Payment has been received and is being confirmed. Please do not pay again.'
-      });
-    }
-  } catch (error) {
-    console.warn('PayU resume pre-check unavailable:', { store_order_id: order.id, message: error.message });
-  }
-
-  if (expired(order)) {
-    await expireOrder(order);
-    return json(req, res, 409, {
-      error: 'This payment session has expired. Return to your cart to start a new checkout.',
-      restart_checkout: true,
-      store_order_id: order.id,
-      display_order_id: order.display_order_id
-    });
-  }
-
-  return json(req, res, 200, {
-    completed: false,
-    status: String(order.status || 'created').toLowerCase(),
-    provider: 'payu',
-    store_order_id: order.id,
-    display_order_id: order.display_order_id,
-    gateway: buildHostedCheckout(order),
-    customer: {
-      name: order.customer_name || '',
-      email: order.customer_email || '',
-      phone: order.customer_phone || ''
-    }
-  });
-}
-
-async function resumeRazorpay(req, res, order, user) {
-  if (!order.razorpay_order_id) {
-    return json(req, res, 409, {
-      error: 'The payment session is still being prepared. Please wait a moment and try again.',
-      recoverable: true
-    });
-  }
-  if (!KEY_ID || !KEY_SECRET) {
-    return json(req, res, 503, { error: 'Online payment is temporarily unavailable. Please try again later.' });
-  }
-
-  const gatewayOrder = await loadRazorpayOrder(order.razorpay_order_id);
-  const expectedAmount = Math.round(Number(order.total_amount) * 100);
-  if (String(gatewayOrder.id) !== String(order.razorpay_order_id) || Number(gatewayOrder.amount) !== expectedAmount) {
-    return json(req, res, 409, { error: 'Payment details could not be confirmed. Please contact Customer Care.' });
-  }
-  if (String(gatewayOrder.status || '').toLowerCase() === 'paid') {
-    return json(req, res, 202, {
-      captured: true,
-      recoverable: true,
-      provider: 'razorpay',
-      store_order_id: order.id,
-      display_order_id: order.display_order_id,
-      message: 'Payment has been received and is being confirmed. Please do not pay again.'
-    });
-  }
-
-  if (expired(order)) {
-    await expireOrder(order);
-    return json(req, res, 409, {
-      error: 'This payment session has expired. Return to your cart to start a new checkout.',
-      restart_checkout: true,
-      store_order_id: order.id,
-      display_order_id: order.display_order_id
-    });
-  }
-
-  return json(req, res, 200, {
-    completed: false,
-    status: String(order.status || 'created').toLowerCase(),
-    provider: 'razorpay',
-    key_id: KEY_ID,
-    store_order_id: order.id,
-    display_order_id: order.display_order_id,
-    order: {
-      id: gatewayOrder.id,
-      amount: Number(gatewayOrder.amount),
-      currency: gatewayOrder.currency || order.currency || 'INR'
-    },
-    customer: {
-      name: order.customer_name || '',
-      email: order.customer_email || user.email || '',
-      phone: order.customer_phone || ''
-    }
-  });
-}
-
 module.exports = async function resumePayment(req, res) {
   cors(req, res);
   if (req.method === 'OPTIONS') {
@@ -212,7 +94,6 @@ module.exports = async function resumePayment(req, res) {
       return json(req, res, 200, {
         completed: true,
         status: 'paid',
-        provider: order.payment_provider || null,
         store_order_id: order.id,
         display_order_id: order.display_order_id
       });
@@ -226,14 +107,63 @@ module.exports = async function resumePayment(req, res) {
         display_order_id: order.display_order_id
       });
     }
+
     if (!['creating', 'created', 'pending', 'payment_pending'].includes(status)) {
       return json(req, res, 409, { error: 'This order is not waiting for an online payment.' });
     }
+    if (!order.razorpay_order_id) {
+      return json(req, res, 409, {
+        error: 'The payment session is still being prepared. Please wait a moment and try again.',
+        recoverable: true
+      });
+    }
+    if (!KEY_ID || !KEY_SECRET) {
+      return json(req, res, 503, { error: 'Online payment is temporarily unavailable. Please try again later.' });
+    }
 
-    const provider = String(order.payment_provider || (order.payu_txnid ? 'payu' : 'razorpay')).toLowerCase();
-    if (provider === 'payu') return resumePayU(req, res, order);
-    if (provider === 'razorpay') return resumeRazorpay(req, res, order, user);
-    return json(req, res, 409, { error: 'This payment provider cannot be resumed.' });
+    const gatewayOrder = await loadRazorpayOrder(order.razorpay_order_id);
+    const expectedAmount = Math.round(Number(order.total_amount) * 100);
+    if (String(gatewayOrder.id) !== String(order.razorpay_order_id) || Number(gatewayOrder.amount) !== expectedAmount) {
+      return json(req, res, 409, { error: 'Payment details could not be confirmed. Please contact Customer Care.' });
+    }
+    if (String(gatewayOrder.status || '').toLowerCase() === 'paid') {
+      return json(req, res, 202, {
+        captured: true,
+        recoverable: true,
+        store_order_id: order.id,
+        display_order_id: order.display_order_id,
+        message: 'Payment has been received and is being confirmed. Please do not pay again.'
+      });
+    }
+
+    const createdAt = new Date(order.created_at).getTime();
+    if (Number.isFinite(createdAt) && Date.now() - createdAt > MAX_PAYMENT_AGE_MS) {
+      await expireOrder(order);
+      return json(req, res, 409, {
+        error: 'This payment session has expired. Return to your cart to start a new checkout.',
+        restart_checkout: true,
+        store_order_id: order.id,
+        display_order_id: order.display_order_id
+      });
+    }
+
+    return json(req, res, 200, {
+      completed: false,
+      status: status || 'created',
+      key_id: KEY_ID,
+      store_order_id: order.id,
+      display_order_id: order.display_order_id,
+      order: {
+        id: gatewayOrder.id,
+        amount: Number(gatewayOrder.amount),
+        currency: gatewayOrder.currency || order.currency || 'INR'
+      },
+      customer: {
+        name: order.customer_name || '',
+        email: order.customer_email || user.email || '',
+        phone: order.customer_phone || ''
+      }
+    });
   } catch (error) {
     console.error('resume-payment error:', error);
     return json(req, res, 400, { error: error.message || 'Unable to resume payment.' });

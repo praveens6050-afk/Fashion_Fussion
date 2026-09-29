@@ -9,10 +9,10 @@ let order=null,session=null,busy=false,autoRetryStarted=false;
 function params(){return new URLSearchParams(location.search);}
 function orderId(){const v=params().get('id')||params().get('order');return /^\d+$/.test(String(v||''))?Number(v):null;}
 function autoRetryRequested(){return params().get('autopay')==='1';}
-function paymentFocusRequested(){return location.hash==='#payment'||params().has('payment');}
+function paymentFocusRequested(){return location.hash==='#payment'||params().get('payment')==='1';}
 function clearAutoRetryFlag(){
   const url=new URL(location.href);url.searchParams.delete('autopay');
-  history.replaceState(null,'',url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():'')+url.hash);
+  history.replaceState(null,'',url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():''));
 }
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 
@@ -75,15 +75,6 @@ function loadRazorpay(){
   });
 }
 
-function submitPayU(gateway){
-  if(!gateway||gateway.provider!=='payu'||gateway.method!=='POST'||!gateway.action||!gateway.fields)throw new Error('PayU checkout could not be prepared.');
-  const action=new URL(gateway.action);
-  if(action.protocol!=='https:'||!['secure.payu.in','test.payu.in'].includes(action.hostname)||action.pathname!=='/_payment')throw new Error('Unexpected PayU payment destination.');
-  const form=document.createElement('form');form.method='POST';form.action=action.toString();form.style.display='none';form.acceptCharset='UTF-8';
-  Object.entries(gateway.fields).forEach(([name,value])=>{const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value==null?'':String(value);form.appendChild(input);});
-  document.body.appendChild(form);form.submit();
-}
-
 async function reconcile(){
   try{
     const d=await api('/api/reconcile-payment',{store_order_id:order.id});
@@ -96,7 +87,7 @@ async function reconcile(){
   return false;
 }
 
-async function confirmRazorpayPayment(details,resumeData){
+async function confirmPayment(details,resumeData){
   message('Payment received. Confirming your order…','good');
   try{
     const verified=await api('/api/verify-payment',{order_id:resumeData.order.id,razorpay_payment_id:details.razorpay_payment_id,razorpay_order_id:details.razorpay_order_id,razorpay_signature:details.razorpay_signature});
@@ -127,16 +118,10 @@ async function resume(){
     const d=await api('/api/resume-payment',{store_order_id:order.id});
     if(d.completed&&d.status==='paid'){location.href='order-confirmation.html?id='+encodeURIComponent(d.store_order_id||order.id);return;}
     if(d.captured){message(d.message||'Payment has been received and is being confirmed. Please do not pay again.','good');await reconcile();return;}
-    if(d.provider==='payu'||d.gateway?.provider==='payu'){
-      if(btn)btn.textContent='Redirecting to PayU…';
-      message('Redirecting to PayU secure payment…','good');
-      submitPayU(d.gateway);
-      return;
-    }
     if(!d.order?.id||!d.key_id)throw new Error('Online payment could not be prepared. Please try again.');
     await loadRazorpay();
     if(btn)btn.textContent='Complete payment';
-    const rz=new Razorpay({key:d.key_id,amount:d.order.amount,currency:d.order.currency||'INR',name:'Fashion Fussion',description:'Complete order payment',order_id:d.order.id,prefill:{name:d.customer?.name||order.customer_name||'',email:d.customer?.email||session.user.email||'',contact:d.customer?.phone||order.customer_phone||''},handler:payment=>confirmRazorpayPayment(payment,d),modal:{ondismiss:()=>message('Payment window closed. You can continue this payment later from the same order.')}});
+    const rz=new Razorpay({key:d.key_id,amount:d.order.amount,currency:d.order.currency||'INR',name:'Fashion Fussion',description:'Complete order payment',order_id:d.order.id,prefill:{name:d.customer?.name||order.customer_name||'',email:d.customer?.email||session.user.email||'',contact:d.customer?.phone||order.customer_phone||''},handler:payment=>confirmPayment(payment,d),modal:{ondismiss:()=>message('Payment window closed. You can continue this payment later from the same order.')}});
     rz.on('payment.failed',()=>message('Payment was not completed. You can safely try again from this same order.','bad'));
     rz.open();
   }catch(e){
@@ -150,7 +135,7 @@ async function resume(){
 async function init(){
   const id=orderId();if(!id||!window.supabaseClient)return;
   session=await authSession();if(!session?.user)return;
-  const {data,error}=await supabaseClient.from('orders').select('id,display_order_id,status,payment_method,payment_provider,payment_verified_at,total_amount,currency,razorpay_order_id,payu_txnid,customer_name,customer_email,customer_phone').eq('id',id).eq('user_id',session.user.id).maybeSingle();
+  const {data,error}=await supabaseClient.from('orders').select('id,display_order_id,status,payment_method,payment_verified_at,total_amount,currency,razorpay_order_id,customer_name,customer_email,customer_phone').eq('id',id).eq('user_id',session.user.id).maybeSingle();
   if(error||!data)return;order=data;
   let tries=0;const timer=setInterval(()=>{tries++;if(target()){clearInterval(timer);render();}else if(tries>80)clearInterval(timer);},100);
 }
