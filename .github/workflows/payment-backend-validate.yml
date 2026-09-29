@@ -1,0 +1,33 @@
+name: Payment Backend Validate
+
+on:
+  push:
+    branches: [cloudflare-customer]
+    paths:
+      - 'customer-panel/backend/**'
+      - '.github/workflows/payment-backend-validate.yml'
+  pull_request:
+    paths:
+      - 'customer-panel/backend/**'
+      - '.github/workflows/payment-backend-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  payment-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: customer-panel/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check payment backend
+        run: npm run check
+      - name: Run payment backend regression tests
+        run: npm test
