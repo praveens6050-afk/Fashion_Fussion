@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 
-const BASE = 'https://fashionfussion.in';
-const WWW = 'https://www.fashionfussion.in';
+const BASE = 'https://www.fashionfussion.in';
+const APEX = 'https://fashionfussion.in';
 const STEP_TIMEOUT = 20000;
 const failures = [];
 
@@ -62,7 +62,7 @@ async function expectLoginRedirect(browser, path) {
   try {
     const response = await page.goto(BASE + path, { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT });
     if (!response || !response.ok()) throw new Error(`${path} returned ${response && response.status()}`);
-    await page.waitForURL(url => cleanPath(url) === '/login', { timeout: STEP_TIMEOUT });
+    await page.waitForURL(url => cleanPath(url) === '/login' && url.hostname === 'www.fashionfussion.in', { timeout: STEP_TIMEOUT });
   } catch (error) {
     throw new Error(`${path} did not redirect signed-out customer to Login; current URL=${page.url()}; ${error.message}`);
   } finally {
@@ -77,7 +77,7 @@ async function firstIndexedProductPath() {
     const response = await fetch(`${BASE}/api/product-sitemap`, { signal: controller.signal });
     if (!response.ok) throw new Error(`product sitemap returned ${response.status}`);
     const xml = await response.text();
-    const match = xml.match(/<loc>https:\/\/fashionfussion\.in\/(product\?id=\d+)<\/loc>/i);
+    const match = xml.match(/<loc>https:\/\/www\.fashionfussion\.in\/(product\?id=\d+)<\/loc>/i);
     return match ? `/${match[1]}` : null;
   } finally {
     clearTimeout(timer);
@@ -101,11 +101,12 @@ async function firstIndexedProductPath() {
     await open(desktop, '/');
     await noHorizontalOverflow(desktop, 'desktop home');
 
-    log('check www canonicalization');
+    log('check apex to www canonicalization');
     const canonicalPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     canonicalPage.setDefaultTimeout(STEP_TIMEOUT);
-    await canonicalPage.goto(WWW + '/', { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT });
-    await canonicalPage.waitForURL(url => url.hostname === 'fashionfussion.in', { timeout: STEP_TIMEOUT });
+    const apexResponse = await canonicalPage.goto(APEX + '/', { waitUntil: 'domcontentloaded', timeout: STEP_TIMEOUT });
+    if (!apexResponse || !apexResponse.ok()) throw new Error(`Apex redirect returned ${apexResponse && apexResponse.status()}`);
+    await canonicalPage.waitForURL(url => url.hostname === 'www.fashionfussion.in', { timeout: STEP_TIMEOUT });
     await canonicalPage.close();
 
     for (const path of ['/wishlist', '/order-details?id=1', '/quote-checkout?quote=1', '/checkout']) {
@@ -151,7 +152,7 @@ async function firstIndexedProductPath() {
     await mobile.close();
 
     if (failures.length) throw new Error(failures.join('\n'));
-    log('PASS live human browser smoke: canonical host, protected-route redirects, desktop/mobile critical pages, product rendering/SEO marker, signup validation, and overflow checks.');
+    log('PASS live human browser smoke: www canonical host, apex redirect, protected-route redirects, desktop/mobile critical pages, product rendering/SEO marker, signup validation, and overflow checks.');
   } finally {
     clearTimeout(watchdog);
     if (browser) await browser.close().catch(() => {});
