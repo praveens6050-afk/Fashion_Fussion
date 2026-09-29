@@ -1,0 +1,1 @@
+-- Restored migration history entry. Original SQL is recorded in production supabase_migrations.schema_migrations.
