@@ -2,6 +2,7 @@ import cancelOrder from '../../api/cancel-order.js';
 import createOrder from '../../api/create-order.js';
 import createPayUOrder from '../../api/create-payu-order.js';
 import createQuoteOrder from '../../api/create-quote-order.js';
+import paymentConfig from '../../api/payment-config.js';
 import payuCallback from '../../api/payu-callback.js';
 import productSitemap from '../../api/product-sitemap.js';
 import quoteOrder from '../../api/quote-order.js';
@@ -19,6 +20,7 @@ const handlers = {
   'create-order': createOrder,
   'create-payu-order': createPayUOrder,
   'create-quote-order': createQuoteOrder,
+  'payment-config': paymentConfig,
   'payu-callback': payuCallback,
   'product-sitemap': productSitemap,
   'quote-order': quoteOrder,
