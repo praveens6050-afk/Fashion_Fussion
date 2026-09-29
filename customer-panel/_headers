@@ -13,8 +13,11 @@
 /index.html
   Link: <https://fashionfussion.in/>; rel="canonical"
 
+/about
+  Link: <https://fashionfussion.in/about>; rel="canonical"
+
 /about.html
-  Link: <https://fashionfussion.in/about.html>; rel="canonical"
+  Link: <https://fashionfussion.in/about>; rel="canonical"
 
 /faq.html
   Link: <https://fashionfussion.in/faq.html>; rel="canonical"
