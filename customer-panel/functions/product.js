@@ -1,4 +1,4 @@
-const SITE_ORIGIN = 'https://fashionfussion.in';
+const SITE_ORIGIN = 'https://www.fashionfussion.in';
 const SITE_NAME = 'Fashion Fussion';
 
 function clean(value) {
