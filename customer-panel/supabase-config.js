@@ -85,7 +85,7 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
   document.documentElement.classList.add('ff-customer-compat','ff-page-'+compatPage);
   if(!homepageBundled){
     add('customer-browser-compat.js?v=20260923-responsive','data-customer-browser-compat');
-    style('customer-responsive.css?v=20260923-responsive','data-customer-responsive');
+    style('customer-responsive.css?v=20260929-responsive-freeze','data-customer-responsive');
   }
 
   async function start(){
@@ -102,8 +102,8 @@ window.FF_ADMIN_ORIGIN='https://admin.fashionfussion.in';
       add('account-role-guard.js?v=3','data-account-role-guard');
       add('support-chat.js?v=13','data-support-chat');
       add('account-refunds.js?v=3','data-account-refunds');
-      add('account-returns.js?v=2','data-account-returns');
-      add('account-business.js?v=5','data-account-business');
+      add('account-returns.js?v=3','data-account-returns');
+      add('account-business.js?v=6','data-account-business');
       add('account-repeat-order.js?v=2','data-account-repeat-order');
       add('account-cancel-promotion.js?v=1','data-account-cancel-promotion');
       add('account-extension-router.js?v=1','data-account-extension-router');
