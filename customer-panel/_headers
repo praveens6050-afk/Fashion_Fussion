@@ -8,40 +8,40 @@
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://checkout.razorpay.com https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://gmdevprqtvoshbbytsxf.supabase.co wss://gmdevprqtvoshbbytsxf.supabase.co https://*.razorpay.com https://cloudflareinsights.com; frame-src https://*.razorpay.com; upgrade-insecure-requests
 
 /
-  Link: <https://fashionfussion.in/>; rel="canonical"
+  Link: <https://www.fashionfussion.in/>; rel="canonical"
 
 /index.html
-  Link: <https://fashionfussion.in/>; rel="canonical"
+  Link: <https://www.fashionfussion.in/>; rel="canonical"
 
 /about
-  Link: <https://fashionfussion.in/about>; rel="canonical"
+  Link: <https://www.fashionfussion.in/about>; rel="canonical"
 
 /about.html
-  Link: <https://fashionfussion.in/about>; rel="canonical"
+  Link: <https://www.fashionfussion.in/about>; rel="canonical"
 
 /faq.html
-  Link: <https://fashionfussion.in/faq.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/faq.html>; rel="canonical"
 
 /business-buying.html
-  Link: <https://fashionfussion.in/business-buying.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/business-buying.html>; rel="canonical"
 
 /contact.html
-  Link: <https://fashionfussion.in/contact.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/contact.html>; rel="canonical"
 
 /terms.html
-  Link: <https://fashionfussion.in/terms.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/terms.html>; rel="canonical"
 
 /shipping-delivery.html
-  Link: <https://fashionfussion.in/shipping-delivery.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/shipping-delivery.html>; rel="canonical"
 
 /returns-refunds.html
-  Link: <https://fashionfussion.in/returns-refunds.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/returns-refunds.html>; rel="canonical"
 
 /privacy.html
-  Link: <https://fashionfussion.in/privacy.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/privacy.html>; rel="canonical"
 
 /security-policy.html
-  Link: <https://fashionfussion.in/security-policy.html>; rel="canonical"
+  Link: <https://www.fashionfussion.in/security-policy.html>; rel="canonical"
 
 /search
   X-Robots-Tag: noindex, follow
