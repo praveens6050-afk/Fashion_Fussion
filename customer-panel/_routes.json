@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/api/*", "/product", "/about", "/about.html", "/images/products/*"],
+  "include": ["/api/*", "/product", "/about", "/about.html", "/images/*"],
   "exclude": []
 }
