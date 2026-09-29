@@ -21,7 +21,7 @@ jobs:
       - name: Wait for exact Cloudflare production commit
         env:
           EXPECTED_SHA: ${{ github.sha }}
-          RELEASE_URL: https://fashionfussion.in/release.json
+          RELEASE_URL: https://www.fashionfussion.in/release.json
         run: |
           set -euo pipefail
           for attempt in $(seq 1 36); do
@@ -40,11 +40,12 @@ jobs:
       - name: Verify production domains and security headers
         run: |
           set -euo pipefail
-          home="$(curl --fail --silent --show-error --max-time 20 https://fashionfussion.in/)"
+          home="$(curl --fail --silent --show-error --max-time 20 https://www.fashionfussion.in/)"
           grep -Eq 'Fashion[ _]Fussion' <<<"$home"
-          canonical="$(curl --fail --silent --show-error --max-time 20 https://www.fashionfussion.in/)"
-          grep -q 'data-canonical-host' <<<"$canonical"
-          headers="$(curl --fail --silent --show-error --max-time 20 -I https://fashionfussion.in/)"
+          apex_headers="$(curl --silent --show-error --max-time 20 -I https://fashionfussion.in/)"
+          grep -Eq '^HTTP/[^ ]+ 301' <<<"$apex_headers"
+          grep -qi '^location: https://www\.fashionfussion\.in/' <<<"$apex_headers"
+          headers="$(curl --fail --silent --show-error --max-time 20 -I https://www.fashionfussion.in/)"
           grep -qi '^x-content-type-options: nosniff' <<<"$headers"
           grep -qi '^content-security-policy:' <<<"$headers"
 
@@ -52,7 +53,7 @@ jobs:
         run: |
           node - <<'NODE'
           (async()=>{
-            const base='https://fashionfussion.in';
+            const base='https://www.fashionfussion.in';
             const privateRoutes=['/account','/cart','/checkout','/quote-checkout','/login','/signup','/reset-password','/wishlist','/notifications','/coupons','/gift-cards','/order-confirmation','/order-details'];
             for(const path of privateRoutes){
               const response=await fetch(base+path,{redirect:'follow'});
@@ -97,7 +98,7 @@ jobs:
               ['/product',/(Product|Loading)/i]
             ];
             for (const [path,marker] of pages) {
-              const response=await fetch('https://fashionfussion.in'+path,{redirect:'follow'});
+              const response=await fetch('https://www.fashionfussion.in'+path,{redirect:'follow'});
               if(!response.ok) throw new Error(`${path} returned ${response.status}`);
               const text=await response.text();
               if(!marker.test(text)) throw new Error(`${path} missing expected page marker ${marker}`);
@@ -111,7 +112,7 @@ jobs:
         run: |
           node - <<'NODE'
           (async()=>{
-            const base='https://fashionfussion.in';
+            const base='https://www.fashionfussion.in';
             const shipping=await fetch(base+'/api/shipping-status',{
               method:'POST',
               headers:{'content-type':'application/json',authorization:'Bearer invalid-production-smoke-token'},
@@ -130,15 +131,15 @@ jobs:
         run: |
           node - <<'NODE'
           (async()=>{
-            const base='https://fashionfussion.in';
+            const base='https://www.fashionfussion.in';
             const sitemap=await fetch(base+'/api/product-sitemap',{redirect:'follow'});
             const sitemapText=await sitemap.text();
             if(!sitemap.ok) throw new Error(`product sitemap returned ${sitemap.status}: ${sitemapText.slice(0,200)}`);
             const sitemapType=String(sitemap.headers.get('content-type')||'').toLowerCase();
             if(!sitemapType.includes('application/xml')) throw new Error(`product sitemap content-type is ${sitemapType}`);
             if(!/<urlset\b/i.test(sitemapText)) throw new Error('product sitemap missing urlset');
-            const loc=sitemapText.match(/<loc>(https:\/\/fashionfussion\.in\/product\?id=(\d+))<\/loc>/i);
-            if(!loc) throw new Error('product sitemap has no canonical product URL');
+            const loc=sitemapText.match(/<loc>(https:\/\/www\.fashionfussion\.in\/product\?id=(\d+))<\/loc>/i);
+            if(!loc) throw new Error('product sitemap has no canonical www product URL');
             const productUrl=loc[1];
             const productId=loc[2];
 
@@ -170,14 +171,14 @@ jobs:
 
             const robotsTxt=await fetch(base+'/robots.txt');
             const robotsText=await robotsTxt.text();
-            if(!robotsTxt.ok||!robotsText.includes('Sitemap: https://fashionfussion.in/api/product-sitemap')) throw new Error('robots.txt missing product sitemap declaration');
+            if(!robotsTxt.ok||!robotsText.includes('Sitemap: https://www.fashionfussion.in/api/product-sitemap')) throw new Error('robots.txt missing www product sitemap declaration');
             console.log(`PASS product SEO ${productUrl}, dynamic sitemap, missing-product noindex`);
           })().catch(error=>{console.error(error);process.exit(1)});
           NODE
 
       - name: Cross-panel Cloudflare smoke
         env:
-          CUSTOMER_URL: https://fashionfussion.in
+          CUSTOMER_URL: https://www.fashionfussion.in
           ADMIN_URL: https://admin.fashionfussion.in
           SELLER_URL: https://seller.fashionfussion.in
         run: node .github/cloudflare-smoke.mjs
