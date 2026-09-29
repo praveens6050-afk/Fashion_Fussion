@@ -10,6 +10,11 @@ const {
   getSupabaseUser,
   roundMoney
 } = require('../lib');
+const {
+  checkRefundStatus: checkPayURefundStatus,
+  refundDetailFromStatus,
+  refundTokenForOrder
+} = require('../payu');
 
 async function rest(path, options = {}) {
   const response = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
@@ -40,7 +45,7 @@ function pricing(order) {
   return { delivery, refundable };
 }
 
-function refundReference(refund) {
+function razorpayRefundReference(refund) {
   return refund?.acquirer_data?.arn || refund?.acquirer_data?.rrn || refund?.acquirer_data?.utr || null;
 }
 
@@ -48,12 +53,12 @@ async function loadOrder(userId, orderId) {
   const rows = await rest(
     'orders?id=eq.' + encodeURIComponent(orderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,display_order_id,user_id,status,payment_method,fulfillment_status,total_amount,items,coupon_discount,gift_card_discount,razorpay_payment_id,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1'
+    '&select=id,display_order_id,user_id,status,payment_method,payment_provider,fulfillment_status,total_amount,items,coupon_discount,gift_card_discount,razorpay_payment_id,payu_mihpayid,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1'
   );
   return rows?.[0] || null;
 }
 
-async function fetchRefunds(paymentId) {
+async function fetchRazorpayRefunds(paymentId) {
   if (!KEY_ID || !KEY_SECRET) {
     const error = new Error('Refund service is not configured');
     error.status = 503;
@@ -72,7 +77,7 @@ async function fetchRefunds(paymentId) {
   return Array.isArray(data.items) ? data.items : [];
 }
 
-function findStoreRefund(refunds, order, expectedPaise) {
+function findRazorpayStoreRefund(refunds, order, expectedPaise) {
   const receipt = 'FF_CANCEL_' + String(order.id);
   return refunds
     .filter(refund =>
@@ -87,12 +92,51 @@ function findStoreRefund(refunds, order, expectedPaise) {
     .sort((a, b) => Number(b?.created_at || 0) - Number(a?.created_at || 0))[0] || null;
 }
 
+function normalizeRazorpayRefund(refund) {
+  if (!refund) return null;
+  return {
+    id: refund.id || null,
+    status: String(refund.status || '').toLowerCase(),
+    amount: roundMoney(Number(refund.amount || 0) / 100),
+    reference: razorpayRefundReference(refund),
+    created_at: refund.created_at || null,
+    speed: refund.speed_processed || refund.speed_requested || null,
+    provider: 'razorpay'
+  };
+}
+
+async function fetchPayURefund(order) {
+  if (!order.payu_mihpayid || !order.refund_id) return null;
+  const data = await checkPayURefundStatus(order.refund_id);
+  const detail = refundDetailFromStatus(data, order.refund_id);
+  if (!detail || String(detail.action || '').toLowerCase() !== 'refund') return null;
+  if (String(detail.mihpayid || '').trim() !== String(order.payu_mihpayid).trim()) {
+    const error = new Error('PayU refund payment reference mismatch');
+    error.status = 409;
+    throw error;
+  }
+  if (String(detail.token || '').trim() && String(detail.token).trim() !== refundTokenForOrder(order.id)) {
+    const error = new Error('PayU refund token mismatch');
+    error.status = 409;
+    throw error;
+  }
+  return {
+    id: String(detail.request_id || order.refund_id),
+    status: String(detail.status || '').toLowerCase(),
+    amount: roundMoney(detail.amt || 0),
+    reference: detail.bank_arn || detail.bank_ref_num || order.refund_reference || null,
+    created_at: null,
+    speed: detail.refund_mode || null,
+    provider: 'payu'
+  };
+}
+
 async function reconcileOrder(order, refund) {
   const refundStatus = String(refund?.status || '').toLowerCase();
   let nextStatus = null;
-  if (refundStatus === 'processed') nextStatus = 'refunded';
-  else if (refundStatus === 'failed') nextStatus = 'refund_failed';
-  else if (refundStatus === 'pending') nextStatus = 'refund_pending';
+  if (['processed', 'success'].includes(refundStatus)) nextStatus = 'refunded';
+  else if (['failed', 'failure'].includes(refundStatus)) nextStatus = 'refund_failed';
+  else if (refundStatus) nextStatus = 'refund_pending';
   if (!nextStatus) return order.status;
 
   const allowedCurrent = ['paid', 'refund_pending', 'refund_initiated', 'refund_failed', 'refunded'];
@@ -112,13 +156,25 @@ async function reconcileOrder(order, refund) {
         fulfillment_updated_at: now,
         refund_id: refund.id || order.refund_id || null,
         refund_status: refund.status || null,
-        refund_reference: refundReference(refund) || order.refund_reference || null,
-        refund_amount: roundMoney(Number(refund.amount || 0) / 100),
+        refund_reference: refund.reference || order.refund_reference || null,
+        refund_amount: roundMoney(refund.amount || order.refund_amount || 0),
         refund_updated_at: now
       })
     }
   );
   return updated?.[0]?.status || order.status;
+}
+
+function storedRefund(order) {
+  return order.refund_id ? {
+    id: order.refund_id,
+    status: order.refund_status || null,
+    amount: order.refund_amount == null ? null : roundMoney(order.refund_amount),
+    destination: 'original_payment_method',
+    reference: order.refund_reference || null,
+    updated_at: order.refund_updated_at || null,
+    provider: order.payment_provider || null
+  } : null;
 }
 
 module.exports = async function refundStatus(req, res) {
@@ -133,9 +189,7 @@ module.exports = async function refundStatus(req, res) {
     const user = await getSupabaseUser(req);
     const body = await readBody(req);
     const orderId = Number(body.order_id);
-    if (!Number.isInteger(orderId) || orderId < 1) {
-      return json(req, res, 400, { error: 'Invalid order ID' });
-    }
+    if (!Number.isInteger(orderId) || orderId < 1) return json(req, res, 400, { error: 'Invalid order ID' });
 
     const order = await loadOrder(user.id, orderId);
     if (!order) return json(req, res, 404, { error: 'Order not found' });
@@ -146,31 +200,47 @@ module.exports = async function refundStatus(req, res) {
         message: 'This order does not use a prepaid payment method.'
       });
     }
-    if (!order.razorpay_payment_id) {
-      return json(req, res, 200, {
-        reconciled: false,
-        status: order.status,
-        message: 'No Razorpay payment reference is available for this order.'
-      });
-    }
 
     const breakdown = pricing(order);
-    const expectedPaise = Math.round(breakdown.refundable * 100);
-    const refunds = await fetchRefunds(order.razorpay_payment_id);
-    const refund = findStoreRefund(refunds, order, expectedPaise);
+    const provider = String(order.payment_provider || (order.payu_mihpayid ? 'payu' : 'razorpay')).toLowerCase();
+    let refund = null;
+
+    if (provider === 'payu') {
+      if (!order.payu_mihpayid || !order.refund_id) {
+        return json(req, res, 200, {
+          reconciled: false,
+          status: order.status,
+          refund: storedRefund(order),
+          refundable_amount: breakdown.refundable,
+          non_refundable_delivery: breakdown.delivery
+        });
+      }
+      refund = await fetchPayURefund(order);
+      if (refund && Math.abs(roundMoney(refund.amount) - roundMoney(order.refund_amount || breakdown.refundable)) > 0.009) {
+        const error = new Error('PayU refund amount does not match this order');
+        error.status = 409;
+        throw error;
+      }
+    } else if (provider === 'razorpay') {
+      if (!order.razorpay_payment_id) {
+        return json(req, res, 200, {
+          reconciled: false,
+          status: order.status,
+          message: 'No Razorpay payment reference is available for this order.'
+        });
+      }
+      const expectedPaise = Math.round(breakdown.refundable * 100);
+      const refunds = await fetchRazorpayRefunds(order.razorpay_payment_id);
+      refund = normalizeRazorpayRefund(findRazorpayStoreRefund(refunds, order, expectedPaise));
+    } else {
+      return json(req, res, 409, { error: 'Refund status is not supported for this payment provider.' });
+    }
 
     if (!refund) {
       return json(req, res, 200, {
         reconciled: false,
         status: order.status,
-        refund: order.refund_id ? {
-          id: order.refund_id,
-          status: order.refund_status || null,
-          amount: order.refund_amount == null ? null : roundMoney(order.refund_amount),
-          destination: 'original_payment_method',
-          reference: order.refund_reference || null,
-          updated_at: order.refund_updated_at || null
-        } : null,
+        refund: storedRefund(order),
         refundable_amount: breakdown.refundable,
         non_refundable_delivery: breakdown.delivery
       });
@@ -185,11 +255,12 @@ module.exports = async function refundStatus(req, res) {
       refund: {
         id: refund.id,
         status: refund.status || null,
-        amount: roundMoney(Number(refund.amount || 0) / 100),
+        amount: roundMoney(refund.amount || 0),
         destination: 'original_payment_method',
-        reference: refundReference(refund) || order.refund_reference || null,
+        reference: refund.reference || order.refund_reference || null,
         created_at: refund.created_at || null,
-        speed: refund.speed_processed || refund.speed_requested || null
+        speed: refund.speed || null,
+        provider: refund.provider
       },
       refundable_amount: breakdown.refundable,
       non_refundable_delivery: breakdown.delivery
