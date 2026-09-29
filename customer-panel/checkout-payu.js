@@ -4,6 +4,7 @@
 const BACKEND_URL = window.FF_API_ORIGIN || '';
 const CART_KEY = 'fashion_fussion_cart';
 const CHECKOUT_KEY = 'fashion_fussion_checkout_key';
+const PAYU_PENDING_KEY = 'fashion_fussion_payu_pending_order';
 let payuActive = false;
 let busy = false;
 
@@ -137,16 +138,21 @@ async function payWithPayU() {
     if (data.completed) {
       localStorage.removeItem(CART_KEY);
       sessionStorage.removeItem(CHECKOUT_KEY);
+      sessionStorage.removeItem(PAYU_PENDING_KEY);
       location.href = 'order-confirmation.html?id=' + encodeURIComponent(data.store_order_id);
       return;
     }
     if (!data.gateway) throw new Error('PayU checkout could not be prepared.');
+    sessionStorage.setItem(PAYU_PENDING_KEY, String(data.store_order_id));
     if (btn) btn.textContent = 'REDIRECTING TO PAYU...';
     setStatus('Redirecting to PayU secure payment…', 'ok');
     submitPayU(data.gateway);
   } catch (error) {
     console.error('PayU checkout error:', error);
-    if (error.data?.retry_with_new_checkout) sessionStorage.removeItem(CHECKOUT_KEY);
+    if (error.data?.retry_with_new_checkout) {
+      sessionStorage.removeItem(CHECKOUT_KEY);
+      sessionStorage.removeItem(PAYU_PENDING_KEY);
+    }
     setStatus(safe(error, 'Unable to start PayU checkout. Please try again.'));
     busy = false;
     if (btn) {
