@@ -6,9 +6,10 @@ const PAYU_SALT = String(process.env.PAYU_SALT || '').trim();
 const PAYU_ENV = String(process.env.PAYU_ENV || 'production').trim().toLowerCase();
 const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || 'https://fashionfussion.in').trim().replace(/\/+$/, '');
 const PAYU_PAYMENT_URL = PAYU_ENV === 'test' ? 'https://test.payu.in/_payment' : 'https://secure.payu.in/_payment';
-const PAYU_VERIFY_URL = PAYU_ENV === 'test'
+const PAYU_POSTSERVICE_URL = PAYU_ENV === 'test'
   ? 'https://test.payu.in/merchant/postservice.php?form=2'
   : 'https://info.payu.in/merchant/postservice.php?form=2';
+const PAYU_VERIFY_URL = PAYU_POSTSERVICE_URL;
 
 function sha512(value) {
   return crypto.createHash('sha512').update(String(value), 'utf8').digest('hex');
@@ -35,6 +36,14 @@ function txnidForOrder(orderId) {
   const txnid = 'FF' + id;
   if (txnid.length > 25) throw new Error('PayU transaction ID is too long');
   return txnid;
+}
+
+function refundTokenForOrder(orderId) {
+  const id = String(orderId || '').replace(/[^A-Za-z0-9]/g, '');
+  if (!id) throw new Error('Cannot create PayU refund token');
+  const token = 'FFR' + id;
+  if (token.length > 23) throw new Error('PayU refund token is too long');
+  return token;
 }
 
 function normalizePhone(value) {
@@ -134,25 +143,37 @@ function verifyResponseHash(payload) {
   return safeEqualText(sha512(responseHashSequence(payload)), provided);
 }
 
-async function verifyPayment(txnid) {
+function postServiceHash(command, var1) {
   assertPayUConfigured();
-  const command = 'verify_payment';
-  const id = String(txnid || '').trim();
-  if (!id) throw new Error('PayU transaction ID is required');
+  return sha512(PAYU_MERCHANT_KEY + '|' + String(command) + '|' + String(var1) + '|' + PAYU_SALT);
+}
+
+async function postService(command, var1, extra = {}) {
+  assertPayUConfigured();
+  const first = String(var1 || '').trim();
+  if (!first) throw new Error('PayU API reference is required');
   const body = new URLSearchParams({
     key: PAYU_MERCHANT_KEY,
-    command,
-    var1: id,
-    hash: sha512(PAYU_MERCHANT_KEY + '|' + command + '|' + id + '|' + PAYU_SALT)
+    command: String(command),
+    var1: first,
+    ...Object.fromEntries(Object.entries(extra).map(([key, value]) => [key, value == null ? '' : String(value)])),
+    hash: postServiceHash(command, first)
   });
-  const response = await fetch(PAYU_VERIFY_URL, {
+  const response = await fetch(PAYU_POSTSERVICE_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
     body: body.toString()
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok || !data || typeof data !== 'object') throw new Error('Could not verify payment with PayU');
+  if (!response.ok || !data || typeof data !== 'object') throw new Error('PayU API request failed');
   return data;
+}
+
+async function verifyPayment(txnid) {
+  return postService('verify_payment', txnid);
 }
 
 function transactionFromVerification(data, txnid) {
@@ -165,19 +186,73 @@ function verifiedSuccess(detail) {
   return String(detail?.status || '').toLowerCase() === 'success';
 }
 
+async function createRefund(mihpayid, orderId, amount) {
+  const token = refundTokenForOrder(orderId);
+  const data = await postService('cancel_refund_transaction', mihpayid, {
+    var2: token,
+    var3: formatAmount(amount),
+    var5: PUBLIC_SITE_URL + '/api/payu-refund-callback',
+    var9: JSON.stringify({ refundDetails: { remarks: 'Customer requested refund order ' + String(orderId) } })
+  });
+  const success = Number(data.status) === 1 || String(data.error_code || '') === '102';
+  if (!success) {
+    const error = new Error(String(data.msg || 'PayU refund request failed'));
+    error.payu = data;
+    throw error;
+  }
+  return {
+    raw: data,
+    token,
+    request_id: String(data.request_id || data.txn_update_id || '').trim() || null,
+    mihpayid: String(data.mihpayid || mihpayid).trim(),
+    bank_ref_num: data.bank_ref_num == null ? null : String(data.bank_ref_num),
+    status: 'pending',
+    message: String(data.msg || 'Refund request queued')
+  };
+}
+
+async function checkRefundStatus(requestId) {
+  return postService('check_action_status', requestId);
+}
+
+function refundDetailFromStatus(data, requestId) {
+  const root = data && typeof data.transaction_details === 'object' ? data.transaction_details : null;
+  if (!root) return null;
+  const requested = root[String(requestId)];
+  if (requested && typeof requested === 'object') {
+    if (requested.request_id || requested.action) return requested;
+    const nested = requested[String(requestId)] || requested[Object.keys(requested)[0]];
+    if (nested && typeof nested === 'object') return nested;
+  }
+  for (const outer of Object.values(root)) {
+    if (!outer || typeof outer !== 'object') continue;
+    if (String(outer.request_id || '') === String(requestId)) return outer;
+    for (const candidate of Object.values(outer)) {
+      if (candidate && typeof candidate === 'object' && String(candidate.request_id || '') === String(requestId)) return candidate;
+    }
+  }
+  return null;
+}
+
 module.exports = {
   PAYU_MERCHANT_KEY,
   PAYU_ENV,
   PAYU_PAYMENT_URL,
+  PAYU_POSTSERVICE_URL,
   PAYU_VERIFY_URL,
   PUBLIC_SITE_URL,
   isPayUConfigured,
   assertPayUConfigured,
   formatAmount,
   txnidForOrder,
+  refundTokenForOrder,
   buildHostedCheckout,
   verifyResponseHash,
+  postService,
   verifyPayment,
   transactionFromVerification,
-  verifiedSuccess
+  verifiedSuccess,
+  createRefund,
+  checkRefundStatus,
+  refundDetailFromStatus
 };
