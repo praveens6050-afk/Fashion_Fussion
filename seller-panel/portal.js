@@ -87,5 +87,5 @@ loadSellerModule('product-image-upload.js?v=20260922-readiness');
 loadSellerModule('seller-support.js?v=20260930-support-reload');
 loadSellerModule('seller-kyc-status.js?v=20260930-kyc-copy');
 loadSellerModule('seller-finance-onboarding.js?v=20260930-live-finance');
-loadSellerModule('seller-live-operations.js?v=20260930-live-operations');
+loadSellerModule('seller-live-operations.js?v=20260930-live-operations-search');
 loadSellerModule('seller-hub-premium.js?v=20260921-hub');
