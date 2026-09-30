@@ -68,12 +68,13 @@ function loadSellerStyle(href){
 loadSellerStyle('sidebar-compact.css?v=20260921-menu');
 loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
 
-// Live catalog/review + support stay unchanged; premium module only improves presentation
-// and computes dashboard insights from the seller's already-loaded catalog data.
+// Live catalog/review, seller operations and support use database-authoritative data.
+// Premium modules only improve presentation around those live data sources.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
 loadSellerModule('seller-support.js?v=20260930-support-reload');
 loadSellerModule('seller-kyc-status.js?v=20260930-kyc-copy');
 loadSellerModule('seller-finance-onboarding.js?v=20260930-live-finance');
+loadSellerModule('seller-live-operations.js?v=20260930-live-operations');
 loadSellerModule('seller-hub-premium.js?v=20260921-hub');
