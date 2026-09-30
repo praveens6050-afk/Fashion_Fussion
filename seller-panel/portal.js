@@ -1,5 +1,6 @@
 'use strict';
 const SELLER_SESSION_KEY='ff_seller_session_v1';
+const SELLER_DEMO_STORAGE_KEY='ff_seller_panel_demo_v1';
 const portal$=id=>document.getElementById(id);
 
 function readSellerSession(){
@@ -17,6 +18,16 @@ function renderProvisionalIdentity(session){
   if(portal$('sellerAvatar'))portal$('sellerAvatar').textContent=initials;
   if(portal$('overviewGreeting'))portal$('overviewGreeting').textContent='Welcome, '+(name.split(/\s+/)[0]||storeName);
 }
+
+// app.js still supplies the shared rendering shell, but production must never fall
+// back to its historical browser-local demo catalog or mutate that catalog locally.
+try{localStorage.removeItem(SELLER_DEMO_STORAGE_KEY)}catch{}
+products=[];
+renderAll();
+submitForm=function(event){event.preventDefault();toast('Live seller catalog is still loading. Please try again.')};
+duplicateProduct=function(id){const live=window.SellerLiveIntegration;if(live?.duplicate)return live.duplicate(id);toast('Live seller catalog is still loading. Please try again.')};
+deleteProduct=function(id){const live=window.SellerLiveIntegration;if(live?.remove)return live.remove(id);toast('Live seller catalog is still loading. Please try again.')};
+resetDemo=function(){toast('Demo mode is disabled in the production seller portal.')};
 
 renderProvisionalIdentity(readSellerSession());
 
@@ -45,7 +56,7 @@ window.SellerCatalogBridge={
   getProducts:()=>products,
   makeId:()=>uid(),
   notify:message=>toast(message),
-  commit:next=>{products=Array.isArray(next)?next:[];persist();renderAll()},
+  commit:next=>{products=Array.isArray(next)?next:[];try{localStorage.removeItem(SELLER_DEMO_STORAGE_KEY)}catch{}renderAll()},
   close:()=>closeDrawer(),
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
