@@ -19,8 +19,6 @@ function renderProvisionalIdentity(session){
   if(portal$('overviewGreeting'))portal$('overviewGreeting').textContent='Welcome, '+(name.split(/\s+/)[0]||storeName);
 }
 
-// app.js still supplies the shared rendering shell, but production must never fall
-// back to its historical browser-local demo catalog or mutate that catalog locally.
 try{localStorage.removeItem(SELLER_DEMO_STORAGE_KEY)}catch{}
 products=[];
 renderAll();
@@ -37,18 +35,9 @@ if(!window.__sellerNavigationCaptureBound){
     const target=event.target;
     if(!(target instanceof Element))return;
     const add=target.closest('[data-action="add-product"]');
-    if(add){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      openDrawer();
-      return;
-    }
+    if(add){event.preventDefault();event.stopImmediatePropagation();openDrawer();return}
     const view=target.closest('[data-view]');
-    if(view&&view.dataset.view&&view.dataset.view!=='support-live'){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      switchView(view.dataset.view);
-    }
+    if(view&&view.dataset.view&&view.dataset.view!=='support-live'){event.preventDefault();event.stopImmediatePropagation();switchView(view.dataset.view)}
   },true);
 }
 
@@ -61,26 +50,13 @@ window.SellerCatalogBridge={
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
 
-function loadSellerModule(src){
-  const script=document.createElement('script');
-  script.src=src;
-  script.async=false;
-  document.body.appendChild(script);
-}
-
-function loadSellerStyle(href){
-  if(document.querySelector(`link[href="${href}"]`))return;
-  const link=document.createElement('link');
-  link.rel='stylesheet';
-  link.href=href;
-  document.head.appendChild(link);
-}
+function loadSellerModule(src){const script=document.createElement('script');script.src=src;script.async=false;document.body.appendChild(script)}
+function loadSellerStyle(href){if(document.querySelector(`link[href="${href}"]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.appendChild(link)}
 
 loadSellerStyle('sidebar-compact.css?v=20260921-menu');
 loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
+loadSellerStyle('seller-growth-program.css?v=20261001-growth');
 
-// Live catalog/review, seller operations and support use database-authoritative data.
-// Premium modules only improve presentation around those live data sources.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
@@ -88,4 +64,5 @@ loadSellerModule('seller-support.js?v=20260930-support-readiness');
 loadSellerModule('seller-kyc-status.js?v=20260930-kyc-copy');
 loadSellerModule('seller-finance-onboarding.js?v=20260930-live-finance');
 loadSellerModule('seller-live-operations.js?v=20260930-live-operations-search');
+loadSellerModule('seller-growth-program.js?v=20261001-growth');
 loadSellerModule('seller-hub-premium.js?v=20260921-hub');
