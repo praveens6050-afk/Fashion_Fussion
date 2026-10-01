@@ -164,7 +164,8 @@ jobs:
           grep -Fq "admin-product-image-upload.js" desktop-admin-loader.js
           grep -Fq "admin-payment-review.js" desktop-admin-loader.js
           grep -Fq "admin-recovery-status.js" desktop-admin-loader.js
-          for f in admin-orders.js admin-shipping.js admin-seller-approvals.js admin-seller-finance.js admin-checkout-health.js admin-returns.js admin-promotions.js admin-inventory.js admin-business-quotes.js; do grep -Fq "$f" supabase-config.js; done
+          grep -Fq "admin-seller-finance.js" desktop-admin-loader.js
+          for f in admin-orders.js admin-shipping.js admin-seller-approvals.js admin-checkout-health.js admin-returns.js admin-promotions.js admin-inventory.js admin-business-quotes.js; do grep -Fq "$f" supabase-config.js; done
           grep -Fq "admin_list_seller_finance_reviews" admin-seller-finance.js
           grep -Fq "admin_review_seller_finance" admin-seller-finance.js
           grep -Fq "admin_upsert_seller_settlement" admin-seller-finance.js
