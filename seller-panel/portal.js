@@ -1,5 +1,6 @@
 'use strict';
 const SELLER_SESSION_KEY='ff_seller_session_v1';
+const SELLER_DEMO_STORAGE_KEY='ff_seller_panel_demo_v1';
 const portal$=id=>document.getElementById(id);
 
 function readSellerSession(){
@@ -18,6 +19,14 @@ function renderProvisionalIdentity(session){
   if(portal$('overviewGreeting'))portal$('overviewGreeting').textContent='Welcome, '+(name.split(/\s+/)[0]||storeName);
 }
 
+try{localStorage.removeItem(SELLER_DEMO_STORAGE_KEY)}catch{}
+products=[];
+renderAll();
+submitForm=function(event){event.preventDefault();toast('Live seller catalog is still loading. Please try again.')};
+duplicateProduct=function(id){const live=window.SellerLiveIntegration;if(live?.duplicate)return live.duplicate(id);toast('Live seller catalog is still loading. Please try again.')};
+deleteProduct=function(id){const live=window.SellerLiveIntegration;if(live?.remove)return live.remove(id);toast('Live seller catalog is still loading. Please try again.')};
+resetDemo=function(){toast('Demo mode is disabled in the production seller portal.')};
+
 renderProvisionalIdentity(readSellerSession());
 
 if(!window.__sellerNavigationCaptureBound){
@@ -26,9 +35,9 @@ if(!window.__sellerNavigationCaptureBound){
     const target=event.target;
     if(!(target instanceof Element))return;
     const add=target.closest('[data-action="add-product"]');
-    if(add){event.preventDefault();event.stopImmediatePropagation();openDrawer();return;}
+    if(add){event.preventDefault();event.stopImmediatePropagation();openDrawer();return}
     const view=target.closest('[data-view]');
-    if(view&&view.dataset.view&&view.dataset.view!=='support-live'){event.preventDefault();event.stopImmediatePropagation();switchView(view.dataset.view);}
+    if(view&&view.dataset.view&&view.dataset.view!=='support-live'){event.preventDefault();event.stopImmediatePropagation();switchView(view.dataset.view)}
   },true);
 }
 
@@ -36,38 +45,24 @@ window.SellerCatalogBridge={
   getProducts:()=>products,
   makeId:()=>uid(),
   notify:message=>toast(message),
-  commit:next=>{products=Array.isArray(next)?next:[];renderAll()},
+  commit:next=>{products=Array.isArray(next)?next:[];try{localStorage.removeItem(SELLER_DEMO_STORAGE_KEY)}catch{}renderAll()},
   close:()=>closeDrawer(),
   showPendingProducts:()=>{activeStatus='pending';syncTabs();switchView('products');renderProducts()}
 };
 
-function loadSellerModule(src){const script=document.createElement('script');script.src=src;script.async=false;document.body.appendChild(script);}
-function loadSellerStyle(href){if(document.querySelector(`link[href="${href}"]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.appendChild(link);}
-function restoreSellerShell(){
-  if(document.documentElement.classList.contains('seller-live-loading'))return;
-  const main=document.querySelector('.main'),sidebar=document.querySelector('.sidebar'),topbar=document.querySelector('.topbar');
-  [main,sidebar,topbar].forEach(el=>{if(!el)return;el.style.setProperty('visibility','visible','important');el.style.setProperty('opacity','1','important');});
-  if(main)main.style.setProperty('display','block','important');
-  if(sidebar){sidebar.style.setProperty('display','flex','important');sidebar.style.setProperty('background','#101828','important');}
-  if(topbar)topbar.style.setProperty('display','flex','important');
-  const core=['overview','products','review','payments','profile'];
-  core.forEach(view=>{const button=document.querySelector(`.nav-item[data-view="${view}"]`);if(button){button.hidden=false;button.removeAttribute('aria-hidden');button.removeAttribute('tabindex')}});
-  if(!document.querySelector('.content.view.active')){document.getElementById('view-overview')?.classList.add('active');document.querySelector('.nav-item[data-view="overview"]')?.classList.add('active');}
-}
+function loadSellerModule(src){const script=document.createElement('script');script.src=src;script.async=false;document.body.appendChild(script)}
+function loadSellerStyle(href){if(document.querySelector(`link[href="${href}"]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.appendChild(link)}
 
-loadSellerStyle('sidebar-compact.css?v=20260925-staged-nav-fix');
-loadSellerStyle('seller-hub-premium.css?v=20260924-shell-fix');
-loadSellerStyle('seller-shell-recovery.css?v=20260924-shell-fix');
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreSellerShell,1800)},{once:true});
-else{restoreSellerShell();setTimeout(restoreSellerShell,500);setTimeout(restoreSellerShell,1800)}
+loadSellerStyle('sidebar-compact.css?v=20260921-menu');
+loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
+loadSellerStyle('seller-growth-program.css?v=20261001-growth');
 
-// Live catalog/review + support stay unchanged; operations and finance are seller-scoped through Supabase RPC.
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
-loadSellerModule('seller-catalog-drawer-hydration.js?v=20260925-edit-hydration-v2');
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
-loadSellerModule('seller-support.js?v=20260927-seller-support-email-v1');
-loadSellerModule('seller-operations-live.js?v=20260924-live');
-loadSellerModule('seller-finance-compliance-live.js?v=20260925-external-verification-v1');
-loadSellerModule('seller-settlement-live.js?v=20260924-deduction-breakdown-v2');
-loadSellerModule('seller-hub-premium.js?v=20260924-shell-fix');
+loadSellerModule('seller-support.js?v=20260930-support-readiness');
+loadSellerModule('seller-kyc-status.js?v=20260930-kyc-copy');
+loadSellerModule('seller-finance-onboarding.js?v=20260930-live-finance');
+loadSellerModule('seller-live-operations.js?v=20260930-live-operations-search');
+loadSellerModule('seller-growth-program.js?v=20261001-growth');
+loadSellerModule('seller-hub-premium.js?v=20260921-hub');
