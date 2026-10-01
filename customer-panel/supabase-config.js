@@ -52,6 +52,10 @@ window.FF_API_ORIGIN='';
     if(homepageBundled)return;
     if(['index.html','search.html','wishlist.html','product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
     if(['index.html','search.html','wishlist.html'].includes(page))add('catalog-cart-entry.js?v=1','data-catalog-cart-entry');
+    if(['index.html','search.html'].includes(page)){
+      style('marketplace-signals.css?v=20261001-phase2','data-marketplace-signals-style');
+      add('marketplace-signals.js?v=20261001-phase2','data-marketplace-signals');
+    }
     if(['index.html','account.html','quote-checkout.html'].includes(page))add('business-registration-trust.js?v=3','data-business-registration-trust');
     if(page==='product.html')add('product-variants.js?v=2','data-product-variants');
     if(['cart.html','checkout.html'].includes(page))add('variant-cart-ui.js?v=1','data-variant-cart-ui');
