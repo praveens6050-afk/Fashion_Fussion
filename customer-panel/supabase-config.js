@@ -48,6 +48,7 @@ window.FF_API_ORIGIN='';
 
   async function start(){
     try{await window.ffSupabaseReady;}catch(error){console.error('Supabase initialization failed',error);return;}
+    add('creator-attribution.js?v=20261001-growth','data-creator-attribution');
     if(homepageBundled)return;
     if(['index.html','search.html','wishlist.html','product.html','cart.html','checkout.html'].includes(page))add('variant-commerce.js?v=2','data-variant-commerce');
     if(['index.html','search.html','wishlist.html'].includes(page))add('catalog-cart-entry.js?v=1','data-catalog-cart-entry');
@@ -63,7 +64,11 @@ window.FF_API_ORIGIN='';
     if(page==='order-confirmation.html')add('order-business-details.js?v=1','data-order-business-details');
     if(page==='cart.html')add('commerce-bulk-display.js?v=1','data-commerce-bulk-display');
     if(page==='checkout.html'){add('commerce-bulk-display.js?v=1','data-commerce-bulk-display');add('checkout-business.js?v=1','data-checkout-business');}
-    if(page==='index.html')add('support-chat.js?v=11','data-support-chat');
+    if(page==='index.html'){
+      add('support-chat.js?v=11','data-support-chat');
+      style('marketplace-discovery.css?v=20261001-growth','data-marketplace-discovery-style');
+      add('marketplace-discovery.js?v=20261001-growth','data-marketplace-discovery');
+    }
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
