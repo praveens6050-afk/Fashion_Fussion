@@ -28,6 +28,7 @@ deleteProduct=function(id){const live=window.SellerLiveIntegration;if(live?.remo
 resetDemo=function(){toast('Demo mode is disabled in the production seller portal.')};
 
 renderProvisionalIdentity(readSellerSession());
+for(const id of ['profileFirstName','profileLastName'])portal$(id)?.removeAttribute('required');
 
 if(!window.__sellerNavigationCaptureBound){
   window.__sellerNavigationCaptureBound=true;
