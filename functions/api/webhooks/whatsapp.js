@@ -1,3 +1,5 @@
+import { routeInboundWhatsAppMessages, verifyMetaWebhookSignature } from './whatsapp-router.js';
+
 export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -21,15 +23,35 @@ export async function onRequestGet(context) {
 }
 
 export async function onRequestPost(context) {
-  const { request } = context;
+  const { request, env } = context;
+  const rawBody = await request.text();
+
+  if (env.WHATSAPP_APP_SECRET) {
+    const valid = await verifyMetaWebhookSignature(
+      rawBody,
+      request.headers.get('x-hub-signature-256'),
+      env.WHATSAPP_APP_SECRET,
+    );
+    if (!valid) return new Response('Invalid signature', { status: 401 });
+  }
 
   let payload;
   try {
-    payload = await request.json();
+    payload = JSON.parse(rawBody);
   } catch {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  console.log('WhatsApp webhook event', JSON.stringify(payload));
-  return new Response('EVENT_RECEIVED', { status: 200 });
+  if (payload?.object !== 'whatsapp_business_account') {
+    return new Response('Ignored', { status: 200 });
+  }
+
+  try {
+    const routed = await routeInboundWhatsAppMessages(payload, env);
+    console.log('WhatsApp webhook processed', JSON.stringify({ count: routed.length }));
+    return new Response('EVENT_RECEIVED', { status: 200 });
+  } catch (error) {
+    console.error('WhatsApp webhook routing failed', error?.message || String(error));
+    return new Response('Routing failed', { status: 500 });
+  }
 }
