@@ -6,12 +6,53 @@ function numberSet(value) {
   return new Set(String(value || '').split(',').map(digits).filter(Boolean));
 }
 
-function classifyRole(env, phone) {
+function fallbackRole(env, phone) {
   const normalized = digits(phone);
-  if (!normalized) return 'unknown';
-  if (numberSet(env.WHATSAPP_ADMIN_NUMBERS).has(normalized)) return 'admin';
-  if (numberSet(env.WHATSAPP_SELLER_NUMBERS).has(normalized)) return 'seller';
-  return 'customer';
+  if (!normalized) return { role: 'unknown', userId: null, source: 'fallback' };
+  if (numberSet(env.WHATSAPP_ADMIN_NUMBERS).has(normalized)) {
+    return { role: 'admin', userId: null, source: 'fallback' };
+  }
+  if (numberSet(env.WHATSAPP_SELLER_NUMBERS).has(normalized)) {
+    return { role: 'seller', userId: null, source: 'fallback' };
+  }
+  return { role: 'customer', userId: null, source: 'fallback' };
+}
+
+async function resolveRoleFromSupabase(env, phone) {
+  const normalized = digits(phone);
+  if (!normalized) return { role: 'unknown', userId: null, source: 'invalid' };
+
+  if (!env.SUPABASE_SERVER_KEY) return fallbackRole(env, normalized);
+
+  const url = 'https://gmdevprqtvoshbbytsxf.supabase.co/rest/v1/rpc/resolve_whatsapp_role';
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_SERVER_KEY,
+        authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ input_phone: normalized }),
+    });
+
+    if (!response.ok) {
+      console.error('WhatsApp role lookup failed', response.status, await response.text());
+      return fallbackRole(env, normalized);
+    }
+
+    const rows = await response.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    const role = ['admin', 'seller', 'customer', 'unknown'].includes(row?.role) ? row.role : 'customer';
+    return {
+      role,
+      userId: row?.user_id || null,
+      source: 'supabase',
+    };
+  } catch (error) {
+    console.error('WhatsApp role lookup exception', error?.message || String(error));
+    return fallbackRole(env, normalized);
+  }
 }
 
 function extractEvents(payload) {
@@ -40,24 +81,19 @@ function extractEvents(payload) {
   return events;
 }
 
-function routeEvent(env, event) {
-  const role = classifyRole(env, event.phone);
+async function routeEvent(env, event) {
+  const resolved = await resolveRoleFromSupabase(env, event.phone);
   console.log('WhatsApp routed event', JSON.stringify({
-    role,
+    role: resolved.role,
+    userId: resolved.userId,
+    source: resolved.source,
     type: event.type,
     phone: event.phone,
     messageId: event.messageId,
   }));
 
-  if (role === 'admin') {
-    console.log('WhatsApp route target: admin');
-  } else if (role === 'seller') {
-    console.log('WhatsApp route target: seller');
-  } else {
-    console.log('WhatsApp route target: customer');
-  }
-
-  return role;
+  console.log(`WhatsApp route target: ${resolved.role}`);
+  return resolved;
 }
 
 export async function onRequestGet(context) {
@@ -93,11 +129,16 @@ export async function onRequestPost(context) {
   }
 
   const events = extractEvents(payload);
-  const routed = events.map(event => ({
-    role: routeEvent(env, event),
-    type: event.type,
-    phone: event.phone,
-    messageId: event.messageId,
+  const routed = await Promise.all(events.map(async event => {
+    const resolved = await routeEvent(env, event);
+    return {
+      role: resolved.role,
+      userId: resolved.userId,
+      source: resolved.source,
+      type: event.type,
+      phone: event.phone,
+      messageId: event.messageId,
+    };
   }));
 
   console.log('WhatsApp webhook event', JSON.stringify({ eventCount: events.length, routed }));
