@@ -1,69 +1,92 @@
-function digits(value) {
-  return String(value || '').replace(/\D/g, '');
+function toHex(buffer) {
+  return Array.from(new Uint8Array(buffer), b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function numberSet(value) {
-  return new Set(String(value || '').split(',').map(digits).filter(Boolean));
+function safeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
-function classifyRole(env, phone) {
-  const normalized = digits(phone);
-  if (!normalized) return 'unknown';
-  if (numberSet(env.WHATSAPP_ADMIN_NUMBERS).has(normalized)) return 'admin';
-  if (numberSet(env.WHATSAPP_SELLER_NUMBERS).has(normalized)) return 'seller';
-  return 'customer';
+async function verifyMetaSignature(rawBody, signatureHeader, appSecret) {
+  if (!appSecret) return true;
+  if (!signatureHeader?.startsWith('sha256=')) return false;
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(appSecret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const digest = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
+  return safeEqual(`sha256=${toHex(digest)}`, signatureHeader);
 }
 
-function extractEvents(payload) {
-  const events = [];
+function extractInboundMessages(payload) {
+  const messages = [];
   for (const entry of payload?.entry || []) {
     for (const change of entry?.changes || []) {
       const value = change?.value || {};
-      for (const message of value.messages || []) {
-        events.push({
-          type: 'message',
-          phone: digits(message.from),
-          messageId: message.id || null,
-          payload: message,
-        });
-      }
-      for (const status of value.statuses || []) {
-        events.push({
-          type: 'status',
-          phone: digits(status.recipient_id),
-          messageId: status.id || null,
-          payload: status,
+      const metadata = value?.metadata || {};
+      for (const message of value?.messages || []) {
+        messages.push({
+          id: message?.id || null,
+          from: message?.from || null,
+          type: message?.type || null,
+          text: message?.text?.body || null,
+          timestamp: message?.timestamp || null,
+          phoneNumberId: metadata?.phone_number_id || null,
+          businessPhone: metadata?.display_phone_number || null,
+          raw: message || {},
         });
       }
     }
   }
-  return events;
+  return messages;
 }
 
-function routeEvent(env, event) {
-  const role = classifyRole(env, event.phone);
-  console.log('WhatsApp routed event', JSON.stringify({
-    role,
-    type: event.type,
-    phone: event.phone,
-    messageId: event.messageId,
-  }));
-
-  if (role === 'admin') {
-    console.log('WhatsApp route target: admin');
-  } else if (role === 'seller') {
-    console.log('WhatsApp route target: seller');
-  } else {
-    console.log('WhatsApp route target: customer');
+async function ingestMessage(env, message) {
+  const supabaseUrl = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
+  if (!supabaseUrl || !serviceKey) {
+    throw new Error('SUPABASE_URL and a server-side Supabase key are required');
   }
 
-  return role;
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/ingest_whatsapp_inbound_event`, {
+    method: 'POST',
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      p_external_message_id: message.id,
+      p_sender_phone: message.from,
+      p_message_type: message.type,
+      p_message_text: message.text,
+      p_phone_number_id: message.phoneNumberId,
+      p_business_phone: message.businessPhone,
+      p_meta_timestamp: message.timestamp
+        ? new Date(Number(message.timestamp) * 1000).toISOString()
+        : null,
+      p_raw_message: message.raw,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Supabase ingest failed (${response.status}): ${detail.slice(0, 500)}`);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data[0] : data;
 }
 
 export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
-
   const mode = url.searchParams.get('hub.mode');
   const token = url.searchParams.get('hub.verify_token');
   const challenge = url.searchParams.get('hub.challenge');
@@ -84,22 +107,46 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  const rawBody = await request.text();
+
+  if (env.WHATSAPP_APP_SECRET) {
+    const valid = await verifyMetaSignature(
+      rawBody,
+      request.headers.get('x-hub-signature-256'),
+      env.WHATSAPP_APP_SECRET,
+    );
+    if (!valid) return new Response('Invalid signature', { status: 401 });
+  }
 
   let payload;
   try {
-    payload = await request.json();
+    payload = JSON.parse(rawBody);
   } catch {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const events = extractEvents(payload);
-  const routed = events.map(event => ({
-    role: routeEvent(env, event),
-    type: event.type,
-    phone: event.phone,
-    messageId: event.messageId,
-  }));
+  if (payload?.object !== 'whatsapp_business_account') {
+    return new Response('Ignored', { status: 200 });
+  }
 
-  console.log('WhatsApp webhook event', JSON.stringify({ eventCount: events.length, routed }));
-  return new Response('EVENT_RECEIVED', { status: 200 });
+  const messages = extractInboundMessages(payload);
+  if (!messages.length) {
+    return new Response('EVENT_RECEIVED', { status: 200 });
+  }
+
+  try {
+    const routed = [];
+    for (const message of messages) {
+      if (!message.id || !message.from) continue;
+      routed.push(await ingestMessage(env, message));
+    }
+    console.log('WhatsApp inbound persisted', JSON.stringify({
+      count: routed.length,
+      roles: routed.map(row => row?.sender_role || null),
+    }));
+    return new Response('EVENT_RECEIVED', { status: 200 });
+  } catch (error) {
+    console.error('WhatsApp inbound routing failed', error?.message || String(error));
+    return new Response('Routing failed', { status: 500 });
+  }
 }
