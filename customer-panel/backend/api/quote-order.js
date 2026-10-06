@@ -37,6 +37,8 @@ async function enforceQuoteRateLimit(userId) {
   }
 }
 
+async function getWholesaleEligibility(userId){const [profile]=await one('profiles?id=eq.'+encodeURIComponent(userId)+'&select=account_type&limit=1').then(row=>row?[row]:[]);if(profile?.account_type!=='business')return false;const business=await one('business_profiles?user_id=eq.'+encodeURIComponent(userId)+'&select=gst_verification_status&limit=1');return business?.gst_verification_status==='verified'}
+
 async function redemptionCount(couponId) {
   const response = await fetch(
     SUPABASE_URL + '/rest/v1/coupon_redemptions?coupon_id=eq.' + encodeURIComponent(couponId) + '&select=id',
@@ -125,7 +127,8 @@ module.exports = async function quoteOrder(req, res) {
     const user = await getSupabaseUser(req);
     await enforceQuoteRateLimit(user.id);
     const body = await readBody(req);
-    const calc = await calculate(body.items);
+    const allowBulk = await getWholesaleEligibility(user.id);
+    const calc = await calculate(body.items, { allowBulk });
     const promo = await discounts(body, calc);
     const payment = paymentPricing(promo.payable, body.payment_method);
 
