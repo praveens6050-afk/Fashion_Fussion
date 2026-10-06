@@ -23,8 +23,14 @@ assert.strictEqual(cors({headers:{origin:'https://evil.example'}},badRes),false)
 const read=name=>fs.readFileSync(path.join(__dirname,'api',name),'utf8');
 const lib=fs.readFileSync(path.join(__dirname,'lib.js'),'utf8');
 for(const required of ['has_variants','getVariantsByIds','getInventoryByVariantIds','variant_id','product_variants','inventory_levels'])assert.ok(lib.includes(required),`Variant pricing must enforce ${required}`);
+for(const required of ['options.allowBulk===true','allowBulk&&product.bulk_enabled===true','bulk_pricing_eligible:allowBulk'])assert.ok(lib.includes(required),`Wholesale pricing must fail closed via ${required}`);
+
+const quotePricing=read('quote-order.js');
+for(const source of [quotePricing,read('create-order.js')]){for(const required of ['getWholesaleEligibility','account_type','gst_verification_status','verified','calculate(body.items'])assert.ok(source.includes(required),`Wholesale authorization must enforce ${required}`);assert.ok(!source.includes('business_invoice===true)business=businessSnapshot')||source.includes('getWholesaleEligibility'),'Business invoice selection must not be the wholesale authorization gate');}
+assert.ok(quotePricing.includes('calculate(body.items, { allowBulk })'),'Quote pricing must pass only server-derived bulk eligibility');
 
 const createOrder=read('create-order.js');
+assert.ok(createOrder.includes('calculate(body.items,{allowBulk})'),'Checkout pricing must pass only server-derived bulk eligibility');
 for(const required of ['reserve_order_inventory','release_order_inventory','finalize_cod_order_inventory','finalize_zero_value_order_inventory'])assert.ok(createOrder.includes(required),`Checkout inventory lifecycle must enforce ${required}`);
 
 const verifyPayment=read('verify-payment.js');
