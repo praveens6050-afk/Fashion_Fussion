@@ -15,12 +15,18 @@ function settlementSummary(){
  if(!rows.length)return '<p class="ff-finance-note">No settlement records available yet.</p>';
  return rows.slice(0,10).map(row=>{
   const id=esc(row.id??'—'),status=esc(statusLabel(row.status));
+  const values=['gross_amount','fees_amount','refunds_amount','net_amount'];
+  const complete=values.every(key=>row[key]!==null&&row[key]!==undefined&&Number.isFinite(Number(row[key])));
+  const paise=key=>Math.round(Number(row[key])*100);
+  const mismatch=complete&&(paise('gross_amount')-paise('fees_amount')-paise('refunds_amount')!==paise('net_amount'));
+  const warning=mismatch?'<div role="status" class="ff-finance-error">Settlement figures need review. Contact support before relying on this payout total.</div>':'';
+
   return '<div class="ff-finance-note" style="margin-top:8px"><strong>Settlement #'+id+'</strong> · '+status+
    '<div>Gross: '+esc(money(row.gross_amount))+' · Fees: '+esc(money(row.fees_amount))+
    ' · Refunds: '+esc(money(row.refunds_amount))+' · Net: <strong>'+esc(money(row.net_amount))+'</strong></div>'+
    '<div>Commission: '+esc(money(row.platform_commission_amount))+' · Commission GST: '+esc(money(row.commission_gst_amount))+
    ' · Payment: '+esc(money(row.payment_fee_amount))+' · Shipping: '+esc(money(row.shipping_deduction_amount))+
-   ' · Returns: '+esc(money(row.return_deduction_amount))+' · Other: '+esc(money(row.other_deduction_amount))+'</div>'+
+   ' · Returns: '+esc(money(row.return_deduction_amount))+' · Other: '+esc(money(row.other_deduction_amount))+'</div>'+warning+
    ((['platform_commission_amount','commission_gst_amount','payment_fee_amount','shipping_deduction_amount','return_deduction_amount','other_deduction_amount'].some(key=>row[key]===null||row[key]===undefined))?'<div>Detailed deductions are not available for this settlement. Contact support for an itemized statement.</div>':'')+'</div>';
  }).join('');
 }
