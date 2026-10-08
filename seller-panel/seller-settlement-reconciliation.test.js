@@ -17,4 +17,10 @@ assert.equal(reconcileSettlement({...base, shipping_deduction_amount:41}).feeBre
 assert.equal(reconcileSettlement({...base, payment_fee_amount:null}).breakdownComplete,false);
 assert.equal(reconcileSettlement({...base, gross_amount:1000.01}).netMatches,false);
 assert.throws(()=>reconcileSettlement({...base, fees_amount:'invalid'}), TypeError);
+
+// Guard against false positives when financial breakdown is incomplete.
+assert.equal(reconcileSettlement({...base, payment_fee_amount:null}).feeBreakdownMatches, null);
+assert.equal(reconcileSettlement({...base, payment_fee_amount:null}).needsReview, true);
+assert.equal(reconcileSettlement({...base, refunds_amount:51}).needsReview, true);
+
 console.log('seller settlement reconciliation tests passed');
