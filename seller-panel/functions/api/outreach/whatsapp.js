@@ -68,6 +68,41 @@ function maskedRecipient(to) {
   return phone ? '••••' + phone.slice(-4) : null;
 }
 
+function consentLedgerConfig(env) {
+  return {
+    url: String(env.SUPABASE_URL || '').replace(/\/$/, ''),
+    key: String(env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY || ''),
+  };
+}
+
+// A caller-supplied consent flag is not proof of opt-in. Check the locked-down
+// server-only ledger before approving a message or making any outbound API call.
+async function checkStoredConsent(env, message) {
+  const { url, key } = consentLedgerConfig(env);
+  if (!url || !key) throw new Error('WhatsApp consent ledger configuration is missing');
+  const phone = '+' + normalizePhone(message.to);
+  const purpose = message.consent.purpose;
+  const filters = new URLSearchParams({
+    phone_e164: 'eq.' + phone,
+    purpose: 'eq.' + purpose,
+    select: 'status,source,consented_at,revoked_at',
+    limit: '1',
+  });
+  const response = await fetch(url + '/rest/v1/whatsapp_contact_consents?' + filters.toString(), {
+    headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error('WhatsApp consent ledger lookup failed');
+  const rows = await response.json();
+  const stored = Array.isArray(rows) ? rows[0] : null;
+  if (!stored || stored.status !== 'opted_in' || stored.revoked_at) return false;
+  if (stored.source !== message.consent.source) return false;
+  // The caller must identify the same recorded consent event, not merely assert opt-in.
+  const submitted = Date.parse(message.consent.recordedAt);
+  const recorded = Date.parse(stored.consented_at);
+  return Number.isFinite(submitted) && Number.isFinite(recorded)
+    && Math.abs(submitted - recorded) < 1000;
+}
+
 async function sendTemplate(env, message) {
   const version = String(env.WHATSAPP_GRAPH_VERSION).replace(/^\//, '');
   const endpoint = `https://graph.facebook.com/${version}/${encodeURIComponent(env.WHATSAPP_PHONE_NUMBER_ID)}/messages`;
@@ -134,14 +169,35 @@ export async function onRequestPost(context) {
     consentIssue: consentError(message, index),
   }));
 
+  const ledgerConfig = consentLedgerConfig(env);
+  const ledgerConfigured = Boolean(ledgerConfig.url && ledgerConfig.key);
+  let ledgerAvailable = ledgerConfigured;
+  if (ledgerConfigured) {
+    // The database is authoritative; a failed lookup fails closed.
+    for (let i = 0; i < messages.length; i += 1) {
+      if (!preview[i].consentValid) {
+        preview[i].recordedOptIn = false;
+        continue;
+      }
+      try {
+        preview[i].recordedOptIn = await checkStoredConsent(env, messages[i]);
+      } catch {
+        ledgerAvailable = false;
+        preview[i].recordedOptIn = false;
+      }
+    }
+  } else {
+    for (const item of preview) item.recordedOptIn = false;
+  }
+
   // This protected preflight checks proposed messages without calling the Meta API.
   // It is the preferred first test for order updates and seller invitations.
   if (dryRun) {
     return json({
       dryRun: true,
       sent: 0,
-      ready: !missing.length && idValid && Boolean(allowed.size) && preview.every(x => x.templateAllowlisted && x.consentValid),
-      missingConfiguration: [...missing, ...(!idValid ? ['WHATSAPP_PHONE_NUMBER_ID (numeric Meta ID required)'] : []), ...(!allowed.size ? ['WHATSAPP_ALLOWED_TEMPLATES'] : [])],
+      ready: !missing.length && idValid && Boolean(allowed.size) && ledgerAvailable && preview.every(x => x.templateAllowlisted && x.consentValid && x.recordedOptIn),
+      missingConfiguration: [...missing, ...(!idValid ? ['WHATSAPP_PHONE_NUMBER_ID (numeric Meta ID required)'] : []), ...(!allowed.size ? ['WHATSAPP_ALLOWED_TEMPLATES'] : []), ...(!ledgerConfigured ? ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY)'] : []), ...(!ledgerAvailable && ledgerConfigured ? ['WHATSAPP_CONSENT_LEDGER_UNAVAILABLE'] : [])],
       preview,
     });
   }
@@ -149,6 +205,7 @@ export async function onRequestPost(context) {
   if (missing.length) return json({ error: 'WhatsApp outreach is not configured', missing }, 503);
   if (!idValid) return json({ error: 'WHATSAPP_PHONE_NUMBER_ID must be the numeric Phone Number ID from Meta WhatsApp Manager, not a WhatsApp mobile number.' }, 503);
   if (!allowed.size) return json({ error: 'WHATSAPP_ALLOWED_TEMPLATES must list approved template names before business-initiated messages are sent.' }, 503);
+  if (!ledgerAvailable) return json({ error: 'WhatsApp consent ledger is not available. Sending is disabled.' }, 503);
 
   for (let i = 0; i < messages.length; i += 1) {
     const issue = consentError(messages[i], i);
@@ -156,11 +213,17 @@ export async function onRequestPost(context) {
     if (!allowed.has(messages[i].templateName)) {
       return json({ error: `messages[${i}].templateName is not in WHATSAPP_ALLOWED_TEMPLATES` }, 400);
     }
+    if (!preview[i].recordedOptIn) return json({ error: `messages[${i}] has no matching active recorded WhatsApp opt-in for the specified purpose` }, 403);
   }
 
   const results = [];
   for (const message of messages) {
     try {
+      // Recheck immediately before each send in case the recipient opted out meanwhile.
+      if (!(await checkStoredConsent(env, message))) {
+        results.push({ to: maskedRecipient(message.to), ok: false, errorCode: 'CONSENT_REVOKED', errorMessage: 'No active recorded WhatsApp opt-in' });
+        continue;
+      }
       const result = await sendTemplate(env, message);
       results.push({ to: maskedRecipient(message.to), ...result });
     } catch (error) {
