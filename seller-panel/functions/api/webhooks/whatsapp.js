@@ -47,6 +47,54 @@ function extractInboundMessages(payload) {
   return messages;
 }
 
+
+const META_DELIVERY_STATUSES = new Set(['sent','delivered','read','failed']);
+
+// WhatsApp Cloud API statuses arrive under value.statuses, not value.messages.
+// Retain only message ID, status, timestamp and numeric Meta error code: no PII
+// or raw webhook payload is copied into the delivery-history table.
+function extractDeliveryStatuses(payload) {
+  const receipts = [];
+  for (const entry of (Array.isArray(payload?.entry) ? payload.entry : [])) {
+    for (const change of (Array.isArray(entry?.changes) ? entry.changes : [])) {
+      const statuses = change?.value?.statuses;
+      if (!Array.isArray(statuses)) continue;
+      for (const item of statuses) {
+        const providerMessageId = String(item?.id || '');
+        const status = String(item?.status || '').toLowerCase();
+        if (!providerMessageId.startsWith('wamid.') || providerMessageId.length > 255 || providerMessageId.length < 7 || /\s/.test(providerMessageId)
+            || !META_DELIVERY_STATUSES.has(status)) continue;
+        const seconds = Number(item?.timestamp);
+        if (!Number.isSafeInteger(seconds) || seconds < 1577836800) continue;
+        const eventAt = new Date(seconds * 1000);
+        if (!Number.isFinite(eventAt.getTime()) || eventAt.getTime() > Date.now() + 300000) continue;
+        const code = item?.errors?.[0]?.code;
+        const errorCode = code == null ? null : String(code).slice(0,64);
+        receipts.push({providerMessageId, status, eventAt: eventAt.toISOString(), errorCode});
+      }
+    }
+  }
+  return receipts;
+}
+
+async function ingestDeliveryStatus(env, receipt) {
+  const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
+  if (!base || !key) throw new Error('WhatsApp delivery database configuration missing');
+  const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_delivery_status', {
+    method: 'POST',
+    headers: {apikey:key, Authorization:'Bearer ' + key, 'content-type':'application/json'},
+    body: JSON.stringify({
+      p_provider_message_id:receipt.providerMessageId,
+      p_meta_status:receipt.status,
+      p_event_at:receipt.eventAt,
+      p_error_code:receipt.errorCode,
+    }),
+  });
+  if (!response.ok) throw new Error('Could not record WhatsApp Meta delivery status');
+  return response.json();
+}
+
 async function ingestMessage(env, message) {
   const supabaseUrl = String(env.SUPABASE_URL || '').replace(/\/$/, '');
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
@@ -144,14 +192,17 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   const rawBody = await request.text();
 
-  if (env.WHATSAPP_APP_SECRET) {
-    const valid = await verifyMetaSignature(
-      rawBody,
-      request.headers.get('x-hub-signature-256'),
-      env.WHATSAPP_APP_SECRET,
-    );
-    if (!valid) return new Response('Invalid signature', { status: 401 });
+  // Fail closed: never trust inbound content or delivery statuses if the
+  // Meta app-secret is unset. Meta signs webhooks with X-Hub-Signature-256.
+  if (!env.WHATSAPP_APP_SECRET) {
+    return new Response('Webhook signature verification is not configured', { status: 503 });
   }
+  const valid = await verifyMetaSignature(
+    rawBody,
+    request.headers.get('x-hub-signature-256'),
+    env.WHATSAPP_APP_SECRET,
+  );
+  if (!valid) return new Response('Invalid signature', { status: 401 });
 
   let payload;
   try {
@@ -165,8 +216,12 @@ export async function onRequestPost(context) {
   }
 
   const messages = extractInboundMessages(payload);
-  if (!messages.length) {
+  const receipts = extractDeliveryStatuses(payload);
+  if (!messages.length && !receipts.length) {
     return new Response('EVENT_RECEIVED', { status: 200 });
+  }
+  if (messages.length + receipts.length > 200) {
+    return new Response('Too many WhatsApp events in a single webhook', { status: 413 });
   }
 
   try {
@@ -176,13 +231,20 @@ export async function onRequestPost(context) {
       routed.push(await ingestMessage(env, message));
       await storeConsentCommand(env, message);
     }
-    console.log('WhatsApp inbound persisted', JSON.stringify({
-      count: routed.length,
-      roles: routed.map(row => row?.sender_role || null),
+    let recorded = 0, duplicates = 0, matchedOrders = 0;
+    for (const receipt of receipts) {
+      const result = await ingestDeliveryStatus(env, receipt);
+      if (result?.recorded === true) recorded += 1;
+      if (result?.duplicate === true) duplicates += 1;
+      if (result?.matched_order === true) matchedOrders += 1;
+    }
+    console.log('WhatsApp signed webhook processed', JSON.stringify({
+      inboundCount: routed.length, deliveryReceipts: receipts.length,
+      recorded, duplicates, matchedOrders,
     }));
     return new Response('EVENT_RECEIVED', { status: 200 });
   } catch (error) {
-    console.error('WhatsApp inbound routing failed', error?.message || String(error));
+    console.error('WhatsApp webhook persistence failed', error?.message || String(error));
     return new Response('Routing failed', { status: 500 });
   }
 }
