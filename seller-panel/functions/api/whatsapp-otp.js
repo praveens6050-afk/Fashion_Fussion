@@ -47,9 +47,9 @@ async function finalize(request,env,body){
   if(!row)throw Object.assign(new Error('No recent WhatsApp verification was found for this account. Verify your mobile number again.'),{status:409});
   const now=new Date().toISOString();
   if(audience==='seller'){
-    await rest(env,`seller_profiles?user_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({phone:String(row.phone_e164).replace(/^\\+91/,''),phone_verified_at:now,phone_verification_method:'whatsapp',updated_at:now})});
+    await rest(env,`seller_profiles?user_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({phone:String(row.phone_e164).replace(/^\+91/,''),phone_verified_at:now,phone_verification_method:'whatsapp',updated_at:now})});
   }else{
-    await rest(env,`profiles?id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({phone:String(row.phone_e164).replace(/^\\+91/,''),phone_verified_at:now,phone_verification_method:'whatsapp',updated_at:now})});
+    await rest(env,`profiles?id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({phone:String(row.phone_e164).replace(/^\+91/,''),phone_verified_at:now,phone_verification_method:'whatsapp',updated_at:now})});
   }
   await rest(env,`phone_otp_challenges?id=eq.${encodeURIComponent(row.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({consumed_at:now})});
   return{ok:true,verified:true,phone:String(row.phone_e164)};
