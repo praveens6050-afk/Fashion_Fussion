@@ -82,13 +82,10 @@ async function checkStoredConsent(env, message) {
   if (!url || !key) throw new Error('WhatsApp consent ledger configuration is missing');
   const phone = '+' + normalizePhone(message.to);
   const purpose = message.consent.purpose;
-  const filters = new URLSearchParams({
-    phone_e164: 'eq.' + phone,
-    purpose: 'eq.' + purpose,
-    select: 'status,source,consented_at,revoked_at',
-    limit: '1',
-  });
-  const response = await fetch(url + '/rest/v1/whatsapp_contact_consents?' + filters.toString(), {
+  const filters = 'phone_e164=eq.' + encodeURIComponent(phone)
+    + '&purpose=eq.' + encodeURIComponent(purpose)
+    + '&select=status,source,consented_at,revoked_at&limit=1';
+  const response = await fetch(url + '/rest/v1/whatsapp_contact_consents?' + filters, {
     headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' },
   });
   if (!response.ok) throw new Error('WhatsApp consent ledger lookup failed');
