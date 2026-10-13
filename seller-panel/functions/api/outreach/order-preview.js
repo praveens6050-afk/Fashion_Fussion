@@ -22,8 +22,11 @@ async function authorized(request, env) {
 }
 function digits(phone) {return String(phone||'').replace(/\D/g,'')}
 function e164(phone) {
-  const n=digits(phone);
-  if (/^[1-9]\d{7,14}$/.test(n)) return '+'+n;
+  const raw=String(phone||'').trim();
+  const n=digits(raw);
+  if(/^\d{10}$/.test(n))return '+91'+n;
+  if(/^91\d{10}$/.test(n))return '+'+n;
+  if(raw.startsWith('+')&&/^[1-9]\d{7,14}$/.test(n))return '+'+n;
   return null;
 }
 function maskPhone(phone) {const n=digits(phone);return n?'••••'+n.slice(-4):null}
