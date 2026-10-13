@@ -62,7 +62,7 @@ function extractDeliveryStatuses(payload) {
       for (const item of statuses) {
         const providerMessageId = String(item?.id || '');
         const status = String(item?.status || '').toLowerCase();
-        if (!/^wamid\.[a-zA-Z0-9._-]{1,249}$/.test(providerMessageId)
+        if (!providerMessageId.startsWith('wamid.') || providerMessageId.length > 255 || providerMessageId.length < 7 || /\s/.test(providerMessageId)
             || !META_DELIVERY_STATUSES.has(status)) continue;
         const seconds = Number(item?.timestamp);
         if (!Number.isSafeInteger(seconds) || seconds < 1577836800) continue;
