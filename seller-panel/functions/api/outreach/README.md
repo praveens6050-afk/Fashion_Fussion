@@ -135,3 +135,9 @@ Meta sends signed `statuses[]` callbacks to the existing `POST /api/webhooks/wha
 Use protected read-only `GET /api/outreach/delivery-receipts?limit=10` to inspect the latest statuses (provider message IDs masked). Protected `GET /api/outreach/order-outbox?limit=10` also includes current provider delivery state and timestamps. Both require `Authorization: Bearer <OUTREACH_API_TOKEN>`.
 
 **Sending remains off:** No order dispatcher, scheduler, cron job, payment-email integration or new outbound template sender is activated here. Actual signed Meta delivery callbacks must still be tested after the Cloudflare deployment before claiming end-to-end delivery success. This feature does not change Zoho Mail.
+
+## Zoho transactional email staging (no new emails sent)
+
+Production Supabase migration `zoho_transactional_order_email_staging_20261014` adds service-role-only RLS `zoho_order_email_outbox` and verified order/shipment update staging triggers, unique per `(order_id,event_type)`. Supports `order_confirmed`, `payment_successful`, `shipped`, `out_for_delivery`, `delivered`; checks confirmed customer auth email, paid/COD states, and forward shipment AWB. Does not backfill historical orders. No mail dispatch, cron, or scheduler is enabled by this migration.
+
+Protected `GET /api/outreach/zoho-order-outbox?limit=10` returns staged events without customer email/phone. Requires `Authorization: Bearer <OUTREACH_API_TOKEN>` and returns `liveSendingEnabled:false`. The existing Razorpay `payment.failed` webhook already handles Zoho recovery mail via `payment_recovery_notifications` and remains unchanged. Production review of config differences (`ZOHO_ACCOUNT_ID` and `ZOHO_FROM_EMAIL` in customer backend versus `ZOHO_MAIL_ACCOUNT_ID` and `ZOHO_MAIL_FROM_ADDRESS` in seller outreach), locking/idempotent claims, mail templates and provider delivery must precede activating other transactional email sends. Outlook is not used for outgoing mail.
