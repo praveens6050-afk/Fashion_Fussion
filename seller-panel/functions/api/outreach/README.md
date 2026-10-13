@@ -106,3 +106,9 @@ To prepare a seller invitation, use a `marketing` consent purpose and document t
 - Honor unsubscribe/STOP requests and suppress those contacts from future outreach.
 - Keep initial batches small and review bounce/reply/complaint signals before increasing volume.
 - Do not expose Zoho, Meta, or internal outreach credentials to the frontend.
+
+## Authoritative consent ledger (2026-10-13)
+
+Supabase migration `whatsapp_contact_consent_ledger_20261013` establishes service-role-only `whatsapp_contact_consents`. Migration `whatsapp_consent_signed_keyword_events_20261013` adds an idempotent `whatsapp_consent_events` history and `record_whatsapp_consent_command` RPC. The signed Meta WhatsApp webhook accepts exact text `JOIN FASHION SELLER` as explicit marketing opt-in and `STOP` / `STOP FASHION` as marketing opt-out. It uses Meta event timestamps and does not let stale replayed events revive consent. Do not treat seller OTP, public business contact details, or a regular message as marketing opt-in.
+
+Outreach `dryRun:true` and live sends both check the authoritative ledger, not merely client supplied `consent.given`. On a live send, consent is rechecked immediately before each recipient. An unavailable ledger fails closed. The caller's consent purpose/source/timestamp must match the stored event. No automatic outreach campaign or order-triggered notifications are enabled by this change. Set up explicit transactional consent capture and review approved template parameters before enabling order/shipping notifications. The ledger is empty until genuinely opted-in recipients are recorded. Never supply a fake timestamp or source in an API call.
