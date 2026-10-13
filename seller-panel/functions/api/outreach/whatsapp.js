@@ -154,6 +154,15 @@ export async function onRequestPost(context) {
     if (error) return json({ error }, 400);
   }
 
+  // The general outreach endpoint cannot verify a real order/payment/shipment
+  // transition. Reject live order_status_update template sends here, even if
+  // callers present a valid opt-in. Order events need a dedicated idempotent sender.
+  if (!dryRun && messages.some((message) => message.templateName === 'order_status_update')) {
+    return json({
+      error: 'Order status sends are disabled on the generic outreach endpoint. Use verified order-event dispatch when available.'
+    }, 409);
+  }
+
   const missing = requiredEnv(env);
   const idValid = validPhoneNumberId(env);
   const allowed = allowedTemplates(env);
