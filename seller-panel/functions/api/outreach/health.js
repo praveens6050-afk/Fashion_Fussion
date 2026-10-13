@@ -51,11 +51,17 @@ export async function onRequestGet(context) {
     },
     whatsapp: {
       ready: whatsappRequired.every((key) => Boolean(env[key]))
-        && /^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID || '').trim()),
-      missing: whatsappRequired.filter((key) => !env[key]),
+        && /^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID || '').trim())
+        && Boolean(env.SUPABASE_URL && (env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY)),
+      missing: [
+        ...whatsappRequired.filter((key) => !env[key]),
+        ...(!env.SUPABASE_URL ? ['SUPABASE_URL'] : []),
+        ...(!(env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY) ? ['SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY'] : []),
+      ],
       phoneNumberIdValid: /^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID || '').trim()),
       approvedTemplateAllowlistConfigured: Boolean(String(env.WHATSAPP_ALLOWED_TEMPLATES || '').trim()),
-      note: 'This is configuration readiness only; template approval, delivery and recorded consent are not independently verified.',
+      consentLedgerConfigured: Boolean(env.SUPABASE_URL && (env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY)),
+      note: 'Configuration check only; actual consent is checked against the server-only ledger on each send. Delivery and Meta approval are not verified here.',
     },
   };
 
