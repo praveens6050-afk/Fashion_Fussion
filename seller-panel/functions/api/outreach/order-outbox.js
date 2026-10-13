@@ -16,7 +16,7 @@ export async function onRequestGet({request,env}){
   const args=new URL(request.url).searchParams;
   const status=args.get('status')||'';
   const limit=Math.max(1,Math.min(25,Number.parseInt(args.get('limit')||'10',10)||10));
-  const filters='select=id,order_id,event_type,status,attempt_count,template_name,created_at,updated_at'
+  const filters='select=id,order_id,event_type,status,attempt_count,template_name,last_provider_status,last_error_code,provider_sent_at,provider_delivered_at,provider_read_at,provider_failed_at,created_at,updated_at'
    +'&order=created_at.desc&limit='+limit
    +(status?'&status=eq.'+encodeURIComponent(status):'');
   try{
