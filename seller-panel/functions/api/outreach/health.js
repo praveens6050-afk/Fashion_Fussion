@@ -38,6 +38,7 @@ export async function onRequestGet(context) {
     'WHATSAPP_ACCESS_TOKEN',
     'WHATSAPP_PHONE_NUMBER_ID',
     'WHATSAPP_GRAPH_VERSION',
+    'WHATSAPP_ALLOWED_TEMPLATES',
   ];
 
   const status = {
@@ -49,8 +50,12 @@ export async function onRequestGet(context) {
       mailBase: env.ZOHO_MAIL_BASE_URL || 'https://mail.zoho.in',
     },
     whatsapp: {
-      ready: whatsappRequired.every((key) => Boolean(env[key])),
+      ready: whatsappRequired.every((key) => Boolean(env[key]))
+        && /^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID || '').trim()),
       missing: whatsappRequired.filter((key) => !env[key]),
+      phoneNumberIdValid: /^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID || '').trim()),
+      approvedTemplateAllowlistConfigured: Boolean(String(env.WHATSAPP_ALLOWED_TEMPLATES || '').trim()),
+      note: 'This is configuration readiness only; template approval, delivery and recorded consent are not independently verified.',
     },
   };
 
