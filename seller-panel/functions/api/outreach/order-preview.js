@@ -62,12 +62,69 @@ function orderEligible(order,eventType,shipment) {
   }
   return [...new Set(issues)];
 }
+const META_ORDER_TEMPLATE = Object.freeze({
+  name: 'order_status_update',
+  languageCode: 'en',
+  statusLabels: Object.freeze({
+    order_confirmed: 'Confirmed',
+    shipped: 'Shipped',
+    out_for_delivery: 'Out for Delivery',
+    delivered: 'Delivered',
+  }),
+});
+// Confirmed directly against Fashion Fussion's approved Meta template:
+// Hi {{1}}, your Fashion Fussion order {{2}} status has been updated to {{3}}.
+// Please check your account for the latest order details.
+// No dynamic header or URL/button parameters exist.
+function cleanTemplateText(input, maxLength) {
+  return String(input ?? '').replace(/[\\r\\n\\t]/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, maxLength);
+}
+function buildOrderTemplate(order, eventType) {
+  if (!order || !EVENTS.has(eventType)) return {components: null, blockers:['invalid_order_template_context']};
+  const customerName = cleanTemplateText(order.customer_name, 70);
+  const displayOrderId = cleanTemplateText(order.display_order_id, 80);
+  const statusLabel = META_ORDER_TEMPLATE.statusLabels[eventType];
+  const blockers = [];
+  if (!customerName) blockers.push('customer_name_missing');
+  if (!displayOrderId) blockers.push('display_order_id_missing');
+  if (!statusLabel) blockers.push('status_label_missing');
+  if (blockers.length) return {components: null, blockers};
+  return {
+    components: [{
+      type: 'body',
+      parameters: [
+        {type: 'text', text: customerName},   // {{1}} - orders.customer_name
+        {type: 'text', text: displayOrderId}, // {{2}} - orders.display_order_id
+        {type: 'text', text: statusLabel},    // {{3}} - verified event status
+      ],
+    }],
+    blockers:[],
+  };
+}
+function safeTemplatePreview(order, eventType, template) {
+  return {
+    name: META_ORDER_TEMPLATE.name,
+    languageCode: META_ORDER_TEMPLATE.languageCode,
+    bodyVariables: [
+      {variable: '{{1}}', source: 'orders.customer_name', present: Boolean(cleanTemplateText(order?.customer_name, 70))},
+      {variable: '{{2}}', source: 'orders.display_order_id', value: cleanTemplateText(order?.display_order_id, 80) || null},
+      {variable: '{{3}}', source: 'verified_event_type', value: META_ORDER_TEMPLATE.statusLabels[eventType]},
+    ],
+    sampleText: template.components
+      ? 'Hi [customer name], your Fashion Fussion order '
+        + template.components[0].parameters[1].text
+        + ' status has been updated to '
+        + template.components[0].parameters[2].text
+        + '. Please check your account for the latest order details.'
+      : null,
+  };
+}
 function consentValid(consent) {
   return Boolean(consent && consent.status==='opted_in' && consent.consented_at && !consent.revoked_at);
 }
 async function preview(env, orderId,eventType) {
   const orderRows=await dbRows(env,'orders',
-    'id=eq.'+orderId+'&select=id,display_order_id,status,fulfillment_status,payment_method,payment_verified_at,customer_phone&limit=1');
+    'id=eq.'+orderId+'&select=id,display_order_id,customer_name,status,fulfillment_status,payment_method,payment_verified_at,customer_phone&limit=1');
   const order=orderRows[0]||null;
   let shipment=null, optin=null;
   if(order && SHIPPING.has(eventType)){
@@ -86,8 +143,8 @@ async function preview(env, orderId,eventType) {
   if(!consentValid(optin)) blockers.push('transactional_whatsapp_opt_in_missing');
   const names=new Set(String(env.WHATSAPP_ALLOWED_TEMPLATES||'').split(',').map(s=>s.trim()).filter(Boolean));
   if(!names.has('order_status_update'))blockers.push('order_status_update_not_allowlisted');
-  // Human verification of {{1}}, {{2}}, etc. against Meta is still pending.
-  blockers.push('template_parameter_mapping_not_verified');
+  const mapped = buildOrderTemplate(order, eventType);
+  blockers.push(...mapped.blockers);
   return {
     dryRun:true,sent:0,liveSendingEnabled:false,
     orderId:order?order.id:orderId,
@@ -98,7 +155,10 @@ async function preview(env, orderId,eventType) {
     recipient:maskPhone(order?.customer_phone),
     transactionalConsentActive:consentValid(optin),
     shipmentAvailable:Boolean(shipment&&shipment.awb_code),
-    eligible:false,
+    template:safeTemplatePreview(order,eventType,mapped),
+    // "eligible" means order + consent + template are ready for future
+    // authorized workflow review, NOT permission to send via this endpoint.
+    eligible:blockers.length===0,
     blockers:[...new Set(blockers)]
   };
 }
