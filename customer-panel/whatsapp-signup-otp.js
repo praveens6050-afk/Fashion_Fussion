@@ -16,6 +16,6 @@
   [phone,email].forEach(el=>el.addEventListener('input',()=>{if(verifiedKey&&verifiedKey!==key()){otp.disabled=false;reset()}}));
   document.querySelectorAll('input[name="accountType"]').forEach(el=>el.addEventListener('change',()=>{if(verifiedKey&&verifiedKey!==key()){otp.disabled=false;reset()}}));
   form.addEventListener('submit',e=>{if(verifiedKey!==key()){e.preventDefault();e.stopImmediatePropagation();setStatus('Verify your mobile number on WhatsApp before creating the account.','error');send.focus()}},true);
-  window.ffWhatsappOtp={isVerified:()=>verifiedKey===key(),reset};
+  window.ffWhatsappOtp={isVerified:()=>Boolean(verifiedKey)&&verifiedKey===key(),getChallengeId:()=>verifiedKey===key()?challengeId:'',reset};
   reset();
 })();
