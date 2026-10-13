@@ -77,7 +77,7 @@ const META_ORDER_TEMPLATE = Object.freeze({
 // Please check your account for the latest order details.
 // No dynamic header or URL/button parameters exist.
 function cleanTemplateText(input, maxLength) {
-  return String(input ?? '').replace(/[\\r\\n\\t]/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, maxLength);
+  return String(input ?? '').replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 function buildOrderTemplate(order, eventType) {
   if (!order || !EVENTS.has(eventType)) return {components: null, blockers:['invalid_order_template_context']};
