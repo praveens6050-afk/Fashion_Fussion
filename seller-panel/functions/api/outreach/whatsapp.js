@@ -43,10 +43,29 @@ function validateMessage(message, index) {
   if (!message || typeof message !== 'object') return `messages[${index}] must be an object`;
   const to = normalizePhone(message.to);
   if (!PHONE_RE.test(to)) return `messages[${index}].to must be an international phone number`;
-  if (!String(message.templateName || '').trim()) return `messages[${index}].templateName is required`;
-  if (String(message.templateName).length > 512) return `messages[${index}].templateName is too long`;
+  if (!/^[a-z0-9_]{1,512}$/.test(String(message.templateName || '').trim())) return `messages[${index}].templateName must be a valid approved WhatsApp template name`;
   if (message.components && !Array.isArray(message.components)) return `messages[${index}].components must be an array`;
   return null;
+}
+
+function consentError(message, index) {
+  const consent = message?.consent || {};
+  if (consent.given !== true) return `messages[${index}].consent.given must be true (explicit WhatsApp opt-in)`;
+  if (!['transactional', 'marketing'].includes(consent.purpose)) return `messages[${index}].consent.purpose must be transactional or marketing`;
+  if (!/^[a-z0-9_-]{3,80}$/.test(String(consent.source || ''))) return `messages[${index}].consent.source must identify the recorded opt-in source`;
+  const at = Date.parse(String(consent.recordedAt || ''));
+  if (!Number.isFinite(at) || at > Date.now() || at < Date.UTC(2020, 0, 1)) return `messages[${index}].consent.recordedAt must be a valid historical ISO timestamp`;
+  return null;
+}
+
+function allowedTemplates(env) {
+  return new Set(String(env.WHATSAPP_ALLOWED_TEMPLATES || '')
+    .split(',').map((s) => s.trim()).filter(Boolean));
+}
+
+function maskedRecipient(to) {
+  const phone = normalizePhone(to);
+  return phone ? '••••' + phone.slice(-4) : null;
 }
 
 async function sendTemplate(env, message) {
@@ -85,14 +104,7 @@ async function sendTemplate(env, message) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-
   if (!(await authorized(request, env))) return json({ error: 'Unauthorized' }, 401);
-
-  const missing = requiredEnv(env);
-  if (missing.length) return json({ error: 'WhatsApp outreach is not configured', missing }, 503);
-  if (!validPhoneNumberId(env)) {
-    return json({ error: 'WHATSAPP_PHONE_NUMBER_ID must be the numeric Phone Number ID from Meta WhatsApp Manager, not a WhatsApp mobile number.' }, 503);
-  }
 
   let body;
   try {
@@ -100,7 +112,7 @@ export async function onRequestPost(context) {
   } catch {
     return json({ error: 'Invalid JSON' }, 400);
   }
-
+  const dryRun = body?.dryRun === true;
   const messages = Array.isArray(body?.messages) ? body.messages : [];
   if (!messages.length) return json({ error: 'messages must contain at least one template message' }, 400);
   if (messages.length > MAX_BATCH) return json({ error: `Maximum ${MAX_BATCH} messages per request` }, 400);
@@ -110,14 +122,50 @@ export async function onRequestPost(context) {
     if (error) return json({ error }, 400);
   }
 
+  const missing = requiredEnv(env);
+  const idValid = validPhoneNumberId(env);
+  const allowed = allowedTemplates(env);
+  const preview = messages.map((message, index) => ({
+    index,
+    recipient: maskedRecipient(message.to),
+    templateName: message.templateName,
+    templateAllowlisted: allowed.has(message.templateName),
+    consentValid: !consentError(message, index),
+    consentIssue: consentError(message, index),
+  }));
+
+  // This protected preflight checks proposed messages without calling the Meta API.
+  // It is the preferred first test for order updates and seller invitations.
+  if (dryRun) {
+    return json({
+      dryRun: true,
+      sent: 0,
+      ready: !missing.length && idValid && Boolean(allowed.size) && preview.every(x => x.templateAllowlisted && x.consentValid),
+      missingConfiguration: [...missing, ...(!idValid ? ['WHATSAPP_PHONE_NUMBER_ID (numeric Meta ID required)'] : []), ...(!allowed.size ? ['WHATSAPP_ALLOWED_TEMPLATES'] : [])],
+      preview,
+    });
+  }
+
+  if (missing.length) return json({ error: 'WhatsApp outreach is not configured', missing }, 503);
+  if (!idValid) return json({ error: 'WHATSAPP_PHONE_NUMBER_ID must be the numeric Phone Number ID from Meta WhatsApp Manager, not a WhatsApp mobile number.' }, 503);
+  if (!allowed.size) return json({ error: 'WHATSAPP_ALLOWED_TEMPLATES must list approved template names before business-initiated messages are sent.' }, 503);
+
+  for (let i = 0; i < messages.length; i += 1) {
+    const issue = consentError(messages[i], i);
+    if (issue) return json({ error: issue }, 400);
+    if (!allowed.has(messages[i].templateName)) {
+      return json({ error: `messages[${i}].templateName is not in WHATSAPP_ALLOWED_TEMPLATES` }, 400);
+    }
+  }
+
   const results = [];
   for (const message of messages) {
     try {
       const result = await sendTemplate(env, message);
-      results.push({ to: normalizePhone(message.to), ...result });
+      results.push({ to: maskedRecipient(message.to), ...result });
     } catch (error) {
       console.error('WhatsApp outreach send failed', error?.message || String(error));
-      results.push({ to: normalizePhone(message.to), ok: false, httpStatus: null, messageId: null, errorCode: null, errorMessage: 'Network error' });
+      results.push({ to: maskedRecipient(message.to), ok: false, httpStatus: null, messageId: null, errorCode: null, errorMessage: 'Network error' });
     }
   }
 
