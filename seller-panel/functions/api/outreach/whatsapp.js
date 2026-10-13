@@ -31,6 +31,10 @@ function requiredEnv(env) {
     .filter((key) => !env[key]);
 }
 
+function validPhoneNumberId(env) {
+  return /^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID || '').trim());
+}
+
 function normalizePhone(value) {
   return String(value || '').replace(/[^0-9]/g, '');
 }
@@ -86,6 +90,9 @@ export async function onRequestPost(context) {
 
   const missing = requiredEnv(env);
   if (missing.length) return json({ error: 'WhatsApp outreach is not configured', missing }, 503);
+  if (!validPhoneNumberId(env)) {
+    return json({ error: 'WHATSAPP_PHONE_NUMBER_ID must be the numeric Phone Number ID from Meta WhatsApp Manager, not a WhatsApp mobile number.' }, 503);
+  }
 
   let body;
   try {
