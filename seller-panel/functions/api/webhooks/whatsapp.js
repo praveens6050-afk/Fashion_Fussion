@@ -84,6 +84,51 @@ async function ingestMessage(env, message) {
   return Array.isArray(data) ? data[0] : data;
 }
 
+// Explicit WhatsApp opt-in command is advertised on our seller opt-in page.
+// Ordinary conversations and OTP replies must not be interpreted as marketing consent.
+function consentCommand(message) {
+  if (message.type !== 'text') return null;
+  const command = String(message.text || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  if (command === 'JOIN FASHION SELLER') return 'opted_in';
+  if (command === 'STOP' || command === 'STOP FASHION') return 'opted_out';
+  return null;
+}
+
+async function storeConsentCommand(env, message) {
+  // Only signed Meta webhooks may modify consent state; regular inbound ingestion
+  // remains available under its existing verification configuration.
+  if (!env.WHATSAPP_APP_SECRET) return;
+  const status = consentCommand(message);
+  if (!status) return;
+  const digits = String(message.from || '').replace(/\D/g, '');
+  if (!/^\d{8,15}$/.test(digits) || !message.id) throw new Error('Invalid WhatsApp consent command metadata');
+  const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
+  if (!base || !key) throw new Error('WhatsApp consent database configuration missing');
+  const now = new Date().toISOString();
+  const item = {
+    phone_e164: '+' + digits,
+    purpose: 'marketing',
+    status,
+    source: 'whatsapp_keyword',
+    proof_reference: String(message.id).slice(0, 255),
+    consented_at: status === 'opted_in' ? now : null,
+    revoked_at: status === 'opted_out' ? now : null,
+    updated_at: now,
+  };
+  const response = await fetch(base + '/rest/v1/whatsapp_contact_consents?on_conflict=phone_e164,purpose', {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: 'Bearer ' + key,
+      'content-type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) throw new Error('WhatsApp consent command could not be recorded');
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -139,6 +184,7 @@ export async function onRequestPost(context) {
     for (const message of messages) {
       if (!message.id || !message.from) continue;
       routed.push(await ingestMessage(env, message));
+      await storeConsentCommand(env, message);
     }
     console.log('WhatsApp inbound persisted', JSON.stringify({
       count: routed.length,
