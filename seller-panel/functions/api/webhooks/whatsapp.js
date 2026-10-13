@@ -95,8 +95,7 @@ function consentCommand(message) {
 }
 
 async function storeConsentCommand(env, message) {
-  // Only signed Meta webhooks may modify consent state; regular inbound ingestion
-  // remains available under its existing verification configuration.
+  // Only a Meta HMAC-signed webhook may change consent.
   if (!env.WHATSAPP_APP_SECRET) return;
   const status = consentCommand(message);
   if (!status) return;
@@ -105,26 +104,17 @@ async function storeConsentCommand(env, message) {
   const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
   const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
   if (!base || !key) throw new Error('WhatsApp consent database configuration missing');
-  const now = new Date().toISOString();
-  const item = {
-    phone_e164: '+' + digits,
-    purpose: 'marketing',
-    status,
-    source: 'whatsapp_keyword',
-    proof_reference: String(message.id).slice(0, 255),
-    consented_at: status === 'opted_in' ? now : null,
-    revoked_at: status === 'opted_out' ? now : null,
-    updated_at: now,
-  };
-  const response = await fetch(base + '/rest/v1/whatsapp_contact_consents?on_conflict=phone_e164,purpose', {
+  const eventAt = message.timestamp ? new Date(Number(message.timestamp) * 1000) : null;
+  if (!eventAt || !Number.isFinite(eventAt.getTime())) throw new Error('Invalid Meta consent event timestamp');
+  const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_consent_command', {
     method: 'POST',
-    headers: {
-      apikey: key,
-      Authorization: 'Bearer ' + key,
-      'content-type': 'application/json',
-      Prefer: 'resolution=merge-duplicates,return=minimal',
-    },
-    body: JSON.stringify(item),
+    headers: { apikey: key, Authorization: 'Bearer ' + key, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      p_phone_e164: '+' + digits,
+      p_external_message_id: String(message.id),
+      p_status: status,
+      p_event_at: eventAt.toISOString(),
+    }),
   });
   if (!response.ok) throw new Error('WhatsApp consent command could not be recorded');
 }
