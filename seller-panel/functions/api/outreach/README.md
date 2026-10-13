@@ -141,3 +141,19 @@ Use protected read-only `GET /api/outreach/delivery-receipts?limit=10` to inspec
 Production Supabase migration `zoho_transactional_order_email_staging_20261014` adds service-role-only RLS `zoho_order_email_outbox` and verified order/shipment update staging triggers, unique per `(order_id,event_type)`. Supports `order_confirmed`, `payment_successful`, `shipped`, `out_for_delivery`, `delivered`; checks confirmed customer auth email, paid/COD states, and forward shipment AWB. Does not backfill historical orders. No mail dispatch, cron, or scheduler is enabled by this migration.
 
 Protected `GET /api/outreach/zoho-order-outbox?limit=10` returns staged events without customer email/phone. Requires `Authorization: Bearer <OUTREACH_API_TOKEN>` and returns `liveSendingEnabled:false`. The existing Razorpay `payment.failed` webhook already handles Zoho recovery mail via `payment_recovery_notifications` and remains unchanged. Production review of config differences (`ZOHO_ACCOUNT_ID` and `ZOHO_FROM_EMAIL` in customer backend versus `ZOHO_MAIL_ACCOUNT_ID` and `ZOHO_MAIL_FROM_ADDRESS` in seller outreach), locking/idempotent claims, mail templates and provider delivery must precede activating other transactional email sends. Outlook is not used for outgoing mail.
+
+## Zoho transactional order email template dry-run (never sends)
+
+Protected `POST /api/outreach/zoho-order-preview` accepts `Authorization: Bearer <OUTREACH_API_TOKEN>` and:
+
+```json
+{"dryRun":true,"orderId":123,"eventType":"order_confirmed"}
+```
+
+Supported `eventType` values are `order_confirmed`, `payment_successful`, `shipped`, `out_for_delivery`, and `delivered`. The preview checks the Supabase order record, payment status and server-side payment verification, latest forward shipment/AWB, staging outbox record, **confirmed** customer auth email matching the order email, and presence of Zoho sender configuration in the **seller** Cloudflare Pages environment. A staged email can be marked ready in the preview only after these checks. It always reports `dryRun:true`, `sent:0`, and `liveSendingEnabled:false`. The email sample masks the customer's name; no actual recipient address is returned. There is no code path for sending from this endpoint.
+
+Template HTML is escaped and links to account-protected order details; it never contains magic-link sign-in credentials or payment collection links. Previews intentionally do not retry the existing Razorpay `payment.failed` recovery email flow.
+
+**Important configuration distinction:** Seller outreach expects `ZOHO_MAIL_ACCOUNT_ID` / `ZOHO_MAIL_FROM_ADDRESS`. Existing customer-panel Razorpay webhook expects `ZOHO_ACCOUNT_ID` / `ZOHO_FROM_EMAIL`. Check each Cloudflare project's own secrets; working seller configuration does not imply customer payment-failed emails are working. Never put secret values into GitHub, screenshots or chat. The health endpoint checks configured variable presence only, not a successful Zoho API send.
+
+Even if a dry-run says `eligible:true`, email sending is still **off**. Before enabling: implement atomic outbox claims, delivery ambiguity handling, opt-out/transactional communication policy checks, and controlled tests with test orders. Do not re-send or backfill historical events without review.
