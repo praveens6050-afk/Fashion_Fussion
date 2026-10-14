@@ -12,11 +12,11 @@ const json=(body,status=200)=>new Response(JSON.stringify(body),{
 async function digest(value){
   return new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value||'')));
 }
-async function authorized(req,env){
-  if(!env.OUTREACH_API_TOKEN)return false;
+async function authorized(req,secret){
+  if(!secret)return false;
   const h=req.headers.get('authorization')||'';
   const value=h.startsWith('Bearer ')?h.slice(7):'';
-  const [a,b]=await Promise.all([digest(value),digest(env.OUTREACH_API_TOKEN)]);
+  const [a,b]=await Promise.all([digest(value),digest(secret)]);
   let diff=0;for(let i=0;i<a.length;i++)diff|=a[i]^b[i];
   return diff===0;
 }
@@ -174,7 +174,13 @@ async function dispatch(env,orderId){
   }};
 }
 export async function onRequestPost({request,env}){
-  if(!(await authorized(request,env)))return json({error:'Unauthorized'},401);
+  // Two separate roles: operators can inspect; customer-side trusted backend may
+  // request live delivery using its dedicated service token, never the public client.
+  const [operator,orderService]=await Promise.all([
+    authorized(request,env.OUTREACH_API_TOKEN),
+    authorized(request,env.ZOHO_ORDER_EVENT_TOKEN)
+  ]);
+  if(!operator&&!orderService)return json({error:'Unauthorized'},401);
   let body;
   try{body=await request.json()}catch{return json({error:'Invalid JSON'},400)}
   if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Invalid request'},400);
@@ -182,6 +188,8 @@ export async function onRequestPost({request,env}){
   if(!/^[1-9]\d{0,14}$/.test(id)||!Number.isSafeInteger(Number(id)))
     return json({error:'Invalid order ID'},400);
   if(body.dryRun===true&&Object.keys(body).sort().join(',')==='dryRun,orderId'){
+    // Prevent a service-to-service bearer from probing customer order queue state.
+    if(!operator)return json({error:'Operator authorization required for preview'},403);
     try{return json(await preview(env,id))}
     catch{return json({error:'Preview unavailable; no email sent'},503)}
   }
