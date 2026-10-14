@@ -41,8 +41,14 @@ async function notifyConfirmedOrder(orderId, source = 'unknown') {
       signal: controller.signal,
       body: JSON.stringify({ orderId: Number(orderId), confirmSend: true })
     });
+    // Only claim acceptance if the seller dispatcher explicitly confirms ONE send.
+    // A proxy/HTML 200 or unreadable response is NOT evidence of Zoho acceptance.
+    const provider = await response.json().catch(() => null);
+    if (response.ok && provider?.accepted === true && provider?.sent === 1) {
+      return { accepted: true, attempted: true };
+    }
+    if (response.ok) return {accepted:false,attempted:true,uncertainOutcome:true};
     // Do not log/propagate personal details or headers. Do not automatically retry.
-    if (response.ok) return { accepted: true, attempted: true };
     if (response.status === 409) return { skipped: true, reason: 'not_eligible_or_duplicate' };
     if (response.status === 423) return { skipped: true, reason: 'seller_sending_disabled' };
     console.warn('Order email hook not confirmed', {
