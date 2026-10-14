@@ -95,6 +95,7 @@ async function preview(env,orderId){
     throw new Error('INVALID_ELIGIBILITY_PREVIEW');
   return {
     dryRun:true,sent:0,eligibility,liveSendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
+    pilotAllowlisted:String(env.ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID||'').trim()===String(orderId),
     autoSchedulerConfigured:false,
     eventStaged:Boolean(event),
     eventState:event?.status||null,
