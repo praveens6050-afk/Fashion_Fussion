@@ -44,7 +44,9 @@ small{font-size:12px;color:#69768f;line-height:1.6;display:block}
   <label for="orderId">Numeric Order ID (read-only confirmation check)</label>
   <input id="orderId" type="number" min="1" step="1" inputmode="numeric" autocomplete="off" placeholder="Optional: test order ID">
   <button id="previewConfirmation" type="button" class="secondary">Check Order Confirmation (no send)</button>
-  <small>This checks queue state only. It cannot create orders, charge a payment, or send email.</small>
+  <small>Preview is read-only: verifies payment/COD, buyer identity, inventory-independent order status, and queue state without sending.</small>
+  <button id="sendVerifiedConfirmation" type="button" disabled>Send ONE verified order confirmation (real email)</button>
+  <small>IMPORTANT: The confirmation goes to the verified buyer email on this real COD order, not the test recipient field above. Only available after eligible dry-run, one-order Cloudflare allowlist, seller sending flag, and your separate confirmation. No automatic rollout is enabled.</small>
 </form>
 <small>The Orders test sends only to ps4038267@gmail.com, after its separate verification and your confirmation. It does not send a real order confirmation or turn on automation.</small>
 <div role="status" aria-live="polite" id="result">First verify the Zoho connection. No email has been sent.</div>
