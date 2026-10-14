@@ -178,7 +178,7 @@ export async function onRequestPost({request,env}){
   // request live delivery using its dedicated service token, never the public client.
   const [operator,orderService]=await Promise.all([
     authorized(request,env.OUTREACH_API_TOKEN),
-    authorized(request,env.ZOHO_ORDER_EVENT_TOKEN)
+    authorized(request,String(env.ZOHO_ORDER_EVENT_TOKEN||'').length>=40 ? env.ZOHO_ORDER_EVENT_TOKEN : null)
   ]);
   if(!operator&&!orderService)return json({error:'Unauthorized'},401);
   let body;
