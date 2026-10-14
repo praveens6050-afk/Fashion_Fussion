@@ -25,6 +25,7 @@ export async function onRequestGet({request,env}){
    sendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
    automaticDispatcherEnabled:false,
    dispatchMode:String(env.ZOHO_ORDER_CONFIRMATION_MODE||'pilot'),
+   sellerAutomationSwitchEnabled:env.ZOHO_ORDER_AUTOMATION_ENABLED==='true',
    customerEventAutomationRequiresSeparateFlag:true,
    sellerAutoModeArmed:env.ZOHO_ORDER_CONFIRMATION_MODE==='automatic' &&
       env.ZOHO_ORDER_AUTOMATION_ENABLED==='true' &&
