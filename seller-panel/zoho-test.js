@@ -124,6 +124,7 @@
         const autoEnabled = data.sellerAutomationSwitchEnabled === true;
         const sendingEnabled = data.sendingEnabled === true;
         const cutoffSet = data.activationCutoffConfigured === true;
+        const cutoffValid = data.activationCutoffValid === true;
         const queue = data.counts || {};
         const pending = Number(queue.pending_review || 0) + Number(queue.ready || 0);
         const sent = Number(queue.sent || 0);
@@ -132,12 +133,17 @@
           'mode=' + mode + '; automationEnabled=' + autoEnabled +
           '; sendingEnabled=' + sendingEnabled +
           '; activationCutoffConfigured=' + cutoffSet +
+          '; activationCutoffValid=' + cutoffValid +
           '; recent queue pending/ready=' + pending + '; sent=' + sent + '. ' +
-          (mode === 'automatic' && safelyOff
-            ? 'READY FOR NEXT SETUP STEP: seller automation remains OFF.'
-            : !safelyOff
-              ? 'ATTENTION: one or more sending switches are ON. Turn both OFF until rollout approval.'
-              : 'Check that mode=automatic and both sending switches are false.') +
+          (!safelyOff
+            ? 'ATTENTION: one or more sending switches are ON. Turn BOTH OFF until separate rollout approval.'
+            : mode !== 'automatic'
+              ? 'NEXT: set Seller mode=automatic while keeping BOTH sending switches false.'
+              : !cutoffSet
+                ? 'NEXT: configure a fresh UTC activation cutoff; do not enable sending yet.'
+                : !cutoffValid
+                  ? 'NEXT: correct cutoff to canonical past/current UTC time (Z); no sends authorized.'
+                  : 'SAFE CONFIG: Seller automatic mode ready for controlled future test, switches remain OFF.') +
           ' Customer hook status is NOT checked here. No email, order or payment was created.');
       }
     } catch {
