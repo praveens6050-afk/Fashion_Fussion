@@ -51,18 +51,24 @@ function validateMessage(message, index) {
 
 async function getZohoAccessToken(env) {
   const accountsBase = (env.ZOHO_ACCOUNTS_BASE_URL || 'https://accounts.zoho.in').replace(/\/$/, '');
-  const url = new URL(`${accountsBase}/oauth/v2/token`);
-  url.searchParams.set('refresh_token', env.ZOHO_REFRESH_TOKEN);
-  url.searchParams.set('client_id', env.ZOHO_CLIENT_ID);
-  url.searchParams.set('client_secret', env.ZOHO_CLIENT_SECRET);
-  url.searchParams.set('grant_type', 'refresh_token');
-
-  const response = await fetch(url.toString(), { method: 'POST' });
+  // Never put a refresh token or client secret in an OAuth request URL.
+  const params = new URLSearchParams({
+    refresh_token: env.ZOHO_REFRESH_TOKEN,
+    client_id: env.ZOHO_CLIENT_ID,
+    client_secret: env.ZOHO_CLIENT_SECRET,
+    grant_type: 'refresh_token',
+  });
+  const response = await fetch(accountsBase + '/oauth/v2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+    body: params.toString(),
+    cache: 'no-store',
+  });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.access_token) {
     throw new Error(`Zoho OAuth refresh failed (${response.status})`);
   }
-  return payload.access_token;
+  return String(payload.access_token);
 }
 
 async function sendZohoMail(env, accessToken, message) {
