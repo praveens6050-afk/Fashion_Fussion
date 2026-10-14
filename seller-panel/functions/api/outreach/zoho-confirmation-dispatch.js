@@ -128,7 +128,7 @@ async function validateAutoWindow(env,orderId){
   // Automatic rollout remains constrained to ONE verified test buyer;
   // a separate future reviewed code change is required for all buyers.
   const testBuyer=String(env.ZOHO_ORDER_AUTOMATION_TEST_BUYER_EMAIL||'').trim().toLowerCase();
-  if(testBuyer.length>254||!/^\\S+@\\S+\\.\\S+$/.test(testBuyer)){
+  if(testBuyer.length>254||!/^\S+@\S+\.\S+$/.test(testBuyer)){
     return {allowed:false,reason:'TEST_BUYER_NOT_CONFIGURED'};
   }
   const db=dbConfig(env);
