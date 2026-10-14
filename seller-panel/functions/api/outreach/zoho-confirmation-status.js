@@ -26,13 +26,28 @@ export async function onRequestGet({request,env}){
  const key=String(env.SUPABASE_SERVICE_ROLE_KEY||env.SUPABASE_SECRET_KEY||'');
  if(!url||!key)return respond({error:'Database not configured'},503);
  try{
-  const q='event_type=eq.order_confirmed&select=id,status,created_at,attempt_count&order=created_at.desc&limit=100';
-  const res=await fetch(url+'/rest/v1/zoho_order_email_outbox?'+q,{cache:'no-store',headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'}});
-  if(!res.ok)return respond({error:'Queue lookup unavailable'},503);
+  // Read comprehensive aggregate counters from the service-only DB RPC.
+  // Never return a row, order ID, address, token, or mailbox credential.
+  const res=await fetch(url+'/rest/v1/rpc/zoho_order_delivery_telemetry',{
+    method:'POST',cache:'no-store',
+    headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json',
+      'Content-Type':'application/json'},
+    body:'{}'
+  });
+  if(!res.ok)return respond({error:'Aggregate queue monitoring unavailable'},503);
   const data=await res.json();
-  if(!Array.isArray(data))return respond({error:'Invalid queue data'},503);
-  const counts={pending_review:0,ready:0,sending:0,sent:0,blocked:0,failed:0};
-  for(const row of data){if(Object.prototype.hasOwnProperty.call(counts,row.status))counts[row.status]++;}
+  if(!data||typeof data!=='object'||Array.isArray(data))return respond({error:'Invalid queue telemetry'},503);
+  const fields=['pendingReview','ready','sending','sent','blocked','stalePending10m',
+    'stuckSending5m','attemptsLastHour','attemptsLast24h','hourlyAttemptCap',
+    'rolling24hAttemptCap'];
+  if(fields.some(k=>!Number.isSafeInteger(data[k])||data[k]<0))
+    return respond({error:'Invalid queue telemetry'},503);
+  const counts={pending_review:data.pendingReview,ready:data.ready,
+    sending:data.sending,sent:data.sent,blocked:data.blocked,failed:0};
+  const quotaAvailable=data.attemptsLastHour<data.hourlyAttemptCap &&
+    data.attemptsLast24h<data.rolling24hAttemptCap;
+  const backlogHealthy=data.stalePending10m===0&&data.stuckSending5m===0;
+  const queueHealth=backlogHealthy ? 'healthy' : 'attention';
   const mode=String(env.ZOHO_ORDER_CONFIRMATION_MODE||'pilot');
   const sendingEnabled=env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true';
   const automationSwitchEnabled=env.ZOHO_ORDER_AUTOMATION_ENABLED==='true';
@@ -60,8 +75,15 @@ export async function onRequestGet({request,env}){
    testBuyerConfigured,
    globalLaunchApproved:globalApproval,
    globalClaimRateCapped:true,
+   // Aggregate data only; quota exhaustion stops the atomic global claim.
+   queueHealth,quotaAvailable,
+   attemptsLastHour:data.attemptsLastHour,attemptsLast24h:data.attemptsLast24h,
+   hourlyAttemptCap:data.hourlyAttemptCap,
+   rolling24hAttemptCap:data.rolling24hAttemptCap,
+   stalePending10m:data.stalePending10m,stuckSending5m:data.stuckSending5m,
    productionReadyForSupervisedActivation:mode==='production' && cutoffValid &&
-     globalApproval && !automationSwitchEnabled && !sendingEnabled,
+     globalApproval && quotaAvailable && backlogHealthy &&
+     !automationSwitchEnabled && !sendingEnabled,
    // This is a readiness report only. No permission to send is derived from
    // the presence of flags, and no Cloudflare bindings are changed here.
    sellerConfigurationReadyForControlledRollout:
@@ -69,6 +91,7 @@ export async function onRequestGet({request,env}){
       (mode==='production'||testBuyerConfigured)&&
       !automationSwitchEnabled&&!sendingEnabled,
    scheduledQueueRecoveryEnabled:false,reviewRequired:true,
-   sampleSize:data.length,counts,limitedToMostRecent:100});
+   sampleSize:Object.values(counts).reduce((total,n)=>total+n,0),
+   counts,limitedToMostRecent:false});
  }catch{return respond({error:'Queue lookup unavailable'},503);}
 }
