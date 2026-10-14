@@ -192,3 +192,11 @@ The From address is fixed as `orders@fashionfussion.in` in `zoho-order-sender.js
 The Android `/zoho-test.html` button is now **Verify Orders mailbox (no send)**. This does not enable the Sales test-send button; the existing separate Sales email test remains unchanged. The order email preview labels this as a separate mailbox. **No order-confirmation sending/dispatcher, cron or backfill is enabled.** Before enabling real order emails, verify the separate OAuth/account and run an explicitly authorized test from the Orders mailbox.
 
 Customer-side Razorpay payment-failure emails have their own Cloudflare deployment variables; this change does not touch them. Revoke/rotate any previously exposed Zoho refresh token before deployment.
+
+## Explicit one-off email from Orders mailbox (manual test only)
+
+`POST /api/outreach/zoho-orders-test-send` is a **separate**, bearer-protected endpoint. It sends one clearly marked **TEST ONLY** email from `orders@fashionfussion.in` using **only** `ZOHO_ORDERS_*` secrets. It never accesses the Sales sender, an order, payment, or the notification outbox.
+
+Use the deployed page at `https://seller.fashionfussion.in/zoho-test.html`: enter the internal `OUTREACH_API_TOKEN`, enter the **fixed** test recipient `ps4038267@gmail.com`, click **Verify Orders mailbox (no send)**, then click the separate **Send one email from orders@** button and confirm the browser prompt. There is NO need to click the legacy **Send one email from Sales** button. The Orders send is disabled until Orders OAuth and sender verification succeed. It stays disabled after any attempt, and the token is cleared. It does not automatically retry ambiguous outcomes.
+
+The Orders test endpoint requires JSON `{"confirmOrdersTestSend":true,"to":"ps4038267@gmail.com"}`. Other destinations, arbitrary email content, and additional fields are rejected. The server refreshes Orders OAuth with a POST body, independently rechecks the Orders account and authorized sender via `GET /api/accounts`, then performs exactly one POST to the Orders account's messages endpoint. HTTP success means Zoho accepted the request, **not** that Gmail received it. Verify actual delivery at the recipient Inbox/Spam and Zoho Orders Sent. No automatic transactional order email notifications or recurring dispatchers are turned on.
