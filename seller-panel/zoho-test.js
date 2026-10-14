@@ -58,17 +58,17 @@
     busy = true;
     verifiedToken = null; // Alias verification never enables the Sales test-send button.
     refresh();
-    setStatus('Verifying orders@fashionfussion.in as an authorized sender alias. No email will be sent...');
+    setStatus('Verifying the separate orders@fashionfussion.in Zoho mailbox. No email will be sent...');
     try {
       const { response, data } = await request('/api/outreach/zoho-verify', {
         dryRun: true, purpose: 'order_confirmation'
       }, token);
       if (response.ok && data.ready === true && data.fromAddressAuthorized === true) {
-        setStatus('Success: orders@fashionfussion.in is authorized on the existing Zoho mailbox. No email sent. Automatic order emails remain disabled.');
+        setStatus('Success: orders@fashionfussion.in is authorized on its own Zoho mailbox. No email sent. Automatic order emails remain disabled.');
       } else {
-        setStatus('Order confirmation alias NOT verified (' + response.status + '). Issue: ' +
+        setStatus('Orders mailbox NOT verified (' + response.status + '). Issue: ' +
           String(data.issue || data.error || 'unknown').slice(0, 180) +
-          '. Confirm the alias is enabled under Zoho Mail sender addresses. No email sent.');
+          '. Check the dedicated Orders OAuth credentials, Account ID and sender address. No email sent.');
       }
     } catch {
       setStatus('Could not reach the Zoho alias verifier. No email sent.');

@@ -174,10 +174,21 @@ Mobile-friendly `https://seller.fashionfussion.in/zoho-test.html` (public static
 
 Security: all requests are same-origin HTTPS; the access token is sent only as an Authorization header to the two existing protected server-side endpoints. Nothing is stored in localStorage, a cookie, a URL or the repository. A successful send clears the token field and blocks further sends; if response outcome is unknown, check Zoho Sent and recipient Inbox before retrying. If the operator no longer knows `OUTREACH_API_TOKEN` because Cloudflare secrets are encrypted, rotate it using Cloudflare's Secrets page only after reviewing other integrations that use the old token. This page is not a substitute for production monitoring.
 
-## Dedicated Zoho sender alias for order confirmation
+## Separate Zoho Orders mailbox (not an alias)
 
-Fashion Fussion uses `orders@fashionfussion.in` for **order confirmation** emails. The user confirmed this is an alias on the **same Zoho mailbox** that previously passed the seller outreach email test. Therefore use the existing `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN` and `ZOHO_MAIL_ACCOUNT_ID`; do **not** create a new OAuth client, account ID or change `ZOHO_MAIL_FROM_ADDRESS` used by seller outreach/sales.
+**Correction (14 October 2026):** Zoho Admin Console shows five licensed users. `orders@fashionfussion.in` and `sales.team@fashionfussion.in` are **separate Zoho Users / mailboxes** with different account IDs. Previously we incorrectly assumed an alias. Therefore `ZOHO_ORDER_ALIAS_NOT_AUTHORIZED` was the expected result when the Sales account was checked for the Orders sender. **Do not add the already-existing Orders address as a Sales alias or overwrite Sales credentials.**
 
-`zoho-order-sender.js` selects `orders@fashionfussion.in` for `order_confirmed` and retains the current sales From address for other event types until separately defined. Protected `POST /api/outreach/zoho-verify` supports `{"dryRun":true,"purpose":"order_confirmation"}`: refreshes the existing OAuth token, reads the existing mailbox, and verifies the alias is listed as an **active sending address** in Zoho's `sendMailDetails`. No email is sent; failed authorization reports `ZOHO_ORDER_ALIAS_NOT_AUTHORIZED`. Default (no purpose) or `purpose:"outreach"` still checks the original sales sender.
+The existing Sales/outreach sender continues to use `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_MAIL_ACCOUNT_ID` and `ZOHO_MAIL_FROM_ADDRESS`.
 
-Android-friendly `/zoho-test.html` has a dedicated **Verify orders@ alias (no send)** button. It does not enable the existing sales test-send button. Order preview includes the selected sender and clearly marks independent alias verification as necessary. **No automatic order-confirmation sender has been enabled.** Actual alias send/delivery still requires an explicitly approved, controlled test before any outbox dispatcher is activated. Existing payment-failed customer backend uses separate Cloudflare credentials and is not modified by this change.
+For order confirmations, provision these **separate seller Cloudflare secrets** with credentials authorized for the Orders mailbox:
+
+- `ZOHO_ORDERS_CLIENT_ID` — Zoho OAuth client for Orders user
+- `ZOHO_ORDERS_CLIENT_SECRET` — associated OAuth secret
+- `ZOHO_ORDERS_REFRESH_TOKEN` — confidential refresh token obtained with `orders@fashionfussion.in` access and `ZohoMail.accounts.READ,ZohoMail.messages.CREATE` scopes
+- `ZOHO_ORDERS_MAIL_ACCOUNT_ID` — Orders mailbox's Zoho Mail account ID (**not** the Sales mailbox account ID)
+
+The From address is fixed as `orders@fashionfussion.in` in `zoho-order-sender.js`. Both Zoho user accounts are in India data center. Protected `POST /api/outreach/zoho-verify` with `{"dryRun":true,"purpose":"order_confirmation"}` uses **only** these separate Orders credentials, then checks the mailbox's own primary or active sender address. If unset it returns `ZOHO_CONFIGURATION_MISSING`; if the address does not match it returns `ZOHO_ORDERS_ADDRESS_NOT_AUTHORIZED`.
+
+The Android `/zoho-test.html` button is now **Verify Orders mailbox (no send)**. This does not enable the Sales test-send button; the existing separate Sales email test remains unchanged. The order email preview labels this as a separate mailbox. **No order-confirmation sending/dispatcher, cron or backfill is enabled.** Before enabling real order emails, verify the separate OAuth/account and run an explicitly authorized test from the Orders mailbox.
+
+Customer-side Razorpay payment-failure emails have their own Cloudflare deployment variables; this change does not touch them. Revoke/rotate any previously exposed Zoho refresh token before deployment.

@@ -4,7 +4,6 @@ import { buildZohoOrderEmail } from './zoho-order-templates.js';
 // Internal Zoho notification readiness preview. NEVER calls the Zoho Mail API.
 const EVENTS=new Set(['order_confirmed','payment_successful','shipped','out_for_delivery','delivered']);
 const SHIPPING=new Set(['shipped','out_for_delivery','delivered']);
-const ZOHO_KEYS=['ZOHO_CLIENT_ID','ZOHO_CLIENT_SECRET','ZOHO_REFRESH_TOKEN','ZOHO_MAIL_ACCOUNT_ID','ZOHO_MAIL_FROM_ADDRESS'];
 function json(body,status=200){return new Response(JSON.stringify(body),{status,headers:{
   'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'
 }})}
@@ -91,7 +90,7 @@ async function preview(env,orderId,eventType){
     blockers.push('confirmed_customer_email_mismatch');
  }else blockers.push('confirmed_customer_email_mismatch');
  const sender=getZohoSenderForEvent(env,eventType);
- const missingConfiguration=ZOHO_KEYS.filter(k=>!env[k]);
+ const missingConfiguration=sender.missingConfiguration;
  if(missingConfiguration.length)blockers.push('zoho_sender_configuration_missing');
  let template=null;
  if(order?.id && order.customer_name && order.display_order_id){
@@ -107,7 +106,8 @@ async function preview(env,orderId,eventType){
   outboxStatus:item?.status||null,hasVerifiedEmail:!blockers.includes('confirmed_customer_email_mismatch'),
   missingConfiguration,preview:template,
   senderAddress:sender.fromAddress,
-  senderAliasRequiresProviderVerification:sender.purpose==='order_confirmation',
+  senderIsSeparateMailbox:sender.purpose==='order_confirmation',
+  senderRequiresProviderVerification:sender.purpose==='order_confirmation',
   eligible:[...new Set(blockers)].length===0,
   blockers:[...new Set(blockers)]
  };
