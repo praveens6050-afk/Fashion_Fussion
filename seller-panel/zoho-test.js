@@ -6,6 +6,7 @@
   const verifyButton = document.getElementById('verify');
   const verifyOrdersButton = document.getElementById('verifyOrders');
   const probeOrderLinkButton = document.getElementById('probeOrderLink');
+  const checkAutomationReadinessButton = document.getElementById('checkAutomationReadiness');
   const sendOrdersButton = document.getElementById('sendOrders');
   const previewConfirmationButton = document.getElementById('previewConfirmation');
   const sendVerifiedConfirmationButton = document.getElementById('sendVerifiedConfirmation');
@@ -22,6 +23,7 @@
     verifyButton.disabled = busy || hasSent;
     verifyOrdersButton.disabled = busy || hasSent;
     probeOrderLinkButton.disabled = busy || hasSent;
+    checkAutomationReadinessButton.disabled = busy || hasSent;
     previewConfirmationButton.disabled = busy || hasSent;
     sendVerifiedConfirmationButton.disabled = busy || hasSent ||
       !verifiedConfirmation ||
@@ -98,6 +100,48 @@
       }
     } catch {
       setStatus('Connection check unreachable. Confirm latest Customer and Seller deployments. No email sent.');
+    } finally { busy = false; refresh(); }
+  });
+
+  // Read-only runtime flag and queue check. Never calls a send endpoint.
+  checkAutomationReadinessButton.addEventListener('click', async () => {
+    if (busy || hasSent) return;
+    const token = tokenField.value.trim();
+    if (!token) { setStatus('Enter your existing OUTREACH_API_TOKEN first.'); return; }
+    busy = true; refresh();
+    setStatus('Checking server-side automatic email configuration and queue (no send)...');
+    try {
+      const response = await fetch('/api/outreach/zoho-confirmation-status', {
+        method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'error',
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' }
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data || typeof data !== 'object') {
+        setStatus('Automatic readiness NOT verified (HTTP ' + response.status +
+          '). Confirm Seller Production secrets and try again. No email sent.');
+      } else {
+        const mode = String(data.dispatchMode || 'unknown').slice(0, 20);
+        const autoEnabled = data.sellerAutomationSwitchEnabled === true;
+        const sendingEnabled = data.sendingEnabled === true;
+        const cutoffSet = data.activationCutoffConfigured === true;
+        const queue = data.counts || {};
+        const pending = Number(queue.pending_review || 0) + Number(queue.ready || 0);
+        const sent = Number(queue.sent || 0);
+        const safelyOff = !autoEnabled && !sendingEnabled;
+        setStatus('READ-ONLY SELLER CONFIGURATION: ' +
+          'mode=' + mode + '; automationEnabled=' + autoEnabled +
+          '; sendingEnabled=' + sendingEnabled +
+          '; activationCutoffConfigured=' + cutoffSet +
+          '; recent queue pending/ready=' + pending + '; sent=' + sent + '. ' +
+          (mode === 'automatic' && safelyOff
+            ? 'READY FOR NEXT SETUP STEP: seller automation remains OFF.'
+            : !safelyOff
+              ? 'ATTENTION: one or more sending switches are ON. Turn both OFF until rollout approval.'
+              : 'Check that mode=automatic and both sending switches are false.') +
+          ' Customer hook status is NOT checked here. No email, order or payment was created.');
+      }
+    } catch {
+      setStatus('Automatic readiness request unavailable. No email sent.');
     } finally { busy = false; refresh(); }
   });
 
