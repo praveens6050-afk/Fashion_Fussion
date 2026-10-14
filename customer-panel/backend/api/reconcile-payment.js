@@ -1,3 +1,4 @@
+const { notifyConfirmedOrder } = require('../order-confirmation-notify');
 const {
   SUPABASE_URL,
   serverHeaders,
@@ -87,6 +88,7 @@ module.exports = async function reconcilePayment(req, res) {
           message: 'Payment is confirmed. Inventory finalization is being reconciled. Do not pay again.'
         });
       }
+      await notifyConfirmedOrder(order.id, 'reconcile_already_paid');
       return json(req, res, 200, {
         reconciled: true,
         already_processed: true,
@@ -209,6 +211,7 @@ module.exports = async function reconcilePayment(req, res) {
       });
     }
 
+    await notifyConfirmedOrder(order.id, 'reconcile_paid');
     return json(req, res, 200, {
       reconciled: true,
       captured: true,
