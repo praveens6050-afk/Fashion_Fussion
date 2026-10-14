@@ -2,6 +2,11 @@
 // This sends ONLY the stored, server-side service bearer to the fixed Customer
 // hostname. No browser ever sees it. It never invokes the mail dispatcher.
 const CUSTOMER_ENDPOINT='https://fashionfussion.in/api/order-mail-link-probe';
+// A 530 on the custom domain can indicate Cloudflare same-zone Worker routing.
+// The project-owned Pages domain is in a different Cloudflare zone. Only use
+// this exact known host for status 530, never after an auth/WAF rejection.
+const CUSTOMER_FALLBACK_ENDPOINT=
+  'https://fashion-fussion-customer.pages.dev/api/order-mail-link-probe';
 const respond=(body,status=200)=>new Response(JSON.stringify(body),{
   status,headers:{'content-type':'application/json; charset=utf-8',
     'cache-control':'no-store','x-content-type-options':'nosniff'}
@@ -29,7 +34,7 @@ export async function onRequestPost({request,env}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),5000);
   try{
-    const response=await fetch(CUSTOMER_ENDPOINT,{
+    const checkEndpoint=(endpoint)=>fetch(endpoint,{
       method:'POST',cache:'no-store',signal:controller.signal,redirect:'manual',
       headers:{
         Authorization:'Bearer '+serviceToken,
@@ -38,6 +43,15 @@ export async function onRequestPost({request,env}){
       },
       body:JSON.stringify({purpose:'order_event_link_probe'})
     });
+    let response=await checkEndpoint(CUSTOMER_ENDPOINT);
+    let endpointUsed='custom_domain';
+    // Do not retry any 401/403/404/503, never bypass Customer access policy.
+    // 530 is Cloudflare's inter-Worker routing/network response; this is NOT
+    // a customer-authentication result. The second target is a fixed project host.
+    if(response.status===530){
+      response=await checkEndpoint(CUSTOMER_FALLBACK_ENDPOINT);
+      endpointUsed='pages_dev_fallback';
+    }
     // Do not forward untrusted Customer responses, URLs, headers, or any secret.
     // A Cloudflare challenge can be HTML with status 403/530/200.
     const responseType=String(response.headers?.get('content-type')||'').toLowerCase();
@@ -46,6 +60,7 @@ export async function onRequestPost({request,env}){
     if(response.ok&&data?.linked===true&&data?.emailSent===false&&data?.orderCreated===false){
       return respond({
         connected:true,customerSecretMatchesSeller:true,
+        endpointUsed,
         customerHookEnabled:data.customerHookEnabled===true,
         sellerSendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
         automaticEmailSent:false,orderCreated:false,
@@ -66,7 +81,7 @@ export async function onRequestPost({request,env}){
       'CUSTOMER_ENDPOINT_HTTP_FAILURE';
     return respond({
       connected:false,customerSecretMatchesSeller:false,
-      customerHttpStatus:response.status,
+      customerHttpStatus:response.status,endpointUsed,
       customerResponseType:isJson?'json':'non_json',
       diagnosticCode:failureCode,
       customerHookEnabled:null,
