@@ -4,6 +4,7 @@
   const recipientField = document.getElementById('recipient');
   const result = document.getElementById('result');
   const verifyButton = document.getElementById('verify');
+  const verifyOrdersButton = document.getElementById('verifyOrders');
   const sendButton = document.getElementById('send');
   const form = document.getElementById('testForm');
   let verifiedToken = null;
@@ -12,6 +13,7 @@
   const setStatus = (text) => { result.textContent = text; };
   const refresh = () => {
     verifyButton.disabled = busy || hasSent;
+    verifyOrdersButton.disabled = busy || hasSent;
     sendButton.disabled = busy || hasSent || verifiedToken !== tokenField.value.trim() ||
       !recipientField.validity.valid || !recipientField.value.trim();
   };
@@ -49,6 +51,30 @@
       setStatus('Could not reach the verification endpoint. No email sent.');
     } finally { busy = false; refresh(); }
   });
+  verifyOrdersButton.addEventListener('click', async () => {
+    if (busy || hasSent) return;
+    const token = tokenField.value.trim();
+    if (!token) { setStatus('Enter the outreach API token first.'); return; }
+    busy = true;
+    verifiedToken = null; // Alias verification never enables the Sales test-send button.
+    refresh();
+    setStatus('Verifying orders@fashionfussion.in as an authorized sender alias. No email will be sent...');
+    try {
+      const { response, data } = await request('/api/outreach/zoho-verify', {
+        dryRun: true, purpose: 'order_confirmation'
+      }, token);
+      if (response.ok && data.ready === true && data.fromAddressAuthorized === true) {
+        setStatus('Success: orders@fashionfussion.in is authorized on the existing Zoho mailbox. No email sent. Automatic order emails remain disabled.');
+      } else {
+        setStatus('Order confirmation alias NOT verified (' + response.status + '). Issue: ' +
+          String(data.issue || data.error || 'unknown').slice(0, 180) +
+          '. Confirm the alias is enabled under Zoho Mail sender addresses. No email sent.');
+      }
+    } catch {
+      setStatus('Could not reach the Zoho alias verifier. No email sent.');
+    } finally { busy = false; refresh(); }
+  });
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const token = tokenField.value.trim();
