@@ -1,7 +1,9 @@
 // Operator-authorized Customer ↔ Seller secret handshake.
 // This sends ONLY the stored, server-side service bearer to the fixed Customer
 // hostname. No browser ever sees it. It never invokes the mail dispatcher.
-const CUSTOMER_ENDPOINT='https://fashionfussion.in/api/order-mail-link-probe';
+// Customer's canonical origin is www.fashionfussion.in; apex 301 redirects POST.
+// Call canonical host directly; do not follow redirects with the bearer.
+const CUSTOMER_ENDPOINT='https://www.fashionfussion.in/api/order-mail-link-probe';
 // A 530 on the custom domain can indicate Cloudflare same-zone Worker routing.
 // The project-owned Pages domain is in a different Cloudflare zone. Only use
 // this exact known host for status 530, never after an auth/WAF rejection.
@@ -44,7 +46,7 @@ export async function onRequestPost({request,env}){
       body:JSON.stringify({purpose:'order_event_link_probe'})
     });
     let response=await checkEndpoint(CUSTOMER_ENDPOINT);
-    let endpointUsed='custom_domain';
+    let endpointUsed='canonical_www';
     // Do not retry any 401/403/404/503, never bypass Customer access policy.
     // 530 is Cloudflare's inter-Worker routing/network response; this is NOT
     // a customer-authentication result. The second target is a fixed project host.
