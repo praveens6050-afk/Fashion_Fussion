@@ -48,7 +48,7 @@ async function dbFetch(config,path,body){
 async function rpc(config,name,body){
   // Do not use a user-provided RPC name/path.
   if(!['approve_zoho_order_confirmation','claim_zoho_order_confirmation',
-       'finish_zoho_order_confirmation'].includes(name))throw Error('RPC_UNSUPPORTED');
+       'finish_zoho_order_confirmation','preview_zoho_order_confirmation_eligibility'].includes(name))throw Error('RPC_UNSUPPORTED');
   return dbFetch(config,'/rest/v1/rpc/'+name,body);
 }
 async function zohoAccess(env){
@@ -90,8 +90,11 @@ async function preview(env,orderId){
     '&event_type=eq.order_confirmed&select=status,attempt_count,created_at&limit=1');
   if(!Array.isArray(rows))throw new Error('DATABASE_BAD_RESPONSE');
   const event=rows[0]||null;
+  const eligibility=await rpc(cfg,'preview_zoho_order_confirmation_eligibility',{p_order_id:Number(orderId)});
+  if(!eligibility||typeof eligibility!=='object'||Array.isArray(eligibility))
+    throw new Error('INVALID_ELIGIBILITY_PREVIEW');
   return {
-    dryRun:true,sent:0,liveSendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
+    dryRun:true,sent:0,eligibility,liveSendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
     autoSchedulerConfigured:false,
     eventStaged:Boolean(event),
     eventState:event?.status||null,
