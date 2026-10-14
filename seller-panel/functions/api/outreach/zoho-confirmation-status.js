@@ -42,8 +42,11 @@ export async function onRequestGet({request,env}){
   const testBuyerConfigured=testBuyerValue.length<=254 &&
     /^\S+@\S+\.\S+$/.test(testBuyerValue);
   // Only a boolean leaves this endpoint: no buyer address or secret value.
-  const autoModeArmed=mode==='automatic'&&automationSwitchEnabled&&
-      sendingEnabled&&cutoffValid&&testBuyerConfigured;
+  const globalApproval=env.ZOHO_ORDER_GLOBAL_LAUNCH_APPROVED==='true' &&
+    env.ZOHO_ORDER_GLOBAL_LAUNCH_ACK==='verified_customers_only_v1';
+  const autoModeArmed=(mode==='automatic'&&testBuyerConfigured||
+      mode==='production'&&globalApproval)&&automationSwitchEnabled&&
+      sendingEnabled&&cutoffValid;
   return respond({provider:'zoho_mail',sender:'orders@fashionfussion.in',
    sendingEnabled,
    automaticDispatcherEnabled:false,
@@ -55,12 +58,10 @@ export async function onRequestGet({request,env}){
    activationCutoffValid:cutoffValid,
    testBuyerRestricted:mode!=='production',
    testBuyerConfigured,
-   globalLaunchApproved:env.ZOHO_ORDER_GLOBAL_LAUNCH_APPROVED==='true' &&
-     env.ZOHO_ORDER_GLOBAL_LAUNCH_ACK==='verified_customers_only_v1',
+   globalLaunchApproved:globalApproval,
    globalClaimRateCapped:true,
    productionReadyForSupervisedActivation:mode==='production' && cutoffValid &&
-     env.ZOHO_ORDER_GLOBAL_LAUNCH_APPROVED==='true' &&
-     env.ZOHO_ORDER_GLOBAL_LAUNCH_ACK==='verified_customers_only_v1',
+     globalApproval && !automationSwitchEnabled && !sendingEnabled,
    // This is a readiness report only. No permission to send is derived from
    // the presence of flags, and no Cloudflare bindings are changed here.
    sellerConfigurationReadyForControlledRollout:
