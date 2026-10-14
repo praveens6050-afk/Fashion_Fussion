@@ -42,8 +42,11 @@ export async function onRequestGet({request,env}){
   const testBuyerConfigured=testBuyerValue.length<=254 &&
     /^\S+@\S+\.\S+$/.test(testBuyerValue);
   // Only a boolean leaves this endpoint: no buyer address or secret value.
-  const autoModeArmed=mode==='automatic'&&automationSwitchEnabled&&
-      sendingEnabled&&cutoffValid&&testBuyerConfigured;
+  const globalApproval=env.ZOHO_ORDER_GLOBAL_LAUNCH_APPROVED==='true' &&
+    env.ZOHO_ORDER_GLOBAL_LAUNCH_ACK==='verified_customers_only_v1';
+  const autoModeArmed=(mode==='automatic'&&testBuyerConfigured||
+      mode==='production'&&globalApproval)&&automationSwitchEnabled&&
+      sendingEnabled&&cutoffValid;
   return respond({provider:'zoho_mail',sender:'orders@fashionfussion.in',
    sendingEnabled,
    automaticDispatcherEnabled:false,
@@ -53,12 +56,17 @@ export async function onRequestGet({request,env}){
    sellerAutoModeArmed:autoModeArmed,
    activationCutoffConfigured:cutoffConfigured,
    activationCutoffValid:cutoffValid,
-   testBuyerRestricted:true,
+   testBuyerRestricted:mode!=='production',
    testBuyerConfigured,
+   globalLaunchApproved:globalApproval,
+   globalClaimRateCapped:true,
+   productionReadyForSupervisedActivation:mode==='production' && cutoffValid &&
+     globalApproval && !automationSwitchEnabled && !sendingEnabled,
    // This is a readiness report only. No permission to send is derived from
    // the presence of flags, and no Cloudflare bindings are changed here.
    sellerConfigurationReadyForControlledRollout:
-      mode==='automatic'&&cutoffValid&&testBuyerConfigured&&
+      ['automatic','production'].includes(mode)&&cutoffValid&&
+      (mode==='production'||testBuyerConfigured)&&
       !automationSwitchEnabled&&!sendingEnabled,
    scheduledQueueRecoveryEnabled:false,reviewRequired:true,
    sampleSize:data.length,counts,limitedToMostRecent:100});
