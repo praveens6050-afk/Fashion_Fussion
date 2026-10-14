@@ -177,6 +177,7 @@
           data.eligibility?.reason === 'ELIGIBLE_FOR_CONTROLLED_TEST' &&
           data.ordersConfigPresent === true &&
           data.liveSendingEnabled === true &&
+          data.pilotAllowlisted === true &&
           (data.eventState === 'pending_review' || data.eventState === 'ready') &&
           data.attemptCount === 0;
         if (pilotReady) verifiedConfirmation = {orderId, token};
@@ -185,6 +186,7 @@
           '; attempts: ' + String(data.attemptCount || 0) +
           '; provider configuration present: ' + String(data.ordersConfigPresent) +
           '; live sending enabled: ' + String(data.liveSendingEnabled) +
+          '; this order allowlisted: ' + String(data.pilotAllowlisted === true) +
           '; eligible for controlled test: ' + String(data.eligibility?.eligible === true) +
           '; reason: ' + String(data.eligibility?.reason || 'UNKNOWN').slice(0,90) +
           (pilotReady ? '. ONE real email pilot is now unlocked, with a separate confirmation.' :
