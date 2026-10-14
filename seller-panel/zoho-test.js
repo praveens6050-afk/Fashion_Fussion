@@ -6,6 +6,8 @@
   const verifyButton = document.getElementById('verify');
   const verifyOrdersButton = document.getElementById('verifyOrders');
   const sendOrdersButton = document.getElementById('sendOrders');
+  const previewConfirmationButton = document.getElementById('previewConfirmation');
+  const orderIdField = document.getElementById('orderId');
   const sendButton = document.getElementById('send');
   const form = document.getElementById('testForm');
   let verifiedToken = null;
@@ -16,6 +18,7 @@
   const refresh = () => {
     verifyButton.disabled = busy || hasSent;
     verifyOrdersButton.disabled = busy || hasSent;
+    previewConfirmationButton.disabled = busy || hasSent;
     sendOrdersButton.disabled = busy || hasSent || verifiedOrdersToken !== tokenField.value.trim() ||
       recipientField.value.trim().toLowerCase() !== 'ps4038267@gmail.com';
     sendButton.disabled = busy || hasSent || verifiedToken !== tokenField.value.trim() ||
@@ -109,6 +112,35 @@
       busy = false;
       refresh();
     }
+  });
+
+  previewConfirmationButton.addEventListener('click', async () => {
+    if (busy || hasSent) return;
+    const token = tokenField.value.trim();
+    const orderId = orderIdField.value.trim();
+    if (!token) { setStatus('Enter the outreach API token first.'); return; }
+    if (!/^[1-9]\d{0,14}$/.test(orderId) || !Number.isSafeInteger(Number(orderId))) {
+      setStatus('Enter a valid numeric Order ID for this read-only check.'); return;
+    }
+    busy = true; refresh();
+    setStatus('Checking order confirmation queue (no email will be sent)...');
+    try {
+      const { response, data } = await request('/api/outreach/zoho-confirmation-dispatch', {
+        orderId: Number(orderId), dryRun: true
+      }, token);
+      if (response.ok && data.dryRun === true) {
+        setStatus('Order #' + orderId + ' — staged: ' + String(data.eventStaged) +
+          '; queue status: ' + String(data.eventState || 'none') +
+          '; attempts: ' + String(data.attemptCount || 0) +
+          '; provider configuration present: ' + String(data.ordersConfigPresent) +
+          '; live sending enabled: ' + String(data.liveSendingEnabled) +
+          '. No email sent. This is NOT verification of payment or delivery.');
+      } else {
+        setStatus('Queue preview unavailable (' + response.status + '). No email sent.');
+      }
+    } catch {
+      setStatus('Queue preview request failed. No email sent.');
+    } finally { busy = false; refresh(); }
   });
 
   form.addEventListener('submit', async (event) => {
