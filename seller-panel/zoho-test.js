@@ -8,6 +8,7 @@
   const probeOrderLinkButton = document.getElementById('probeOrderLink');
   const sendOrdersButton = document.getElementById('sendOrders');
   const previewConfirmationButton = document.getElementById('previewConfirmation');
+  const sendVerifiedConfirmationButton = document.getElementById('sendVerifiedConfirmation');
   const orderIdField = document.getElementById('orderId');
   const sendButton = document.getElementById('send');
   const form = document.getElementById('testForm');
@@ -15,12 +16,17 @@
   let verifiedOrdersToken = null;
   let busy = false;
   let hasSent = false;
+  let verifiedConfirmation = null;
   const setStatus = (text) => { result.textContent = text; };
   const refresh = () => {
     verifyButton.disabled = busy || hasSent;
     verifyOrdersButton.disabled = busy || hasSent;
     probeOrderLinkButton.disabled = busy || hasSent;
     previewConfirmationButton.disabled = busy || hasSent;
+    sendVerifiedConfirmationButton.disabled = busy || hasSent ||
+      !verifiedConfirmation ||
+      verifiedConfirmation.token !== tokenField.value.trim() ||
+      verifiedConfirmation.orderId !== orderIdField.value.trim();
     sendOrdersButton.disabled = busy || hasSent || verifiedOrdersToken !== tokenField.value.trim() ||
       recipientField.value.trim().toLowerCase() !== 'ps4038267@gmail.com';
     sendButton.disabled = busy || hasSent || verifiedToken !== tokenField.value.trim() ||
@@ -38,7 +44,10 @@
     const data = await response.json().catch(() => ({ error: 'Unexpected non-JSON server response' }));
     return { response, data };
   };
-  tokenField.addEventListener('input', () => { verifiedToken = null; verifiedOrdersToken = null; refresh(); });
+  tokenField.addEventListener('input', () => {
+    verifiedToken = null; verifiedOrdersToken = null; verifiedConfirmation = null; refresh();
+  });
+  orderIdField.addEventListener('input', () => { verifiedConfirmation = null; refresh(); });
   recipientField.addEventListener('input', refresh);
   verifyButton.addEventListener('click', async () => {
     const token = tokenField.value.trim();
@@ -156,6 +165,7 @@
     if (!/^[1-9]\d{0,14}$/.test(orderId) || !Number.isSafeInteger(Number(orderId))) {
       setStatus('Enter a valid numeric Order ID for this read-only check.'); return;
     }
+    verifiedConfirmation = null;
     busy = true; refresh();
     setStatus('Checking order confirmation queue (no email will be sent)...');
     try {
@@ -163,6 +173,13 @@
         orderId: Number(orderId), dryRun: true
       }, token);
       if (response.ok && data.dryRun === true) {
+        const pilotReady = data.eligibility?.eligible === true &&
+          data.eligibility?.reason === 'ELIGIBLE_FOR_CONTROLLED_TEST' &&
+          data.ordersConfigPresent === true &&
+          data.liveSendingEnabled === true &&
+          (data.eventState === 'pending_review' || data.eventState === 'ready') &&
+          data.attemptCount === 0;
+        if (pilotReady) verifiedConfirmation = {orderId, token};
         setStatus('Order #' + orderId + ' — staged: ' + String(data.eventStaged) +
           '; queue status: ' + String(data.eventState || 'none') +
           '; attempts: ' + String(data.attemptCount || 0) +
@@ -170,13 +187,56 @@
           '; live sending enabled: ' + String(data.liveSendingEnabled) +
           '; eligible for controlled test: ' + String(data.eligibility?.eligible === true) +
           '; reason: ' + String(data.eligibility?.reason || 'UNKNOWN').slice(0,90) +
-          '. No email sent. This is NOT proof of delivery.');
+          (pilotReady ? '. ONE real email pilot is now unlocked, with a separate confirmation.' :
+            '. Send stays LOCKED. Check seller feature flag/eligibility; no email sent.') +
+          ' This is NOT proof of delivery.');
       } else {
         setStatus('Queue preview unavailable (' + response.status + '). No email sent.');
       }
     } catch {
       setStatus('Queue preview request failed. No email sent.');
     } finally { busy = false; refresh(); }
+  });
+
+  sendVerifiedConfirmationButton.addEventListener('click', async () => {
+    const token = tokenField.value.trim();
+    const orderId = orderIdField.value.trim();
+    if (busy || hasSent || !verifiedConfirmation ||
+        verifiedConfirmation.orderId !== orderId ||
+        verifiedConfirmation.token !== token) return;
+    if (!window.confirm(
+      'Send exactly ONE REAL order-confirmation email for database order #' + orderId +
+      ' to the matching verified buyer email? The real COD order already exists. ' +
+      'Zoho may incur delivery costs. This action cannot be undone, and there is NO automatic retry.'
+    )) return;
+    // Fail closed after ANY attempt, including timeout/unknown provider outcomes.
+    busy = true;
+    hasSent = true;
+    verifiedConfirmation = null;
+    refresh();
+    setStatus('Submitting ONE verified order-confirmation email. Do not retry...');
+    try {
+      const {response, data} = await request('/api/outreach/zoho-confirmation-dispatch',
+        {orderId: Number(orderId), confirmSend: true}, token);
+      if(response.ok && data.accepted === true && data.sent === 1){
+        setStatus('Zoho accepted ONE order confirmation for order #' + orderId +
+          '. Check the buyer inbox / spam and the Orders mailbox Sent folder for delivery.' +
+          ' Customer-side automatic email hook remains disabled. No second send.');
+      } else {
+        setStatus('Order confirmation NOT confirmed (' + response.status + '). ' +
+          'Reason: ' + String(data.reason || data.error || 'UNKNOWN').slice(0,120) +
+          '. Provider outcome may be uncertain. Check Zoho Sent + Supabase outbox before any retry.');
+      }
+    } catch {
+      setStatus('Network timeout/error: provider outcome UNKNOWN. ' +
+        'Do not retry. Check Zoho Sent and Supabase notification outbox.');
+    } finally {
+      tokenField.value = '';
+      verifiedToken = null;
+      verifiedOrdersToken = null;
+      busy = false;
+      refresh();
+    }
   });
 
   form.addEventListener('submit', async (event) => {
