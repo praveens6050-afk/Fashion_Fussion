@@ -116,7 +116,10 @@ function activationCutoff(env){
   if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) return null;
   const ms=Date.parse(value);
   if(!Number.isFinite(ms)||ms>Date.now()+60000) return null;
-  if(new Date(ms).toISOString()!==new Date(Date.parse(value)).toISOString())return null;
+  const canonical=value.length===20
+    ? new Date(ms).toISOString().replace('.000Z','Z')
+    : new Date(ms).toISOString();
+  if(canonical!==value)return null;
   return ms;
 }
 async function validateAutoWindow(env,orderId){
