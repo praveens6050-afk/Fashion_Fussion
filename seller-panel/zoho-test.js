@@ -119,7 +119,7 @@
     const token = tokenField.value.trim();
     const orderId = orderIdField.value.trim();
     if (!token) { setStatus('Enter the outreach API token first.'); return; }
-    if (!/^[1-9]\\d{0,14}$/.test(orderId) || !Number.isSafeInteger(Number(orderId))) {
+    if (!/^[1-9]\d{0,14}$/.test(orderId) || !Number.isSafeInteger(Number(orderId))) {
       setStatus('Enter a valid numeric Order ID for this read-only check.'); return;
     }
     busy = true; refresh();
