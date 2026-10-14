@@ -46,7 +46,7 @@ export async function onRequestPost({request,env}){
       body:JSON.stringify({purpose:'order_event_link_probe'})
     });
     let response=await checkEndpoint(CUSTOMER_ENDPOINT);
-    let endpointUsed='custom_domain';
+    let endpointUsed='canonical_www';
     // Do not retry any 401/403/404/503, never bypass Customer access policy.
     // 530 is Cloudflare's inter-Worker routing/network response; this is NOT
     // a customer-authentication result. The second target is a fixed project host.
