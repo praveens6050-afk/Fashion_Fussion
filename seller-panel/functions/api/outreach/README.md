@@ -157,3 +157,13 @@ Template HTML is escaped and links to account-protected order details; it never 
 **Important configuration distinction:** Seller outreach expects `ZOHO_MAIL_ACCOUNT_ID` / `ZOHO_MAIL_FROM_ADDRESS`. Existing customer-panel Razorpay webhook expects `ZOHO_ACCOUNT_ID` / `ZOHO_FROM_EMAIL`. Check each Cloudflare project's own secrets; working seller configuration does not imply customer payment-failed emails are working. Never put secret values into GitHub, screenshots or chat. The health endpoint checks configured variable presence only, not a successful Zoho API send.
 
 Even if a dry-run says `eligible:true`, email sending is still **off**. Before enabling: implement atomic outbox claims, delivery ambiguity handling, opt-out/transactional communication policy checks, and controlled tests with test orders. Do not re-send or backfill historical events without review.
+
+## Verify Zoho credentials without sending email
+
+Protected endpoint: `POST /api/outreach/zoho-verify`. Requires `Authorization: Bearer <OUTREACH_API_TOKEN>` and JSON `{"dryRun":true}`. The server checks all five Zoho secrets, refreshes an OAuth access token using form-encoded **POST** (not query-string secrets), and fetches `GET https://mail.zoho.in/api/accounts` with `ZohoMail.accounts.READ` to confirm `ZOHO_MAIL_ACCOUNT_ID`, `ZOHO_MAIL_FROM_ADDRESS`, and mailbox sending availability. The endpoint **never sends email**, never returns access/refresh tokens or account IDs, and returns `sent:0`. The OAuth check is separate from actual `ZohoMail.messages.CREATE` permission and successful delivery, which require future explicit test sending after sign-off. It is safe to run multiple times.
+
+Possible `issue` responses include `ZOHO_CONFIGURATION_MISSING`, `ZOHO_OAUTH_REFRESH_FAILED`, `ZOHO_ACCOUNT_READ_FAILED`, `ZOHO_ACCOUNT_ID_NOT_FOUND`, `ZOHO_FROM_ADDRESS_NOT_AUTHORIZED`, and `ZOHO_MAILBOX_DISABLED`. A ready result is a **read-only configuration check**, not notification activation.
+
+Security: the existing `POST /api/outreach/email` OAuth request has been changed to place the refresh token and client secret in the `application/x-www-form-urlencoded` **POST body**, never the request URL. Keep sender secrets out of chat, screenshots and logs. If a refresh token was exposed in a prior screenshot, revoke/rotate it before testing production mail.
+
+Cloudflare customer-panel payment-failed email uses separate `ZOHO_ACCOUNT_ID` / `ZOHO_FROM_EMAIL` variable names. Check those separately; the seller Zoho verification endpoint does not verify secrets on the customer Pages project.
