@@ -168,7 +168,9 @@
           '; attempts: ' + String(data.attemptCount || 0) +
           '; provider configuration present: ' + String(data.ordersConfigPresent) +
           '; live sending enabled: ' + String(data.liveSendingEnabled) +
-          '. No email sent. This is NOT verification of payment or delivery.');
+          '; eligible for controlled test: ' + String(data.eligibility?.eligible === true) +
+          '; reason: ' + String(data.eligibility?.reason || 'UNKNOWN').slice(0,90) +
+          '. No email sent. This is NOT proof of delivery.');
       } else {
         setStatus('Queue preview unavailable (' + response.status + '). No email sent.');
       }
