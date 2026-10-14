@@ -48,6 +48,8 @@ export async function onRequestGet(context) {
       missing: zohoRequired.filter((key) => !env[key]),
       accountsBase: env.ZOHO_ACCOUNTS_BASE_URL || 'https://accounts.zoho.in',
       mailBase: env.ZOHO_MAIL_BASE_URL || 'https://mail.zoho.in',
+      configurationOnly: true,
+      note: 'Presence-only check. POST /api/outreach/zoho-verify with dryRun:true verifies OAuth and sender account without sending email.',
     },
     whatsapp: {
       ready: whatsappRequired.every((key) => Boolean(env[key]))
