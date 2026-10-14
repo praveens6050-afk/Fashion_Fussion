@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { notifyConfirmedOrder } = require('../order-confirmation-notify');
+const { scheduleConfirmedOrder } = require('../order-confirmation-notify');
 const {
   WEBHOOK_SECRET,
   SUPABASE_URL,
@@ -379,7 +379,7 @@ async function handlePaymentFailed(event) {
   }
 }
 
-async function handlePaymentCaptured(event) {
+async function handlePaymentCaptured(event,req) {
   const payment = event?.payload?.payment?.entity;
   if (!payment?.id || !payment?.order_id || payment.status !== 'captured') return { received: true, ignored: true };
   const order = await loadOrderByRazorpayOrder(payment.order_id);
@@ -407,7 +407,7 @@ async function handlePaymentCaptured(event) {
   }
   if (order.status === 'paid') {
     await commitOrderInventory(order.id);
-    await notifyConfirmedOrder(order.id, 'razorpay_webhook_already_paid');
+    await scheduleConfirmedOrder(req,order.id, 'razorpay_webhook_already_paid');
     return { received: true, already_processed: true, inventory_reconciled: true };
   }
   if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
@@ -434,7 +434,7 @@ async function handlePaymentCaptured(event) {
     p_source: 'razorpay_webhook'
   });
   await commitOrderInventory(order.id);
-  await notifyConfirmedOrder(order.id, 'razorpay_webhook_paid');
+  await scheduleConfirmedOrder(req,order.id, 'razorpay_webhook_paid');
   return { received: true, finalized: true, inventory_committed: true, store_order_id: order.id };
 }
 
@@ -518,7 +518,7 @@ module.exports = async function razorpayWebhook(req, res) {
 
     const event = JSON.parse(raw.toString('utf8') || '{}');
     let result;
-    if (event.event === 'payment.captured') result = await handlePaymentCaptured(event);
+    if (event.event === 'payment.captured') result = await handlePaymentCaptured(event,req);
     else if (event.event === 'payment.failed') result = await handlePaymentFailed(event);
     else if (['refund.created', 'refund.processed', 'refund.failed'].includes(event.event)) result = await handleRefundEvent(event);
     else result = { received: true, ignored: true };
