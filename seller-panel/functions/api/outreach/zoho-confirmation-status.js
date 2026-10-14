@@ -22,7 +22,7 @@ export async function onRequestGet({request,env}){
   const counts={pending_review:0,ready:0,sending:0,sent:0,blocked:0,failed:0};
   for(const row of data){if(Object.prototype.hasOwnProperty.call(counts,row.status))counts[row.status]++;}
   return respond({provider:'zoho_mail',sender:'orders@fashionfussion.in',
-   sendingEnabled:false,automaticDispatcherEnabled:false,reviewRequired:true,
+   sendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',automaticDispatcherEnabled:false,reviewRequired:true,
    sampleSize:data.length,counts,limitedToMostRecent:100});
  }catch{return respond({error:'Queue lookup unavailable'},503);}
 }
