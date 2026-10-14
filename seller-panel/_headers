@@ -51,3 +51,11 @@
 
 /login.html
   Cache-Control: no-store, max-age=0, no-transform
+
+/zoho-mail-test.html
+  Cache-Control: no-store, max-age=0, no-transform
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/zoho-mail-test.js
+  Cache-Control: no-store, max-age=0, no-transform
