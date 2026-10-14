@@ -75,10 +75,15 @@
           '; Seller sending enabled: ' + String(data.sellerSendingEnabled) +
           '. No email, order or payment was created.');
       } else {
-        setStatus('Connection NOT verified (' + response.status + '). ' +
-          String(data.error || 'Unknown connection issue').slice(0, 200) +
-          '. Ensure exactly the same token is configured in BOTH Cloudflare projects ' +
-          'and BOTH latest deployments are green. No email sent.');
+        const customerHttp=Number.isInteger(data.customerHttpStatus) ?
+          ' Customer HTTP ' + data.customerHttpStatus + '.' : '';
+        const diagnostic=String(data.diagnosticCode || 'NO_DIAGNOSTIC').slice(0, 90);
+        const responseType=String(data.customerResponseType || 'unknown').slice(0, 24);
+        setStatus('Connection NOT verified (Seller HTTP ' + response.status + '). ' +
+          'Code: ' + diagnostic + '.' + customerHttp +
+          ' Customer response type: ' + responseType + '. ' +
+          String(data.error || 'Unknown connection issue').slice(0, 180) +
+          '. No email, order or payment was created. Do not enable sending flags.');
       }
     } catch {
       setStatus('Connection check unreachable. Confirm latest Customer and Seller deployments. No email sent.');
