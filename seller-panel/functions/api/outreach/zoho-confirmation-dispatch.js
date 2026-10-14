@@ -48,7 +48,8 @@ async function dbFetch(config,path,body){
 async function rpc(config,name,body){
   // Do not use a user-provided RPC name/path.
   if(!['approve_zoho_order_confirmation','claim_zoho_order_confirmation',
-       'finish_zoho_order_confirmation','preview_zoho_order_confirmation_eligibility'].includes(name))throw Error('RPC_UNSUPPORTED');
+       'finish_zoho_order_confirmation','preview_zoho_order_confirmation_eligibility',
+       'claim_zoho_order_confirmation_global_limited'].includes(name))throw Error('RPC_UNSUPPORTED');
   return dbFetch(config,'/rest/v1/rpc/'+name,body);
 }
 async function zohoAccess(env){
@@ -122,13 +123,13 @@ function activationCutoff(env){
   if(canonical!==value)return null;
   return ms;
 }
-async function validateAutoWindow(env,orderId){
+async function validateAutoWindow(env,orderId,mode='automatic'){
   const cutoff=activationCutoff(env);
   if(cutoff===null)return {allowed:false,reason:'AUTOMATION_CUTOFF_MISSING_OR_INVALID'};
   // Automatic rollout remains constrained to ONE verified test buyer;
   // a separate future reviewed code change is required for all buyers.
   const testBuyer=String(env.ZOHO_ORDER_AUTOMATION_TEST_BUYER_EMAIL||'').trim().toLowerCase();
-  if(testBuyer.length>254||!/^\S+@\S+\.\S+$/.test(testBuyer)){
+  if(mode==='automatic' && (testBuyer.length>254||!/^\S+@\S+\.\S+$/.test(testBuyer))){
     return {allowed:false,reason:'TEST_BUYER_NOT_CONFIGURED'};
   }
   const db=dbConfig(env);
@@ -145,7 +146,7 @@ async function validateAutoWindow(env,orderId){
   // order email matches the confirmed Supabase Auth user's email.
   const orderBuyer=typeof order?.customer_email==='string' ?
     order.customer_email.trim().toLowerCase() : '';
-  if(!order||!orderBuyer||orderBuyer!==testBuyer){
+  if(!order||!orderBuyer||(mode==='automatic'&&orderBuyer!==testBuyer)){
     return {allowed:false,reason:'NOT_CONTROLLED_TEST_BUYER'};
   }
   const age=time=>typeof time==='string'?Date.parse(time):NaN;
@@ -160,13 +161,15 @@ async function validateAutoWindow(env,orderId){
   }
   return {allowed:true};
 }
-async function dispatch(env,orderId){
+async function dispatch(env,orderId,mode='pilot'){
   const db=dbConfig(env);
   // Provider readiness is checked BEFORE the atomic claim. Failure leaves queue untouched.
   const {cfg,headers}=await zohoAccess(env);
   // Service-only SQL validation; rejects stale/unpaid/unverified/cancelled orders.
   await rpc(db,'approve_zoho_order_confirmation',{p_order_id:orderId});
-  const claims=await rpc(db,'claim_zoho_order_confirmation',{p_order_id:orderId});
+  const claimRpc=mode==='production' ? 'claim_zoho_order_confirmation_global_limited'
+    : 'claim_zoho_order_confirmation';
+  const claims=await rpc(db,claimRpc,{p_order_id:orderId});
   if(!Array.isArray(claims)||claims.length!==1)return {status:409,body:{
     accepted:false,sent:0,reason:'ORDER_NOT_ELIGIBLE_OR_ALREADY_PROCESSED'
   }};
@@ -265,19 +268,26 @@ export async function onRequestPost({request,env}){
     const pilotId=String(env.ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID||'').trim();
     if(!/^[1-9]\d{0,14}$/.test(pilotId)||!Number.isSafeInteger(Number(pilotId))||pilotId!==id)
       return json({error:'Pilot order is not allowlisted',sent:0,reason:'PILOT_ORDER_NOT_ALLOWLISTED'},423);
-  } else if(mode==='automatic'){
+  } else if(mode==='automatic'||mode==='production'){
     if(!orderService)return json({error:'Automation requires internal service credentials',sent:0},403);
     if(env.ZOHO_ORDER_AUTOMATION_ENABLED!=='true')
       return json({error:'Order automation is disabled',sent:0,reason:'AUTOMATION_DISABLED'},423);
+    // Broad customer sending is an independent explicit launch authorization.
+    // No existing pilot or test-buyer flag grants it implicitly.
+    if(mode==='production' &&
+       (env.ZOHO_ORDER_GLOBAL_LAUNCH_APPROVED!=='true' ||
+        env.ZOHO_ORDER_GLOBAL_LAUNCH_ACK!=='verified_customers_only_v1')){
+      return json({error:'Global launch not approved',sent:0,reason:'GLOBAL_LAUNCH_LOCKED'},423);
+    }
     let gate;
-    try{gate=await validateAutoWindow(env,id)}
+    try{gate=await validateAutoWindow(env,id,mode)}
     catch{return json({error:'Automation window check unavailable',sent:0},503)}
     if(!gate.allowed)return json({error:'Order not allowed for automatic delivery',sent:0,reason:gate.reason},423);
   } else {
     return json({error:'Unknown order email dispatch mode',sent:0},423);
   }
   try {
-    const r=await dispatch(env,id);
+    const r=await dispatch(env,id,mode);
     return json(r.body,r.status);
   }catch{
     return json({accepted:false,sent:0,reason:
