@@ -104,7 +104,8 @@ export async function onRequestPost({request,env}){
   if(!(await authorized(request,env)))return json({error:'Unauthorized'},401);
   let body;
   try {body=await request.json();}catch{return json({error:'Invalid JSON'},400);}
-  if(body?.confirmOrdersTestSend!==true||body?.to!==TEST_RECIPIENT ||
+  if(!body||typeof body!=='object'||Array.isArray(body)||
+     body.confirmOrdersTestSend!==true||body.to!==TEST_RECIPIENT||
      Object.keys(body).sort().join(',')!=='confirmOrdersTestSend,to')
     return json({error:'Explicit confirmation and fixed recipient required. No email sent.'},400);
   try {
