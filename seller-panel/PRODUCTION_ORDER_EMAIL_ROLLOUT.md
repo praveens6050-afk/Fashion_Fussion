@@ -21,3 +21,13 @@ Seller must explicitly configure `ZOHO_ORDER_CONFIRMATION_MODE=production`, `ZOH
 5. Do not remove the existing test-buyer secret: it remains necessary if reverting to restricted `automatic` mode. Only this explicitly approved `production` mode ignores it.
 
 **No mass outreach, marketing, unpaid-order notifications, Zoho sends or new orders are performed by this change.**
+
+## Production no-send readiness gate and monitoring (15 October 2026)
+
+The existing `/zoho-test.html` diagnostic now recognizes both **single-test-buyer** `automatic` and **all-verified-buyers** `production` modes. The protected `GET /api/outreach/zoho-confirmation-status` uses only the service-role aggregate `zoho_order_delivery_telemetry()` RPC. It reports exact global hourly/rolling-24h send-attempt quotas, count of emails already sent, pending/ready rows, >10-minute stale queue entries and >5-minute stuck-sending entries. It never returns customer addresses, specific order IDs, secrets or notification contents. Invalid/unavailable telemetry gives HTTP 503 rather than a false readiness PASS.
+
+Before permanent go-live, expect `dispatchMode=production`, `activationCutoffValid=true`, `queueHealth=healthy`, `quotaAvailable=true`. The cutoff must be chosen **fresh before the start of new orders** and after both known test orders (23, 24); do not use a timestamp in the future. With `globalLaunchApproved=false`, broad sending must remain locked regardless of the older single-test-buyer switches.
+
+`productionReadyForSupervisedActivation=true` is reported only when global approval is configured **and** both Seller sending switches remain OFF and the queue has no stale/stuck entries; it is not proof the Customer hook is enabled or Cloudflare deployed. Final global activation requires the user to explicitly authorize enabling both Seller switches and separately confirm the Customer `FF_ORDER_EMAIL_HOOK_ENABLED=true` flag. Validate a real new confirmed order and independently verify inbox delivery before calling it live.
+
+Once running, monitor `queueHealth` and `quotaAvailable` regularly; pause sending if hourly caps are reached, stale events accumulate or stuck sends appear. Cap-rejected outbox rows are never automatically reprocessed by this deployment. Email delivery after Zoho acceptance and durable recovery remain operational limitations.
