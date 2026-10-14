@@ -53,12 +53,19 @@ export async function onRequestGet({request,env}){
    sellerAutoModeArmed:autoModeArmed,
    activationCutoffConfigured:cutoffConfigured,
    activationCutoffValid:cutoffValid,
-   testBuyerRestricted:true,
+   testBuyerRestricted:mode!=='production',
    testBuyerConfigured,
+   globalLaunchApproved:env.ZOHO_ORDER_GLOBAL_LAUNCH_APPROVED==='true' &&
+     env.ZOHO_ORDER_GLOBAL_LAUNCH_ACK==='verified_customers_only_v1',
+   globalClaimRateCapped:true,
+   productionReadyForSupervisedActivation:mode==='production' && cutoffValid &&
+     env.ZOHO_ORDER_GLOBAL_LAUNCH_APPROVED==='true' &&
+     env.ZOHO_ORDER_GLOBAL_LAUNCH_ACK==='verified_customers_only_v1',
    // This is a readiness report only. No permission to send is derived from
    // the presence of flags, and no Cloudflare bindings are changed here.
    sellerConfigurationReadyForControlledRollout:
-      mode==='automatic'&&cutoffValid&&testBuyerConfigured&&
+      ['automatic','production'].includes(mode)&&cutoffValid&&
+      (mode==='production'||testBuyerConfigured)&&
       !automationSwitchEnabled&&!sendingEnabled,
    scheduledQueueRecoveryEnabled:false,reviewRequired:true,
    sampleSize:data.length,counts,limitedToMostRecent:100});
