@@ -37,3 +37,11 @@ The Sales/outreach mailbox's OAuth/token configuration is unchanged. The four ex
 - A successful email API call does NOT guarantee final inbox delivery.
 - At-most-once provider submission prevents duplicate mail but can leave email unsent on transient failure. There is **no scheduled queue recovery worker** yet. A pending-review event requires authorized intervention.
 - Order emails are not automatically sent while either feature flag remains off. Payment-failed emails use a **different** customer-side Zoho integration; they are not modified here.
+
+## Safe shared-secret connection test — no orders, payments or emails
+
+To confirm the **48+ character `ZOHO_ORDER_EVENT_TOKEN`** saved in both Cloudflare projects really matches, a new customer Cloudflare Pages Function listens at `POST /api/order-mail-link-probe`. It authenticates a server-to-server Bearer token against its own secret (length >= 40) and accepts **only** JSON `{"purpose":"order_event_link_probe"}`. It returns whether the customer's email hook feature flag is enabled, not the secret value. It never touches Supabase, payments, Zoho Mail, checkout or the notification outbox, and GET is rejected.
+
+The Seller project exposes a separate **operator**-protected endpoint `POST /api/outreach/zoho-order-link-test` with JSON `{"dryRun":true}`; the operator uses their existing `OUTREACH_API_TOKEN` only on the official seller website. Seller backend then sends its stored `ZOHO_ORDER_EVENT_TOKEN` over HTTPS to the fixed customer domain, and reports whether the two secrets match. The user does not enter or see the service token. The Seller `/zoho-test.html` UI has **Test Customer ↔ Seller connection (no send)**.
+
+Both deployments must include this change before the link check works. Cloudflare may need production redeploy after secret changes. Keep both sending flags false until verified order E2E approval. A matching-token check does **not** test order creation, deliverability or webhook replay, and does not activate email.
