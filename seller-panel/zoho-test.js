@@ -125,6 +125,7 @@
         const sendingEnabled = data.sendingEnabled === true;
         const cutoffSet = data.activationCutoffConfigured === true;
         const cutoffValid = data.activationCutoffValid === true;
+        const testBuyerConfigured = data.testBuyerConfigured === true;
         const queue = data.counts || {};
         const pending = Number(queue.pending_review || 0) + Number(queue.ready || 0);
         const sent = Number(queue.sent || 0);
@@ -134,6 +135,7 @@
           '; sendingEnabled=' + sendingEnabled +
           '; activationCutoffConfigured=' + cutoffSet +
           '; activationCutoffValid=' + cutoffValid +
+          '; testBuyerConfigured=' + testBuyerConfigured +
           '; recent queue pending/ready=' + pending + '; sent=' + sent + '. ' +
           (!safelyOff
             ? 'ATTENTION: one or more sending switches are ON. Turn BOTH OFF until separate rollout approval.'
@@ -143,7 +145,9 @@
                 ? 'NEXT: configure a fresh UTC activation cutoff; do not enable sending yet.'
                 : !cutoffValid
                   ? 'NEXT: correct cutoff to canonical past/current UTC time (Z); no sends authorized.'
-                  : 'SAFE CONFIG: Seller automatic mode ready for controlled future test, switches remain OFF.') +
+                  : !testBuyerConfigured
+                    ? 'NEXT: add Seller secret ZOHO_ORDER_AUTOMATION_TEST_BUYER_EMAIL for the ONE approved test account; keep switches OFF.'
+                    : 'SAFE CONFIG: restricted to ONE configured test buyer, switches remain OFF.') +
           ' Customer hook status is NOT checked here. No email, order or payment was created.');
       }
     } catch {
