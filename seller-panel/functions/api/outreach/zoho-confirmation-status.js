@@ -8,6 +8,18 @@ async function auth(req,env){
  const [a,b]=await Promise.all([digest(h.startsWith('Bearer ')?h.slice(7):''),digest(env.OUTREACH_API_TOKEN)]);
  let d=0;for(let i=0;i<a.length;i++)d|=a[i]^b[i];return d===0;
 }
+// Match the dispatcher's fail-closed UTC parser without returning the timestamp
+// or any private Cloudflare secret to the browser.
+function validCutoff(value,now=Date.now()){
+ const raw=String(value||'').trim();
+ if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(raw))return false;
+ const parsed=Date.parse(raw);
+ if(!Number.isFinite(parsed)||parsed>now+60000)return false;
+ const canonical=raw.length===20
+   ? new Date(parsed).toISOString().replace('.000Z','Z')
+   : new Date(parsed).toISOString();
+ return canonical===raw;
+}
 export async function onRequestGet({request,env}){
  if(!(await auth(request,env)))return respond({error:'Unauthorized'},401);
  const url=String(env.SUPABASE_URL||'').replace(/\/$/,'');
@@ -21,16 +33,26 @@ export async function onRequestGet({request,env}){
   if(!Array.isArray(data))return respond({error:'Invalid queue data'},503);
   const counts={pending_review:0,ready:0,sending:0,sent:0,blocked:0,failed:0};
   for(const row of data){if(Object.prototype.hasOwnProperty.call(counts,row.status))counts[row.status]++;}
+  const mode=String(env.ZOHO_ORDER_CONFIRMATION_MODE||'pilot');
+  const sendingEnabled=env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true';
+  const automationSwitchEnabled=env.ZOHO_ORDER_AUTOMATION_ENABLED==='true';
+  const cutoffConfigured=Boolean(String(env.ZOHO_ORDER_AUTOMATION_NOT_BEFORE||'').trim());
+  const cutoffValid=validCutoff(env.ZOHO_ORDER_AUTOMATION_NOT_BEFORE);
+  const autoModeArmed=mode==='automatic'&&automationSwitchEnabled&&
+      sendingEnabled&&cutoffValid;
   return respond({provider:'zoho_mail',sender:'orders@fashionfussion.in',
-   sendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
+   sendingEnabled,
    automaticDispatcherEnabled:false,
-   dispatchMode:String(env.ZOHO_ORDER_CONFIRMATION_MODE||'pilot'),
-   sellerAutomationSwitchEnabled:env.ZOHO_ORDER_AUTOMATION_ENABLED==='true',
+   dispatchMode:mode,
+   sellerAutomationSwitchEnabled:automationSwitchEnabled,
    customerEventAutomationRequiresSeparateFlag:true,
-   sellerAutoModeArmed:env.ZOHO_ORDER_CONFIRMATION_MODE==='automatic' &&
-      env.ZOHO_ORDER_AUTOMATION_ENABLED==='true' &&
-      env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
-   activationCutoffConfigured:Boolean(env.ZOHO_ORDER_AUTOMATION_NOT_BEFORE),
+   sellerAutoModeArmed:autoModeArmed,
+   activationCutoffConfigured:cutoffConfigured,
+   activationCutoffValid:cutoffValid,
+   // This is a readiness report only. No permission to send is derived from
+   // the presence of flags, and no Cloudflare bindings are changed here.
+   sellerConfigurationReadyForControlledRollout:
+      mode==='automatic'&&cutoffValid&&!automationSwitchEnabled&&!sendingEnabled,
    scheduledQueueRecoveryEnabled:false,reviewRequired:true,
    sampleSize:data.length,counts,limitedToMostRecent:100});
  }catch{return respond({error:'Queue lookup unavailable'},503);}
