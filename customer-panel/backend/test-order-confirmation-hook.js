@@ -15,7 +15,7 @@ async function main() {
   global.fetch = async (url, options) => {
     calls.push({url,options});
     if(networkFailure)throw new Error('synthetic network error');
-    return {ok:status===200,status};
+    return {ok:status===200,status,json:async()=>({accepted:status===200,sent:status===200?1:0})};
   };
   try {
     delete process.env.FF_ORDER_EMAIL_HOOK_ENABLED;
