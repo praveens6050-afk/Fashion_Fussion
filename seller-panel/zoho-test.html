@@ -37,9 +37,11 @@ small{font-size:12px;color:#69768f;line-height:1.6;display:block}
   <div class="actions">
     <button id="verify" type="button" class="secondary">1. Verify Zoho connection</button>
     <button id="verifyOrders" type="button" class="secondary">Verify Orders mailbox (no send)</button>
-    <button id="send" type="submit" disabled>2. Send one test email</button>
+    <button id="sendOrders" type="button" disabled>Send one email from orders@</button>
+    <button id="send" type="submit" disabled>Send one email from Sales</button>
   </div>
 </form>
+<small>The Orders test sends only to ps4038267@gmail.com, after its separate verification and your confirmation. It does not send a real order confirmation or turn on automation.</small>
 <div role="status" aria-live="polite" id="result">First verify the Zoho connection. No email has been sent.</div>
 <p><small>Test uses secured same-origin POST endpoints. Cloudflare secret values remain server-side. If you previously exposed your Zoho refresh token, rotate it before running the test.</small></p>
 </main>
