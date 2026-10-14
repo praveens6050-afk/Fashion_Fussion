@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { notifyConfirmedOrder } = require('../order-confirmation-notify');
 const {
   WEBHOOK_SECRET,
   SUPABASE_URL,
@@ -406,6 +407,7 @@ async function handlePaymentCaptured(event) {
   }
   if (order.status === 'paid') {
     await commitOrderInventory(order.id);
+    await notifyConfirmedOrder(order.id, 'razorpay_webhook_already_paid');
     return { received: true, already_processed: true, inventory_reconciled: true };
   }
   if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
@@ -432,6 +434,7 @@ async function handlePaymentCaptured(event) {
     p_source: 'razorpay_webhook'
   });
   await commitOrderInventory(order.id);
+  await notifyConfirmedOrder(order.id, 'razorpay_webhook_paid');
   return { received: true, finalized: true, inventory_committed: true, store_order_id: order.id };
 }
 
