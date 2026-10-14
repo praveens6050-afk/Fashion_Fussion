@@ -38,8 +38,12 @@ export async function onRequestGet({request,env}){
   const automationSwitchEnabled=env.ZOHO_ORDER_AUTOMATION_ENABLED==='true';
   const cutoffConfigured=Boolean(String(env.ZOHO_ORDER_AUTOMATION_NOT_BEFORE||'').trim());
   const cutoffValid=validCutoff(env.ZOHO_ORDER_AUTOMATION_NOT_BEFORE);
+  const testBuyerValue=String(env.ZOHO_ORDER_AUTOMATION_TEST_BUYER_EMAIL||'').trim().toLowerCase();
+  const testBuyerConfigured=testBuyerValue.length<=254 &&
+    /^\S+@\S+\.\S+$/.test(testBuyerValue);
+  // Only a boolean leaves this endpoint: no buyer address or secret value.
   const autoModeArmed=mode==='automatic'&&automationSwitchEnabled&&
-      sendingEnabled&&cutoffValid;
+      sendingEnabled&&cutoffValid&&testBuyerConfigured;
   return respond({provider:'zoho_mail',sender:'orders@fashionfussion.in',
    sendingEnabled,
    automaticDispatcherEnabled:false,
@@ -49,10 +53,13 @@ export async function onRequestGet({request,env}){
    sellerAutoModeArmed:autoModeArmed,
    activationCutoffConfigured:cutoffConfigured,
    activationCutoffValid:cutoffValid,
+   testBuyerRestricted:true,
+   testBuyerConfigured,
    // This is a readiness report only. No permission to send is derived from
    // the presence of flags, and no Cloudflare bindings are changed here.
    sellerConfigurationReadyForControlledRollout:
-      mode==='automatic'&&cutoffValid&&!automationSwitchEnabled&&!sendingEnabled,
+      mode==='automatic'&&cutoffValid&&testBuyerConfigured&&
+      !automationSwitchEnabled&&!sendingEnabled,
    scheduledQueueRecoveryEnabled:false,reviewRequired:true,
    sampleSize:data.length,counts,limitedToMostRecent:100});
  }catch{return respond({error:'Queue lookup unavailable'},503);}
