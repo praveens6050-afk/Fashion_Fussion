@@ -89,6 +89,11 @@ function createNodeResponse() {
 
 export async function runNodeHandler(handler, context) {
   const req = await createNodeRequest(context.request);
+  // Preserve Cloudflare Pages background-lifetime semantics for trusted
+  // post-commit email tasks; never expose waitUntil to client-supplied input.
+  if (typeof context.waitUntil === 'function') {
+    req.waitUntil = (promise) => context.waitUntil(promise);
+  }
   const res = createNodeResponse();
   const result = await handler(req, res);
   if (result instanceof Response) return result;

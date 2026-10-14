@@ -1,7 +1,7 @@
 'use strict';
 // Standalone Node test; never touches the live mail provider, Cloudflare or Supabase.
 const assert = require('node:assert/strict');
-const { notifyConfirmedOrder } = require('./order-confirmation-notify');
+const { notifyConfirmedOrder, scheduleConfirmedOrder } = require('./order-confirmation-notify');
 
 async function main() {
   const backup = {
@@ -51,7 +51,28 @@ async function main() {
     assert.equal((await notifyConfirmedOrder(123)).uncertainOutcome,true);
     // One call per attempted notification; never retries a failed/ambiguous request.
     assert.equal(calls.length,5);
-    console.log('Zoho order-confirmation hook tests: PASS (no network requests).');
+    networkFailure=false;
+    status=200;
+    const beforeBackground=calls.length;
+    const pending=[];
+    const scheduled=await scheduleConfirmedOrder({
+      waitUntil(promise) { pending.push(promise); }
+    },123,'cloudflare_background');
+    assert.equal(scheduled.scheduled,true);
+    assert.equal(pending.length,1);
+    await Promise.all(pending);
+    assert.equal(calls.length,beforeBackground+1);
+    const backgroundCall=calls.at(-1);
+    assert.deepEqual(JSON.parse(backgroundCall.options.body),{
+      orderId:123,confirmSend:true
+    });
+
+    delete process.env.FF_ORDER_EMAIL_HOOK_ENABLED;
+    const offCount=calls.length;
+    const off=await scheduleConfirmedOrder({waitUntil(){throw Error('MUST_NOT_REGISTER')}},123);
+    assert.equal(off.reason,'customer_hook_disabled');
+    assert.equal(calls.length,offCount);
+    console.log('Zoho order-confirmation hook and Cloudflare waitUntil mock tests: PASS (no network requests).');
   } finally {
     if(backup.enabled===undefined)delete process.env.FF_ORDER_EMAIL_HOOK_ENABLED;
     else process.env.FF_ORDER_EMAIL_HOOK_ENABLED=backup.enabled;
