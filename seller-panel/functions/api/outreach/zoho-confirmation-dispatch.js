@@ -125,15 +125,29 @@ function activationCutoff(env){
 async function validateAutoWindow(env,orderId){
   const cutoff=activationCutoff(env);
   if(cutoff===null)return {allowed:false,reason:'AUTOMATION_CUTOFF_MISSING_OR_INVALID'};
+  // Automatic rollout remains constrained to ONE verified test buyer;
+  // a separate future reviewed code change is required for all buyers.
+  const testBuyer=String(env.ZOHO_ORDER_AUTOMATION_TEST_BUYER_EMAIL||'').trim().toLowerCase();
+  if(testBuyer.length>254||!/^\\S+@\\S+\\.\\S+$/.test(testBuyer)){
+    return {allowed:false,reason:'TEST_BUYER_NOT_CONFIGURED'};
+  }
   const db=dbConfig(env);
   const [orders,events]=await Promise.all([
-    dbFetch(db,'/rest/v1/orders?id=eq.'+orderId+'&select=id,created_at&limit=1'),
+    dbFetch(db,'/rest/v1/orders?id=eq.'+orderId+'&select=id,created_at,customer_email&limit=1'),
     dbFetch(db,'/rest/v1/zoho_order_email_outbox?order_id=eq.'+orderId+
       '&event_type=eq.order_confirmed&provider=eq.zoho_mail'+
       '&select=created_at,status,attempt_count&limit=1')
   ]);
   if(!Array.isArray(orders)||!Array.isArray(events))throw Error('AUTO_WINDOW_DATA_BAD');
   const order=orders[0],event=events[0];
+  // Fail closed before OAuth or Supabase claim for any other customer order.
+  // The existing service-only approval RPC independently verifies that the
+  // order email matches the confirmed Supabase Auth user's email.
+  const orderBuyer=typeof order?.customer_email==='string' ?
+    order.customer_email.trim().toLowerCase() : '';
+  if(!order||!orderBuyer||orderBuyer!==testBuyer){
+    return {allowed:false,reason:'NOT_CONTROLLED_TEST_BUYER'};
+  }
   const age=time=>typeof time==='string'?Date.parse(time):NaN;
   if(!order||!event||!Number.isFinite(age(order.created_at))||
      !Number.isFinite(age(event.created_at))||
