@@ -5,6 +5,7 @@
   const result = document.getElementById('result');
   const verifyButton = document.getElementById('verify');
   const verifyOrdersButton = document.getElementById('verifyOrders');
+  const probeOrderLinkButton = document.getElementById('probeOrderLink');
   const sendOrdersButton = document.getElementById('sendOrders');
   const previewConfirmationButton = document.getElementById('previewConfirmation');
   const orderIdField = document.getElementById('orderId');
@@ -18,6 +19,7 @@
   const refresh = () => {
     verifyButton.disabled = busy || hasSent;
     verifyOrdersButton.disabled = busy || hasSent;
+    probeOrderLinkButton.disabled = busy || hasSent;
     previewConfirmationButton.disabled = busy || hasSent;
     sendOrdersButton.disabled = busy || hasSent || verifiedOrdersToken !== tokenField.value.trim() ||
       recipientField.value.trim().toLowerCase() !== 'ps4038267@gmail.com';
@@ -58,6 +60,31 @@
       setStatus('Could not reach the verification endpoint. No email sent.');
     } finally { busy = false; refresh(); }
   });
+  probeOrderLinkButton.addEventListener('click', async () => {
+    if (busy || hasSent) return;
+    const token = tokenField.value.trim();
+    if (!token) { setStatus('Enter OUTREACH_API_TOKEN first. The separate event secret stays on Cloudflare.'); return; }
+    busy = true; refresh();
+    setStatus('Testing private Customer ↔ Seller token handshake (no email, order or payment)...');
+    try {
+      const { response, data } = await request('/api/outreach/zoho-order-link-test',
+        { dryRun: true }, token);
+      if (response.ok && data.connected === true && data.customerSecretMatchesSeller === true) {
+        setStatus('SUCCESS: Cloudflare Customer and Seller share the same private order-event token. ' +
+          'Customer hook enabled: ' + String(data.customerHookEnabled) +
+          '; Seller sending enabled: ' + String(data.sellerSendingEnabled) +
+          '. No email, order or payment was created.');
+      } else {
+        setStatus('Connection NOT verified (' + response.status + '). ' +
+          String(data.error || 'Unknown connection issue').slice(0, 200) +
+          '. Ensure exactly the same token is configured in BOTH Cloudflare projects ' +
+          'and BOTH latest deployments are green. No email sent.');
+      }
+    } catch {
+      setStatus('Connection check unreachable. Confirm latest Customer and Seller deployments. No email sent.');
+    } finally { busy = false; refresh(); }
+  });
+
   verifyOrdersButton.addEventListener('click', async () => {
     if (busy || hasSent) return;
     const token = tokenField.value.trim();
