@@ -1,3 +1,4 @@
+import { getZohoSenderForEvent } from './zoho-order-sender.js';
 // Internal Zoho OAuth/account readiness verification. NEVER sends an email.
 // Requires OUTREACH_API_TOKEN; does not reveal tokens, mailboxes or account IDs.
 const REQUIRED = [
@@ -37,7 +38,7 @@ function secureZohoBase(value,fallback,expectedHost){
     throw new Error('Invalid Zoho API host setting');
   return base;
 }
-async function checkZoho(env){
+async function checkZoho(env,purpose='outreach'){
   const accounts=secureZohoBase(env.ZOHO_ACCOUNTS_BASE_URL,'https://accounts.zoho.in','accounts.zoho.in');
   const mail=secureZohoBase(env.ZOHO_MAIL_BASE_URL,'https://mail.zoho.in','mail.zoho.in');
   const body=new URLSearchParams({
@@ -67,9 +68,10 @@ async function checkZoho(env){
     ready:false,oauthRefreshOk:true,accountFound:false,fromAddressAuthorized:false,mailboxEnabled:false,
     issue:'ZOHO_ACCOUNT_READ_FAILED'
   };
-  const account=payload.data.find(row=>String(row?.accountId??'')===String(env.ZOHO_MAIL_ACCOUNT_ID).trim());
+  const sender=getZohoSenderForEvent(env,purpose==='order_confirmation'?'order_confirmed':'outreach');
+  const account=payload.data.find(row=>String(row?.accountId??'')===sender.accountId);
   const accountFound=Boolean(account);
-  const fromAddressAuthorized=fromAllowed(account,env.ZOHO_MAIL_FROM_ADDRESS);
+  const fromAddressAuthorized=fromAllowed(account,sender.fromAddress);
   const mailboxEnabled=accountFound && account.enabled!==false &&
     account.outgoingBlocked!==true && account.mailboxStatus!=='disabled';
   const ready=Boolean(accountFound && fromAddressAuthorized && mailboxEnabled);
@@ -78,21 +80,27 @@ async function checkZoho(env){
     mailboxEnabled,
     // No message was sent: CREATE scope / actual delivery is not proved by GET /api/accounts.
     sendPermissionAndDeliveryTested:false,
+    purpose,
+    senderIsExistingMailboxAlias:purpose==='order_confirmation',
     issue:ready?null:!accountFound?'ZOHO_ACCOUNT_ID_NOT_FOUND':
-      !fromAddressAuthorized?'ZOHO_FROM_ADDRESS_NOT_AUTHORIZED':'ZOHO_MAILBOX_DISABLED'
+      !fromAddressAuthorized?(purpose==='order_confirmation'?'ZOHO_ORDER_ALIAS_NOT_AUTHORIZED':'ZOHO_FROM_ADDRESS_NOT_AUTHORIZED'):'ZOHO_MAILBOX_DISABLED'
   };
 }
 export async function onRequestPost({request,env}){
   if(!(await authorized(request,env)))return json({error:'Unauthorized'},401);
   let body;try{body=await request.json()}catch{return json({error:'Invalid JSON'},400)}
   if(body?.dryRun!==true)return json({error:'Only dryRun:true is supported. No emails are sent.'},400);
+  const purpose=body?.purpose??'outreach';
+  if(!['outreach','order_confirmation'].includes(purpose)){
+    return json({error:'Unsupported Zoho sender purpose'},400);
+  }
   const missing=REQUIRED.filter(name=>!String(env[name]||'').trim());
   if(missing.length)return json({
     ready:false,dryRun:true,sent:0,missingConfiguration:missing,
     issue:'ZOHO_CONFIGURATION_MISSING'
   },503);
   try{
-    const result=await checkZoho(env);
+    const result=await checkZoho(env,purpose);
     return json({dryRun:true,sent:0,provider:'zoho_mail',...result},result.ready?200:503);
   }catch(e){
     console.error('Zoho configuration check failed',String(e?.message||e).slice(0,120));
