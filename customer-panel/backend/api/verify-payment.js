@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { notifyConfirmedOrder } = require('../order-confirmation-notify');
 const {
   KEY_SECRET, SUPABASE_URL, serverHeaders, cors, json, readBody,
   basicAuth, getSupabaseUser, safeEqualText
@@ -77,6 +78,7 @@ module.exports = async function verifyPayment(req, res) {
     if (order.status === 'paid') {
       try { await commitInventory(order.id); }
       catch (error) { console.error('Inventory commit repair failed:', error); return json(req, res, 409, { verified: false, captured: true, recoverable: true, error: 'Payment is captured. Inventory finalization is being reconciled; please do not pay again.', store_order_id: order.id, display_order_id: order.display_order_id }); }
+      await notifyConfirmedOrder(order.id, 'verify_already_paid');
       return json(req, res, 200, { verified: true, already_processed: true, order_id, store_order_id: order.id, display_order_id: order.display_order_id, status: 'paid' });
     }
     if (isInactiveCheckoutStatus(order.status)) {
@@ -91,6 +93,7 @@ module.exports = async function verifyPayment(req, res) {
       console.error('Atomic checkout/inventory finalize failed:', error);
       return json(req, res, 409, { verified: false, captured: true, recoverable: true, error: 'Payment is captured. Finalization is pending reconciliation; please do not pay again.', store_order_id: order.id, display_order_id: order.display_order_id });
     }
+    await notifyConfirmedOrder(order.id, 'verify_paid');
     return json(req, res, 200, { verified: true, order_id, store_order_id: order.id, display_order_id: order.display_order_id, status: 'paid' });
   } catch (error) {
     console.error('verify-payment error:', error);
