@@ -68,4 +68,23 @@ async function notifyConfirmedOrder(orderId, source = 'unknown') {
   }
 }
 
-module.exports = { notifyConfirmedOrder };
+// On Cloudflare Pages, waitUntil keeps the validated notification request
+// alive after checkout/webhook has returned. Other runtimes await the promise.
+// Never retry uncertain submissions; Supabase outbox remains the audit source.
+function scheduleConfirmedOrder(req,orderId,source='unknown'){
+  if(!settings().enabled)return Promise.resolve({skipped:true,reason:'customer_hook_disabled'});
+  const task=Promise.resolve().then(()=>notifyConfirmedOrder(orderId,source))
+    .catch(()=>({accepted:false,uncertainOutcome:true}));
+  if(typeof req?.waitUntil==='function'){
+    try {
+      req.waitUntil(task);
+      return Promise.resolve({scheduled:true});
+    }catch{
+      // Cannot guarantee if the task was registered. Do not double-submit.
+      return Promise.resolve({accepted:false,uncertainOutcome:true});
+    }
+  }
+  return task;
+}
+
+module.exports = { notifyConfirmedOrder, scheduleConfirmedOrder };
