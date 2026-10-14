@@ -206,7 +206,7 @@ export async function onRequestPost({request,env}){
   // Remove this *mandatory* allowlist only after the supervised pilot, review,
   // and approval of an automated production notification rollout.
   const pilotId=String(env.ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID||'').trim();
-  if(!/^[1-9]\\d{0,14}$/.test(pilotId)||!Number.isSafeInteger(Number(pilotId))||pilotId!==id)
+  if(!/^[1-9]\d{0,14}$/.test(pilotId)||!Number.isSafeInteger(Number(pilotId))||pilotId!==id)
     return json({error:'Pilot order is not allowlisted',sent:0,reason:'PILOT_ORDER_NOT_ALLOWLISTED'},423);
   try {
     const r=await dispatch(env,id);
