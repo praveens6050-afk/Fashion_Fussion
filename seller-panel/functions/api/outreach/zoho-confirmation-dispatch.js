@@ -95,7 +95,10 @@ async function preview(env,orderId){
     throw new Error('INVALID_ELIGIBILITY_PREVIEW');
   return {
     dryRun:true,sent:0,eligibility,liveSendingEnabled:env.ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED==='true',
-    pilotAllowlisted:String(env.ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID||'').trim()===String(orderId),
+    dispatchMode:String(env.ZOHO_ORDER_CONFIRMATION_MODE||'pilot'),
+    automationEnabled:env.ZOHO_ORDER_AUTOMATION_ENABLED==='true',
+    pilotAllowlisted:String(env.ZOHO_ORDER_CONFIRMATION_MODE||'pilot')==='pilot' &&
+      String(env.ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID||'').trim()===String(orderId),
     autoSchedulerConfigured:false,
     eventStaged:Boolean(event),
     eventState:event?.status||null,
@@ -104,6 +107,44 @@ async function preview(env,orderId){
     ordersConfigPresent:zohoSenderConfiguration(env,'order_confirmation').missingConfiguration.length===0,
     note:'No emails are sent in dry-run. Real sending additionally requires a verified eligible order and explicit server feature flag.'
   };
+}
+// The full production flow has a separate, explicit mode and an activation
+// cutoff. Both order AND durable outbox event must be created after that UTC
+// moment, so old/pilot rows cannot be backfilled automatically.
+function activationCutoff(env){
+  const value=String(env.ZOHO_ORDER_AUTOMATION_NOT_BEFORE||'').trim();
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) return null;
+  const ms=Date.parse(value);
+  if(!Number.isFinite(ms)||ms>Date.now()+60000) return null;
+  const canonical=value.length===20
+    ? new Date(ms).toISOString().replace('.000Z','Z')
+    : new Date(ms).toISOString();
+  if(canonical!==value)return null;
+  return ms;
+}
+async function validateAutoWindow(env,orderId){
+  const cutoff=activationCutoff(env);
+  if(cutoff===null)return {allowed:false,reason:'AUTOMATION_CUTOFF_MISSING_OR_INVALID'};
+  const db=dbConfig(env);
+  const [orders,events]=await Promise.all([
+    dbFetch(db,'/rest/v1/orders?id=eq.'+orderId+'&select=id,created_at&limit=1'),
+    dbFetch(db,'/rest/v1/zoho_order_email_outbox?order_id=eq.'+orderId+
+      '&event_type=eq.order_confirmed&provider=eq.zoho_mail'+
+      '&select=created_at,status,attempt_count&limit=1')
+  ]);
+  if(!Array.isArray(orders)||!Array.isArray(events))throw Error('AUTO_WINDOW_DATA_BAD');
+  const order=orders[0],event=events[0];
+  const age=time=>typeof time==='string'?Date.parse(time):NaN;
+  if(!order||!event||!Number.isFinite(age(order.created_at))||
+     !Number.isFinite(age(event.created_at))||
+     age(order.created_at)<cutoff||age(event.created_at)<cutoff||
+     age(order.created_at)>Date.now()+300000||age(event.created_at)>Date.now()+300000){
+    return {allowed:false,reason:'ORDER_BEFORE_AUTOMATION_CUTOFF_OR_MISSING'};
+  }
+  if(!['pending_review','ready'].includes(event.status)||event.attempt_count!==0){
+    return {allowed:false,reason:'EVENT_ALREADY_PROCESSED_OR_NOT_READY'};
+  }
+  return {allowed:true};
 }
 async function dispatch(env,orderId){
   const db=dbConfig(env);
@@ -202,13 +243,25 @@ export async function onRequestPost({request,env}){
     return json({error:'Automatic order confirmation sending is disabled',sent:0},423);
   if(body.confirmSend!==true||Object.keys(body).sort().join(',')!=='confirmSend,orderId')
     return json({error:'Explicit send acknowledgement required'},400);
-  // Pilot safety: ONE explicitly selected and recent verified order only.
-  // No broad order confirmation sends even if an operator flips the enable flag.
-  // Remove this *mandatory* allowlist only after the supervised pilot, review,
-  // and approval of an automated production notification rollout.
-  const pilotId=String(env.ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID||'').trim();
-  if(!/^[1-9]\d{0,14}$/.test(pilotId)||!Number.isSafeInteger(Number(pilotId))||pilotId!==id)
-    return json({error:'Pilot order is not allowlisted',sent:0,reason:'PILOT_ORDER_NOT_ALLOWLISTED'},423);
+  // Strict modes: the existing default PILOT keeps a single-ID allowlist.
+  // AUTOMATIC requires three separate opt-ins, service-only authentication,
+  // and a fresh post-activation order plus staged outbox row.
+  const mode=String(env.ZOHO_ORDER_CONFIRMATION_MODE||'pilot').trim();
+  if(mode==='pilot'){
+    const pilotId=String(env.ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID||'').trim();
+    if(!/^[1-9]\d{0,14}$/.test(pilotId)||!Number.isSafeInteger(Number(pilotId))||pilotId!==id)
+      return json({error:'Pilot order is not allowlisted',sent:0,reason:'PILOT_ORDER_NOT_ALLOWLISTED'},423);
+  } else if(mode==='automatic'){
+    if(!orderService)return json({error:'Automation requires internal service credentials',sent:0},403);
+    if(env.ZOHO_ORDER_AUTOMATION_ENABLED!=='true')
+      return json({error:'Order automation is disabled',sent:0,reason:'AUTOMATION_DISABLED'},423);
+    let gate;
+    try{gate=await validateAutoWindow(env,id)}
+    catch{return json({error:'Automation window check unavailable',sent:0},503)}
+    if(!gate.allowed)return json({error:'Order not allowed for automatic delivery',sent:0,reason:gate.reason},423);
+  } else {
+    return json({error:'Unknown order email dispatch mode',sent:0},423);
+  }
   try {
     const r=await dispatch(env,id);
     return json(r.body,r.status);

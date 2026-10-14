@@ -283,3 +283,21 @@ Only **after** this change is deployed in seller Production and one-order testin
 6. **Rollback:** set Seller `ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED=false` immediately after controlled test; keep Customer `FF_ORDER_EMAIL_HOOK_ENABLED=false`. Leave test-order allowlist `23` as an additional deny-by-default safeguard. Do **not** repeat send on uncertainty; reconcile from Zoho Sent / Supabase before any attempt.
 
 The actual COD order is live and inventory has already been committed. After delivery testing, if it is only a test order, cancel using the normal authorized order-cancellation/stock-release flow rather than modifying payment or inventory records manually. **Nothing in this PR submits a message, order, or payment or enables either Cloudflare flag.**
+
+## Automatic order confirmations: guarded event-driven rollout (DISABLED)
+
+Existing one-order pilot safety is preserved: the default ZOHO_ORDER_CONFIRMATION_MODE is pilot, which requires ZOHO_ORDER_CONFIRMATION_TEST_ORDER_ID to match the requested numeric order ID.
+
+Automatic sends require ALL seller flags:
+- ZOHO_ORDER_CONFIRMATION_SENDING_ENABLED=true (global kill switch)
+- ZOHO_ORDER_CONFIRMATION_MODE=automatic (explicit switch away from pilot)
+- ZOHO_ORDER_AUTOMATION_ENABLED=true (second automatic kill switch)
+- ZOHO_ORDER_AUTOMATION_NOT_BEFORE=<new canonical UTC instant, such as 2026-10-15T00:00:00Z> (mandatory)
+
+Customer Pages separately requires FF_ORDER_EMAIL_HOOK_ENABLED=true and the preexisting identical secret ZOHO_ORDER_EVENT_TOKEN in both projects. Do not expose this token to browser code. Automatic calls require the service bearer, never an operator outreach bearer.
+
+Before calling Zoho, Seller rechecks Supabase order creation AND outbox event creation are newer than the UTC cutoff, with an untouched pending_review/ready event and zero attempts. Existing service-only SQL independently validates recent confirmed customer email, legitimate confirmed COD or verified captured prepaid payment, and atomically claims the message at most once. Old/pilot/duplicate/unpaid/cancelled events are not automatically sent. Zoho acceptance is not proof of inbox delivery.
+
+Rollout process: confirm both new deployments are green; leave flags false. Select activation cutoff at/after the planned start time. Configure automatic mode while both seller send flags stay false. Perform reviewed readiness tests. Only after explicit approval enable seller auto + global flags and then customer hook, create one NEW consented real COD checkout after the cutoff, and confirm a single buyer inbox message. Immediately revert both kill switches if anything is wrong; never automatically retry uncertain Zoho outcomes.
+
+Cloudflare Customer dispatch uses waitUntil after confirmed-order finalization to avoid checkout latency. This is event-driven only. There is NO independent scheduled recovery worker. If the Customer webhook/request fails before dispatch, its durable pending_review event remains for manual review; guaranteed eventual delivery is not yet implemented. PayU and shipping/failed-payment email flows are outside this phase. No real mail, order or payment is created by this code change.
