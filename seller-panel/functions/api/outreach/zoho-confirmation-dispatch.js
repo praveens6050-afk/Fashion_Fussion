@@ -195,6 +195,6 @@ export async function onRequestPost({request,env}){
     return json(r.body,r.status);
   }catch{
     return json({accepted:false,sent:0,reason:
-      'DISPATCH_NOT_CONFIRMED_CHECK_OUTBOX',uncertainOutcome:true,retryAllowed:false},503);
+      'DISPATCH_PRECHECK_UNAVAILABLE',uncertainOutcome:false,retryAllowed:false},503);
   }
 }
