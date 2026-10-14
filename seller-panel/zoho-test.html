@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Zoho Mail Test — Fashion Fussion</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#16213c;background:#f4f6fc}
+*{box-sizing:border-box}body{margin:0;padding:32px 16px}
+main{max-width:580px;margin:auto;background:white;border-radius:18px;padding:32px;box-shadow:0 10px 35px #13255012;border:1px solid #dfe5f1}
+h1{font-size:24px;line-height:1.3;margin:0 0 12px}p{line-height:1.6;color:#46546f;font-size:14px}
+.notice{background:#f3f7ff;border:1px solid #d8e5fa;border-radius:11px;padding:12px 14px}
+label{display:block;font-size:13px;font-weight:700;margin:20px 0 7px}
+input{display:block;width:100%;border:1px solid #cad3e3;border-radius:10px;padding:13px 12px;font:inherit;color:#18273c}
+input:focus{outline:3px solid #d2e5ff;border-color:#325cc7}
+button{display:inline-block;border:0;border-radius:11px;padding:13px 18px;font:inherit;font-weight:700;cursor:pointer;background:#5144d9;color:white}
+button.secondary{background:#e8eeff;color:#27347a}
+button:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:23px}
+#result{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:18px;font-size:13px;line-height:1.65;padding:14px;border-radius:9px;background:#f7f8fa;border:1px solid #e5e8ef}
+small{font-size:12px;color:#69768f;line-height:1.6;display:block}
+@media(max-width:500px){main{padding:20px}button{width:100%}}
+</style>
+<script src="/zoho-test.js" defer></script>
+</head>
+<body>
+<main>
+<h1>Fashion Fussion · Zoho Mail test</h1>
+<p class="notice">This page runs on the official seller domain. It sends <strong>one real test email</strong> only after you explicitly click Send. It does not enable automatic order emails.</p>
+<form id="testForm" autocomplete="off">
+  <label for="token">Internal outreach API token</label>
+  <input id="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="Enter your OUTREACH_API_TOKEN">
+  <small>The token stays in this browser tab's memory. It is not saved to storage or included in a URL. Do not share it in chat.</small>
+  <label for="recipient">Recipient email</label>
+  <input id="recipient" type="email" inputmode="email" autocomplete="off" required placeholder="Enter your test inbox address">
+  <div class="actions">
+    <button id="verify" type="button" class="secondary">1. Verify Zoho connection</button>
+    <button id="send" type="submit" disabled>2. Send one test email</button>
+  </div>
+</form>
+<div role="status" aria-live="polite" id="result">First verify the Zoho connection. No email has been sent.</div>
+<p><small>Test uses secured same-origin POST endpoints. Cloudflare secret values remain server-side. If you previously exposed your Zoho refresh token, rotate it before running the test.</small></p>
+</main>
+</body>
+</html>
