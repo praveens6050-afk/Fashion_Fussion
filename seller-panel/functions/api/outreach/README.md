@@ -167,3 +167,11 @@ Possible `issue` responses include `ZOHO_CONFIGURATION_MISSING`, `ZOHO_OAUTH_REF
 Security: the existing `POST /api/outreach/email` OAuth request has been changed to place the refresh token and client secret in the `application/x-www-form-urlencoded` **POST body**, never the request URL. Keep sender secrets out of chat, screenshots and logs. If a refresh token was exposed in a prior screenshot, revoke/rotate it before testing production mail.
 
 Cloudflare customer-panel payment-failed email uses separate `ZOHO_ACCOUNT_ID` / `ZOHO_FROM_EMAIL` variable names. Check those separately; the seller Zoho verification endpoint does not verify secrets on the customer Pages project.
+
+## Manual Zoho live send test on Android Chrome
+
+Open `https://seller.fashionfussion.in/zoho-mail-test.html` after its Cloudflare deployment. This noindex utility is intentionally separate from customer/seller order workflows. It is only for a **manually requested one-off test** to the fixed address `ps4038267@gmail.com`.
+
+On your own device, enter the existing `OUTREACH_API_TOKEN` (not a Zoho token), select **Verify Zoho connection** (calls protected `POST /api/outreach/zoho-verify` with `dryRun:true`, no mail), then select **Send one real test email** (calls existing protected `POST /api/outreach/email` exactly once after a browser confirmation). The token is sent only to the **same-origin** Fashion Fussion API in the Authorization header, never included in URLs or body, never persisted to local/session storage, and cleared from the form after a send attempt. Duplicate UI clicks and unknown send outcomes are not retried automatically. The browser shows Zoho acceptance, not Gmail delivery; check the recipient Inbox/Spam and Zoho Sent.
+
+The presence of a Cloudflare secret does not mean the secret value can be read back from Cloudflare. If the `OUTREACH_API_TOKEN` value is lost, replace it with a new long random secret in Cloudflare first; do not share it in ChatGPT or public online REST test websites. A previously exposed Zoho refresh token must be rotated. No scheduled campaigns or order email notifications are started by this test utility.
