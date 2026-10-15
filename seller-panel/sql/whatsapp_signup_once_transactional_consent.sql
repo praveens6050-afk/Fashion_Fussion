@@ -159,7 +159,10 @@ BEGIN
         last_event_at=p_event_at,last_event_id=p_external_message_id,updated_at=now()
     WHERE c.phone_e164=p_phone_e164 AND c.purpose='transactional'
       AND c.source='signup_verified_otp' AND c.proof_reference LIKE 'signup:%'
-      AND (c.last_event_at IS NULL OR c.last_event_at<p_event_at);
+      AND p_event_at > greatest(
+        coalesce(c.last_event_at,'-infinity'::timestamptz),
+        coalesce(c.consented_at,'-infinity'::timestamptz),
+        coalesce(c.revoked_at,'-infinity'::timestamptz));
   ELSE
     INSERT INTO public.whatsapp_contact_consents AS c
       (phone_e164,purpose,status,source,proof_reference,
@@ -170,7 +173,10 @@ BEGIN
     ON CONFLICT(phone_e164,purpose) DO UPDATE SET
       status='opted_out',revoked_at=p_event_at,updated_at=now(),
       last_event_at=p_event_at,last_event_id=p_external_message_id
-    WHERE c.last_event_at IS NULL OR c.last_event_at<p_event_at
+    WHERE p_event_at > greatest(
+      coalesce(c.last_event_at,'-infinity'::timestamptz),
+      coalesce(c.consented_at,'-infinity'::timestamptz),
+      coalesce(c.revoked_at,'-infinity'::timestamptz))
       OR (c.last_event_at=p_event_at AND c.status='opted_in');
     -- Existing signup source/proof_reference are intentionally preserved:
     -- STOP suppresses new orders and START can later restore the original.
