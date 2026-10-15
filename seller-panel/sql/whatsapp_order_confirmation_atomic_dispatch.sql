@@ -228,3 +228,85 @@ REVOKE ALL ON FUNCTION public.record_checkout_whatsapp_consent(bigint)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.record_checkout_whatsapp_consent(bigint)
   TO authenticated;
+
+
+-- Separate atomic claim for customer shipping milestones using the existing
+-- unique (order_id,event_type) outbox and the SAME global 5/hour 20/day cap.
+-- The existing confirmation function/permissions remain unchanged.
+-- No Meta call or queue backfill is performed by this migration.
+CREATE OR REPLACE FUNCTION public.claim_whatsapp_shipping_event(
+  p_order_id bigint, p_event_type text, p_activation_cutoff timestamptz)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE
+  v_claim record;
+  v_label text;
+BEGIN
+  IF p_order_id IS NULL OR p_order_id<=0
+     OR p_event_type NOT IN ('shipped','out_for_delivery','delivered')
+     OR p_activation_cutoff IS NULL OR p_activation_cutoff > now()
+     OR p_activation_cutoff < '2026-10-01'::timestamptz
+  THEN RETURN NULL; END IF;
+  v_label:=CASE p_event_type
+    WHEN 'shipped' THEN 'Shipped'
+    WHEN 'out_for_delivery' THEN 'Out for Delivery'
+    WHEN 'delivered' THEN 'Delivered'
+    ELSE NULL END;
+  IF v_label IS NULL THEN RETURN NULL; END IF;
+
+  -- This advisory lock is intentionally the SAME as order-confirmed:
+  -- parallel confirmation/shipment workers cannot race the shared quota.
+  PERFORM pg_catalog.pg_advisory_xact_lock(733012,417021);
+  IF (SELECT count(*) FROM public.whatsapp_order_notification_outbox
+      WHERE attempt_started_at>=now()-interval '1 hour')>=5
+    OR (SELECT count(*) FROM public.whatsapp_order_notification_outbox
+      WHERE attempt_started_at>=now()-interval '24 hours')>=20
+  THEN RETURN NULL; END IF;
+
+  UPDATE public.whatsapp_order_notification_outbox ob
+  SET status='sending',attempt_count=1,attempt_started_at=now(),updated_at=now()
+  FROM public.orders ord
+  JOIN public.whatsapp_order_consents oc
+    ON oc.order_id=ord.id AND oc.user_id=ord.user_id
+  JOIN public.whatsapp_contact_consents cc
+    ON cc.phone_e164=oc.phone_e164 AND cc.purpose='transactional'
+  WHERE ob.order_id=ord.id AND ord.id=p_order_id
+    AND ob.event_type=p_event_type
+    AND ob.template_name='order_status_update'
+    AND ob.status IN ('pending_review','ready') AND ob.attempt_count=0
+    AND ob.provider_message_id IS NULL AND ob.attempt_started_at IS NULL
+    AND ob.created_at BETWEEN greatest(p_activation_cutoff,now()-interval '24 hours') AND now()
+    AND ord.fulfillment_updated_at
+      BETWEEN greatest(p_activation_cutoff,now()-interval '24 hours') AND now()
+    AND ord.user_id IS NOT NULL
+    AND ord.fulfillment_status=p_event_type
+    AND ( (ord.payment_method='prepaid' AND ord.status='paid'
+              AND ord.payment_verified_at IS NOT NULL)
+       OR (ord.payment_method='cod' AND ord.status IN ('cod_pending','cod_collected')) )
+    AND (p_event_type<>'delivered' OR ord.payment_method<>'cod'
+         OR ord.status='cod_collected')
+    AND nullif(btrim(ord.customer_name),'') IS NOT NULL
+    AND nullif(btrim(ord.display_order_id),'') IS NOT NULL
+    AND oc.revoked_at IS NULL AND oc.consented_at IS NOT NULL
+    AND oc.consented_at <= ord.fulfillment_updated_at
+    AND oc.phone_e164=private.ff_whatsapp_e164(ord.customer_phone)
+    AND cc.status='opted_in' AND cc.consented_at IS NOT NULL
+    AND cc.revoked_at IS NULL
+    AND cc.consented_at<=ord.fulfillment_updated_at
+    AND EXISTS(SELECT 1 FROM public.order_shipments sh
+       WHERE sh.order_id=ord.id AND sh.direction='forward'
+         AND nullif(btrim(sh.awb_code),'') IS NOT NULL)
+  RETURNING ob.id,ord.customer_name,ord.display_order_id,oc.phone_e164
+  INTO v_claim;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  RETURN pg_catalog.jsonb_build_object(
+    'outboxId',v_claim.id,'recipientPhone',v_claim.phone_e164,
+    'customerName',v_claim.customer_name,'displayOrderId',v_claim.display_order_id,
+    'statusLabel',v_label
+  );
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.claim_whatsapp_shipping_event(bigint,text,timestamptz)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_whatsapp_shipping_event(bigint,text,timestamptz)
+  TO service_role;
