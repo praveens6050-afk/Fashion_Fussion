@@ -1,0 +1,15 @@
+name = "fashion-fussion-whatsapp-automation"
+main = "whatsapp-worker.mjs"
+compatibility_date = "2026-10-15"
+workers_dev = false
+preview_urls = false
+
+[vars]
+WHATSAPP_AUTOMATION_ENABLED = "false"
+WHATSAPP_AUTOMATION_MODE = "preview"
+WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED = "false"
+WHATSAPP_SHIPPING_SENDING_ENABLED = "false"
+WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED = "false"
+
+[triggers]
+crons = []
