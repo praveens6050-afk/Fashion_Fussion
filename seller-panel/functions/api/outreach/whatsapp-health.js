@@ -68,14 +68,19 @@ export async function onRequestGet({request, env}) {
       .map(async ([name, details]) => [name, await countRows(base,key,details)]));
     return json({
       readOnly: true, messagesSent: 0, noDatabaseChanges: true,
-      automaticOrderWhatsAppDispatchEnabled: false,
+      dispatchLaunchGatePresence: {
+        sendingFlagTrue: env.WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED === 'true',
+        globalApprovalFlagTrue: env.WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED === 'true',
+        internalTokenPresent: Boolean(env.WHATSAPP_ORDER_INTERNAL_TOKEN),
+        cutoffPresent: Boolean(env.WHATSAPP_ORDER_CONFIRMATION_NOT_BEFORE)
+      },
       configPresenceOnly: {ready:missing.length === 0, missing,
         otpEnvPresent:Boolean(env.WHATSAPP_OTP_SECRET),
         note:'Does not validate Meta credentials, approved template content or live Cloudflare deployment.'},
       counts: Object.fromEntries(pairs),
       caveats:['Delivery receipts may belong to OTP or outreach, not necessarily orders.',
         'Unclassified inbound messages require manual triage; role inference must not be forced.',
-        'Queue counts are staging only; no automatic order WhatsApp sender is activated.']
+        'This endpoint cannot confirm cron deployment or Meta template approval; queue counts alone do not establish sending.']
     });
   } catch (err) {
     console.error('WhatsApp read-only health query failed',String(err?.message || err));
