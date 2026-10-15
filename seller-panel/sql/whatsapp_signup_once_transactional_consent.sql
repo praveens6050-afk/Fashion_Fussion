@@ -113,19 +113,25 @@ BEGIN
   INSERT INTO public.whatsapp_order_consents
     (order_id,user_id,phone_e164,source,consented_at,revoked_at)
   SELECT NEW.id,NEW.user_id,cc.phone_e164,'signup_verified_otp',cc.consented_at,null
-  FROM public.profiles p
-  JOIN public.whatsapp_contact_consents cc
-    ON cc.phone_e164=private.ff_whatsapp_e164(NEW.customer_phone)
-   AND cc.phone_e164=private.ff_whatsapp_e164(p.phone)
-  WHERE p.id=NEW.user_id AND p.phone_verified_at IS NOT NULL
-    AND p.phone_verification_method='whatsapp'
+  FROM public.whatsapp_contact_consents cc
+  JOIN auth.users u
+    ON u.id=NEW.user_id
+  JOIN public.phone_otp_challenges otp
+    ON cc.proof_reference='signup:'||NEW.user_id::text||':'||otp.id::text
+   AND otp.phone_e164=cc.phone_e164
+   AND lower(otp.email)=lower(u.email)
+   AND otp.audience=u.raw_user_meta_data->>'account_type'
+   AND otp.verified_at IS NOT NULL
+   AND otp.consumed_at IS NOT NULL
+   AND otp.consumed_at>=otp.verified_at
+   AND otp.consumed_at<=NEW.created_at
+  WHERE cc.phone_e164=private.ff_whatsapp_e164(NEW.customer_phone)
     AND cc.purpose='transactional' AND cc.status='opted_in'
     AND cc.revoked_at IS NULL AND cc.consented_at IS NOT NULL
     AND cc.consented_at<=NEW.created_at
     AND cc.source='signup_verified_otp'
-    AND cc.proof_reference LIKE 'signup:'||NEW.user_id::text||':%'
   ON CONFLICT(order_id) DO NOTHING;
-  -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
+  -- Verified OTP challenge is authoritative; client-writable profile flags are not.\n  -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
   -- Prepaid remains pending until the verified payment transition trigger.
   RETURN NEW;
 END;
