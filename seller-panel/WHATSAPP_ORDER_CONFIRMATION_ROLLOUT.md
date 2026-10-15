@@ -62,6 +62,12 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - The screenshot shows a **Submit for review** action on an edit page. Avoid submitting an unnecessary edit or changing an already-approved template simply to match the code. No template changes or Meta sends were made.
 - New mock-only automated tests exercise matching header+body+footer, dynamic/media/wrong static headers and extra buttons. Template approval remains unverified until a live **GET-only** Meta check is performed.
 
+## Meta Template Library verification — 15 October 2026 (operator screenshot)
+- The user provided an additional **template details** screenshot of the existing `order_status_update` English template in Meta WhatsApp Manager. It explicitly shows **Utility** and **Active — Quality Pending**. Quality pending means the active template does not yet have a sufficient quality rating; it is not itself a rejection or pause.
+- The preview includes the static **Fashion Fussion** header/footer and body text corresponding to customer name `{{1}}`, display order ID `{{2}}`, and status `{{3}}`; the synthetic sample shown as `Shipped` does not establish a production order notification or delivery.
+- **UI template identity/category/language/active state: manually reviewed.** The backend `APPROVED` status value, actual Meta Graph API access, WABA membership, live Cloudflare WABA environment binding, and template delivery are **not independently confirmed**; use private GET-only Meta preflight for those after separately authorized deployment.
+- Do not resubmit or edit the existing active Meta template; don't enable automatic sending, scheduler or historical backfill solely based on screenshot verification.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
