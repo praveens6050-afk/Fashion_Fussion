@@ -120,7 +120,7 @@ test('transactional STOP and START reject historical Meta event replays',()=>{
  assert.match(sql,/coalesce\(c\.consented_at,'-infinity'::timestamptz\)/);
  assert.match(sql,/coalesce\(c\.revoked_at,'-infinity'::timestamptz\)/);
  assert.match(sql,/p_status='opted_in'/);
- assert.match(sql,/ledger\.status='opted_in' AND ledger\.revoked_at IS NULL/);
+ assert.match(sql,/status=ledger\.status/);\n assert.match(sql,/proof_reference=excluded\.proof_reference/);
 });
 test('new-order consent inherits only the verified owner and exact phone',()=>{
  const sql=readFileSync(new URL('../sql/whatsapp_signup_once_transactional_consent.sql',import.meta.url),'utf8');
