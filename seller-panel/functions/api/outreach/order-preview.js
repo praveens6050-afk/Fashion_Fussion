@@ -51,7 +51,11 @@ function orderEligible(order,eventType,shipment) {
       || order.fulfillment_status==='cancelled') issues.push('order_not_active');
   if (eventType==='order_confirmed') {
     // No "order placed" event for unconfirmed COD, expired checkouts or unverified prepaid payments.
-    if(order.status!=='paid'||!order.payment_verified_at) issues.push('paid_order_not_confirmed');
+    // COD is confirmed when explicitly cod_pending/cod_collected. Prepaid must
+    // have the verified payment marker; never infer payment from an order ID.
+    const prepaid = order.payment_method==='prepaid' && order.status==='paid' && Boolean(order.payment_verified_at);
+    const cod = order.payment_method==='cod' && ['cod_pending','cod_collected'].includes(order.status);
+    if(!prepaid&&!cod) issues.push('order_not_payment_verified_or_cod_confirmed');
     if(order.fulfillment_status!=='ordered') issues.push('order_already_progressed');
   } else {
     if (!['paid','cod_pending','cod_collected'].includes(order.status))issues.push('order_payment_state_not_eligible');
