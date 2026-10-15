@@ -70,11 +70,18 @@ BEGIN
        'signup:'||p_user_id::text||':'||p_challenge_id::text,
        v_time,null,v_time)
     ON CONFLICT(phone_e164,purpose) DO UPDATE SET
-      status='opted_in',source=excluded.source,
-      proof_reference=excluded.proof_reference,consented_at=v_time,
-      revoked_at=null,updated_at=v_time
-    WHERE ledger.status='opted_in' AND ledger.revoked_at IS NULL;
-    -- A past STOP stays honored; users may explicitly text START FASHION UPDATES.
+      -- Never turn a previous STOP back ON from signup alone.
+      status=ledger.status,
+      source=excluded.source,
+      proof_reference=excluded.proof_reference,
+      consented_at=CASE WHEN ledger.status='opted_in' THEN v_time
+                         ELSE ledger.consented_at END,
+      revoked_at=ledger.revoked_at,
+      updated_at=v_time,
+      last_event_at=greatest(coalesce(ledger.last_event_at,'-infinity'::timestamptz),v_time)
+    WHERE ledger.status IN ('opted_in','opted_out');
+    -- An earlier STOP remains OFF. Linking this verified OTP allows a
+    -- future, newer explicit START FASHION UPDATES to restore the opt-in.
     SELECT EXISTS(
       SELECT 1 FROM public.whatsapp_contact_consents cc
        WHERE cc.phone_e164=v_challenge.phone_e164 AND cc.purpose='transactional'
