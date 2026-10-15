@@ -1,0 +1,58 @@
+name: Seller E2E Helper Validation
+
+on:
+  push:
+    branches: [fix/seller-e2e-expected-otp-finalize-409-20261015]
+  pull_request:
+    paths:
+      - '.github/live-seller-authenticated-smoke.cjs'
+      - '.github/workflows/seller-e2e-helper-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  helper-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check authenticated E2E script syntax
+        run: node --check .github/live-seller-authenticated-smoke.cjs
+      - name: Test exact OTP finalize classifier from source
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const assert = require('node:assert/strict');
+          const source = fs.readFileSync('.github/live-seller-authenticated-smoke.cjs', 'utf8');
+          const start = source.indexOf('function isExpectedSellerOtpFinalize(request) {');
+          const end = source.indexOf('\nfunction observe(page) {', start);
+          assert.ok(start >= 0 && end > start, 'classifier function boundaries must exist');
+          const functionSource = source.slice(start, end);
+          const sandbox = { URL };
+          vm.createContext(sandbox);
+          vm.runInContext(functionSource + '\nglobalThis.classifier = isExpectedSellerOtpFinalize;', sandbox);
+          function request({ method = 'POST', url = 'https://seller.fashionfussion.in/api/whatsapp-otp', json, raw, jsonThrows = false }) {
+            return {
+              method: () => method,
+              url: () => url,
+              postDataJSON: () => { if (jsonThrows) throw new Error('body parser unavailable'); return json; },
+              postData: () => raw,
+            };
+          }
+          const classify = sandbox.classifier;
+          assert.equal(classify(request({ json: { action: 'finalize', audience: 'seller' } })), true);
+          assert.equal(classify(request({ raw: '{"action":"finalize","audience":"seller"}', jsonThrows: true })), true);
+          assert.equal(classify(request({ raw: '{"action":"FINALIZE","audience":"SELLER"}', jsonThrows: true })), true);
+          assert.equal(classify(request({ raw: '{"action":"send","audience":"seller"}', jsonThrows: true })), false);
+          assert.equal(classify(request({ raw: '{"action":"finalize","audience":"customer"}', jsonThrows: true })), false);
+          assert.equal(classify(request({ url: 'https://seller.fashionfussion.in/api/other', raw: '{"action":"finalize","audience":"seller"}', jsonThrows: true })), false);
+          assert.equal(classify(request({ url: 'https://evil.example/api/whatsapp-otp', raw: '{"action":"finalize","audience":"seller"}', jsonThrows: true })), false);
+          assert.equal(classify(request({ method: 'GET', raw: '{"action":"finalize","audience":"seller"}', jsonThrows: true })), false);
+          console.log('PASS: syntax check and 8 classifier assertions.');
+          NODE
