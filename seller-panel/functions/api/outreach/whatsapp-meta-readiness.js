@@ -70,8 +70,10 @@ async function readMeta(path, token) {
   if (!Array.isArray(data?.data)) throw new Error('META_RESPONSE_INVALID');
   return data;
 }
-export async function onRequestGet({request, env}) {
-  if (!(await authorized(request,env))) return reply({error:'Unauthorized'},401);
+// Shared between the read-only operator status endpoint and the private
+// order dispatcher. This function performs ONLY Meta GET requests; it never
+// sends an order notification or mutates consent or state.
+export async function verifyMetaOrderTemplate(env) {
   const version = String(env.WHATSAPP_GRAPH_VERSION||'').trim();
   const waba = String(env.WHATSAPP_BUSINESS_ACCOUNT_ID||'').trim();
   const phone = String(env.WHATSAPP_PHONE_NUMBER_ID||'').trim();
@@ -84,11 +86,11 @@ export async function onRequestGet({request, env}) {
   if (!/^[0-9]{13,25}$/.test(phone)) missing.push('WHATSAPP_PHONE_NUMBER_ID');
   if (token.length<20) missing.push('WHATSAPP_ACCESS_TOKEN');
   if (!allowed.has(EXPECTED_NAME)) missing.push('WHATSAPP_ALLOWED_TEMPLATES_ORDER_STATUS_UPDATE');
-  if (missing.length) return reply({dryRun:true,messagesSent:0,ready:false,
-    issue:'CONFIGURATION_INCOMPLETE',missing},200);
+  if (missing.length) return {dryRun:true,messagesSent:0,ready:false,
+    issue:'CONFIGURATION_INCOMPLETE',missing};
 
-  // Both Meta endpoints are GET-only. Never follow provider-supplied next links.
-  // Unknown/partial responses fail closed without leaking IDs, tokens or phone.
+  // Verify template approval, exact three-parameter body and phone membership.
+  // Provider pagination or unavailable GET permissions are NOT silently ignored.
   try {
     const [templates,phoneNumbers] = await Promise.all([
       readMeta(version+'/'+waba+'/message_templates?'+new URLSearchParams({
@@ -102,7 +104,7 @@ export async function onRequestGet({request, env}) {
     const template=matches.length===1?matches[0]:null;
     const checks=checkTemplate(template);
     const phoneNumberInBusiness=phoneNumbers.data.some(row=>String(row?.id||'')===phone);
-    const paginationComplete = !templates.paging?.next && !phoneNumbers.paging?.next;
+    const paginationComplete=!templates.paging?.next && !phoneNumbers.paging?.next;
     const ready=matches.length===1 && phoneNumberInBusiness && paginationComplete
       && Object.values(checks).every(Boolean);
     const issues=[];
@@ -113,13 +115,18 @@ export async function onRequestGet({request, env}) {
       issues.push('TEMPLATE_PARAMETER_MAPPING_MISMATCH');
     if (!phoneNumberInBusiness) issues.push('PHONE_NUMBER_NOT_VERIFIED_IN_BUSINESS');
     if (!paginationComplete) issues.push('META_RESULT_PAGINATED');
-    return reply({dryRun:true,messagesSent:0,ready,templateName:EXPECTED_NAME,
+    return {dryRun:true,messagesSent:0,ready,templateName:EXPECTED_NAME,
       language:EXPECTED_LANGUAGE,phoneNumberInBusiness,paginationComplete,
       checks,issues:[...new Set(issues)],
-      note:'Read-only Meta business configuration check; no delivery, recipient consent, token send permission or order workflow is verified.'});
+      note:'GET-only Meta configuration check; consent, sending permission and delivery not proven.'};
   } catch {
-    return reply({dryRun:true,messagesSent:0,ready:false,
-      issue:'META_READ_UNAVAILABLE',note:'Meta GET access unavailable or invalid. No message was sent.'},503);
+    return {dryRun:true,messagesSent:0,ready:false,
+      issue:'META_READ_UNAVAILABLE',note:'Meta GET access unavailable or invalid. No message was sent.'};
   }
+}
+export async function onRequestGet({request, env}) {
+  if (!(await authorized(request,env))) return reply({error:'Unauthorized'},401);
+  const report = await verifyMetaOrderTemplate(env);
+  return reply(report, report.issue==='META_READ_UNAVAILABLE'?503:200);
 }
 export function onRequestPost(){return reply({error:'Read-only GET required'},405);}
