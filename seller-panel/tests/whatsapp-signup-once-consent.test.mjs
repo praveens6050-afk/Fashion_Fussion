@@ -125,9 +125,13 @@ test('transactional STOP and START reject historical Meta event replays',()=>{
 test('new-order consent inherits only the verified owner and exact phone',()=>{
  const sql=readFileSync(new URL('../sql/whatsapp_signup_once_transactional_consent.sql',import.meta.url),'utf8');
  assert.match(sql,/cc\.phone_e164=private\.ff_whatsapp_e164\(NEW\.customer_phone\)/);
- assert.match(sql,/cc\.phone_e164=private\.ff_whatsapp_e164\(p\.phone\)/);
- assert.match(sql,/p\.phone_verified_at IS NOT NULL/);
- assert.match(sql,/p\.phone_verification_method='whatsapp'/);
+ assert.match(sql,/JOIN public\.phone_otp_challenges otp/);
+ assert.match(sql,/otp\.verified_at IS NOT NULL/);
+ assert.match(sql,/otp\.consumed_at IS NOT NULL/);
+ assert.match(sql,/otp\.phone_e164=cc\.phone_e164/);
+ assert.match(sql,/lower\(otp\.email\)=lower\(u\.email\)/);
+ assert.match(sql,/cc\.proof_reference='signup:'/);
+ assert.doesNotMatch(sql,/p\.phone_verification_method='whatsapp'/);
  assert.match(sql,/cc\.source='signup_verified_otp'/);
  assert.match(sql,/cc\.status='opted_in'/);
  assert.match(sql,/cc\.revoked_at IS NULL/);
