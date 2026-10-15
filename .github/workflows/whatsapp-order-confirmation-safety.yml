@@ -26,6 +26,8 @@ jobs:
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-signed-webhook.test.mjs
       - name: Verify read-only Meta business and approved template preflight
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-meta-readiness.test.mjs
+      - name: Verify WhatsApp operator readiness page cannot send or persist tokens
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-readiness-page.test.mjs
 
   whatsapp-sql-contract:
     runs-on: ubuntu-latest
