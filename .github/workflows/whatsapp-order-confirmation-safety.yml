@@ -18,3 +18,56 @@ jobs:
           node-version: '22'
       - name: Verify WhatsApp confirmation dispatch fail-closed tests
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-order-confirmation-dispatch.test.mjs
+      - name: Verify WhatsApp integration health read-only safety tests
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-integration-health.test.mjs
+      - name: Verify WhatsApp order preview requires per-order consent
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-order-preview-consent.test.mjs
+      - name: Verify signed Meta callbacks and explicit seller consent commands
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-signed-webhook.test.mjs
+      - name: Verify read-only Meta business and approved template preflight
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-meta-readiness.test.mjs
+      - name: Verify WhatsApp operator readiness page cannot send or persist tokens
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-readiness-page.test.mjs
+      - name: Verify customer seller admin consent gating and no-send readiness inventory
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-roles-readiness.test.mjs
+      - name: Verify shipping and delivery dispatcher never bypasses Meta, consent or idempotency
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-shipping-dispatch.test.mjs
+      - name: Verify seller marketing Meta template readiness remains no-send and consent-gated
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-seller-template-readiness.test.mjs
+
+  whatsapp-sql-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: whatsapp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d whatsapp_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure PostgreSQL CLI installed
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Run actual WhatsApp SQL migration twice and test in isolated DB
+        env:
+          PGPASSWORD: isolated-test-only
+        run: |
+          set -euo pipefail
+          DB='postgresql://postgres@127.0.0.1:5432/whatsapp_ci'
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-fixture.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-assertions.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-shipping-assertions.sql

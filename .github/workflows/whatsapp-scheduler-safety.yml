@@ -1,0 +1,18 @@
+name: WhatsApp Scheduler Safety
+on:
+  pull_request:
+    branches: [cloudflare-seller]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scheduler-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify customer scheduler and all WhatsApp regression tests without live services
+        run: node --experimental-default-type=module --test automation/whatsapp-worker.test.mjs seller-panel/tests/whatsapp-*.test.mjs
