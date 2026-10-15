@@ -87,6 +87,22 @@ for(const [command, expected] of [
   assert.deepEqual(paths.map(p=>p.split('/rpc/')[1]),expected);
  });
 }
+test('transactional STOP still executes if marketing ledger temporarily fails',async t=>{
+ const old=globalThis.fetch,attempted=[];
+ globalThis.fetch=async (url,opts)=>{
+  const u=String(url);
+  attempted.push(u.split('/rpc/')[1]);
+  if(u.includes('ingest_whatsapp_inbound_event'))return json([]);
+  if(u.includes('record_whatsapp_consent_command'))return json({error:'temporary outage'},503);
+  if(u.includes('record_whatsapp_transactional_keyword'))return json(true);
+  throw Error('unexpected RPC');
+ };
+ t.after(()=>globalThis.fetch=old);
+ const result=await webhookHandler(signedRequest(metaMessage('STOP')));
+ assert.equal(result.status,500,'Meta should retry a partially failed STOP');
+ assert.ok(attempted.includes('record_whatsapp_consent_command'));
+ assert.ok(attempted.includes('record_whatsapp_transactional_keyword'));
+});
 test('unsigned STOP is rejected; consent records remain untouched',async t=>{
  const old=globalThis.fetch;let called=0;globalThis.fetch=async()=>{called++;throw Error('unexpected')};
  t.after(()=>globalThis.fetch=old);
