@@ -219,7 +219,7 @@ begin
  PERFORM public.stage_whatsapp_order_event(v_order.id,'order_confirmed');
  return jsonb_build_object('ok',true,'order_id',v_order.id,'phone_hint',right(v_phone,4),'consented_at',v_time);
 end;
-$function$
+$function$;
 
 -- Restrict the customer checkout RPC to signed-in buyers. It verifies
 -- auth.uid() + order ownership internally; anon MUST NOT execute it.
