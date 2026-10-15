@@ -163,4 +163,31 @@ BEGIN
  THEN RAISE EXCEPTION 'Second finalization unexpectedly succeeded'; END IF;
 END;
 $$;
+
+-- Signed Meta receipts can arrive BEFORE a provider ack is finalized.
+-- Their durable events must be reconciled without a second Meta submission.
+INSERT INTO public.whatsapp_delivery_status_events
+  (provider_message_id,meta_status,event_at)
+VALUES
+  ('wamid.CI_EARLY_107','delivered',now()-interval '1 second'),
+  ('wamid.CI_EARLY_107','read',now());
+DO $
+DECLARE claimed jsonb; outbox_id bigint;
+BEGIN
+  claimed := public.claim_whatsapp_order_confirmation(107, now()-interval '10 minutes');
+  IF claimed IS NULL THEN RAISE EXCEPTION 'Early-receipt test claim missing'; END IF;
+  outbox_id := (claimed->>'outboxId')::bigint;
+  IF NOT public.finish_whatsapp_order_confirmation(outbox_id,'wamid.CI_EARLY_107')
+  THEN RAISE EXCEPTION 'Early-receipt test failed to finalize'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.whatsapp_order_notification_outbox
+      WHERE id=outbox_id AND status='delivered'
+        AND provider_delivered_at IS NOT NULL AND provider_read_at IS NOT NULL
+        AND last_provider_status='read'
+        AND provider_message_id='wamid.CI_EARLY_107' AND attempt_count=1)
+  THEN RAISE EXCEPTION 'Early signed receipt was not linked to order'; END IF;
+  IF public.finish_whatsapp_order_confirmation(outbox_id,'wamid.CI_EARLY_107')
+  THEN RAISE EXCEPTION 'Duplicate Meta ack incorrectly finalized twice'; END IF;
+END;
+$;
+
 SELECT 'PASS - WhatsApp signup-once SQL integration, consent, STOP and idempotency' AS result;
