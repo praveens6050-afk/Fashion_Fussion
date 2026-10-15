@@ -32,6 +32,13 @@
 - Tests: `seller-panel/tests/whatsapp-shipping-dispatch.test.mjs` (mocked Meta and DB, no live sends) plus `seller-panel/tests/sql/whatsapp-shipping-assertions.sql` (ephemeral PostgreSQL only, transaction rolled back). Both wired into WhatsApp Safety CI.
 - The operator readiness page and role report may still label customer as launch-blocked until Supabase deployment and live preflight; **this is correct**. No new automatic shipping schedule was added.
 
+## Seller onboarding marketing template verification (read only; no broadcasts)
+- `seller-panel/functions/api/outreach/whatsapp-seller-template-readiness.js` adds a **private GET-only** Meta Graph preflight requiring numeric WABA/Phone Number IDs, read-capable token, and new explicitly configured `WHATSAPP_SELLER_ONBOARDING_TEMPLATE` in the existing `WHATSAPP_ALLOWED_TEMPLATES` list. **The exact template name must be confirmed**, not inferred from screenshot truncation.
+- It checks Meta `APPROVED`/Marketing/`en`, matching WABA phone ID, complete API response and inspects body parameter count, but **always returns `readyForSending:false`** until separate recipient-level proof of consent, marketing copy/variable review, campaign queue, and pilot sign-off. A public seller's phone number is not consent.
+- Operator `/whatsapp-readiness.html` now shows Customer order template, seller marketing template, database health, and role-specific blockers in a single no-send dashboard. Input token is cleared and never stored in browser storage/URL. This page is **not yet deployed**.
+- The synthetic Meta readiness CI includes missing template name, wrong/paused category, phone mismatch, API 403, no-POST and no secret exposure.
+- **No automatic seller acquisition broadcast has been built or authorized**, because production currently has zero eligible marketing opt-ins. Existing manually consent-gated outreach API remains available separately.
+
 ## Code tests
 - `.github/workflows/whatsapp-order-confirmation-safety.yml` runs 7 Node.js fail-closed suites and an isolated PostgreSQL 16 service applying the actual proposed migration twice then synthetic SQL assertions.
 - Scope: signed callbacks, customer opt-in/checkout, false/prepaid/COD orders, aborted and duplicate events, provider receipts, first-attempt limits, WABA/template verification before claim, seller marketing opt-in presence, Admin rollout blockers, privacy-safe operator dashboard.
