@@ -11,6 +11,7 @@ test('operator diagnostics page provides only check and clear actions',async()=>
   assert.match(html,/id="check"/);
   assert.match(html,/id="clear"/);
   assert.match(html,/id="roles"/);
+  assert.match(html,/id="sellerMeta"/);
   assert.match(html,/id="token" type="password"/);
   assert.doesNotMatch(html,/type="submit"[^>]*>Send\b/i);
   assert.doesNotMatch(html,/<script(?![^>]*src)/i);
@@ -25,6 +26,7 @@ test('operator diagnostic client uses same-origin GET only; no storage or token 
   assert.match(js,/\/api\/outreach\/whatsapp-health/);
   assert.match(js,/\/api\/outreach\/whatsapp-meta-readiness/);
   assert.match(js,/\/api\/outreach\/whatsapp-roles-readiness/);
+  assert.match(js,/\/api\/outreach\/whatsapp-seller-template-readiness/);
   assert.doesNotMatch(js,/method:\s*['"]POST['"]/);
   assert.doesNotMatch(js,/(?:localStorage|sessionStorage|indexedDB|document\.cookie)/);
   assert.doesNotMatch(js,/https:\/\/graph\.facebook\.com/);
