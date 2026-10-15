@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Shared signed inbound WhatsApp webhook + JOIN/STOP consent | Yes (existing) | Real signed callback subscription and delivery re-test after approved deploy |
 | Customer COD / payment-verified prepaid order confirmation | Yes: atomic SQL, opt-in, rate-capped private dispatcher and 3-body-parameter approved utility template | Healthy Supabase staging migration; controlled production SQL rollout; real Meta GET-only WABA/phone matching; explicit sending approval; first NEW consented pilot order |
-| Customer shipment / out-for-delivery / delivered | Consent/verified shipment event staging exists in SQL; dry-run preview exists | Separate reviewed atomic claim/dispatcher for each event with delivery-state idempotency; do NOT use order-confirmed sender for other event types |
+| Customer shipment / out-for-delivery / delivered | **New private, independently gated atomic shipping dispatcher and service-only claim RPC added to Draft PR**; shared quota and per-event uniqueness; synthetic SQL/JS tests included | Valid staging database; production migration after approval; Meta live GET verification, legitimate post-consent shipment and separately approved pilot before sending |
 | Seller marketing onboarding | Existing service-only consent-gated template outreach API; signed opt-in command JOIN FASHION SELLER | **0 currently opted-in marketing contacts**. Exact approved marketing template, consent provenance, dedicated non-duplicate campaign queue and explicit pilot approval; do not send cold bulk WhatsApp |
 | Seller new-order alerts | No dedicated WhatsApp dispatcher | Registered seller recipient / authorized preference, approved utility template, verified order ownership, outbox/dedup and signed receipts |
 | Admin operational alerts | No dedicated admin WhatsApp workflow or verified admin recipient registry | Approved separate utility template(s), strictly authorized contacts, incident alert outbox, rate limits and response acknowledgment |
@@ -22,6 +22,16 @@
 - User added a Cloudflare WABA ID. Its runtime value is **not readable** from current connectors and is **not Meta API verified**. Do not request or expose Meta secret tokens in chat.
 - Existing Zoho Mail and WhatsApp OTP/inbound code must remain unchanged/operational. No historical order or order #25 resends.
 
+
+## Shipping milestone implementation (this Draft PR, no live send)
+- `seller-panel/functions/api/outreach/whatsapp-shipping-dispatch.js` accepts only `{"dryRun":true}` with operator token or `{"dispatch":true}` with a **new, separate 40+ character** `WHATSAPP_SHIPPING_INTERNAL_TOKEN`. The protected route does not accept arbitrary order IDs.
+- Global shipping flags, **all false/absent by default**, are `WHATSAPP_SHIPPING_SENDING_ENABLED=true`, `WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED=true`, `WHATSAPP_SHIPPING_GLOBAL_LAUNCH_ACK=verified_shipping_opt_in_v1`, and `WHATSAPP_SHIPPING_NOT_BEFORE=<UTC ISO timestamp before an authorized NEW milestone>`. **Do not configure/enable for production until separate pilot approval**.
+- Service-only `public.claim_whatsapp_shipping_event(bigint,text,timestamptz)` handles *only* `shipped`, `out_for_delivery`, `delivered`, requires exactly current verified fulfillment state, recent fulfillment transition, matching account owner/phone, per-order and transactional consent predating shipment, forward-shipment AWB, payment-verified prepaid or confirmed COD; delivered COD must already be collected.
+- Uses the same existing unique order/event outbox, shared `pg_advisory_xact_lock(733012,417021)`, shared 5-first-attempt/hour and 20/24h caps with order confirmation, and one provider attempt per event. Provider timeout or ambiguous outcome is **never automatically retried**. Standard Meta `order_status_update` approved English Utility template receives the actual 3 verified parameters, with status label taken only from allowlisted event names.
+- Live Meta-approved utility template and matching WABA/Phone Number ID must pass the GET-only preflight **before any database claim**. Extra signed receipt callbacks continue through existing webhook.
+- Tests: `seller-panel/tests/whatsapp-shipping-dispatch.test.mjs` (mocked Meta and DB, no live sends) plus `seller-panel/tests/sql/whatsapp-shipping-assertions.sql` (ephemeral PostgreSQL only, transaction rolled back). Both wired into WhatsApp Safety CI.
+- The operator readiness page and role report may still label customer as launch-blocked until Supabase deployment and live preflight; **this is correct**. No new automatic shipping schedule was added.
+
 ## Code tests
 - `.github/workflows/whatsapp-order-confirmation-safety.yml` runs 7 Node.js fail-closed suites and an isolated PostgreSQL 16 service applying the actual proposed migration twice then synthetic SQL assertions.
 - Scope: signed callbacks, customer opt-in/checkout, false/prepaid/COD orders, aborted and duplicate events, provider receipts, first-attempt limits, WABA/template verification before claim, seller marketing opt-in presence, Admin rollout blockers, privacy-safe operator dashboard.
@@ -35,7 +45,7 @@
 5. On production, during an authorized maintenance window apply the reviewed migration **only after staging matches**. Verify service-only claim/finish permissions, trigger health, no historical replay, and outbox state. Do not enable schedule/dispatch.
 6. Create a **new legitimate order** from a controlled test buyer who explicitly checks optional order WhatsApp consent. Inspect only dry-run eligibility and one-order outbox staging; no fake customer consent or backdated purchases.
 7. Seek **separate explicit authorization** for one-time pilot sending before enabling new launch flags; first inspect candidate queue for only approved test order, rate caps and suppression of duplicates. Confirm actual Meta `wamid` response and signed delivered/read callback; a provider-accepted message does not guarantee delivery.
-8. Only after successful pilot should an authenticated private WhatsApp-specific scheduler be designed/approved. Customer shipping events, seller onboarding and admin alerts each require their separate approved consent/template/ownership workflows before any auto-send.
+8. Only after successful pilot should an authenticated private WhatsApp-specific scheduler be designed/approved. Customer shipping has a separately gated, tested code path but still requires its own explicit pilot approval; seller onboarding and admin alerts require independently verified consent/template/ownership workflows before any auto-send.
 9. Check error fallback, zero retries on unknown provider outcome, audit privacy, and observe no degradation to Zoho Mail, checkout, payment or OTP flows.
 
 ## No-go triggers
