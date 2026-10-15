@@ -1,3 +1,15 @@
+-- NOT AN ACTIVE MIGRATION.
+-- Kept outside supabase/migrations because applying this blanket revocation now would
+-- break existing browser-based Admin workflows that call RPCs with the authenticated role.
+-- Known direct callers include:
+--   admin-panel/admin-creators.js: admin_list_seller_creator_offers, admin_review_seller_creator_offer
+--   admin-panel/admin-seller-finance.js: admin_upsert_seller_settlement_breakdown
+-- It also changes get_marketplace_product_signals() to SECURITY INVOKER; that needs a
+-- caller/RLS/grant review before rollout. First move privileged calls behind server-side
+-- service_role wrappers or build a carefully reviewed allowlist, then create a new migration.
+--
+-- Original proposed migration follows; do not move into supabase/migrations until reviewed.
+
 -- Least-privilege RPC hardening.
 -- Privileged admin/owner/support operations must never be callable merely because
 -- a user has the generic `authenticated` database role. Server/admin code can
@@ -15,9 +27,9 @@ BEGIN
     WHERE n.nspname = 'public'
       AND p.prosecdef
       AND (
-        p.proname LIKE 'admin\_%' ESCAPE '\'
-        OR p.proname LIKE 'owner\_%' ESCAPE '\'
-        OR p.proname LIKE 'support\_staff\_%' ESCAPE '\'
+        p.proname LIKE 'admin\\_%' ESCAPE '\\'
+        OR p.proname LIKE 'owner\\_%' ESCAPE '\\'
+        OR p.proname LIKE 'support\\_staff\\_%' ESCAPE '\\'
         OR p.proname = 'cleanup_seller_e2e_submissions'
       )
   LOOP
