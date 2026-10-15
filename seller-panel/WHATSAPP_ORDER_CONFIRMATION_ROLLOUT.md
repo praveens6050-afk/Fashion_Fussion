@@ -74,6 +74,14 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - Existing **production RPC permissions have not been touched**. Applying reviewed SQL in production is a later explicit release decision after a healthy Supabase staging run and no-send pilot approval.
 - A provided WABA ID configured in Cloudflare does not prove Meta GET token permissions or Phone Number ID membership. The private Meta verification endpoint remains code-only in this Draft PR; no live Meta API call was made.
 
+## Mandatory live Meta preflight before any future order claim (code only)
+- The private **order-confirmation dispatcher** now reuses the same WABA/Phone Number ID/template checker as the private operator readiness endpoint. On a dispatch with eligible unattempted queue candidates, it issues fixed-origin **Meta GETs** for `order_status_update` and phone number membership **before** invoking `claim_whatsapp_order_confirmation`.
+- If `WHATSAPP_BUSINESS_ACCOUNT_ID` is missing, the Meta API denies access, the template is paused/not approved, body/static header variables mismatch, the assigned phone is not in that WABA or the Meta response cannot be fully verified, the dispatcher fails closed with **HTTP 423, zero claims and zero sends**. No pending order is poisoned by the failed preflight.
+- An empty queue incurs **no Meta reads, order claims or WhatsApp sends**. Operator `dryRun:true` remains a Supabase-only preview and never invokes Meta.
+- This is an additional **defense-in-depth** check, not a replacement for existing private 40-character internal dispatch token, Cloudflare launch flags, atomic SQL quota controls, per-order consent checks, Meta `wamid` tracking, or signed webhook receipts.
+- CI uses mock GET/POST transports to prove approved exact template+phone permits a single synthetic dispatch, and missing WABA, paused template, mismatched phone or Meta 403 all block database claims and Meta sends. This does not prove a real Meta token works; **no live Meta GET or send was performed**.
+- Seller onboarding remains **consent-gated**: current production ledger shows zero active marketing opt-ins, so do not send cold WhatsApp invitations based only on public shop phone numbers. Admin WhatsApp alerts still require a separately approved purpose/template, authorized recipients and a dedicated workflow.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
