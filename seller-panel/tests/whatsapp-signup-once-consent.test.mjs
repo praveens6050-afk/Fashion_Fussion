@@ -95,6 +95,27 @@ test('unsigned STOP is rejected; consent records remain untouched',async t=>{
  assert.equal((await webhookHandler(context)).status,401);
  assert.equal(called,0);
 });
+test('transactional STOP and START reject historical Meta event replays',()=>{
+ const sql=readFileSync(new URL('../sql/whatsapp_signup_once_transactional_consent.sql',import.meta.url),'utf8');
+ // A signed but delayed STOP older than a newly granted signup consent
+ // must not override that newer grant.
+ const blockers=sql.match(/p_event_at\s*>\s*greatest\(/g)||[];
+ assert.equal(blockers.length,2,'STOP and START must both enforce chronology');
+ assert.match(sql,/coalesce\(c\.consented_at,'-infinity'::timestamptz\)/);
+ assert.match(sql,/coalesce\(c\.revoked_at,'-infinity'::timestamptz\)/);
+ assert.match(sql,/p_status='opted_in'/);
+ assert.match(sql,/ledger\.status='opted_in' AND ledger\.revoked_at IS NULL/);
+});
+test('new-order consent inherits only the verified owner and exact phone',()=>{
+ const sql=readFileSync(new URL('../sql/whatsapp_signup_once_transactional_consent.sql',import.meta.url),'utf8');
+ assert.match(sql,/cc\.phone_e164=private\.ff_whatsapp_e164\(NEW\.customer_phone\)/);
+ assert.match(sql,/cc\.phone_e164=private\.ff_whatsapp_e164\(p\.phone\)/);
+ assert.match(sql,/p\.phone_verified_at IS NOT NULL/);
+ assert.match(sql,/p\.phone_verification_method='whatsapp'/);
+ assert.match(sql,/cc\.source='signup_verified_otp'/);
+ assert.match(sql,/cc\.status='opted_in'/);
+ assert.match(sql,/cc\.revoked_at IS NULL/);
+});
 test('migration preserves opt-out, signup ownership and no historic order backfill',()=>{
  const sql=readFileSync(new URL('../sql/whatsapp_signup_once_transactional_consent.sql',import.meta.url),'utf8');
  assert.match(sql,/verified_at IS NULL/);
