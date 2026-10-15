@@ -23,22 +23,64 @@ function observedHost(value) {
   } catch { return false; }
 }
 
+function isExpectedSellerOtpFinalize(request) {
+  if (request.method() !== 'POST') return false;
+  try {
+    const url = new URL(request.url());
+    if (url.hostname !== 'seller.fashionfussion.in' || url.pathname !== '/api/whatsapp-otp') return false;
+
+    // Playwright's postDataJSON() can throw when the request body is exposed as
+    // a Buffer/string by a browser/runtime combination. Parse the raw body as a
+    // fallback instead of silently classifying the known optional finalize call
+    // as an unexpected API failure.
+    let body;
+    try { body = request.postDataJSON(); }
+    catch {
+      try { body = JSON.parse(request.postData() || '{}'); }
+      catch { return false; }
+    }
+    return String(body?.action || '').toLowerCase() === 'finalize'
+      && String(body?.audience || '').toLowerCase() === 'seller';
+  } catch { return false; }
+}
+
 function observe(page) {
+  // Match the generic browser console 409 only to a previously classified expected finalize response.
+  let expectedOtpFinalize409ConsoleAllowance = 0;
   page.on('pageerror', error => failures.push(`pageerror: ${error.message}`));
   page.on('console', message => {
     if (message.type() !== 'error') return;
     const text = message.text();
     if (/favicon/i.test(text)) return;
     if (/cloudflareinsights\.com\/cdn-cgi\/rum/i.test(text)) return;
+    // Chromium's generic 409 console message has no request URL/body. Suppress one
+    // duplicate only after the response listener classified the exact expected request.
+    if (/Failed to load resource: the server responded with a status of 409/i.test(text)
+      && expectedOtpFinalize409ConsoleAllowance > 0) {
+      expectedOtpFinalize409ConsoleAllowance -= 1;
+      return;
+    }
     failures.push(`console error: ${text}`);
   });
   page.on('requestfailed', request => {
     if (!observedHost(request.url())) return;
+    // Seller login intentionally treats a 409 from the optional finalize action as
+    // "mobile verification not attached yet". It must not enable WhatsApp sending.
+    // A navigation can abort that best-effort request after the login succeeds.
+    if (isExpectedSellerOtpFinalize(request) && request.failure()?.errorText === 'net::ERR_ABORTED') return;
     failures.push(`failed request: ${request.method()} ${request.url()} ${request.failure()?.errorText || ''}`);
   });
   page.on('response', response => {
     if (!observedHost(response.url()) || response.status() < 400) return;
-    const type = response.request().resourceType();
+    const request = response.request();
+    // finalizePhone() explicitly handles HTTP 409 as a non-fatal result when no
+    // verified WhatsApp phone can be attached. This is expected under the
+    // fail-closed release restrictions; only ignore that exact request/action.
+    if (response.status() === 409 && isExpectedSellerOtpFinalize(request)) {
+      expectedOtpFinalize409ConsoleAllowance += 1;
+      return;
+    }
+    const type = request.resourceType();
     if (['document', 'script', 'stylesheet', 'fetch', 'xhr'].includes(type)) {
       failures.push(`${type} HTTP ${response.status()}: ${response.url()}`);
     }
