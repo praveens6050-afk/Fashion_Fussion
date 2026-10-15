@@ -1,7 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
-const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors}=require('./lib');
+const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors,buildOrderItemSellerSnapshots}=require('./lib');
 
 assert.deepStrictEqual(paymentPricing(100,'prepaid'),{payment_method:'prepaid',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
 assert.deepStrictEqual(paymentPricing(100,'cod'),{payment_method:'cod',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
@@ -18,6 +18,25 @@ assert.throws(()=>normalizeCartRequest([{id:9,variant_id:15,qty:1},{id:9,variant
 assert.throws(()=>normalizeCartRequest([{id:9,variant_id:'bad',qty:1}]),/Invalid variant ID/);
 assert.throws(()=>normalizeCartRequest(Array.from({length:51},(_,i)=>({id:i+1,qty:1}))),/Too many cart items/);
 assert.throws(()=>normalizeCartRequest([{id:9,qty:501}]),/Invalid quantity/);
+
+const sellerA='11111111-1111-4111-8111-111111111111';
+const sellerB='22222222-2222-4222-8222-222222222222';
+assert.deepStrictEqual(buildOrderItemSellerSnapshots(
+  [{id:10,variant_id:101},{id:20,variant_id:null},{id:30,variant_id:null},{id:40,variant_id:null}],
+  [
+    {approved_product_id:10,seller_id:sellerA},
+    {approved_product_id:10,seller_id:sellerA},
+    {approved_product_id:30,seller_id:sellerA},
+    {approved_product_id:30,seller_id:sellerB}
+  ]
+),[
+  {line_index:0,product_id:10,variant_id:101,seller_id:sellerA,attribution_status:'seller_attributed'},
+  {line_index:1,product_id:20,variant_id:null,seller_id:null,attribution_status:'unmapped'},
+  {line_index:2,product_id:30,variant_id:null,seller_id:null,attribution_status:'ambiguous'},
+  {line_index:3,product_id:40,variant_id:null,seller_id:null,attribution_status:'unmapped'}
+]);
+assert.throws(()=>buildOrderItemSellerSnapshots([{id:'bad',variant_id:null}],[]),/Invalid product ID/);
+
 
 function fakeRes(){return{headers:{},setHeader(name,value){this.headers[name]=value}}}
 const goodRes=fakeRes();
@@ -40,6 +59,8 @@ for(const required of ['reserve_order_inventory','release_order_inventory','rese
 assert.ok(createOrder.includes("await rpc('finalize_cod_order_inventory'"),'COD checkout must finalize order and reserved inventory atomically');
 assert.ok(createOrder.includes("await rpc('finalize_zero_value_order_inventory'"),'Zero-value checkout must finalize order and reserved inventory atomically');
 assert.ok(!createOrder.includes("await rpc('finalize_checkout_order',{p_order_id:saved.id")&&!createOrder.includes("await rpc('commit_order_inventory',{p_order_id:saved.id"),'New zero-value checkout must not split order and inventory finalization across RPC calls');
+assert.ok(createOrder.includes('getSellerAttributionSnapshots(calc.items)'),'Retail checkout must snapshot seller attribution before payment');
+assert.ok(createOrder.includes('saveOrderItemSellerSnapshots(saved.id,sellerSnapshots)'),'Retail checkout must persist seller attribution separately from public order items');
 
 const verifyPayment=fs.readFileSync(path.join(__dirname,'api/verify-payment.js'),'utf8');
 for(const required of ['commit_order_inventory','commitInventory','Inventory finalization is being reconciled'])assert.ok(verifyPayment.includes(required),`Verified payment inventory lifecycle must enforce ${required}`);
@@ -69,6 +90,8 @@ for(const required of ['getSupabaseUser','user_id=eq.','return_refund','refund_i
 assert.ok(returnRefundStatus.includes("fetch('https://api.razorpay.com/v1/refunds/"),'Return refund reconciliation must query Razorpay by persisted refund ID');
 
 const quoteOrder=fs.readFileSync(path.join(__dirname,'api/create-quote-order.js'),'utf8');
+assert.ok(quoteOrder.includes('getSellerAttributionSnapshots(normalized.items)'),'Business quote checkout must snapshot seller attribution');
+assert.ok(quoteOrder.includes('saveOrderItemSellerSnapshots(saved.id,sellerSnapshots)'),'Business quote checkout must persist seller attribution separately from public order items');
 for(const field of ['bulk_quote_id','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','accepted_at','business_billing_address:quote.business_billing_address','findExistingQuoteOrder','createRazorpayOrder'])assert.ok(quoteOrder.includes(field),`Accepted quote order must enforce ${field}`);
 assert.ok(quoteOrder.includes("quote.status!=='accepted'"),'Only accepted quotes may create quote orders');
 assert.ok(quoteOrder.includes("new Date(quote.valid_until).getTime()<Date.now()"),'Quote checkout must reject expired quotes');
