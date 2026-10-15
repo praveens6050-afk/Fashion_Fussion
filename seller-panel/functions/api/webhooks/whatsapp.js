@@ -164,26 +164,29 @@ async function storeConsentCommand(env, message) {
     throw new Error('Invalid Meta consent event timestamp');
   const headers = { apikey: key, Authorization: 'Bearer ' + key,
     'content-type': 'application/json' };
-  if (marketingStatus) {
-    const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_consent_command', {
-      method: 'POST', headers,
-      body: JSON.stringify({
-        p_phone_e164:'+'+digits, p_external_message_id:String(message.id),
-        p_status:marketingStatus, p_event_at:eventAt.toISOString()
-      })
-    });
-    if (!response.ok) throw new Error('WhatsApp marketing consent command failed');
-  }
-  if (transactionalStatus) {
-    const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_transactional_keyword', {
-      method: 'POST', headers,
-      body: JSON.stringify({
-        p_phone_e164:'+'+digits, p_external_message_id:String(message.id),
-        p_status:transactionalStatus, p_event_at:eventAt.toISOString()
-      })
-    });
-    if (!response.ok) throw new Error('WhatsApp transactional opt-out update failed');
-  }
+  // STOP targets two independent ledgers. Never let a marketing RPC failure
+  // prevent the transactional opt-out attempt (or vice versa). A partial
+  // failure returns 500 so Meta can retry the signed event idempotently.
+  const writes = [];
+  if (marketingStatus) writes.push({
+    endpoint:'record_whatsapp_consent_command',
+    payload:{p_phone_e164:'+'+digits,p_external_message_id:String(message.id),
+      p_status:marketingStatus,p_event_at:eventAt.toISOString()}
+  });
+  if (transactionalStatus) writes.push({
+    endpoint:'record_whatsapp_transactional_keyword',
+    payload:{p_phone_e164:'+'+digits,p_external_message_id:String(message.id),
+      p_status:transactionalStatus,p_event_at:eventAt.toISOString()}
+  });
+  const results = await Promise.all(writes.map(async write => {
+    try {
+      const response = await fetch(base+'/rest/v1/rpc/'+write.endpoint, {
+        method:'POST',headers,body:JSON.stringify(write.payload)
+      });
+      return response.ok;
+    } catch { return false; }
+  }));
+  if (results.some(ok => !ok)) throw new Error('WhatsApp consent change was not fully recorded');
 }
 
 export async function onRequestGet(context) {
