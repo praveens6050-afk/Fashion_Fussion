@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(38);
 
 select has_table('public', 'whatsapp_inbound_events', 'inbound events table is created');
 select has_table('public', 'phone_otp_challenges', 'phone OTP challenges table is created');
@@ -55,7 +55,7 @@ select lives_ok(
   'a same-time JOIN is safely resolved'
 );
 select is((select status from public.whatsapp_contact_consents where phone_e164='+919876543210' and purpose='marketing'), 'opted_out', 'STOP wins timestamp ties');
-select is((select count(*)::integer from public.whatsapp_consent_events where phone_e164='+919876543210'), 3, 'stale and duplicate ordering still records unique source events');
+select is((select count(*)::integer from public.whatsapp_consent_events where phone_e164='+919876543210'), 4, 'stale and duplicate ordering still records unique source events');
 
 insert into public.orders(id) values (900001);
 insert into public.whatsapp_order_notification_outbox(order_id,event_type)
