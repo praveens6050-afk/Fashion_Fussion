@@ -171,7 +171,7 @@ INSERT INTO public.whatsapp_delivery_status_events
 VALUES
   ('wamid.CI_EARLY_107','delivered',now()-interval '1 second'),
   ('wamid.CI_EARLY_107','read',now());
-DO $
+DO $$
 DECLARE claimed jsonb; outbox_id bigint;
 BEGIN
   claimed := public.claim_whatsapp_order_confirmation(107, now()-interval '10 minutes');
@@ -188,6 +188,6 @@ BEGIN
   IF public.finish_whatsapp_order_confirmation(outbox_id,'wamid.CI_EARLY_107')
   THEN RAISE EXCEPTION 'Duplicate Meta ack incorrectly finalized twice'; END IF;
 END;
-$;
+$$;
 
 SELECT 'PASS - WhatsApp signup-once SQL integration, consent, STOP and idempotency' AS result;
