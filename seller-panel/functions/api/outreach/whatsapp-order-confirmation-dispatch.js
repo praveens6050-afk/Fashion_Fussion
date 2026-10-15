@@ -1,3 +1,4 @@
+import {verifyMetaOrderTemplate} from './whatsapp-meta-readiness.js';
 // Private order-confirmed WhatsApp dispatcher. DEFAULT: NO SEND.
 // Strict explicit launch gates, verified order+consent at DB claim time,
 // rate capped, at most one Meta provider submission per order/event.
@@ -139,6 +140,18 @@ export async function onRequestPost({request,env}){
       ...(!env.WHATSAPP_GRAPH_VERSION?['WHATSAPP_GRAPH_VERSION']:[]),
       ...(!String(env.WHATSAPP_ALLOWED_TEMPLATES||'').split(',').map(s=>s.trim()).includes('order_status_update')?['WHATSAPP_ALLOWED_TEMPLATES']:[])
     ]});
+  if(candidates.length===0)return respond({armed:true,dryRun:false,claimed:0,
+    providerAccepted:0,reviewRequired:0,skipped:0,autoRetry:false,
+    note:'Empty queue; no Meta message or template lookup performed'});
+  // The operator's historical template screenshots and a saved WABA ID do
+  // not prove that the configured Phone Number ID belongs to the WABA or that
+  // Meta still allows the exact approved template. Verify both, GET-only,
+  // before touching the first-attempt atomic claim; fail closed on any issue.
+  const meta = await verifyMetaOrderTemplate(env);
+  if(meta.ready!==true)return respond({armed:false,
+    error:'Meta sender/template preflight not verified',sent:0,
+    claimed:0,providerAccepted:0,autoRetry:false,
+    check:'Use private WhatsApp meta-readiness endpoint; no messages sent'},423);
   let claimed=0,accepted=0,needsReview=0,skipped=0;
   for(const row of candidates){
    if(claimed>=MAX_PER_TICK)break;
