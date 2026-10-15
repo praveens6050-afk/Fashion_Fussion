@@ -169,6 +169,15 @@ BEGIN
      OR NOT pg_catalog.has_function_privilege('service_role','public.finish_whatsapp_order_confirmation(bigint,text,text)','EXECUTE')
   THEN RAISE EXCEPTION 'Finish RPC execute grants are unsafe'; END IF;
 
+  -- SECURITY DEFINER checkout consent must be reachable by authenticated
+  -- customers only, not by anonymous callers via default PUBLIC grants.
+  IF pg_catalog.has_function_privilege('anon','public.record_checkout_whatsapp_consent(bigint)','EXECUTE')
+     OR NOT pg_catalog.has_function_privilege('authenticated','public.record_checkout_whatsapp_consent(bigint)','EXECUTE')
+  THEN RAISE EXCEPTION 'Checkout opt-in RPC grants are unsafe'; END IF;
+  IF pg_catalog.has_function_privilege('anon','public.stage_whatsapp_order_event(bigint,text)','EXECUTE')
+     OR pg_catalog.has_function_privilege('authenticated','public.stage_whatsapp_order_event(bigint,text)','EXECUTE')
+  THEN RAISE EXCEPTION 'Internal staging RPC leaked to browser roles'; END IF;
+
   -- Real checkout path: first-time consent must stage only a confirmed,
   -- authenticated synthetic order, without contacting Meta or sending.
   PERFORM pg_catalog.set_config('ff.test_uid',owner_id::text,true);
