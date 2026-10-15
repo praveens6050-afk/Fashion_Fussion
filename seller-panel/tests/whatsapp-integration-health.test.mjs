@@ -34,9 +34,13 @@ test('read-only status requests exact HEAD counts and exposes no customer inform
     calls++;
     assert.equal(new URL(url).hostname,'example.supabase.co');
     assert.equal(options.method,'HEAD');
-    assert.equal(options.headers.Prefer,'count=exact');
     assert.equal(options.headers.Authorization,'Bearer fake-server-secret');
     assert.ok(!String(url).includes('graph.facebook.com'));
+    if(String(url).includes('select=attempt_started_at')) {
+      assert.ok(!options.headers.Prefer,'Schema probe must not trigger an RPC');
+      return new Response(null,{status:400});
+    }
+    assert.equal(options.headers.Prefer,'count=exact');
     return new Response(null,{status:200,headers:{'Content-Range':'0-0/3'}});
   };
   t.after(()=>{globalThis.fetch=old});
@@ -49,6 +53,9 @@ test('read-only status requests exact HEAD counts and exposes no customer inform
   assert.equal(body.counts.incomingTotal,3);
   assert.equal(body.counts.orderStagedTotal,3);
   assert.equal(body.dispatchLaunchGatePresence.sendingFlagTrue,false);
+  assert.equal(body.atomicDispatchSchema.outboxAttemptColumnPresent,false);
+  assert.equal(body.atomicDispatchSchema.claimRpcVerified,false);
+  assert.equal(body.atomicDispatchSchema.status,'MIGRATION_REQUIRED');
   assert.ok(calls>=15);
   assert.ok(!JSON.stringify(body).includes('fake-server-secret'));
   assert.ok(!JSON.stringify(body).includes('fake-meta-token'));
@@ -69,4 +76,31 @@ test('missing exact count header fails closed instead of reporting healthy zeroe
   const response=await onRequestGet({request:request(token),env});
   assert.equal(response.status,503);
   assert.equal((await response.json()).error,'WhatsApp integration health unavailable; no messages sent');
+});
+
+test('healthy column schema is not mistaken for a verified claim RPC',async t=>{
+  const old=globalThis.fetch;
+  globalThis.fetch=async (url, options)=>{
+    assert.equal(options.method,'HEAD');
+    if(String(url).includes('select=attempt_started_at'))return new Response(null,{status:200});
+    return new Response(null,{status:200,headers:{'Content-Range':'*/0'}});
+  };
+  t.after(()=>{globalThis.fetch=old});
+  const r=await onRequestGet({request:request(token),env});
+  assert.equal(r.status,200);
+  const body=await r.json();
+  assert.equal(body.atomicDispatchSchema.outboxAttemptColumnPresent,true);
+  assert.equal(body.atomicDispatchSchema.claimRpcVerified,false);
+  assert.equal(body.atomicDispatchSchema.status,'MANUAL_RPC_AND_SQL_REVIEW_REQUIRED');
+});
+test('schema probe service failure fails closed, not mistaken for missing migration',async t=>{
+  const old=globalThis.fetch;
+  globalThis.fetch=async (url)=>{
+    if(String(url).includes('select=attempt_started_at'))return new Response(null,{status:503});
+    return new Response(null,{status:200,headers:{'Content-Range':'*/0'}});
+  };
+  t.after(()=>{globalThis.fetch=old});
+  const r=await onRequestGet({request:request(token),env});
+  assert.equal(r.status,503);
+  assert.equal((await r.json()).error,'WhatsApp integration health unavailable; no messages sent');
 });
