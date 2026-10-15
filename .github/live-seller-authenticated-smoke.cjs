@@ -28,8 +28,19 @@ function isExpectedSellerOtpFinalize(request) {
   try {
     const url = new URL(request.url());
     if (url.hostname !== 'seller.fashionfussion.in' || url.pathname !== '/api/whatsapp-otp') return false;
-    const body = request.postDataJSON();
-    return body?.action === 'finalize' && body?.audience === 'seller';
+
+    // Playwright's postDataJSON() can throw when the request body is exposed as
+    // a Buffer/string by a browser/runtime combination. Parse the raw body as a
+    // fallback instead of silently classifying the known optional finalize call
+    // as an unexpected API failure.
+    let body;
+    try { body = request.postDataJSON(); }
+    catch {
+      try { body = JSON.parse(request.postData() || '{}'); }
+      catch { return false; }
+    }
+    return String(body?.action || '').toLowerCase() === 'finalize'
+      && String(body?.audience || '').toLowerCase() === 'seller';
   } catch { return false; }
 }
 
