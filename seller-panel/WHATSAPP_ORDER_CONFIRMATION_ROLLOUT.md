@@ -20,6 +20,13 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - If Meta accepts, save its real `wamid.*` provider ID, status `accepted`; signed `statuses[]` callback later moves to delivered/read/failed. Meta acknowledgement is **not** receipt on customer's phone.
 - If Meta rejects, times out, or the result is uncertain, the event stays attempted (`failed`/`blocked`) and is never automatically resent. Do NOT manually requeue without confirming provider status.
 
+## Read-only prelaunch checks (PR #311; not deployed)
+- `GET /api/outreach/whatsapp-health` reports privacy-safe counts for incoming classifications, Meta delivery receipts, opt-ins, staging queue states and launch-gate configuration presence, using operator authorization. It does **not** send messages or alter Supabase.
+- `POST /api/outreach/order-preview` with `{"dryRun":true,"orderId":123,"eventType":"order_confirmed"}` requires **both** an active transactional phone opt-in and active order-specific consent bound to the same authenticated order owner and normalized order phone. It rejects cancelled orders, COD without valid confirmation, prepaid without payment verification, historical confirmations older than 24 hours, and shipment events that predate consent. It only previews; never sends.
+- GitHub Actions safety tests cover the health check, consent, payment and shipment gates, including no Meta calls or database mutations from the previews. Do not infer delivered customer order messages from generic Meta delivery receipts (which can be OTPs).
+- **Production prerequisites currently missing:** `attempt_started_at` in the WhatsApp order outbox, and service-only `claim_whatsapp_order_confirmation(bigint,timestamptz)` RPC. Until the reviewed migration is applied and tested, the dispatcher's current dry run is not expected to work in production. Do not turn on global launch flags or schedule dispatch.
+- Seller acquisition templates require their own recorded **marketing** consent; no opt-in is implied by a public seller contact or an unclassified WhatsApp inbound event.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
