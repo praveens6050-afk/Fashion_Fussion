@@ -9,6 +9,7 @@
   const health = document.getElementById('health');
   const meta = document.getElementById('meta');
   const roles = document.getElementById('roles');
+  const sellerMeta = document.getElementById('sellerMeta');
 
   async function readOnlyGet(path, bearer) {
     const response = await fetch(path, {
@@ -34,22 +35,25 @@
     if (!bearer) {status.textContent = 'Enter the existing OUTREACH_API_TOKEN.';return;}
     token.value = '';
     check.disabled = true;
-    status.textContent = 'Checking two read-only endpoints…';
+    status.textContent = 'Checking four read-only endpoints…';
     health.textContent = 'Checking…';
     meta.textContent = 'Checking…';
     roles.textContent = 'Checking…';
+    sellerMeta.textContent = 'Checking…';
     try {
       const results = await Promise.allSettled([
         readOnlyGet('/api/outreach/whatsapp-health',bearer),
         readOnlyGet('/api/outreach/whatsapp-meta-readiness',bearer),
-        readOnlyGet('/api/outreach/whatsapp-roles-readiness',bearer)
+        readOnlyGet('/api/outreach/whatsapp-roles-readiness',bearer),
+        readOnlyGet('/api/outreach/whatsapp-seller-template-readiness',bearer)
       ]);
       const output=results.map(r=>r.status==='fulfilled'?r.value:{ready:false,issue:'NETWORK_UNAVAILABLE'});
       show(health, output[0]);
       show(meta, output[1]);
       show(roles, output[2]);
+      show(sellerMeta, output[3]);
       status.textContent = output[0].readOnly && output[1].ready
-        ? 'Preflight checks passed; actual sending remains subject to separate launch approval.'
+        ? 'Customer Meta/DB preflight passed. Seller and Admin remain separately consent-gated; no messages sent.'
         : 'One or more readiness checks require attention. No message was sent.';
     } finally {
       check.disabled = false;
@@ -60,6 +64,7 @@
     health.textContent = 'Not checked';
     meta.textContent = 'Not checked';
     roles.textContent = 'Not checked';
+    sellerMeta.textContent = 'Not checked';
     status.textContent = 'Cleared. No messages sent.';
   });
 })();
