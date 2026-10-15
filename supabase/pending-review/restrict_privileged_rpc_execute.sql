@@ -27,9 +27,9 @@ BEGIN
     WHERE n.nspname = 'public'
       AND p.prosecdef
       AND (
-        p.proname LIKE 'admin\\_%' ESCAPE '\\'
-        OR p.proname LIKE 'owner\\_%' ESCAPE '\\'
-        OR p.proname LIKE 'support\\_staff\\_%' ESCAPE '\\'
+        p.proname LIKE 'admin\_%' ESCAPE '\'
+        OR p.proname LIKE 'owner\_%' ESCAPE '\'
+        OR p.proname LIKE 'support\_staff\_%' ESCAPE '\'
         OR p.proname = 'cleanup_seller_e2e_submissions'
       )
   LOOP
