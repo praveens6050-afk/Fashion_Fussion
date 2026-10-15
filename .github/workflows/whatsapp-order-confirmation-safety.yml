@@ -1,7 +1,7 @@
 name: WhatsApp Order Confirmation Safety
 on:
   push:
-    branches: [feature/whatsapp-order-confirmation-safe-dispatch]
+    branches: [feature/whatsapp-order-confirmation-safe-dispatch, feature/whatsapp-signup-once-backend]
   pull_request:
     branches: [cloudflare-seller]
   workflow_dispatch:
