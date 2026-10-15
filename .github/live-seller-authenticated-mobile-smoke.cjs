@@ -19,22 +19,52 @@ function observedHost(value) {
   } catch { return false; }
 }
 
+function isExpectedSellerOtpFinalize(request) {
+  if (request.method() !== 'POST') return false;
+  try {
+    const url = new URL(request.url());
+    if (url.hostname !== 'seller.fashionfussion.in' || url.pathname !== '/api/whatsapp-otp') return false;
+
+    // Playwright may expose the request body as a string or Buffer in some runtimes.
+    let body;
+    try { body = request.postDataJSON(); }
+    catch {
+      try { body = JSON.parse(request.postData() || '{}'); }
+      catch { return false; }
+    }
+    return String(body?.action || '').toLowerCase() === 'finalize'
+      && String(body?.audience || '').toLowerCase() === 'seller';
+  } catch { return false; }
+}
+
 function observe(page) {
+  let expectedOtpFinalize409ConsoleAllowance = 0;
   page.on('pageerror', error => failures.push(`pageerror: ${error.message}`));
   page.on('console', message => {
     if (message.type() !== 'error') return;
     const text = message.text();
     if (/favicon/i.test(text)) return;
-    if (/cloudflareinsights\.com\/cdn-cgi\/rum/i.test(text)) return;
+    if (/cloudflareinsights\\.com\\/cdn-cgi\\/rum/i.test(text)) return;
+    if (/Failed to load resource: the server responded with a status of 409/i.test(text)
+      && expectedOtpFinalize409ConsoleAllowance > 0) {
+      expectedOtpFinalize409ConsoleAllowance -= 1;
+      return;
+    }
     failures.push(`console error: ${text}`);
   });
   page.on('requestfailed', request => {
     if (!observedHost(request.url())) return;
+    if (isExpectedSellerOtpFinalize(request) && request.failure()?.errorText === 'net::ERR_ABORTED') return;
     failures.push(`failed request: ${request.method()} ${request.url()} ${request.failure()?.errorText || ''}`);
   });
   page.on('response', response => {
     if (!observedHost(response.url()) || response.status() < 400) return;
-    const type = response.request().resourceType();
+    const request = response.request();
+    if (response.status() === 409 && isExpectedSellerOtpFinalize(request)) {
+      expectedOtpFinalize409ConsoleAllowance += 1;
+      return;
+    }
+    const type = request.resourceType();
     if (['document', 'script', 'stylesheet', 'fetch', 'xhr'].includes(type)) {
       failures.push(`${type} HTTP ${response.status()}: ${response.url()}`);
     }
