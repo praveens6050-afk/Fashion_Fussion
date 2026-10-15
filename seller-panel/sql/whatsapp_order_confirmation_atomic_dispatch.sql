@@ -193,7 +193,7 @@ BEGIN
   END IF;
   RETURN true;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.finish_whatsapp_order_confirmation(bigint,text,text)
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.finish_whatsapp_order_confirmation(bigint,text,text) TO service_role;
