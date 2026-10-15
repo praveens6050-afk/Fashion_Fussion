@@ -34,3 +34,13 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - The route is a private **dispatcher**, not an automatic scheduler. Wire it to the existing private cron/Vault model only after pilot and authorization, with a WhatsApp-specific secret and independent rate controls.
 - Seller new-order alerts, Admin failure alerts, customer shipment/delivery and seller marketing require their own consent, templates and proof; not included in this first step.
 - A consent checkbox checked after an order is placed cannot retroactively authorize messages previously attempted, nor can an old buyer's WhatsApp delivery be assumed.
+
+## Signup-once consent design (PR #309)
+Customer PR [#309](https://github.com/praveens6050-afk/Fashion_Fussion/pull/309) adds an **unchecked, affirmative transactional WhatsApp consent** on customer/retailer signup and removes the repeated checkout checkbox. Phone OTP verification alone never opts anyone into order messages. Customer orders proceed with email notification even if consent is not given.
+
+To enable this safely, apply **both** SQL migrations from this PR in order: first `whatsapp_order_confirmation_atomic_dispatch.sql`, then `whatsapp_signup_once_transactional_consent.sql`. The latter broadens the existing per-order consent source constraint and installs:
+- The service-role-only `finalize_whatsapp_signup_order_updates` RPC. It verifies the authenticated signup's account type, actual OTP challenge/email and unused OTP verification, sets the verified profile phone, stores an opt-in *only if expressly checked*, and consumes the challenge atomically. STOP history takes priority.
+- A new AFTER INSERT order trigger that copies *only proven signup consent* to each **future** same-user same-verified-number order; no historical backfill. Existing order-consent and COD/prepaid staging triggers remain the only way into the queue.
+- A signed Meta webhook `STOP`/`STOP FASHION` transactional opt-out and `START FASHION UPDATES` explicit re-opt-in, preserving the original ownership proof.
+
+**Deployment order:** migrate backend SQL on a staging database and test first; migrate production SQL before deploying the OTP API change; deploy Seller Pages code; then deploy Customer Pages PR #309; leave the new outbound Meta send gates **OFF** until the later controlled, approved opt-in test and explicit activation. Do not merge Customer changes before Seller OTP + SQL is verified, or email-confirmation-later signups may have phone finalization errors. No launch flags or existing on/off settings were changed while creating these PRs. Existing customer accounts without documented signup consent do **not** get enrolled automatically: add a separate explicit account opt-in path later.
