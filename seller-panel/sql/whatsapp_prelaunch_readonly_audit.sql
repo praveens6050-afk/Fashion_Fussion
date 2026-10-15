@@ -7,6 +7,7 @@ WITH rpc AS (
   SELECT
     pg_catalog.to_regprocedure('public.claim_whatsapp_order_confirmation(bigint,timestamptz)') AS claim_oid,
     pg_catalog.to_regprocedure('public.finish_whatsapp_order_confirmation(bigint,text,text)') AS finish_oid,
+    pg_catalog.to_regprocedure('public.claim_whatsapp_shipping_event(bigint,text,timestamptz)') AS shipping_oid,
     pg_catalog.to_regprocedure('public.stage_whatsapp_order_event(bigint,text)') AS stage_oid
 ),
 checks AS (
@@ -20,14 +21,19 @@ checks AS (
     ) AS attempt_started_at_column,
     (SELECT claim_oid IS NOT NULL FROM rpc) AS claim_rpc_present,
     (SELECT finish_oid IS NOT NULL FROM rpc) AS finish_rpc_present,
+    (SELECT shipping_oid IS NOT NULL FROM rpc) AS shipping_rpc_present,
     COALESCE((SELECT p.prosecdef FROM pg_catalog.pg_proc p, rpc WHERE p.oid=rpc.claim_oid),false)
       AS claim_rpc_security_definer,
     COALESCE((SELECT p.prosecdef FROM pg_catalog.pg_proc p, rpc WHERE p.oid=rpc.finish_oid),false)
       AS finish_rpc_security_definer,
+    COALESCE((SELECT p.prosecdef FROM pg_catalog.pg_proc p, rpc WHERE p.oid=rpc.shipping_oid),false)
+      AS shipping_rpc_security_definer,
     COALESCE((SELECT pg_catalog.has_function_privilege('service_role',claim_oid,'EXECUTE')
       FROM rpc WHERE claim_oid IS NOT NULL),false) AS claim_service_role_access,
     COALESCE((SELECT pg_catalog.has_function_privilege('service_role',finish_oid,'EXECUTE')
       FROM rpc WHERE finish_oid IS NOT NULL),false) AS finish_service_role_access,
+    COALESCE((SELECT pg_catalog.has_function_privilege('service_role',shipping_oid,'EXECUTE')
+      FROM rpc WHERE shipping_oid IS NOT NULL),false) AS shipping_service_role_access,
     COALESCE((SELECT pg_catalog.has_function_privilege('anon',claim_oid,'EXECUTE')
       FROM rpc WHERE claim_oid IS NOT NULL),false) AS claim_anon_access,
     COALESCE((SELECT pg_catalog.has_function_privilege('authenticated',claim_oid,'EXECUTE')
@@ -36,6 +42,10 @@ checks AS (
       FROM rpc WHERE finish_oid IS NOT NULL),false) AS finish_anon_access,
     COALESCE((SELECT pg_catalog.has_function_privilege('authenticated',finish_oid,'EXECUTE')
       FROM rpc WHERE finish_oid IS NOT NULL),false) AS finish_authenticated_access,
+    COALESCE((SELECT pg_catalog.has_function_privilege('anon',shipping_oid,'EXECUTE')
+      FROM rpc WHERE shipping_oid IS NOT NULL),false) AS shipping_anon_access,
+    COALESCE((SELECT pg_catalog.has_function_privilege('authenticated',shipping_oid,'EXECUTE')
+      FROM rpc WHERE shipping_oid IS NOT NULL),false) AS shipping_authenticated_access,
     EXISTS (
       SELECT 1 FROM pg_catalog.pg_constraint c
       WHERE c.conrelid='public.whatsapp_order_notification_outbox'::regclass
@@ -61,11 +71,12 @@ checks AS (
        WHERE status='pending_review') AS pending_review_count
 )
 SELECT *, (
-  attempt_started_at_column AND claim_rpc_present AND finish_rpc_present
-  AND claim_rpc_security_definer AND finish_rpc_security_definer
-  AND claim_service_role_access AND finish_service_role_access
+  attempt_started_at_column AND claim_rpc_present AND finish_rpc_present AND shipping_rpc_present
+  AND claim_rpc_security_definer AND finish_rpc_security_definer AND shipping_rpc_security_definer
+  AND claim_service_role_access AND finish_service_role_access AND shipping_service_role_access
   AND NOT claim_anon_access AND NOT claim_authenticated_access
   AND NOT finish_anon_access AND NOT finish_authenticated_access
+  AND NOT shipping_anon_access AND NOT shipping_authenticated_access
   AND order_event_uniqueness AND stage_on_order_change_enabled
   AND stage_on_consent_enabled
 ) AS schema_and_grants_ready_for_controlled_staging_test
