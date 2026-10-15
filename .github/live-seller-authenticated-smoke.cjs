@@ -45,16 +45,21 @@ function isExpectedSellerOtpFinalize(request) {
 }
 
 function observe(page) {
+  // Match the generic browser console 409 only to a previously classified expected finalize response.
+  let expectedOtpFinalize409ConsoleAllowance = 0;
   page.on('pageerror', error => failures.push(`pageerror: ${error.message}`));
   page.on('console', message => {
     if (message.type() !== 'error') return;
     const text = message.text();
     if (/favicon/i.test(text)) return;
     if (/cloudflareinsights\.com\/cdn-cgi\/rum/i.test(text)) return;
-    // Browser console logs do not expose the originating request body. Ignore only
-    // the generic 409 console duplicate; the response listener below still fails
-    // every 409 except the explicitly expected seller OTP finalize action.
-    if (/Failed to load resource: the server responded with a status of 409/i.test(text)) return;
+    // Chromium's generic 409 console message has no request URL/body. Suppress one
+    // duplicate only after the response listener classified the exact expected request.
+    if (/Failed to load resource: the server responded with a status of 409/i.test(text)
+      && expectedOtpFinalize409ConsoleAllowance > 0) {
+      expectedOtpFinalize409ConsoleAllowance -= 1;
+      return;
+    }
     failures.push(`console error: ${text}`);
   });
   page.on('requestfailed', request => {
@@ -71,7 +76,10 @@ function observe(page) {
     // finalizePhone() explicitly handles HTTP 409 as a non-fatal result when no
     // verified WhatsApp phone can be attached. This is expected under the
     // fail-closed release restrictions; only ignore that exact request/action.
-    if (response.status() === 409 && isExpectedSellerOtpFinalize(request)) return;
+    if (response.status() === 409 && isExpectedSellerOtpFinalize(request)) {
+      expectedOtpFinalize409ConsoleAllowance += 1;
+      return;
+    }
     const type = request.resourceType();
     if (['document', 'script', 'stylesheet', 'fetch', 'xhr'].includes(type)) {
       failures.push(`${type} HTTP ${response.status()}: ${response.url()}`);
