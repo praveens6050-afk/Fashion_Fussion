@@ -39,6 +39,16 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - `seller-panel/tests/whatsapp-signed-webhook.test.mjs` verifies Meta HMAC challenge/signatures, no persistence of unsigned events, signed delivery receipt parsing, seller marketing JOIN/STOP commands, and rejection of malformed/oversized payloads. Mocked transports never call Meta or a real database.
 - CI success is **a code-level simulated verification, not a live WhatsApp delivery claim**. A clean actual staging Supabase branch is still required before production migration or launch approval.
 
+## Meta template verification — read-only (PR #311)
+- New **private, operator-authenticated** `GET /api/outreach/whatsapp-meta-readiness`; no POST and no Meta message send. Requires the *existing* `OUTREACH_API_TOKEN` as a Bearer token. No secret values go in query strings, logs, or the response.
+- Add the **numeric** `WHATSAPP_BUSINESS_ACCOUNT_ID` (WABA ID) to the **Seller Cloudflare Pages production environment** before using this endpoint **after approved deployment**. This is the WABA Account ID, **not** the already configured numeric `WHATSAPP_PHONE_NUMBER_ID`; keep both unchanged. Do not paste the Graph API access token or app secret into chat.
+- Uses existing server-side `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_GRAPH_VERSION`, `WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_ALLOWED_TEMPLATES`. If any configuration is missing, returns `ready:false` without calling Meta.
+- Performs fixed-origin Meta Graph API **GET** reads: `/{WABA_ID}/message_templates?name=order_status_update` and `/{WABA_ID}/phone_numbers`. Checks approved `en` utility template, exact static body with exactly three body parameters, no dynamic header/buttons, and matching Phone Number ID in the same WABA. Unexpected/rejected/paused templates, inaccessible results, pagination, or mismatched mapping fail closed. It never creates or edits a template.
+- Response deliberately contains only boolean checks and issue codes, **not** Meta access tokens, phone numbers, buyer PII, business IDs or raw provider error details. Meta GET access alone does **not** prove sender permission, recipient consent, a successful WhatsApp delivery or webhook subscription health.
+- CI mocks Meta reads and asserts no POST requests, unauthenticated access rejected, missing ID blocked, approved template allowed, incorrect language/category/body/phone/rejected or paginated results blocked, and Meta API errors fail closed.
+- Meta's own Cloud API reference describes read-only phone-number and template retrieval: https://www.postman.com/meta/whatsapp-business-platform/request/e9ady51/get-phone-numbers and https://www.postman.com/meta/whatsapp-business-platform/request/7whkjje/get-template-by-name-default-fields.
+- **No new production Cloudflare variable was added in this PR**. Existing live WhatsApp, Sales Zoho Mail and Orders Zoho Mail secrets have not been changed.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
