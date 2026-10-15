@@ -10,6 +10,7 @@ DECLARE
   cutoff_time timestamptz:=now()-interval '1 hour';
   eid bigint;
   ev text;
+  expected_label text;
   claimed jsonb;
   i integer;
 BEGIN
@@ -100,11 +101,11 @@ BEGIN
                  WHEN 501 THEN 'out_for_delivery'
                  WHEN 502 THEN 'delivered'
                  ELSE 'shipped' END;
+    expected_label:=CASE ev WHEN 'shipped' THEN 'Shipped'
+                    WHEN 'out_for_delivery' THEN 'Out for Delivery'
+                    ELSE 'Delivered' END;
     claimed:=public.claim_whatsapp_shipping_event(eid,ev,cutoff_time);
-    IF claimed IS NULL OR (claimed->>'statusLabel') IS DISTINCT FROM
-      CASE ev WHEN 'shipped' THEN 'Shipped'
-              WHEN 'out_for_delivery' THEN 'Out for Delivery'
-              ELSE 'Delivered' END
+    IF claimed IS NULL OR (claimed->>'statusLabel') IS DISTINCT FROM expected_label
     THEN RAISE EXCEPTION 'Valid shipping event % not claimed properly',eid; END IF;
     IF public.claim_whatsapp_shipping_event(eid,ev,cutoff_time) IS NOT NULL THEN
       RAISE EXCEPTION 'Duplicate shipping provider attempt for %',eid;
