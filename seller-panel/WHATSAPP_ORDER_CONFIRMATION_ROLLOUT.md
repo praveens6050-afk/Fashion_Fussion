@@ -56,6 +56,12 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - The separate `WHATSAPP_BUSINESS_ACCOUNT_ID` value must be confirmed from Meta WhatsApp Manager. **Do not guess it from the phone number ID**; neither the operator page nor the preflight exposes this identifier or secret values.
 - A positive template preflight means **only** Meta's read configuration matches; checkout consent, database migration, opt-in proof, webhook subscription and actual customer delivery must still pass independent checks.
 
+## Meta template screenshot review — 15 October 2026
+- The Meta template edit screenshot shows a **static TEXT header** `Fashion Fussion`, the three-variable order status body and a `Fashion Fussion` footer. This does **not** independently verify the template's **name, approval status, category or language**; those must be checked in Meta Template Library or with the read-only WABA preflight after approved deployment.
+- The read-only `whatsapp-meta-readiness` checker has been adjusted to accept **exactly** this static text header (no dynamic header parameter) and the static footer, while rejecting media headers, variable headers, unrecognized branded headers and button components. The order send route still sends **three BODY parameters only**, because static text headers need no Meta parameters.
+- The screenshot shows a **Submit for review** action on an edit page. Avoid submitting an unnecessary edit or changing an already-approved template simply to match the code. No template changes or Meta sends were made.
+- New mock-only automated tests exercise matching header+body+footer, dynamic/media/wrong static headers and extra buttons. Template approval remains unverified until a live **GET-only** Meta check is performed.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
