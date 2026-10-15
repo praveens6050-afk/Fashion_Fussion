@@ -38,11 +38,24 @@ function checkTemplate(entry) {
   };
   const components = Array.isArray(entry?.components) ? entry.components : [];
   const bodies = components.filter(c=>String(c?.type||'').toUpperCase()==='BODY');
-  const extras = components.filter(c=>!['BODY','FOOTER'].includes(String(c?.type||'').toUpperCase()));
+  const headers = components.filter(c=>String(c?.type||'').toUpperCase()==='HEADER');
   const footers = components.filter(c=>String(c?.type||'').toUpperCase()==='FOOTER');
+  const extras = components.filter(c=>!['BODY','HEADER','FOOTER'].includes(String(c?.type||'').toUpperCase()));
   checks.exactBodyMatches=bodies.length===1 && cleanBody(bodies[0].text)===EXPECTED_BODY;
-  checks.noUnexpectedDynamicComponents=extras.length===0 && footers.length<=1
-    && footers.every(c=>!/{{\s*\d+\s*}}/.test(String(c?.text||'')));
+  // The approved UI can include a *static* Fashion Fussion text header.
+  // Such a header needs no Cloud API parameter. Never accept variable,
+  // image, video, document, location, or interactive button components.
+  const staticTextHeader=headers.length<=1 && headers.every(c=>
+    String(c?.format||'').toUpperCase()==='TEXT'
+    && cleanBody(c?.text)==='Fashion Fussion'
+    && !/{{\s*\d+\s*}}/.test(String(c?.text||''))
+    && !c?.example
+  );
+  const staticFooter=footers.length<=1 && footers.every(c=>
+    cleanBody(c?.text)==='Fashion Fussion'
+    && !/{{\s*\d+\s*}}/.test(String(c?.text||''))
+  );
+  checks.noUnexpectedDynamicComponents=extras.length===0 && staticTextHeader && staticFooter;
   return checks;
 }
 async function readMeta(path, token) {
