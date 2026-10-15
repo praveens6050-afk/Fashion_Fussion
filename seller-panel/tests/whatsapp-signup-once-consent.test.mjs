@@ -142,7 +142,7 @@ test('migration preserves opt-out, signup ownership and no historic order backfi
  assert.match(sql,/whatsapp_order_updates_opt_in/);
  assert.match(sql,/FOR UPDATE/);
  assert.match(sql,/ledger\.status='opted_in'/);
- assert.match(sql,/cc\.proof_reference LIKE 'signup:'/);
+ assert.match(sql,/cc\.proof_reference='signup:'\|\|NEW\.user_id::text\|\|':'\|\|otp\.id::text/);
  assert.match(sql,/AFTER INSERT ON public\.orders/);
  assert.doesNotMatch(sql,/\bUPDATE public\.orders\b/i);
 });
