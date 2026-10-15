@@ -32,6 +32,13 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - The private `whatsapp-health` endpoint now performs an additional **HEAD-only** probe for `attempt_started_at`. An absent column shows `MIGRATION_REQUIRED`; a present column still requires separate claim/finish RPC and grants verification. No RPC is invoked.
 - Supabase's only listed branch was marked `MIGRATIONS_FAILED`, so **no staging database is verified ready for applying migrations**. No migration has been applied to staging or production; no messages sent.
 
+## Isolated SQL and signed-webhook CI (PR #311)
+- `seller-panel/tests/sql/whatsapp-fixture.sql` constructs an **ephemeral GitHub Actions PostgreSQL 16** instance with synthetic orders and mock roles; it does not connect to Fashion Fussion Supabase.
+- CI applies the **actual proposed** `seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql` **twice**, verifying migration idempotency, then runs `seller-panel/tests/sql/whatsapp-assertions.sql` inside a rollback-only transaction.
+- SQL assertions cover no-consent rejection, unverified prepaid, confirmed COD/prepaid, cancellation, mismatched recipient phone, inactive/revoked consent, historical orders, shipping AWB and post-consent timing, COD delivery collection, one claim per event, provider finish once, hourly 5-first-attempt cap, service-only RPC grants, and opt-in-after-checkout stage without sending.
+- `seller-panel/tests/whatsapp-signed-webhook.test.mjs` verifies Meta HMAC challenge/signatures, no persistence of unsigned events, signed delivery receipt parsing, seller marketing JOIN/STOP commands, and rejection of malformed/oversized payloads. Mocked transports never call Meta or a real database.
+- CI success is **a code-level simulated verification, not a live WhatsApp delivery claim**. A clean actual staging Supabase branch is still required before production migration or launch approval.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
