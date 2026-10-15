@@ -38,9 +38,8 @@ jobs:
         run: |
           set -euo pipefail
           test_dir="$RUNNER_TEMP/whatsapp-contract-project"
-          mkdir -p "$test_dir/supabase/migrations" "$test_dir/supabase/tests" "$test_dir/supabase/tests/fixtures"
+          mkdir -p "$test_dir/supabase/migrations" "$test_dir/supabase/tests"
           printf 'project_id = "fashion-fussion-whatsapp-contract-ci"\n' > "$test_dir/supabase/config.toml"
-          cp supabase/tests/fixtures/whatsapp_contract_baseline.sql "$test_dir/supabase/tests/fixtures/"
           cp supabase/tests/whatsapp_migrations_contract.sql "$test_dir/supabase/tests/"
           cp supabase/tests/fixtures/whatsapp_contract_baseline.sql "$test_dir/supabase/migrations/20260901000000_test_only_whatsapp_prerequisites.sql"
           for migration in \
