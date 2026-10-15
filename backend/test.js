@@ -59,7 +59,7 @@ for(const required of ['reserve_order_inventory','release_order_inventory','rese
 assert.ok(createOrder.includes("await rpc('finalize_cod_order_inventory'"),'COD checkout must finalize order and reserved inventory atomically');
 assert.ok(createOrder.includes("await rpc('finalize_zero_value_order_inventory'"),'Zero-value checkout must finalize order and reserved inventory atomically');
 assert.ok(!createOrder.includes("await rpc('finalize_checkout_order',{p_order_id:saved.id")&&!createOrder.includes("await rpc('commit_order_inventory',{p_order_id:saved.id"),'New zero-value checkout must not split order and inventory finalization across RPC calls');
-assert.ok(createOrder.includes('getSellerAttributionSnapshots(calc.items)'),'Retail checkout must snapshot seller attribution before payment');
+assert.ok(createOrder.includes('getSellerAttributionSnapshotsBestEffort(calc.items)'),'Retail checkout must attempt seller attribution without blocking checkout on optional signal data');
 assert.ok(createOrder.includes('saveOrderItemSellerSnapshots(saved.id,sellerSnapshots)'),'Retail checkout must persist seller attribution separately from public order items');
 
 const verifyPayment=fs.readFileSync(path.join(__dirname,'api/verify-payment.js'),'utf8');
@@ -90,7 +90,7 @@ for(const required of ['getSupabaseUser','user_id=eq.','return_refund','refund_i
 assert.ok(returnRefundStatus.includes("fetch('https://api.razorpay.com/v1/refunds/"),'Return refund reconciliation must query Razorpay by persisted refund ID');
 
 const quoteOrder=fs.readFileSync(path.join(__dirname,'api/create-quote-order.js'),'utf8');
-assert.ok(quoteOrder.includes('getSellerAttributionSnapshots(normalized.items)'),'Business quote checkout must snapshot seller attribution');
+assert.ok(quoteOrder.includes('getSellerAttributionSnapshotsBestEffort(normalized.items)'),'Business quote checkout must attempt seller attribution without blocking checkout on optional signal data');
 assert.ok(quoteOrder.includes('saveOrderItemSellerSnapshots(saved.id,sellerSnapshots)'),'Business quote checkout must persist seller attribution separately from public order items');
 for(const field of ['bulk_quote_id','quoted_subtotal','quoted_gst','quoted_delivery','quoted_total','accepted_at','business_billing_address:quote.business_billing_address','findExistingQuoteOrder','createRazorpayOrder'])assert.ok(quoteOrder.includes(field),`Accepted quote order must enforce ${field}`);
 assert.ok(quoteOrder.includes("quote.status!=='accepted'"),'Only accepted quotes may create quote orders');
