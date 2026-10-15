@@ -27,6 +27,11 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - **Production prerequisites currently missing:** `attempt_started_at` in the WhatsApp order outbox, and service-only `claim_whatsapp_order_confirmation(bigint,timestamptz)` RPC. Until the reviewed migration is applied and tested, the dispatcher's current dry run is not expected to work in production. Do not turn on global launch flags or schedule dispatch.
 - Seller acquisition templates require their own recorded **marketing** consent; no opt-in is implied by a public seller contact or an unclassified WhatsApp inbound event.
 
+## Pre-launch audit update (15 October 2026)
+- Added `seller-panel/sql/whatsapp_prelaunch_readonly_audit.sql`, a **SELECT-only** check for atomic outbox column, claim/finish RPC presence and grants, unique order/event constraint, trigger state, and outbox counts. It was run read-only against production: column absent, both RPCs absent, triggers active, deduplication constraint present, outbox empty. The audit correctly returned `schema_and_grants_ready_for_controlled_staging_test=false`.
+- The private `whatsapp-health` endpoint now performs an additional **HEAD-only** probe for `attempt_started_at`. An absent column shows `MIGRATION_REQUIRED`; a present column still requires separate claim/finish RPC and grants verification. No RPC is invoked.
+- Supabase's only listed branch was marked `MIGRATIONS_FAILED`, so **no staging database is verified ready for applying migrations**. No migration has been applied to staging or production; no messages sent.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
