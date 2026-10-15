@@ -47,7 +47,14 @@ test('checks empty backlog and quotas without calling Zoho',async(t)=>{
     if(target.includes('/rpc/zoho_order_delivery_telemetry'))
       return stubResponse({attemptsLastHour:1,attemptsLast24h:3,
         hourlyAttemptCap:30,rolling24hAttemptCap:150});
-    if(target.includes('/zoho_order_email_outbox?'))return stubResponse([]);
+    if(target.includes('/zoho_order_email_outbox?')){
+      const u=new URL(target);
+      const filters=u.searchParams.getAll('created_at');
+      assert.equal(filters.length,2,'must restrict both start and end of recovery window');
+      assert.ok(filters.some(x=>x.startsWith('gte.')));
+      assert.ok(filters.some(x=>x.startsWith('lte.')));
+      return stubResponse([]);
+    }
     throw Error('Unexpected third-party or dispatch request');
   };
   t.after(()=>{globalThis.fetch=previous});
