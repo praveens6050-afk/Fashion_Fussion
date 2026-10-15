@@ -145,26 +145,45 @@ function consentCommand(message) {
 async function storeConsentCommand(env, message) {
   // Only a Meta HMAC-signed webhook may change consent.
   if (!env.WHATSAPP_APP_SECRET) return;
-  const status = consentCommand(message);
-  if (!status) return;
+  const marketingStatus = consentCommand(message);
+  const command = message.type === 'text'
+    ? String(message.text || '').trim().toUpperCase().replace(/\s+/g, ' ')
+    : '';
+  const transactionalStatus = command === 'STOP' || command === 'STOP FASHION'
+    ? 'opted_out'
+    : command === 'START FASHION UPDATES' ? 'opted_in' : null;
+  if (!marketingStatus && !transactionalStatus) return;
   const digits = String(message.from || '').replace(/\D/g, '');
-  if (!/^\d{8,15}$/.test(digits) || !message.id) throw new Error('Invalid WhatsApp consent command metadata');
+  if (!/^\d{8,15}$/.test(digits) || !message.id)
+    throw new Error('Invalid WhatsApp consent command metadata');
   const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
   const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
   if (!base || !key) throw new Error('WhatsApp consent database configuration missing');
   const eventAt = message.timestamp ? new Date(Number(message.timestamp) * 1000) : null;
-  if (!eventAt || !Number.isFinite(eventAt.getTime())) throw new Error('Invalid Meta consent event timestamp');
-  const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_consent_command', {
-    method: 'POST',
-    headers: { apikey: key, Authorization: 'Bearer ' + key, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      p_phone_e164: '+' + digits,
-      p_external_message_id: String(message.id),
-      p_status: status,
-      p_event_at: eventAt.toISOString(),
-    }),
-  });
-  if (!response.ok) throw new Error('WhatsApp consent command could not be recorded');
+  if (!eventAt || !Number.isFinite(eventAt.getTime()))
+    throw new Error('Invalid Meta consent event timestamp');
+  const headers = { apikey: key, Authorization: 'Bearer ' + key,
+    'content-type': 'application/json' };
+  if (marketingStatus) {
+    const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_consent_command', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        p_phone_e164:'+'+digits, p_external_message_id:String(message.id),
+        p_status:marketingStatus, p_event_at:eventAt.toISOString()
+      })
+    });
+    if (!response.ok) throw new Error('WhatsApp marketing consent command failed');
+  }
+  if (transactionalStatus) {
+    const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_transactional_keyword', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        p_phone_e164:'+'+digits, p_external_message_id:String(message.id),
+        p_status:transactionalStatus, p_event_at:eventAt.toISOString()
+      })
+    });
+    if (!response.ok) throw new Error('WhatsApp transactional opt-out update failed');
+  }
 }
 
 export async function onRequestGet(context) {
