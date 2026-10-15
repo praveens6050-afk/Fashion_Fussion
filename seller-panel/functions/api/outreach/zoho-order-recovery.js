@@ -104,9 +104,12 @@ export async function onRequestPost({request,env}){
       event_type:'eq.order_confirmed',provider:'eq.zoho_mail',
       status:'in.(pending_review,ready)',attempt_count:'eq.0',
       sent_at:'is.null',provider_message_id:'is.null',
-      created_at:'gte.'+lowerBound,created_at:'lte.'+upperBound,
       order:'created_at.asc',limit:String(MAX_SCAN)
     });
+    // Multiple PostgREST filters on one column MUST use append(); an object
+    // would overwrite the lower bound and accidentally include old events.
+    params.append('created_at','gte.'+lowerBound);
+    params.append('created_at','lte.'+upperBound);
     const rows=await dbFetch(db,'zoho_order_email_outbox?'+params.toString());
     if(!Array.isArray(rows))throw Error('QUEUE_INVALID');
     let eligible=0,accepted=0,reviewRequired=0,skipped=0;
