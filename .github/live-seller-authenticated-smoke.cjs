@@ -23,6 +23,16 @@ function observedHost(value) {
   } catch { return false; }
 }
 
+function isExpectedSellerOtpFinalize(request) {
+  if (request.method() !== 'POST') return false;
+  try {
+    const url = new URL(request.url());
+    if (url.hostname !== 'seller.fashionfussion.in' || url.pathname !== '/api/whatsapp-otp') return false;
+    const body = request.postDataJSON();
+    return body?.action === 'finalize' && body?.audience === 'seller';
+  } catch { return false; }
+}
+
 function observe(page) {
   page.on('pageerror', error => failures.push(`pageerror: ${error.message}`));
   page.on('console', message => {
@@ -34,11 +44,20 @@ function observe(page) {
   });
   page.on('requestfailed', request => {
     if (!observedHost(request.url())) return;
+    // Seller login intentionally treats a 409 from the optional finalize action as
+    // "mobile verification not attached yet". It must not enable WhatsApp sending.
+    // A navigation can abort that best-effort request after the login succeeds.
+    if (isExpectedSellerOtpFinalize(request) && request.failure()?.errorText === 'net::ERR_ABORTED') return;
     failures.push(`failed request: ${request.method()} ${request.url()} ${request.failure()?.errorText || ''}`);
   });
   page.on('response', response => {
     if (!observedHost(response.url()) || response.status() < 400) return;
-    const type = response.request().resourceType();
+    const request = response.request();
+    // finalizePhone() explicitly handles HTTP 409 as a non-fatal result when no
+    // verified WhatsApp phone can be attached. This is expected under the
+    // fail-closed release restrictions; only ignore that exact request/action.
+    if (response.status() === 409 && isExpectedSellerOtpFinalize(request)) return;
+    const type = request.resourceType();
     if (['document', 'script', 'stylesheet', 'fetch', 'xhr'].includes(type)) {
       failures.push(`${type} HTTP ${response.status()}: ${response.url()}`);
     }
