@@ -68,6 +68,12 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - **UI template identity/category/language/active state: manually reviewed.** The backend `APPROVED` status value, actual Meta Graph API access, WABA membership, live Cloudflare WABA environment binding, and template delivery are **not independently confirmed**; use private GET-only Meta preflight for those after separately authorized deployment.
 - Do not resubmit or edit the existing active Meta template; don't enable automatic sending, scheduler or historical backfill solely based on screenshot verification.
 
+## Checkout RPC least-privilege hardening — additional draft review
+- The proposed atomic SQL migration now explicitly revokes `public.record_checkout_whatsapp_consent(bigint)` execute from `PUBLIC` and `anon`, granting only `authenticated`. The function remains `SECURITY DEFINER` and still verifies `auth.uid()`, confirmed COD/verified prepaid state, exact order owner and phone, and explicit checkout selection.
+- Isolated PostgreSQL SQL contract now asserts that anonymous access to checkout opt-in is denied, authenticated access is available, and internal stage/claim/finish RPCs are unavailable to `anon` or `authenticated`.
+- Existing **production RPC permissions have not been touched**. Applying reviewed SQL in production is a later explicit release decision after a healthy Supabase staging run and no-send pilot approval.
+- A provided WABA ID configured in Cloudflare does not prove Meta GET token permissions or Phone Number ID membership. The private Meta verification endpoint remains code-only in this Draft PR; no live Meta API call was made.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
