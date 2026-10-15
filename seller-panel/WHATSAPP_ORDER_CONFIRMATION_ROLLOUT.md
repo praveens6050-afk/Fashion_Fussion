@@ -49,6 +49,13 @@ Known current runtime: signed WhatsApp webhook persists inbound messages and Met
 - Meta's own Cloud API reference describes read-only phone-number and template retrieval: https://www.postman.com/meta/whatsapp-business-platform/request/e9ady51/get-phone-numbers and https://www.postman.com/meta/whatsapp-business-platform/request/7whkjje/get-template-by-name-default-fields.
 - **No new production Cloudflare variable was added in this PR**. Existing live WhatsApp, Sales Zoho Mail and Orders Zoho Mail secrets have not been changed.
 
+## Operator WhatsApp readiness page — no sending
+- The proposed UI at `https://seller.fashionfussion.in/whatsapp-readiness.html` is **not live until the draft PR is separately deployed**. It uses the existing private outreach bearer token entered by the operator only on the official seller domain.
+- A single button requests only same-origin `GET /api/outreach/whatsapp-health` and `GET /api/outreach/whatsapp-meta-readiness`. It clears the input before sending requests and never stores credentials in cookies, browser storage, HTML URLs, logs or results.
+- It shows safe read-only counts, launch-gate presence and Meta template check results. There is no ability to send, queue, retry, stage, opt-in, change an environment variable, or activate order messages from this page.
+- The separate `WHATSAPP_BUSINESS_ACCOUNT_ID` value must be confirmed from Meta WhatsApp Manager. **Do not guess it from the phone number ID**; neither the operator page nor the preflight exposes this identifier or secret values.
+- A positive template preflight means **only** Meta's read configuration matches; checkout consent, database migration, opt-in proof, webhook subscription and actual customer delivery must still pass independent checks.
+
 ## Safe rollout
 1. Review this PR, run safety CI, review SQL under production migration access.
 2. Apply the migration on a staging Supabase database and validate COD+prepaid staging, no-consent rejection, race/duplicate claims, provider status transitions and role grants. Only then run against production; it does not enqueue old orders by itself.
