@@ -25,16 +25,59 @@ function cutoff(raw){
  const canon=new Date(n).toISOString();
  return (s.length===20?canon.replace('.000Z','Z'):canon)===s?s:null;
 }
+function graphVersion(env){return String(env.WHATSAPP_GRAPH_VERSION||env.WHATSAPP_API_VERSION||'');}
 function ready(env){
  const allowlist=new Set(String(env.WHATSAPP_ALLOWED_TEMPLATES||'').split(',').map(x=>x.trim()));
  return env.WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED==='true' &&
    env.WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED==='true' &&
    env.WHATSAPP_ORDER_GLOBAL_LAUNCH_ACK==='verified_opt_in_orders_v1' &&
    /^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID||'')) &&
-   /^v\d+\.\d+$/.test(String(env.WHATSAPP_GRAPH_VERSION||'')) &&
+   /^[0-9]{13,25}$/.test(String(env.WHATSAPP_BUSINESS_ACCOUNT_ID||'')) &&
+   /^v\d+\.\d+$/.test(graphVersion(env)) &&
    String(env.WHATSAPP_ACCESS_TOKEN||'').length>=20 &&
    allowlist.has('order_status_update') &&
    cutoff(env.WHATSAPP_ORDER_CONFIRMATION_NOT_BEFORE)!==null;
+}
+async function approvedOrderTemplate(env){
+ // Validate actual Meta approval and signature BEFORE the first DB claim.
+ // A merely allowlisted template name is not proof of Meta approval.
+ const version=graphVersion(env), waba=String(env.WHATSAPP_BUSINESS_ACCOUNT_ID||'');
+ if(!/^v\d+\.\d+$/.test(version)||!/^[0-9]{13,25}$/.test(waba)||
+   String(env.WHATSAPP_ACCESS_TOKEN||'').length<20)return false;
+ const u=new URL('https://graph.facebook.com/'+version+'/'+waba+'/message_templates');
+ u.searchParams.set('name','order_status_update');
+ u.searchParams.set('fields','name,status,language,category,components');
+ u.searchParams.set('limit','50');
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),8000);
+ try{
+   const response=await fetch(u.toString(),{
+     method:'GET',redirect:'error',signal:controller.signal,cache:'no-store',
+     headers:{Authorization:'Bearer '+env.WHATSAPP_ACCESS_TOKEN,Accept:'application/json'}
+   });
+   if(!response.ok)return false;
+   const d=await response.json().catch(()=>null);
+   const templates=Array.isArray(d?.data)?d.data:[];
+   // Fail closed if the approval API is incomplete/ambiguous or there are
+   // multiple templates with the same name and language.
+   const matches=templates.filter(t=>t?.name==='order_status_update' && t?.language==='en');
+   if(matches.length!==1)return false;
+   const t=matches[0];
+   if(t.status!=='APPROVED'||t.category!=='UTILITY'||!Array.isArray(t.components))return false;
+   const bodies=t.components.filter(x=>x?.type==='BODY');
+   if(bodies.length!==1||typeof bodies[0].text!=='string')return false;
+   const vars=[...bodies[0].text.matchAll(/\{\{\s*(\d+)\s*\}\}/g)].map(m=>Number(m[1]));
+   if(JSON.stringify(vars)!=='[1,2,3]')return false;
+   // We do not provide dynamic header or button parameters; disallow them.
+   for(const component of t.components){
+     if(component?.type==='HEADER' && component.format && component.format!=='TEXT')return false;
+     if(component?.type==='HEADER' && /\{\{\s*\d+\s*\}\}/.test(String(component.text||'')))return false;
+     if(component?.type==='BUTTONS' && Array.isArray(component.buttons) && component.buttons.some(b=>
+       /\{\{\s*\d+\s*\}\}/.test(String(b?.url||'')) ))return false;
+   }
+   return true;
+ }catch{return false}
+ finally{clearTimeout(timeout)}
 }
 function database(env){
  const key=String(env.SUPABASE_SERVICE_ROLE_KEY||env.SUPABASE_SECRET_KEY||'').trim();
@@ -83,7 +126,7 @@ async function submitMeta(env,claim){
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),9000);
  try{
-  const r=await fetch('https://graph.facebook.com/'+env.WHATSAPP_GRAPH_VERSION+'/'
+  const r=await fetch('https://graph.facebook.com/'+graphVersion(env)+'/'
    +env.WHATSAPP_PHONE_NUMBER_ID+'/messages',{
     method:'POST',signal:controller.signal,redirect:'error',
     headers:{Authorization:'Bearer '+env.WHATSAPP_ACCESS_TOKEN,
@@ -129,16 +172,25 @@ export async function onRequestPost({request,env}){
   params.append('created_at','lte.'+new Date().toISOString());
   const candidates=await postgrest(db,'whatsapp_order_notification_outbox?'+params);
   if(!Array.isArray(candidates))throw Error('Invalid queue response');
-  if(dryRun)return respond({dryRun:true,armed:active,sent:0,
-    candidates:candidates.length,requiresExplicitLaunch:true,
+  if(dryRun){
+    // This is read-only: it may inspect the Meta approved template if the WABA
+    // ID is configured, but NEVER claims an order or sends any message.
+    const templateVerified=await approvedOrderTemplate(env);
+    return respond({dryRun:true,armed:active&&templateVerified,sent:0,
+      templateVerified,candidates:candidates.length,requiresExplicitLaunch:true,
     missing: [
       ...(!env.WHATSAPP_ORDER_INTERNAL_TOKEN?['WHATSAPP_ORDER_INTERNAL_TOKEN']:[]),
       ...(!cutoff(env.WHATSAPP_ORDER_CONFIRMATION_NOT_BEFORE)?['WHATSAPP_ORDER_CONFIRMATION_NOT_BEFORE']:[]),
       ...(!env.WHATSAPP_ACCESS_TOKEN?['WHATSAPP_ACCESS_TOKEN']:[]),
       ...(!env.WHATSAPP_PHONE_NUMBER_ID?['WHATSAPP_PHONE_NUMBER_ID']:[]),
-      ...(!env.WHATSAPP_GRAPH_VERSION?['WHATSAPP_GRAPH_VERSION']:[]),
+      ...(!graphVersion(env)?['WHATSAPP_GRAPH_VERSION_OR_WHATSAPP_API_VERSION']:[]),
+      ...(!env.WHATSAPP_BUSINESS_ACCOUNT_ID?['WHATSAPP_BUSINESS_ACCOUNT_ID']:[]),
       ...(!String(env.WHATSAPP_ALLOWED_TEMPLATES||'').split(',').map(s=>s.trim()).includes('order_status_update')?['WHATSAPP_ALLOWED_TEMPLATES']:[])
     ]});
+  }
+  if(candidates.length>0 && !(await approvedOrderTemplate(env)))
+    return respond({armed:false,error:'Meta-approved order template unavailable or schema mismatch',
+      sent:0,claimed:0,autoRetry:false},424);
   let claimed=0,accepted=0,needsReview=0,skipped=0;
   for(const row of candidates){
    if(claimed>=MAX_PER_TICK)break;

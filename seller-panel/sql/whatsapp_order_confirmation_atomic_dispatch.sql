@@ -149,7 +149,49 @@ BEGIN
     AND provider_message_id IS NULL
   ;
   GET DIAGNOSTICS v_changed=ROW_COUNT;
-  RETURN v_changed=1;
+  IF v_changed<>1 THEN RETURN false; END IF;
+  -- Meta may deliver a signed sent/delivered/read receipt before its API
+  -- acknowledgement was linked to this outbox row. Those receipts have
+  -- already been durably stored in whatsapp_delivery_status_events, but the
+  -- normal webhook matching UPDATE could not find provider_message_id yet.
+  -- Reconcile them atomically here; never re-submit the Meta message.
+  IF p_provider_message_id IS NOT NULL THEN
+    WITH receipts AS (
+      SELECT
+        max(event_at) FILTER (WHERE meta_status='sent') AS sent_at,
+        max(event_at) FILTER (WHERE meta_status IN ('delivered','read')) AS delivered_at,
+        max(event_at) FILTER (WHERE meta_status='read') AS read_at,
+        max(event_at) FILTER (WHERE meta_status='failed') AS failed_at,
+        (array_agg(error_code ORDER BY event_at DESC)
+          FILTER (WHERE meta_status='failed'))[1] AS failed_error
+      FROM public.whatsapp_delivery_status_events
+      WHERE provider_message_id=p_provider_message_id
+    )
+    UPDATE public.whatsapp_order_notification_outbox o SET
+      provider_sent_at=greatest(o.provider_sent_at,r.sent_at),
+      provider_delivered_at=greatest(o.provider_delivered_at,r.delivered_at),
+      provider_read_at=greatest(o.provider_read_at,r.read_at),
+      provider_failed_at=greatest(o.provider_failed_at,r.failed_at),
+      last_provider_status=CASE
+        WHEN r.read_at IS NOT NULL OR o.last_provider_status='read' THEN 'read'
+        WHEN r.delivered_at IS NOT NULL OR o.last_provider_status='delivered' THEN 'delivered'
+        WHEN r.failed_at IS NOT NULL OR o.last_provider_status='failed' THEN 'failed'
+        WHEN r.sent_at IS NOT NULL OR o.last_provider_status='sent' THEN 'sent'
+        ELSE o.last_provider_status END,
+      status=CASE
+        WHEN r.delivered_at IS NOT NULL THEN 'delivered'
+        WHEN r.failed_at IS NOT NULL THEN 'failed'
+        ELSE o.status END,
+      last_error_code=CASE
+        WHEN r.failed_at IS NOT NULL AND r.delivered_at IS NULL
+          THEN r.failed_error ELSE o.last_error_code END,
+      updated_at=now()
+    FROM receipts r
+    WHERE o.id=p_outbox_id AND o.provider_message_id=p_provider_message_id
+      AND (r.sent_at IS NOT NULL OR r.delivered_at IS NOT NULL
+           OR r.failed_at IS NOT NULL);
+  END IF;
+  RETURN true;
 END;
 $$;
 REVOKE ALL ON FUNCTION public.finish_whatsapp_order_confirmation(bigint,text,text)
@@ -219,5 +261,4 @@ begin
  PERFORM public.stage_whatsapp_order_event(v_order.id,'order_confirmed');
  return jsonb_build_object('ok',true,'order_id',v_order.id,'phone_hint',right(v_phone,4),'consented_at',v_time);
 end;
-$function$
-
+$function$;

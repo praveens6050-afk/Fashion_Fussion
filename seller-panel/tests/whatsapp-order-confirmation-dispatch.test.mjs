@@ -19,6 +19,15 @@ const env={
  WHATSAPP_ACCESS_TOKEN:'unit-test-fake-meta-token',
  WHATSAPP_ALLOWED_TEMPLATES:'seller_invitation,order_status_update'
 };
+const launchEnv={
+ ...env,WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED:'true',
+ WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED:'true',
+ WHATSAPP_BUSINESS_ACCOUNT_ID:'123456789012345'
+};
+const approvedTemplate=()=>({
+ data:[{name:'order_status_update',status:'APPROVED',category:'UTILITY',language:'en',
+  components:[{type:'BODY',text:'Hi {{1}}, your order {{2}} is {{3}}.'}]}]
+});
 const req=(body,token)=>new Request('https://seller.fashionfussion.in/api/outreach/whatsapp-order-confirmation-dispatch',
  {method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
  body:JSON.stringify(body)});
@@ -52,9 +61,7 @@ test('dry run scans bounded zero-attempt queue but sends nothing',async t=>{
  assert.equal(calls,1);
 });
 test('armed queue with no candidates never submits Meta',async t=>{
- const old=globalThis.fetch;const e={...env,
-  WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED:'true',
-  WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED:'true'};
+ const old=globalThis.fetch;const e=launchEnv;
  let calls=0;
  globalThis.fetch=async(url)=>{calls++;assert.match(String(url),/supabase.co/);return ok([])};
  t.after(()=>{globalThis.fetch=old});
@@ -66,12 +73,11 @@ test('armed queue with no candidates never submits Meta',async t=>{
  assert.equal(calls,1);
 });
 test('verified single candidate submits Meta only after atomic claim+consent',async t=>{
- const old=globalThis.fetch;const e={...env,
-  WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED:'true',
-  WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED:'true'};
+ const old=globalThis.fetch;const e=launchEnv;
  let submits=0,claimCalls=0,finishCalls=0;
  globalThis.fetch=async(url,opts={})=>{
   const u=String(url);
+  if(u.includes('/message_templates?')){assert.equal(opts.method,'GET');return ok(approvedTemplate());}
   if(u.includes('whatsapp_order_notification_outbox?'))return ok([{order_id:33,created_at:'2026-10-15T08:00:00Z'}]);
   if(u.includes('/rpc/claim_whatsapp_order_confirmation')){
    claimCalls++;
@@ -105,12 +111,11 @@ test('verified single candidate submits Meta only after atomic claim+consent',as
  assert.equal(finishCalls,1);
 });
 test('revoked consent blocks Meta even after claim; no retry',async t=>{
- const old=globalThis.fetch;const e={...env,
-  WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED:'true',
-  WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED:'true'};
+ const old=globalThis.fetch;const e=launchEnv;
  let submits=0,finalCode=null;
  globalThis.fetch=async(url,opts={})=>{
   const u=String(url);
+  if(u.includes('/message_templates?'))return ok(approvedTemplate());
   if(u.includes('whatsapp_order_notification_outbox?'))return ok([{order_id:33}]);
   if(u.includes('/rpc/claim_whatsapp_order_confirmation'))return ok({
    outboxId:98,recipientPhone:'+919876543210',customerName:'Test',displayOrderId:'OD33'});
@@ -126,4 +131,61 @@ test('revoked consent blocks Meta even after claim; no retry',async t=>{
  assert.equal(result.status,200);
  assert.equal(submits,0);
  assert.equal(finalCode,'CONSENT_REVOKED');
+});
+
+
+test('does not claim order or send Meta when template is not approved or schema mismatched',async t=>{
+ const old=globalThis.fetch,conditions=[
+  {status:'PENDING',category:'UTILITY',components:[{type:'BODY',text:'Hi {{1}}, {{2}}, {{3}}.'}]},
+  {status:'APPROVED',category:'MARKETING',components:[{type:'BODY',text:'Hi {{1}}, {{2}}, {{3}}.'}]},
+  {status:'APPROVED',category:'UTILITY',components:[{type:'BODY',text:'Hi {{1}}, {{2}}, {{3}}, {{4}}.'}]},
+  {status:'APPROVED',category:'UTILITY',components:[{type:'BODY',text:'Hi {{1}}, {{2}}.'}]},
+ ];
+ t.after(()=>{globalThis.fetch=old});
+ for(const variant of conditions){
+  let claims=0,sends=0,metaReads=0;
+  globalThis.fetch=async (url,opts={})=>{
+   const u=String(url);
+   if(u.includes('whatsapp_order_notification_outbox?'))return ok([{order_id:34}]);
+   if(u.includes('/message_templates?')){
+    metaReads++;assert.equal(opts.method,'GET');
+    return ok({data:[{name:'order_status_update',language:'en',...variant}]});
+   }
+   if(u.includes('/rpc/claim_whatsapp_order_confirmation')){claims++;return ok(null);}
+   if(u.includes('/messages')){sends++;return ok({messages:[{id:'wamid.test'}]});}
+   throw Error('unexpected call '+u);
+  };
+  const r=await onRequestPost({request:req({dispatch:true},internal),env:launchEnv});
+  assert.equal(r.status,424);
+  assert.equal(claims,0);
+  assert.equal(sends,0);
+  assert.equal(metaReads,1);
+ }
+});
+test('approved exact 3-variable utility template is reported without sending in dry run',async t=>{
+ const old=globalThis.fetch;let writes=0;
+ t.after(()=>{globalThis.fetch=old});
+ globalThis.fetch=async(url,opts={})=>{
+  const u=String(url);
+  if(u.includes('whatsapp_order_notification_outbox?'))return ok([]);
+  if(u.includes('/message_templates?')){
+   assert.equal(opts.method,'GET');
+   assert.equal(new URL(u).searchParams.get('name'),'order_status_update');
+   return ok(approvedTemplate());
+  }
+  writes++;throw Error('dry run attempted write');
+ };
+ const response=await onRequestPost({request:req({dryRun:true},operator),env:launchEnv});
+ const data=await response.json();
+ assert.equal(response.status,200);
+ assert.equal(data.templateVerified,true);
+ assert.equal(data.armed,true);
+ assert.equal(data.sent,0);
+ assert.equal(writes,0);
+});
+test('without WhatsApp business account ID dispatch stays off',async()=>{
+ const r=await onRequestPost({request:req({dispatch:true},internal),env:{
+  ...launchEnv,WHATSAPP_BUSINESS_ACCOUNT_ID:undefined
+ }});
+ assert.equal(r.status,423);
 });
