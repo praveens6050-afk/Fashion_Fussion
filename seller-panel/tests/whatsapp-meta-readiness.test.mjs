@@ -80,6 +80,55 @@ test('approved utility template with 3 correct variables and matching phone pass
   assert.ok(!JSON.stringify(d).includes(env.WHATSAPP_BUSINESS_ACCOUNT_ID));
   assert.ok(!JSON.stringify(d).includes(env.WHATSAPP_ACCESS_TOKEN));
 });
+test('approved screenshot-style static Fashion Fussion HEADER, body, and footer pass',async t=>{
+  mockedMeta(t,{templates:[{...template,components:[
+    {type:'HEADER',format:'TEXT',text:'Fashion Fussion'},
+    {type:'BODY',text:EXPECTED_BODY},
+    {type:'FOOTER',text:'Fashion Fussion'}
+  ]}]});
+  const d=await (await onRequestGet({request:request(),env})).json();
+  assert.equal(d.ready,true);
+  assert.equal(d.messagesSent,0);
+  assert.equal(d.checks.noUnexpectedDynamicComponents,true);
+  assert.deepEqual(d.issues,[]);
+});
+test('dynamic variable header must fail even when body matches',async t=>{
+  mockedMeta(t,{templates:[{...template,components:[
+    {type:'HEADER',format:'TEXT',text:'Fashion Fussion {{1}}'},
+    {type:'BODY',text:EXPECTED_BODY}
+  ]}]});
+  const d=await (await onRequestGet({request:request(),env})).json();
+  assert.equal(d.ready,false);
+  assert.ok(d.issues.includes('TEMPLATE_PARAMETER_MAPPING_MISMATCH'));
+});
+test('media header must fail even with Fashion Fussion static text',async t=>{
+  mockedMeta(t,{templates:[{...template,components:[
+    {type:'HEADER',format:'IMAGE',text:'Fashion Fussion'},
+    {type:'BODY',text:EXPECTED_BODY}
+  ]}]});
+  const d=await (await onRequestGet({request:request(),env})).json();
+  assert.equal(d.ready,false);
+  assert.ok(d.issues.includes('TEMPLATE_PARAMETER_MAPPING_MISMATCH'));
+});
+test('unexpected buttons must fail even with matching static header',async t=>{
+  mockedMeta(t,{templates:[{...template,components:[
+    {type:'HEADER',format:'TEXT',text:'Fashion Fussion'},
+    {type:'BODY',text:EXPECTED_BODY},
+    {type:'BUTTONS',buttons:[{type:'URL',text:'Shop',url:'https://fashionfussion.in'}]}
+  ]}]});
+  const d=await (await onRequestGet({request:request(),env})).json();
+  assert.equal(d.ready,false);
+  assert.ok(d.issues.includes('TEMPLATE_PARAMETER_MAPPING_MISMATCH'));
+});
+test('unapproved header text must fail despite static format',async t=>{
+  mockedMeta(t,{templates:[{...template,components:[
+    {type:'HEADER',format:'TEXT',text:'Unexpected Brand'},
+    {type:'BODY',text:EXPECTED_BODY}
+  ]}]});
+  const d=await (await onRequestGet({request:request(),env})).json();
+  assert.equal(d.ready,false);
+  assert.ok(d.issues.includes('TEMPLATE_PARAMETER_MAPPING_MISMATCH'));
+});
 test('approved template with unexpected payload text is NOT ready',async t=>{
   mockedMeta(t,{templates:[{...template,components:[{type:'BODY',text:'Hi {{1}}, your order {{2}} is shipped.'}]}]});
   const d=await (await onRequestGet({request:request(),env})).json();
