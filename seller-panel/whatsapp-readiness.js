@@ -8,6 +8,7 @@
   const status = document.getElementById('status');
   const health = document.getElementById('health');
   const meta = document.getElementById('meta');
+  const roles = document.getElementById('roles');
 
   async function readOnlyGet(path, bearer) {
     const response = await fetch(path, {
@@ -36,14 +37,17 @@
     status.textContent = 'Checking two read-only endpoints…';
     health.textContent = 'Checking…';
     meta.textContent = 'Checking…';
+    roles.textContent = 'Checking…';
     try {
       const results = await Promise.allSettled([
         readOnlyGet('/api/outreach/whatsapp-health',bearer),
-        readOnlyGet('/api/outreach/whatsapp-meta-readiness',bearer)
+        readOnlyGet('/api/outreach/whatsapp-meta-readiness',bearer),
+        readOnlyGet('/api/outreach/whatsapp-roles-readiness',bearer)
       ]);
       const output=results.map(r=>r.status==='fulfilled'?r.value:{ready:false,issue:'NETWORK_UNAVAILABLE'});
       show(health, output[0]);
       show(meta, output[1]);
+      show(roles, output[2]);
       status.textContent = output[0].readOnly && output[1].ready
         ? 'Preflight checks passed; actual sending remains subject to separate launch approval.'
         : 'One or more readiness checks require attention. No message was sent.';
@@ -55,6 +59,7 @@
     token.value = '';
     health.textContent = 'Not checked';
     meta.textContent = 'Not checked';
+    roles.textContent = 'Not checked';
     status.textContent = 'Cleared. No messages sent.';
   });
 })();
