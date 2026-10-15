@@ -59,7 +59,7 @@ function buildOrderItemSellerSnapshots(items, submissions) {
 
   for (const submission of Array.isArray(submissions) ? submissions : []) {
     const productId = String(submission?.approved_product_id ?? "").trim();
-    if (!/^\\d+$/.test(productId)) continue;
+    if (!/^\d+$/.test(productId)) continue;
     const sellerId = String(submission?.seller_id ?? "").trim().toLowerCase();
     if (!uuidPattern.test(sellerId)) throw new Error("Approved seller attribution contains an invalid seller ID");
     if (!sellersByProduct.has(productId)) sellersByProduct.set(productId, new Set());
@@ -68,13 +68,13 @@ function buildOrderItemSellerSnapshots(items, submissions) {
 
   return items.map((item, lineIndex) => {
     const productId = String(item?.id ?? "").trim();
-    if (!/^\\d+$/.test(productId) || !Number.isSafeInteger(Number(productId)) || Number(productId) < 1) {
+    if (!/^\d+$/.test(productId) || !Number.isSafeInteger(Number(productId)) || Number(productId) < 1) {
       throw new Error("Invalid product ID for seller attribution");
     }
     let variantId = null;
     if (item?.variant_id != null && item.variant_id !== "") {
       const rawVariantId = String(item.variant_id).trim();
-      if (!/^\\d+$/.test(rawVariantId) || !Number.isSafeInteger(Number(rawVariantId)) || Number(rawVariantId) < 1) {
+      if (!/^\d+$/.test(rawVariantId) || !Number.isSafeInteger(Number(rawVariantId)) || Number(rawVariantId) < 1) {
         throw new Error("Invalid variant ID for seller attribution");
       }
       variantId = Number(rawVariantId);
@@ -94,7 +94,7 @@ async function getSellerAttributionSnapshots(items) {
   assertServerConfig();
   if (!Array.isArray(items) || !items.length) throw new Error("Order has no items for seller attribution");
   const productIds = [...new Set(items.map(item => String(item?.id ?? "").trim()))];
-  if (productIds.some(id => !/^\\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) < 1)) {
+  if (productIds.some(id => !/^\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) < 1)) {
     throw new Error("Invalid product ID for seller attribution");
   }
   const response = await fetch(
