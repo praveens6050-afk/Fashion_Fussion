@@ -221,3 +221,10 @@ begin
 end;
 $function$
 
+-- Restrict the customer checkout RPC to signed-in buyers. It verifies
+-- auth.uid() + order ownership internally; anon MUST NOT execute it.
+-- Applied after CREATE OR REPLACE so the grants remain correct on reruns.
+REVOKE ALL ON FUNCTION public.record_checkout_whatsapp_consent(bigint)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_checkout_whatsapp_consent(bigint)
+  TO authenticated;
