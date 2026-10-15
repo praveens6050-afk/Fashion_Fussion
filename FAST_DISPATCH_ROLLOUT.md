@@ -20,6 +20,8 @@ The current schema does not support a trustworthy seller-specific calculation:
 
 Accordingly, `get_seller_fast_dispatch_signal(uuid)` intentionally returns zero verified samples, NULL rate/average metrics, and `fast_dispatch = false` for every seller. This avoids a migration failure and prevents unverified order-level timestamps from creating a misleading badge. Do not replace this with a guessed column or infer seller performance from product ownership.
 
+The code-only follow-up branch also prepares `order_item_seller_snapshots`, a private per-line record populated from approved `seller_product_submissions` mappings by both retail and business-quote checkout. The snapshot is stored outside customer-visible `orders.items`; ambiguous ownership is recorded without selecting a seller. This migration and backend change have not been applied or deployed. Even after they are released, the Fast Dispatch signal must remain disabled until a per-seller shipment/handoff model is implemented and verified.
+
 ## Requirements before enabling the signal
 
 1. Design and review a durable seller-attributed order-line/fulfillment model that supports mixed-seller carts.
