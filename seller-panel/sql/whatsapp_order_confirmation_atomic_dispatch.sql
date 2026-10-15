@@ -75,12 +75,14 @@ GRANT EXECUTE ON FUNCTION public.stage_whatsapp_order_event(bigint,text) TO serv
 
 -- Only order-confirmed; validated CONSENT must match the exact order phone.
 -- Database transaction serializes global quota checks and first attempts.
-CREATE OR REPLACE FUNCTION public.claim_whatsapp_order_confirmation(p_order_id bigint)
+CREATE OR REPLACE FUNCTION public.claim_whatsapp_order_confirmation(p_order_id bigint,p_activation_cutoff timestamptz)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $$
 DECLARE v_claim record;
 BEGIN
-  IF p_order_id IS NULL OR p_order_id<=0 THEN RETURN NULL; END IF;
+  IF p_order_id IS NULL OR p_order_id<=0 OR p_activation_cutoff IS NULL
+     OR p_activation_cutoff>now() OR p_activation_cutoff<'2026-10-01'::timestamptz
+  THEN RETURN NULL; END IF;
   PERFORM pg_catalog.pg_advisory_xact_lock(733012,417021);
   IF (SELECT count(*) FROM public.whatsapp_order_notification_outbox
        WHERE attempt_started_at >= now()-interval '1 hour') >= 5
@@ -99,8 +101,8 @@ BEGIN
     AND ob.template_name='order_status_update'
     AND ob.status IN ('pending_review','ready') AND ob.attempt_count=0
     AND ob.provider_message_id IS NULL AND ob.attempt_started_at IS NULL
-    AND ob.created_at BETWEEN now()-interval '24 hours' AND now()
-    AND ord.created_at BETWEEN now()-interval '24 hours' AND now()
+    AND ob.created_at BETWEEN greatest(p_activation_cutoff,now()-interval '24 hours') AND now()
+    AND ord.created_at BETWEEN greatest(p_activation_cutoff,now()-interval '24 hours') AND now()
     AND ord.user_id IS NOT NULL AND ord.fulfillment_status='ordered'
     AND ( (ord.payment_method='prepaid' AND ord.status='paid' AND ord.payment_verified_at IS NOT NULL)
        OR (ord.payment_method='cod' AND ord.status IN ('cod_pending','cod_collected')) )
@@ -118,9 +120,9 @@ BEGIN
   );
 END;
 $$;
-REVOKE ALL ON FUNCTION public.claim_whatsapp_order_confirmation(bigint)
+REVOKE ALL ON FUNCTION public.claim_whatsapp_order_confirmation(bigint,timestamptz)
   FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_whatsapp_order_confirmation(bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_whatsapp_order_confirmation(bigint,timestamptz) TO service_role;
 
 -- Provider acknowledgement: no requeue, even after HTTP failure or timeout.
 -- The signed Meta delivery webhook performs eventual delivery/read accounting.
