@@ -44,7 +44,7 @@ function observe(page) {
     if (message.type() !== 'error') return;
     const text = message.text();
     if (/favicon/i.test(text)) return;
-    if (/cloudflareinsights\\.com\\/cdn-cgi\\/rum/i.test(text)) return;
+    if (/cloudflareinsights\.com\/cdn-cgi\/rum/i.test(text)) return;
     if (/Failed to load resource: the server responded with a status of 409/i.test(text)
       && expectedOtpFinalize409ConsoleAllowance > 0) {
       expectedOtpFinalize409ConsoleAllowance -= 1;
