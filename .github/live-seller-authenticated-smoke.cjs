@@ -40,6 +40,10 @@ function observe(page) {
     const text = message.text();
     if (/favicon/i.test(text)) return;
     if (/cloudflareinsights\.com\/cdn-cgi\/rum/i.test(text)) return;
+    // Browser console logs do not expose the originating request body. Ignore only
+    // the generic 409 console duplicate; the response listener below still fails
+    // every 409 except the explicitly expected seller OTP finalize action.
+    if (/Failed to load resource: the server responded with a status of 409/i.test(text)) return;
     failures.push(`console error: ${text}`);
   });
   page.on('requestfailed', request => {
