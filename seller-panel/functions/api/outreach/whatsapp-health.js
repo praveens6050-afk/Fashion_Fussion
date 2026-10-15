@@ -51,6 +51,17 @@ async function countRows(base, key, [table, column, filters]) {
   if (!match) throw new Error('Exact count unavailable for ' + table);
   return Number(match[1]);
 }
+// HEAD-only schema probe: never invokes the side-effecting claim RPC.
+async function hasAtomicOutboxColumn(base, key) {
+  const response = await fetch(base+'/rest/v1/whatsapp_order_notification_outbox?select=attempt_started_at&limit=0', {
+    method:'HEAD', headers:{apikey:key, Authorization:'Bearer '+key, Accept:'application/json'}
+  });
+  if (response.ok) return true;
+  // A PostgREST 400 is expected while the reviewed SQL migration is absent.
+  // All other errors may indicate a permissions or connectivity problem.
+  if (response.status === 400) return false;
+  throw new Error('WhatsApp atomic schema probe unavailable');
+}
 export async function onRequestGet({request, env}) {
   if (!(await authorized(request, env))) return json({error:'Unauthorized'},401);
   const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -66,8 +77,15 @@ export async function onRequestGet({request, env}) {
   try {
     const pairs = await Promise.all(Object.entries(GROUPS)
       .map(async ([name, details]) => [name, await countRows(base,key,details)]));
+    const atomicOutboxColumnPresent = await hasAtomicOutboxColumn(base,key);
     return json({
       readOnly: true, messagesSent: 0, noDatabaseChanges: true,
+      atomicDispatchSchema: {
+        outboxAttemptColumnPresent:atomicOutboxColumnPresent,
+        claimRpcVerified:false,
+        status:atomicOutboxColumnPresent?'MANUAL_RPC_AND_SQL_REVIEW_REQUIRED':'MIGRATION_REQUIRED',
+        note:'This HEAD-only endpoint NEVER invokes the claim/finish RPCs. Verify their grants separately before launch.'
+      },
       dispatchLaunchGatePresence: {
         sendingFlagTrue: env.WHATSAPP_ORDER_CONFIRMATION_SENDING_ENABLED === 'true',
         globalApprovalFlagTrue: env.WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED === 'true',
