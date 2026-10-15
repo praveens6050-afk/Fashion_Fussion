@@ -10,11 +10,36 @@ permissions:
 jobs:
   whatsapp-dispatch-safety:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ff_ci
+          POSTGRES_PASSWORD: ci_only_not_production
+          POSTGRES_DB: ff_whatsapp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ff_ci -d ff_whatsapp_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: ff_ci
+      PGPASSWORD: ci_only_not_production
+      PGDATABASE: ff_whatsapp_ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify WhatsApp confirmation dispatch fail-closed tests
+      - name: Verify webhook, signup consent and dispatcher safety unit tests
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-order-confirmation-dispatch.test.mjs seller-panel/tests/whatsapp-signup-once-consent.test.mjs
+      - name: Test both WhatsApp SQL migrations in disposable PostgreSQL
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f seller-panel/tests/fixtures/whatsapp_ci_schema.sql
+          psql -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql
+          psql -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_signup_once_transactional_consent.sql
+          psql -X -v ON_ERROR_STOP=1 -f seller-panel/tests/fixtures/whatsapp_ci_assertions.sql
