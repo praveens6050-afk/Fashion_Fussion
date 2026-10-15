@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verify WhatsApp confirmation dispatch fail-closed tests
-        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-order-confirmation-dispatch.test.mjs
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-order-confirmation-dispatch.test.mjs seller-panel/tests/whatsapp-signup-once-consent.test.mjs
