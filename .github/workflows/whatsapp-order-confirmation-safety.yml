@@ -20,3 +20,5 @@ jobs:
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-order-confirmation-dispatch.test.mjs
       - name: Verify WhatsApp integration health read-only safety tests
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-integration-health.test.mjs
+      - name: Verify WhatsApp order preview requires per-order consent
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-order-preview-consent.test.mjs
