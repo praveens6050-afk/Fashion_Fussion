@@ -24,8 +24,8 @@ function digits(phone) {return String(phone||'').replace(/\D/g,'')}
 function e164(phone) {
   const raw=String(phone||'').trim();
   const n=digits(raw);
-  if(/^\d{10}$/.test(n))return '+91'+n;
-  if(/^91\d{10}$/.test(n))return '+'+n;
+  if(/^[6-9]\d{9}$/.test(n))return '+91'+n;
+  if(/^91[6-9]\d{9}$/.test(n))return '+'+n;
   if(raw.startsWith('+')&&/^[1-9]\d{7,14}$/.test(n))return '+'+n;
   return null;
 }
@@ -47,6 +47,7 @@ async function dbRows(env, resource, params) {
 function orderEligible(order,eventType,shipment) {
   if (!order) return ['order_not_found'];
   const issues=[];
+  if (!order.user_id) issues.push('authenticated_order_owner_missing');
   if (['cancelled','cod_cancelled','expired','payment_failed','refund_pending','refund_initiated','refund_failed','refunded'].includes(order.status)
       || order.fulfillment_status==='cancelled') issues.push('order_not_active');
   if (eventType==='order_confirmed') {
@@ -57,6 +58,9 @@ function orderEligible(order,eventType,shipment) {
     const cod = order.payment_method==='cod' && ['cod_pending','cod_collected'].includes(order.status);
     if(!prepaid&&!cod) issues.push('order_not_payment_verified_or_cod_confirmed');
     if(order.fulfillment_status!=='ordered') issues.push('order_already_progressed');
+    const created = Date.parse(String(order.created_at||''));
+    if(!Number.isFinite(created) || created<Date.now()-24*60*60*1000 || created>Date.now()+60*1000)
+      issues.push('order_confirmation_not_recent');
   } else {
     if (!['paid','cod_pending','cod_collected'].includes(order.status))issues.push('order_payment_state_not_eligible');
     if(order.fulfillment_status!==eventType) issues.push('fulfillment_event_not_current');
@@ -128,9 +132,9 @@ function consentValid(consent) {
 }
 async function preview(env, orderId,eventType) {
   const orderRows=await dbRows(env,'orders',
-    'id=eq.'+orderId+'&select=id,display_order_id,customer_name,status,fulfillment_status,payment_method,payment_verified_at,customer_phone&limit=1');
+    'id=eq.'+orderId+'&select=id,user_id,created_at,fulfillment_updated_at,display_order_id,customer_name,status,fulfillment_status,payment_method,payment_verified_at,customer_phone&limit=1');
   const order=orderRows[0]||null;
-  let shipment=null, optin=null;
+  let shipment=null, optin=null, orderConsent=null;
   if(order && SHIPPING.has(eventType)){
     const shipments=await dbRows(env,'order_shipments',
       'order_id=eq.'+orderId+'&direction=eq.forward&select=id,direction,status,awb_code,updated_at&order=updated_at.desc&limit=1');
@@ -142,9 +146,24 @@ async function preview(env, orderId,eventType) {
       'phone_e164=eq.'+encodeURIComponent(phone)+'&purpose=eq.transactional&select=status,consented_at,revoked_at&limit=1');
     optin=rows[0]||null;
   }
+  if(phone && order?.user_id){
+    const consentRows=await dbRows(env,'whatsapp_order_consents',
+      'order_id=eq.'+orderId+'&user_id=eq.'+encodeURIComponent(order.user_id)
+      +'&phone_e164=eq.'+encodeURIComponent(phone)
+      +'&select=phone_e164,consented_at,revoked_at&limit=1');
+    orderConsent=consentRows[0]||null;
+  }
+  const orderConsentActive=Boolean(orderConsent?.consented_at && !orderConsent.revoked_at);
   const blockers=orderEligible(order,eventType,shipment);
   if(!phone) blockers.push('valid_customer_whatsapp_phone_missing');
   if(!consentValid(optin)) blockers.push('transactional_whatsapp_opt_in_missing');
+  if(!orderConsentActive) blockers.push('order_specific_whatsapp_opt_in_missing');
+  if(SHIPPING.has(eventType) && orderConsentActive){
+    const updated=Date.parse(String(order.fulfillment_updated_at||''));
+    const consentAt=Date.parse(String(orderConsent.consented_at));
+    if(!Number.isFinite(updated) || !Number.isFinite(consentAt) || updated<consentAt)
+      blockers.push('fulfillment_event_before_whatsapp_opt_in');
+  }
   const names=new Set(String(env.WHATSAPP_ALLOWED_TEMPLATES||'').split(',').map(s=>s.trim()).filter(Boolean));
   if(!names.has('order_status_update'))blockers.push('order_status_update_not_allowlisted');
   const mapped = buildOrderTemplate(order, eventType);
@@ -158,6 +177,7 @@ async function preview(env, orderId,eventType) {
     fulfillmentStatus:order?.fulfillment_status||null,
     recipient:maskPhone(order?.customer_phone),
     transactionalConsentActive:consentValid(optin),
+    orderSpecificConsentActive:orderConsentActive,
     shipmentAvailable:Boolean(shipment&&shipment.awb_code),
     template:safeTemplatePreview(order,eventType,mapped),
     // "eligible" means order + consent + template are ready for future
