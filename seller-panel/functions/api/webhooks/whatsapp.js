@@ -136,35 +136,76 @@ async function ingestMessage(env, message) {
 // Ordinary conversations and OTP replies must not be interpreted as marketing consent.
 function consentCommand(message) {
   if (message.type !== 'text') return null;
-  const command = String(message.text || '').trim().toUpperCase().replace(/\s+/g, ' ');
-  if (command === 'JOIN FASHION SELLER') return 'opted_in';
-  if (command === 'STOP' || command === 'STOP FASHION') return 'opted_out';
+  const command = String(message.text || '').trim().toUpperCase().replace(/\\s+/g, ' ');
+  if (command === 'JOIN FASHION SELLER') return 'seller_opt_in';
+  if (command === 'STOP' || command === 'STOP FASHION') return 'stop_all';
+  if (command === 'START FASHION UPDATES') return 'transactional_opt_in';
   return null;
 }
 
 async function storeConsentCommand(env, message) {
   // Only a Meta HMAC-signed webhook may change consent.
   if (!env.WHATSAPP_APP_SECRET) return;
-  const status = consentCommand(message);
-  if (!status) return;
-  const digits = String(message.from || '').replace(/\D/g, '');
-  if (!/^\d{8,15}$/.test(digits) || !message.id) throw new Error('Invalid WhatsApp consent command metadata');
-  const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const command = consentCommand(message);
+  if (!command) return;
+  const digits = String(message.from || '').replace(/\\D/g, '');
+  if (!/^\\d{8,15}$/.test(digits) || !message.id) {
+    throw new Error('Invalid WhatsApp consent command metadata');
+  }
+  const seconds = Number(message.timestamp);
+  if (!Number.isSafeInteger(seconds) || seconds < 1577836800
+      || seconds * 1000 > Date.now() + 300000) {
+    throw new Error('Invalid Meta consent event timestamp');
+  }
+  const eventAt = new Date(seconds * 1000).toISOString();
+  const base = String(env.SUPABASE_URL || '').replace(/\\/$/, '');
   const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
   if (!base || !key) throw new Error('WhatsApp consent database configuration missing');
-  const eventAt = message.timestamp ? new Date(Number(message.timestamp) * 1000) : null;
-  if (!eventAt || !Number.isFinite(eventAt.getTime())) throw new Error('Invalid Meta consent event timestamp');
-  const response = await fetch(base + '/rest/v1/rpc/record_whatsapp_consent_command', {
-    method: 'POST',
-    headers: { apikey: key, Authorization: 'Bearer ' + key, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      p_phone_e164: '+' + digits,
-      p_external_message_id: String(message.id),
-      p_status: status,
-      p_event_at: eventAt.toISOString(),
-    }),
-  });
-  if (!response.ok) throw new Error('WhatsApp consent command could not be recorded');
+
+  const calls = [];
+  if (command === 'seller_opt_in' || command === 'stop_all') {
+    calls.push({
+      name: 'record_whatsapp_consent_command',
+      body: {
+        p_phone_e164: '+' + digits,
+        p_external_message_id: String(message.id),
+        p_status: command === 'seller_opt_in' ? 'opted_in' : 'opted_out',
+        p_event_at: eventAt,
+      },
+    });
+  }
+  if (command === 'transactional_opt_in' || command === 'stop_all') {
+    calls.push({
+      name: 'record_whatsapp_transactional_keyword',
+      body: {
+        p_phone_e164: '+' + digits,
+        p_external_message_id: String(message.id),
+        p_status: command === 'transactional_opt_in' ? 'opted_in' : 'opted_out',
+        p_event_at: eventAt,
+      },
+    });
+  }
+
+  // STOP is a safety action for both consent ledgers. Attempt both even if
+  // one ledger is temporarily unavailable; return 500 afterward so Meta retries.
+  let failed = false;
+  for (const call of calls) {
+    try {
+      const response = await fetch(base + '/rest/v1/rpc/' + call.name, {
+        method: 'POST',
+        headers: {
+          apikey: key,
+          Authorization: 'Bearer ' + key,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(call.body),
+      });
+      if (!response.ok) failed = true;
+    } catch {
+      failed = true;
+    }
+  }
+  if (failed) throw new Error('WhatsApp consent command could not be fully recorded');
 }
 
 export async function onRequestGet(context) {
