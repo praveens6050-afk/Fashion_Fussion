@@ -76,3 +76,6 @@ jobs:
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-assertions.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-shipping-assertions.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-signup-assertions.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/notification-privilege-fixture.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140100_harden_notification_trigger_privileges.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/notification-privilege-assertions.sql
