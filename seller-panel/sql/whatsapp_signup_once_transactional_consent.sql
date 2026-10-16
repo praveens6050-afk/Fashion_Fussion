@@ -143,7 +143,8 @@ BEGIN
     AND cc.consented_at<=NEW.created_at
     AND cc.source='signup_verified_otp'
   ON CONFLICT(order_id) DO NOTHING;
-  -- Verified OTP challenge is authoritative; client-writable profile flags are not.\n  -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
+  -- Verified OTP challenge is authoritative; client-writable profile flags are not.
+  -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
   -- Prepaid remains pending until the verified payment transition trigger.
   RETURN NEW;
 END;
