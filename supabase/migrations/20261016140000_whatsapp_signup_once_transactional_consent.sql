@@ -36,7 +36,11 @@ BEGIN
   SELECT * INTO v_user FROM auth.users WHERE id=p_user_id;
   IF NOT FOUND OR
     v_user.raw_user_meta_data->>'whatsapp_signup_challenge_id' IS DISTINCT FROM p_challenge_id::text
-    OR v_user.raw_user_meta_data->>'account_type' IS DISTINCT FROM p_audience
+    OR (CASE
+      WHEN v_user.raw_user_meta_data->>'account_type' IN ('retailer','business','seller')
+        THEN 'retailer'
+      ELSE v_user.raw_user_meta_data->>'account_type'
+    END) IS DISTINCT FROM p_audience
   THEN RAISE EXCEPTION 'Signup verification does not match this account' USING errcode='42501'; END IF;
 
   SELECT * INTO v_challenge FROM public.phone_otp_challenges
@@ -133,7 +137,11 @@ BEGIN
     ON cc.proof_reference='signup:'||NEW.user_id::text||':'||otp.id::text
    AND otp.phone_e164=cc.phone_e164
    AND lower(otp.email)=lower(u.email)
-   AND otp.audience=u.raw_user_meta_data->>'account_type'
+   AND otp.audience=CASE
+     WHEN u.raw_user_meta_data->>'account_type' IN ('retailer','business','seller')
+       THEN 'retailer'
+     ELSE u.raw_user_meta_data->>'account_type'
+   END
    AND otp.verified_at IS NOT NULL
    AND otp.consumed_at IS NOT NULL
    AND otp.consumed_at>=otp.verified_at
