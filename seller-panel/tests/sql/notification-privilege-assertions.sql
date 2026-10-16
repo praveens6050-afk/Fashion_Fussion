@@ -15,6 +15,9 @@ BEGIN
      OR has_function_privilege('authenticated','public.stage_zoho_email_on_order_insert()','EXECUTE') THEN
     RAISE EXCEPTION 'Trigger-only Zoho staging function must not be exposed as RPC';
   END IF;
+  IF to_regclass('public.whatsapp_inbound_events_sender_user_id_idx') IS NULL THEN
+    RAISE EXCEPTION 'WhatsApp inbound sender foreign key index is missing';
+  END IF;
   IF NOT has_table_privilege('service_role','public.whatsapp_inbound_events','INSERT')
      OR NOT has_sequence_privilege('service_role','public.whatsapp_inbound_events_id_seq','USAGE')
      OR NOT has_function_privilege('service_role','public.stage_zoho_email_on_order_insert()','EXECUTE') THEN
