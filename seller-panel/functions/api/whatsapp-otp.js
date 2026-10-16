@@ -32,7 +32,9 @@ async function finalize(request,env,body){
   // Email alone is insufficient: another person could verify their own phone using someone else's email.
   if(isCustomerOrRetailer){
     const signupChallenge=clean(user.user_metadata?.whatsapp_signup_challenge_id);
-    const signupAudience=clean(user.user_metadata?.account_type).toLowerCase();
+    const rawSignupAudience=clean(user.user_metadata?.account_type).toLowerCase();
+    // Older signup builds stored business/seller while the current API contract uses retailer.
+    const signupAudience=['retailer','business','seller'].includes(rawSignupAudience)?'retailer':rawSignupAudience;
     if(!/^[0-9a-f-]{36}$/i.test(requestedChallenge)||!signupChallenge||signupChallenge!==requestedChallenge||signupAudience!==audience){
       throw Object.assign(new Error('Account-linked WhatsApp verification is missing. Complete verification during signup.'),{status:409});
     }
