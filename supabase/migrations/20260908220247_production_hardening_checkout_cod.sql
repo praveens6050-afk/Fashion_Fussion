@@ -36,13 +36,24 @@ create unique index if not exists customer_addresses_one_default_uidx
   on public.customer_addresses(user_id)
   where is_default is true;
 
-do $$ begin
-  if not exists (select 1 from pg_constraint where conname='customer_wishlist_product_id_fkey') then
+do $wishlist_product_fk_guard$
+begin
+  -- The clean replay baseline may not include the production products table.
+  -- Preserve the foreign key on complete schemas; skip only when its target is absent.
+  if to_regclass('public.products') is not null
+     and to_regclass('public.customer_wishlist') is not null
+     and not exists (
+       select 1 from pg_constraint
+       where conname = 'customer_wishlist_product_id_fkey'
+         and conrelid = 'public.customer_wishlist'::regclass
+     )
+  then
     alter table public.customer_wishlist
       add constraint customer_wishlist_product_id_fkey
       foreign key (product_id) references public.products(id) on delete cascade;
   end if;
-end $$;
+end
+$wishlist_product_fk_guard$;
 
 create or replace function public.handle_new_user()
 returns trigger
