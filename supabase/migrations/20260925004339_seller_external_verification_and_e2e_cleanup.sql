@@ -147,7 +147,7 @@ begin
   );
 
   insert into public.seller_compliance_profiles(seller_id,legal_name,trade_name,entity_type,primary_category,gst_registered,pan_last4,gstin_last4,pan_fingerprint,gstin_fingerprint,verification_status,rejection_reason,reviewed_at,reviewed_by,updated_at)
-  values(v_seller,trim(p_legal_name),nullif(trim(p_trade_name),''),p_entity_type,nullif(trim(p_primary_category),''),coalesce(p_gst_registered,false),v_pan_last4,v_gstin_last4,v_pan_fingerprint,v_gstin_fingerprint,'draft',null,null,null,null,now())
+  values(v_seller,trim(p_legal_name),nullif(trim(p_trade_name),''),p_entity_type,nullif(trim(p_primary_category),''),coalesce(p_gst_registered,false),v_pan_last4,v_gstin_last4,v_pan_fingerprint,v_gstin_fingerprint,'draft',null,null,null,now())
   on conflict(seller_id) do update set
     legal_name=excluded.legal_name,trade_name=excluded.trade_name,entity_type=excluded.entity_type,primary_category=excluded.primary_category,gst_registered=excluded.gst_registered,
     pan_last4=excluded.pan_last4,gstin_last4=excluded.gstin_last4,pan_fingerprint=excluded.pan_fingerprint,gstin_fingerprint=excluded.gstin_fingerprint,

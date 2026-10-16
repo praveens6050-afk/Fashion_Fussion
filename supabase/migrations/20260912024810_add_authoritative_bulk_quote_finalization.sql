@@ -68,7 +68,7 @@ begin
     raise exception 'Item prices are required';
   end if;
 
-  select count(*) into v_expected from public.bulk_quote_items where quote_id = p_quote_id;
+  select count(*) into v_expected from public.bulk_quote_items as bqi where bqi.quote_id = p_quote_id;
   if v_expected < 1 then raise exception 'Quote has no items'; end if;
 
   for v_item in
@@ -96,9 +96,9 @@ begin
       raise exception 'Product GST rate is invalid';
     end if;
 
-    update public.bulk_quote_items
+    update public.bulk_quote_items as bqi
       set quoted_unit_price = round(v_price,2)
-      where id = v_item.id and quote_id = p_quote_id;
+      where bqi.id = v_item.id and bqi.quote_id = p_quote_id;
 
     v_subtotal := v_subtotal + round(v_price * v_item.quantity,2);
     v_gst := v_gst + round((v_price * v_item.quantity) * (v_item.gst_rate / 100.0),2);
