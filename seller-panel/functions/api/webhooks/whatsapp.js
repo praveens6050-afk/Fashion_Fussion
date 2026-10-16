@@ -10,7 +10,8 @@ function safeEqual(a, b) {
 }
 
 async function verifyMetaSignature(rawBody, signatureHeader, appSecret) {
-  if (!appSecret) return true;
+  // Fail closed: without the Meta App Secret, webhook authenticity cannot be established.
+  if (!appSecret) return false;
   if (!signatureHeader?.startsWith('sha256=')) return false;
 
   const key = await crypto.subtle.importKey(
