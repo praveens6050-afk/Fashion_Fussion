@@ -116,7 +116,7 @@ test('missing Meta App Secret fails closed before any database write',async t=>{
   const requestWithValidLookingSignature=await request(item);
   const {WHATSAPP_APP_SECRET,...withoutSecret}=env;
   const response=await onRequestPost({request:requestWithValidLookingSignature,env:withoutSecret});
-  assert.equal(response.status,401);
+  assert.equal(response.status,503,'missing webhook security configuration must fail closed');
   assert.equal(calls,0);
 });
 
