@@ -24,11 +24,21 @@ on public.customer_support_requests for insert
 to authenticated
 with check (user_id = (select auth.uid()));
 
-alter table public.products
-  add constraint products_cost_nonnegative_check check (cost >= 0),
-  add constraint products_price_nonnegative_check check (price >= 0),
-  add constraint products_rating_range_check check (rating is null or (rating >= 0 and rating <= 5)),
-  add constraint products_reviews_nonnegative_check check (reviews is null or reviews >= 0);
+-- This reconstructed baseline can omit the production products table.
+-- Keep the original integrity rules whenever that table is present.
+do $products_integrity_constraints$
+begin
+  if to_regclass('public.products') is not null then
+    execute $constraints$
+      alter table public.products
+        add constraint products_cost_nonnegative_check check (cost >= 0),
+        add constraint products_price_nonnegative_check check (price >= 0),
+        add constraint products_rating_range_check check (rating is null or (rating >= 0 and rating <= 5)),
+        add constraint products_reviews_nonnegative_check check (reviews is null or reviews >= 0)
+    $constraints$;
+  end if;
+end
+$products_integrity_constraints$;
 
 alter table public.orders
   add constraint orders_total_amount_nonnegative_check check (total_amount >= 0),

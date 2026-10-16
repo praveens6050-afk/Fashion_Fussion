@@ -36,13 +36,24 @@ create unique index if not exists customer_addresses_one_default_uidx
   on public.customer_addresses(user_id)
   where is_default is true;
 
-do $$ begin
-  if not exists (select 1 from pg_constraint where conname='customer_wishlist_product_id_fkey') then
+do $wishlist_product_fk_guard$
+begin
+  -- The clean replay baseline may not include the production products table.
+  -- Preserve the foreign key on complete schemas; skip only when its target is absent.
+  if to_regclass('public.products') is not null
+     and to_regclass('public.customer_wishlist') is not null
+     and not exists (
+       select 1 from pg_constraint
+       where conname = 'customer_wishlist_product_id_fkey'
+         and conrelid = 'public.customer_wishlist'::regclass
+     )
+  then
     alter table public.customer_wishlist
       add constraint customer_wishlist_product_id_fkey
       foreign key (product_id) references public.products(id) on delete cascade;
   end if;
-end $$;
+end
+$wishlist_product_fk_guard$;
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -81,22 +92,32 @@ to authenticated
 using (exists (select 1 from public.profiles p where p.id=(select auth.uid()) and p.is_admin=true))
 with check (exists (select 1 from public.profiles p where p.id=(select auth.uid()) and p.is_admin=true));
 
-create or replace function public.admin_product_costs()
-returns table(product_id bigint, cost numeric)
-language sql
-security definer
-set search_path = ''
-as $$
-  select p.id, p.cost
-  from public.products p
-  where exists (
-    select 1 from public.profiles pr
-    where pr.id = auth.uid() and pr.is_admin = true
-  )
-  order by p.id;
-$$;
-revoke execute on function public.admin_product_costs() from public, anon;
-grant execute on function public.admin_product_costs() to authenticated;
+-- The reconstructed local baseline intentionally omits the production products
+-- table. Create this RPC only when its backing relation exists.
+do $admin_product_costs_guard$
+begin
+  if to_regclass('public.products') is not null then
+    execute $function$
+      create or replace function public.admin_product_costs()
+      returns table(product_id bigint, cost numeric)
+      language sql
+      security definer
+      set search_path = ''
+      as $body$
+        select p.id, p.cost
+        from public.products p
+        where exists (
+          select 1 from public.profiles pr
+          where pr.id = auth.uid() and pr.is_admin = true
+        )
+        order by p.id;
+      $body$
+    $function$;
+    execute 'revoke execute on function public.admin_product_costs() from public, anon';
+    execute 'grant execute on function public.admin_product_costs() to authenticated';
+  end if;
+end
+$admin_product_costs_guard$;
 
 create or replace function public.release_order_promotions(p_order_id bigint, p_user_id uuid)
 returns void
