@@ -27,15 +27,36 @@ async function finalize(request,env,body){
   const audience=clean(body.audience).toLowerCase();
   if(!email||!validAudience(audience))throw Object.assign(new Error('Verified account email and account type are required.'),{status:400});
   const isCustomerOrRetailer=audience==='customer'||audience==='retailer';
-  const requestedChallenge=clean(body.challenge_id);
+  // Prefer the explicit request value, but recover from signup metadata when older clients omit it.
+  // The DB RPC still validates ownership, email, audience, verification and one-time consumption.
+  const requestedChallenge=clean(body.challenge_id||user.user_metadata?.whatsapp_signup_challenge_id);
   // A verified WhatsApp challenge must belong to THIS signup's authenticated user.
   // Email alone is insufficient: another person could verify their own phone using someone else's email.
   if(isCustomerOrRetailer){
     const signupChallenge=clean(user.user_metadata?.whatsapp_signup_challenge_id);
-    const signupAudience=clean(user.user_metadata?.account_type).toLowerCase();
+    const rawSignupAudience=clean(user.user_metadata?.account_type).toLowerCase();
+    // Older signup builds stored business/seller while the current API contract uses retailer.
+    const signupAudience=['retailer','business','seller'].includes(rawSignupAudience)?'retailer':rawSignupAudience;
     if(!/^[0-9a-f-]{36}$/i.test(requestedChallenge)||!signupChallenge||signupChallenge!==requestedChallenge||signupAudience!==audience){
       throw Object.assign(new Error('Account-linked WhatsApp verification is missing. Complete verification during signup.'),{status:409});
     }
+  }
+  // Only the authenticated, owner-bound signup challenge can finalize
+  // customer/retailer phone verification and optional future-order opt-in.
+  // This DB RPC consumes the challenge and saves verified consent atomically.
+  if(isCustomerOrRetailer){
+    if(!/^[0-9a-f-]{36}$/i.test(requestedChallenge)){
+      throw Object.assign(new Error('Signup WhatsApp challenge is required'),{status:409});
+    }
+    const finalized=await rest(env,'rpc/finalize_whatsapp_signup_order_updates',{
+      method:'POST',
+      body:JSON.stringify({
+        p_user_id:user.id,p_challenge_id:requestedChallenge,p_audience:audience
+      })
+    });
+    if(finalized?.ok!==true || finalized?.verified!==true)
+      throw Object.assign(new Error('Signup phone verification was not completed'),{status:409});
+    return finalized;
   }
   const since=new Date(Date.now()-24*60*60*1000).toISOString();
   const filter=`phone_otp_challenges?email=eq.${encodeURIComponent(email)}&audience=eq.${encodeURIComponent(audience)}&verified_at=not.is.null&consumed_at=is.null&verified_at=gte.${encodeURIComponent(since)}&select=id,phone_e164,verified_at&order=verified_at.desc&limit=1`;

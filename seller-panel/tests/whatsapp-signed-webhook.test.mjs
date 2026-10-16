@@ -73,7 +73,7 @@ test('signed delivery statuses are stored without customer data or Meta sends',a
   assert.ok(!calls.some(c=>c.url.includes('graph.facebook.com')));
 });
 test('signed ordinary seller replies do not grant marketing opt-in; JOIN/STOP do',async t=>{
-  const original=globalThis.fetch;let optIns=0,optOuts=0,inbound=0;
+  const original=globalThis.fetch;let optIns=0,optOuts=0,transactionalOptOuts=0,inbound=0;
   globalThis.fetch=async(url,options)=>{
     const p=String(url),body=JSON.parse(options.body);
     assert.ok(p.startsWith('https://example.supabase.co/'));
@@ -85,7 +85,13 @@ test('signed ordinary seller replies do not grant marketing opt-in; JOIN/STOP do
       assert.equal(body.p_phone_e164,'+919876543210');
       if(body.p_status==='opted_in') optIns++;
       else if(body.p_status==='opted_out')optOuts++;
-      else throw Error('Unexpected consent change');
+      else throw Error('Unexpected seller consent change');
+      return ok(true);
+    }
+    if(p.endsWith('/record_whatsapp_transactional_keyword')){
+      assert.equal(body.p_phone_e164,'+919876543210');
+      assert.equal(body.p_status,'opted_out');
+      transactionalOptOuts++;
       return ok(true);
     }
     throw Error('Unexpected webhook outgoing call');
@@ -99,7 +105,21 @@ test('signed ordinary seller replies do not grant marketing opt-in; JOIN/STOP do
   assert.equal(inbound,3);
   assert.equal(optIns,1);
   assert.equal(optOuts,1);
+  assert.equal(transactionalOptOuts,1);
 });
+test('missing Meta App Secret fails closed before any database write',async t=>{
+  const original=globalThis.fetch;let calls=0;
+  globalThis.fetch=async()=>{calls++;throw Error('DB must not be hit');};
+  t.after(()=>{globalThis.fetch=original});
+  const item=payload({messages:[{id:'wamid.no-secret',from:'919876543210',type:'text',
+    text:{body:'STOP'},timestamp:String(metaNow())}]});
+  const requestWithValidLookingSignature=await request(item);
+  const {WHATSAPP_APP_SECRET,...withoutSecret}=env;
+  const response=await onRequestPost({request:requestWithValidLookingSignature,env:withoutSecret});
+  assert.equal(response.status,503,'missing webhook security configuration must fail closed');
+  assert.equal(calls,0);
+});
+
 test('malformed JSON or oversized signed webhook never mutates outbox',async t=>{
   const original=globalThis.fetch;let calls=0;
   globalThis.fetch=async()=>{calls++;throw Error('DB must not be hit');};

@@ -67,7 +67,15 @@ jobs:
           set -euo pipefail
           DB='postgresql://postgres@127.0.0.1:5432/whatsapp_ci'
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-fixture.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-signup-fixture.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql
+          cmp -s seller-panel/sql/whatsapp_signup_once_transactional_consent.sql supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-assertions.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-shipping-assertions.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-signup-assertions.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/notification-privilege-fixture.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140100_harden_notification_trigger_privileges.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/notification-privilege-assertions.sql
