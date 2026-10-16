@@ -430,3 +430,5 @@ REVOKE ALL ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,te
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
   TO service_role;
+
+-- Full clean-replay validation must run against the PR #325 baseline branch before merge.
