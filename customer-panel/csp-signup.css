@@ -7,3 +7,11 @@
 .ff-whatsapp-otp .whatsapp-otp-status{margin-top:10px;line-height:1.5}
 .ff-whatsapp-otp .whatsapp-otp-status.success{color:#13653d;background:transparent}
 .ff-whatsapp-otp .whatsapp-otp-status.error{color:#a32323;background:transparent}
+
+/* Customer gives WhatsApp transactional consent once during signup, not checkout. */
+.whatsapp-consent-box{display:flex;align-items:flex-start;gap:12px;background:#f5f8ff;border:1px solid #cbd6e8;border-radius:12px;padding:15px 16px;margin:18px 0}
+.whatsapp-consent-box input[type=checkbox]{width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;accent-color:#182a50;cursor:pointer}
+.whatsapp-consent-box span{display:block;flex:1;line-height:1.45}
+.whatsapp-consent-box strong{display:block;font-size:14px;color:#182a50}
+.whatsapp-consent-box small{display:block;margin-top:5px;font-size:12px;line-height:1.55;color:#516278;font-weight:400}
+.whatsapp-consent-box:focus-within{outline:2px solid #7f9dce;outline-offset:2px}

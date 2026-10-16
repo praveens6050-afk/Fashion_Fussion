@@ -1,0 +1,20 @@
+name: Customer WhatsApp Signup-Once Safety
+on:
+  push:
+    branches: [feature/customer-signup-whatsapp-once]
+  pull_request:
+    branches: [cloudflare-customer]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  consent-ui-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify no checkout opt-in prompts and consent at signup
+        run: node --test .github/whatsapp-signup-once-consent.test.mjs
