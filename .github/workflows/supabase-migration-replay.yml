@@ -1,6 +1,12 @@
 name: Supabase Local Migration Replay
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "supabase/**"
+      - ".github/workflows/supabase-migration-replay.yml"
   pull_request:
     branches:
       - main
