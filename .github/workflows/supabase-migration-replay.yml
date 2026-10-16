@@ -1,0 +1,66 @@
+name: Supabase Local Migration Replay
+
+on:
+  pull_request:
+    branches:
+      - main
+      - cloudflare-seller
+    paths:
+      - "supabase/**"
+      - ".github/workflows/supabase-migration-replay.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-migration-replay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migration-replay:
+    name: Replay migrations on disposable local Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verify CLI and migration inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase --version
+          test -f supabase/config.toml
+          test -d supabase/migrations
+          count="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l | tr -d ' ')"
+          echo "Local SQL migration files: $count"
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No SQL migrations found."
+            exit 1
+          fi
+
+      - name: Start isolated local Supabase stack
+        run: supabase start
+
+      - name: Replay all migrations from a clean local database
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db reset --local
+
+      - name: Report migration inventory and status
+        if: always()
+        shell: bash
+        run: |
+          supabase migration list --local || true
+          supabase status || true
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop --no-backup || true
