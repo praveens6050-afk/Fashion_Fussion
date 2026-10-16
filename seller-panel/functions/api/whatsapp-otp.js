@@ -27,7 +27,9 @@ async function finalize(request,env,body){
   const audience=clean(body.audience).toLowerCase();
   if(!email||!validAudience(audience))throw Object.assign(new Error('Verified account email and account type are required.'),{status:400});
   const isCustomerOrRetailer=audience==='customer'||audience==='retailer';
-  const requestedChallenge=clean(body.challenge_id);
+  // Prefer the explicit request value, but recover from signup metadata when older clients omit it.
+  // The DB RPC still validates ownership, email, audience, verification and one-time consumption.
+  const requestedChallenge=clean(body.challenge_id||user.user_metadata?.whatsapp_signup_challenge_id);
   // A verified WhatsApp challenge must belong to THIS signup's authenticated user.
   // Email alone is insufficient: another person could verify their own phone using someone else's email.
   if(isCustomerOrRetailer){
