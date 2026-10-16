@@ -1,7 +1,8 @@
 -- Synthetic CI fixture only. Never run against production.
 CREATE TABLE public.whatsapp_inbound_events (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  external_message_id text NOT NULL
+  external_message_id text NOT NULL,
+  sender_user_id uuid
 );
 ALTER TABLE public.whatsapp_inbound_events ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE public.whatsapp_inbound_events TO PUBLIC, anon, authenticated, service_role;
