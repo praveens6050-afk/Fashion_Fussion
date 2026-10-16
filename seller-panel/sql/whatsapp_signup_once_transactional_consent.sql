@@ -232,4 +232,4 @@ REVOKE ALL ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,te
 GRANT EXECUTE ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
   TO service_role;
 
--- Full clean-replay validation must run against the PR #325 baseline branch before merge.
+-- Clean-replay validation is enforced by .github/workflows/supabase-migration-replay.yml.
