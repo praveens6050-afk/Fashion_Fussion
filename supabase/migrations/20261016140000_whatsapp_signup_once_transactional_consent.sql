@@ -122,12 +122,12 @@ AS $$
 BEGIN
   IF NEW.user_id IS NULL OR NEW.created_at IS NULL
      OR NEW.created_at < now()-interval '24 hours' THEN RETURN NEW; END IF;
+
   INSERT INTO public.whatsapp_order_consents
     (order_id,user_id,phone_e164,source,consented_at,revoked_at)
   SELECT NEW.id,NEW.user_id,cc.phone_e164,'signup_verified_otp',cc.consented_at,null
   FROM public.whatsapp_contact_consents cc
-  JOIN auth.users u
-    ON u.id=NEW.user_id
+  JOIN auth.users u ON u.id=NEW.user_id
   JOIN public.phone_otp_challenges otp
     ON cc.proof_reference='signup:'||NEW.user_id::text||':'||otp.id::text
    AND otp.phone_e164=cc.phone_e164
@@ -141,11 +141,23 @@ BEGIN
     SELECT regexp_replace(coalesce(NEW.customer_phone,''),'[^0-9]','','g') AS digits
   ) normalized_phone
   WHERE cc.phone_e164=CASE
-      WHEN normalized_phone.digits ~ '^[6-9][0-9]{9}
-    AND cc.revoked_at IS NULL AND cc.consented_at IS NOT NULL
+      WHEN normalized_phone.digits ~ '^[6-9][0-9]{9}$'
+        THEN '+91'||normalized_phone.digits
+      WHEN normalized_phone.digits ~ '^91[6-9][0-9]{9}$'
+        THEN '+'||normalized_phone.digits
+      WHEN left(btrim(coalesce(NEW.customer_phone,'')),1)='+'
+        AND normalized_phone.digits ~ '^[1-9][0-9]{7,14}$'
+        THEN '+'||normalized_phone.digits
+      ELSE NULL
+    END
+    AND cc.purpose='transactional'
+    AND cc.status='opted_in'
+    AND cc.revoked_at IS NULL
+    AND cc.consented_at IS NOT NULL
     AND cc.consented_at<=NEW.created_at
     AND cc.source='signup_verified_otp'
   ON CONFLICT(order_id) DO NOTHING;
+
   -- Verified OTP challenge is authoritative; client-writable profile flags are not.
   -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
   -- Prepaid remains pending until the verified payment transition trigger.
