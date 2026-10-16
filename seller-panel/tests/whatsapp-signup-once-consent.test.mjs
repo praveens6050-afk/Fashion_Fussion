@@ -43,6 +43,26 @@ test('signup verified customer finalization delegates only to atomic service-rol
  assert.equal((await result.json()).transactional_consent_active,true);
  assert.equal(callNames.length,2);
 });
+test('finalization recovers the signup challenge from authenticated metadata when older clients omit it',async t=>{
+ const old=globalThis.fetch,calls=[];
+ globalThis.fetch=async(url,opts={})=>{
+  const u=String(url);calls.push(u);
+  if(u.includes('/auth/v1/user'))return json({id:userId,email:'test@example.com',
+   user_metadata:{account_type:'customer',whatsapp_signup_challenge_id:challenge,
+    whatsapp_order_updates_opt_in:true,whatsapp_order_updates_consent_version:'signup_order_updates_v1'}});
+  if(u.includes('/rest/v1/rpc/finalize_whatsapp_signup_order_updates')){
+   assert.deepEqual(JSON.parse(opts.body),{p_user_id:userId,p_challenge_id:challenge,p_audience:'customer'});
+   return json({ok:true,verified:true,transactional_consent_active:true});
+  }
+  throw Error('Unexpected API request '+u);
+ };t.after(()=>globalThis.fetch=old);
+ const request=new Request(api,{method:'POST',headers:{Authorization:'Bearer fake-user-session','Content-Type':'application/json'},
+  body:JSON.stringify({action:'finalize',audience:'customer'})});
+ const res=await otpHandler({request,env});
+ assert.equal(res.status,200);
+ assert.equal(calls.length,2);
+});
+
 test('invalid account-linked challenge is refused before database finalization',async t=>{
  const old=globalThis.fetch,calls=[];
  globalThis.fetch=async url=>{calls.push(String(url));return json({
