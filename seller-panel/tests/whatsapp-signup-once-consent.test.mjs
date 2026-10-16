@@ -147,3 +147,22 @@ test('migration preserves opt-out, signup ownership and no historic order backfi
  assert.match(sql,/AFTER INSERT ON public\.orders/);
  assert.doesNotMatch(sql,/\bUPDATE public\.orders\b/i);
 });
+
+test('legacy business/seller metadata is normalized to retailer during finalization',async t=>{
+ const old=globalThis.fetch,calls=[];
+ globalThis.fetch=async(url,opts={})=>{
+  const u=String(url);calls.push(u);
+  if(u.includes('/auth/v1/user'))return json({id:userId,email:'retailer@example.com',
+   user_metadata:{account_type:'business',whatsapp_signup_challenge_id:challenge}});
+  if(u.includes('/rest/v1/rpc/finalize_whatsapp_signup_order_updates')){
+   assert.deepEqual(JSON.parse(opts.body),{p_user_id:userId,p_challenge_id:challenge,p_audience:'retailer'});
+   return json({ok:true,verified:true});
+  }
+  throw Error('Unexpected API request '+u);
+ };t.after(()=>globalThis.fetch=old);
+ const request=new Request(api,{method:'POST',headers:{Authorization:'Bearer fake-user-session','Content-Type':'application/json'},
+  body:JSON.stringify({action:'finalize',audience:'retailer',challenge_id:challenge})});
+ const res=await otpHandler({request,env});
+ assert.equal(res.status,200);
+ assert.equal(calls.length,2);
+});
