@@ -108,7 +108,7 @@ USING (
 
 -- products: this reconstructed baseline may not include the production products table.
 -- Apply consolidation only when the table exists; do not fabricate a products schema here.
-do $
+do $products_policy_guard$
 begin
   if to_regclass('public.products') is not null then
     execute 'DROP POLICY IF EXISTS "Admins can manage products" ON public.products';
@@ -137,7 +137,7 @@ begin
     $policy$;
   end if;
 end
-$;
+$products_policy_guard$;
 
 -- profiles: remove redundant broader UPDATE policy; keep the policy that prevents changing is_admin
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
