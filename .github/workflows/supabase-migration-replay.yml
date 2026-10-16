@@ -27,7 +27,7 @@ jobs:
   migration-replay:
     name: Replay migrations on disposable local Supabase
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
 
       - name: Verify CLI and migration inventory
         shell: bash
@@ -59,6 +59,12 @@ jobs:
         run: |
           set -euo pipefail
           supabase db reset --local
+
+      - name: Lint the replayed database schema
+        run: supabase db lint --local --level error --fail-on error
+
+      - name: Run database contract tests
+        run: supabase test db
 
       - name: Report migration inventory and status
         if: always()
