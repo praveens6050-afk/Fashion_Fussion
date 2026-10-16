@@ -1,4 +1,5 @@
 -- Signup-once, explicit transactional WhatsApp consent.
+-- CI validation commit: replay this migration with the clean baseline before merge.
 -- Depends on whatsapp_order_confirmation_atomic_dispatch.sql in PR #308.
 -- Migration does not send messages, backfill orders, or turn on WhatsApp sending.
 -- Anonymous/authenticated callers cannot invoke the privileged signup finalize RPC.
