@@ -1,0 +1,72 @@
+name: Supabase Local Migration Replay
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/supabase-local-migration-replay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-local-migration-replay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  replay-and-contract-tests:
+    name: Fresh local Supabase replay and database contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
+        with:
+          version: 2.121.0
+
+      - name: Inventory versioned migrations
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          files = sorted(Path('supabase/migrations').glob('*.sql'))
+          versions = []
+          for path in files:
+              match = re.fullmatch(r'(\d{14})_.+\.sql', path.name)
+              if not match:
+                  raise SystemExit(f'Invalid migration filename: {path}')
+              versions.append(match.group(1))
+          if not files:
+              raise SystemExit('No versioned migrations found.')
+          duplicates = sorted({version for version in versions if versions.count(version) > 1})
+          if duplicates:
+              raise SystemExit(f'Duplicate migration versions: {", ".join(duplicates)}')
+          summary = f'Found {len(files)} versioned SQL migrations. Fresh local replay follows.\n'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as output:
+              output.write('## Supabase local migration replay\n\n' + summary)
+          print(summary.strip())
+          PY
+
+      - name: Start disposable local Supabase stack
+        run: supabase start
+
+      - name: Recreate local database and replay migrations without seed data
+        run: supabase db reset --no-seed
+
+      - name: Lint the local database schema
+        run: supabase db lint --level error --fail-on error
+
+      - name: Run database security and business-contract tests
+        run: supabase test db
+
+      - name: Stop disposable local Supabase stack
+        if: always()
+        run: supabase stop || true

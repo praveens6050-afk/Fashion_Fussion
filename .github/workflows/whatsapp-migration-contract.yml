@@ -1,0 +1,73 @@
+name: WhatsApp Migration Contracts
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/whatsapp_migrations_contract.sql"
+      - "supabase/tests/fixtures/whatsapp_contract_baseline.sql"
+      - ".github/workflows/whatsapp-migration-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: whatsapp-migration-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  whatsapp-contracts:
+    name: Replay WhatsApp migrations on disposable local Supabase
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359
+        with:
+          version: 2.121.0
+
+      - name: Prepare isolated contract project
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_dir="$RUNNER_TEMP/whatsapp-contract-project"
+          mkdir -p "$test_dir/supabase/migrations" "$test_dir/supabase/tests"
+          printf 'project_id = "fashion-fussion-whatsapp-contract-ci"\n' > "$test_dir/supabase/config.toml"
+          cp supabase/tests/whatsapp_migrations_contract.sql "$test_dir/supabase/tests/"
+          cp supabase/tests/fixtures/whatsapp_contract_baseline.sql "$test_dir/supabase/migrations/20260901000000_test_only_whatsapp_prerequisites.sql"
+          for migration in \
+            20261003163321_add_whatsapp_inbound_routing.sql \
+            20261003163416_resolve_whatsapp_role.sql \
+            20261004173549_add_whatsapp_phone_otp_verification.sql \
+            20261004193050_add_verified_seller_phone_login_resolver.sql \
+            20261005141659_add_shared_login_otp_challenges.sql \
+            20261013172419_whatsapp_contact_consent_ledger_20261013.sql \
+            20261013173204_whatsapp_consent_signed_keyword_events_20261013.sql \
+            20261013174345_whatsapp_order_notification_outbox_20261013.sql \
+            20261013175842_whatsapp_order_checkbox_consent_20261013.sql \
+            20261013181115_stage_whatsapp_order_events_without_sending_20261013.sql \
+            20261013181606_whatsapp_meta_delivery_receipts_20261013.sql; do
+            cp "supabase/migrations/$migration" "$test_dir/supabase/migrations/"
+          done
+          echo "WHATSAPP_TEST_DIR=$test_dir" >> "$GITHUB_ENV"
+          echo "Prepared a synthetic base fixture plus 11 WhatsApp migrations; no remote Supabase connection is configured."
+
+      - name: Start disposable local Supabase stack
+        run: cd "$WHATSAPP_TEST_DIR" && supabase start
+
+      - name: Replay fixture and WhatsApp migrations locally
+        run: cd "$WHATSAPP_TEST_DIR" && supabase db reset --no-seed
+
+      - name: Run WhatsApp migration contract tests
+        run: cd "$WHATSAPP_TEST_DIR" && supabase test db
+
+      - name: Stop disposable local Supabase stack
+        if: always()
+        run: cd "$WHATSAPP_TEST_DIR" && supabase stop || true
