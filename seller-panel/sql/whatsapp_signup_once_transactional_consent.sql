@@ -35,7 +35,11 @@ BEGIN
   SELECT * INTO v_user FROM auth.users WHERE id=p_user_id;
   IF NOT FOUND OR
     v_user.raw_user_meta_data->>'whatsapp_signup_challenge_id' IS DISTINCT FROM p_challenge_id::text
-    OR v_user.raw_user_meta_data->>'account_type' IS DISTINCT FROM p_audience
+    OR (CASE
+      WHEN v_user.raw_user_meta_data->>'account_type' IN ('retailer','business','seller')
+        THEN 'retailer'
+      ELSE v_user.raw_user_meta_data->>'account_type'
+    END) IS DISTINCT FROM p_audience
   THEN RAISE EXCEPTION 'Signup verification does not match this account' USING errcode='42501'; END IF;
 
   SELECT * INTO v_challenge FROM public.phone_otp_challenges
@@ -132,12 +136,238 @@ BEGIN
     ON cc.proof_reference='signup:'||NEW.user_id::text||':'||otp.id::text
    AND otp.phone_e164=cc.phone_e164
    AND lower(otp.email)=lower(u.email)
-   AND otp.audience=u.raw_user_meta_data->>'account_type'
+   AND otp.audience=CASE
+     WHEN u.raw_user_meta_data->>'account_type' IN ('retailer','business','seller')
+       THEN 'retailer'
+     ELSE u.raw_user_meta_data->>'account_type'
+   END
    AND otp.verified_at IS NOT NULL
    AND otp.consumed_at IS NOT NULL
    AND otp.consumed_at>=otp.verified_at
    AND otp.consumed_at<=NEW.created_at
-  WHERE cc.phone_e164=private.ff_whatsapp_e164(NEW.customer_phone)
+  CROSS JOIN LATERAL (
+    SELECT regexp_replace(coalesce(NEW.customer_phone,''),'[^0-9]','','g') AS digits
+  ) normalized_phone
+  WHERE cc.phone_e164=CASE
+      WHEN normalized_phone.digits ~ '^[6-9][0-9]{9}
+    AND cc.revoked_at IS NULL AND cc.consented_at IS NOT NULL
+    AND cc.consented_at<=NEW.created_at
+    AND cc.source='signup_verified_otp'
+  ON CONFLICT(order_id) DO NOTHING;
+  -- Verified OTP challenge is authoritative; client-writable profile flags are not.
+  -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
+  -- Prepaid remains pending until the verified payment transition trigger.
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_ff_attach_signup_whatsapp_to_new_order ON public.orders;
+CREATE TRIGGER trg_ff_attach_signup_whatsapp_to_new_order
+ AFTER INSERT ON public.orders FOR EACH ROW
+ EXECUTE FUNCTION public.ff_attach_signup_whatsapp_to_new_order();
+
+-- Signed Meta webhook controls transactional STOP and explicit restart.
+-- Does not change marketing opt-in, and never creates a new signup proof.
+CREATE OR REPLACE FUNCTION public.record_whatsapp_transactional_keyword(
+ p_phone_e164 text,p_external_message_id text,p_status text,p_event_at timestamptz)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $$
+DECLARE v_count integer;
+BEGIN
+  IF p_phone_e164 IS NULL OR p_phone_e164 !~ '^\+[1-9][0-9]{7,14}$'
+     OR p_external_message_id IS NULL OR
+        length(p_external_message_id) NOT BETWEEN 5 AND 255
+     OR p_status NOT IN ('opted_in','opted_out')
+     OR p_event_at IS NULL OR p_event_at>now()+interval '5 minutes'
+     OR p_event_at<'2020-01-01'::timestamptz
+  THEN RAISE EXCEPTION 'Invalid signed transactional opt-out metadata' USING errcode='22023'; END IF;
+
+  IF p_status='opted_in' THEN
+    -- START from WhatsApp may reactivate a previous explicit signup consent,
+    -- but cannot fabricate one for a number without owner-bound signup proof.
+    UPDATE public.whatsapp_contact_consents c
+    SET status='opted_in',consented_at=p_event_at,revoked_at=null,
+        last_event_at=p_event_at,last_event_id=p_external_message_id,updated_at=now()
+    WHERE c.phone_e164=p_phone_e164 AND c.purpose='transactional'
+      AND c.source='signup_verified_otp' AND c.proof_reference LIKE 'signup:%'
+      AND p_event_at > greatest(
+        coalesce(c.last_event_at,'-infinity'::timestamptz),
+        coalesce(c.consented_at,'-infinity'::timestamptz),
+        coalesce(c.revoked_at,'-infinity'::timestamptz));
+  ELSE
+    INSERT INTO public.whatsapp_contact_consents AS c
+      (phone_e164,purpose,status,source,proof_reference,
+       consented_at,revoked_at,updated_at,last_event_at,last_event_id)
+    VALUES(p_phone_e164,'transactional','opted_out',
+      'whatsapp_keyword_transactional',p_external_message_id,
+      null,p_event_at,now(),p_event_at,p_external_message_id)
+    ON CONFLICT(phone_e164,purpose) DO UPDATE SET
+      status='opted_out',revoked_at=p_event_at,updated_at=now(),
+      last_event_at=p_event_at,last_event_id=p_external_message_id
+    WHERE p_event_at > greatest(
+      coalesce(c.last_event_at,'-infinity'::timestamptz),
+      coalesce(c.consented_at,'-infinity'::timestamptz),
+      coalesce(c.revoked_at,'-infinity'::timestamptz))
+      OR (c.last_event_at=p_event_at AND c.status='opted_in');
+    -- Existing signup source/proof_reference are intentionally preserved:
+    -- STOP suppresses new orders and START can later restore the original.
+  END IF;
+  GET DIAGNOSTICS v_count=ROW_COUNT;
+  RETURN v_count>0;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
+  TO service_role;
+
+        THEN '+91'||normalized_phone.digits
+      WHEN normalized_phone.digits ~ '^91[6-9][0-9]{9}
+    AND cc.revoked_at IS NULL AND cc.consented_at IS NOT NULL
+    AND cc.consented_at<=NEW.created_at
+    AND cc.source='signup_verified_otp'
+  ON CONFLICT(order_id) DO NOTHING;
+  -- Verified OTP challenge is authoritative; client-writable profile flags are not.
+  -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
+  -- Prepaid remains pending until the verified payment transition trigger.
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_ff_attach_signup_whatsapp_to_new_order ON public.orders;
+CREATE TRIGGER trg_ff_attach_signup_whatsapp_to_new_order
+ AFTER INSERT ON public.orders FOR EACH ROW
+ EXECUTE FUNCTION public.ff_attach_signup_whatsapp_to_new_order();
+
+-- Signed Meta webhook controls transactional STOP and explicit restart.
+-- Does not change marketing opt-in, and never creates a new signup proof.
+CREATE OR REPLACE FUNCTION public.record_whatsapp_transactional_keyword(
+ p_phone_e164 text,p_external_message_id text,p_status text,p_event_at timestamptz)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $$
+DECLARE v_count integer;
+BEGIN
+  IF p_phone_e164 IS NULL OR p_phone_e164 !~ '^\+[1-9][0-9]{7,14}$'
+     OR p_external_message_id IS NULL OR
+        length(p_external_message_id) NOT BETWEEN 5 AND 255
+     OR p_status NOT IN ('opted_in','opted_out')
+     OR p_event_at IS NULL OR p_event_at>now()+interval '5 minutes'
+     OR p_event_at<'2020-01-01'::timestamptz
+  THEN RAISE EXCEPTION 'Invalid signed transactional opt-out metadata' USING errcode='22023'; END IF;
+
+  IF p_status='opted_in' THEN
+    -- START from WhatsApp may reactivate a previous explicit signup consent,
+    -- but cannot fabricate one for a number without owner-bound signup proof.
+    UPDATE public.whatsapp_contact_consents c
+    SET status='opted_in',consented_at=p_event_at,revoked_at=null,
+        last_event_at=p_event_at,last_event_id=p_external_message_id,updated_at=now()
+    WHERE c.phone_e164=p_phone_e164 AND c.purpose='transactional'
+      AND c.source='signup_verified_otp' AND c.proof_reference LIKE 'signup:%'
+      AND p_event_at > greatest(
+        coalesce(c.last_event_at,'-infinity'::timestamptz),
+        coalesce(c.consented_at,'-infinity'::timestamptz),
+        coalesce(c.revoked_at,'-infinity'::timestamptz));
+  ELSE
+    INSERT INTO public.whatsapp_contact_consents AS c
+      (phone_e164,purpose,status,source,proof_reference,
+       consented_at,revoked_at,updated_at,last_event_at,last_event_id)
+    VALUES(p_phone_e164,'transactional','opted_out',
+      'whatsapp_keyword_transactional',p_external_message_id,
+      null,p_event_at,now(),p_event_at,p_external_message_id)
+    ON CONFLICT(phone_e164,purpose) DO UPDATE SET
+      status='opted_out',revoked_at=p_event_at,updated_at=now(),
+      last_event_at=p_event_at,last_event_id=p_external_message_id
+    WHERE p_event_at > greatest(
+      coalesce(c.last_event_at,'-infinity'::timestamptz),
+      coalesce(c.consented_at,'-infinity'::timestamptz),
+      coalesce(c.revoked_at,'-infinity'::timestamptz))
+      OR (c.last_event_at=p_event_at AND c.status='opted_in');
+    -- Existing signup source/proof_reference are intentionally preserved:
+    -- STOP suppresses new orders and START can later restore the original.
+  END IF;
+  GET DIAGNOSTICS v_count=ROW_COUNT;
+  RETURN v_count>0;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
+  TO service_role;
+
+        THEN '+'||normalized_phone.digits
+      WHEN left(btrim(coalesce(NEW.customer_phone,'')),1)='+'
+        AND normalized_phone.digits ~ '^[1-9][0-9]{7,14}
+    AND cc.revoked_at IS NULL AND cc.consented_at IS NOT NULL
+    AND cc.consented_at<=NEW.created_at
+    AND cc.source='signup_verified_otp'
+  ON CONFLICT(order_id) DO NOTHING;
+  -- Verified OTP challenge is authoritative; client-writable profile flags are not.
+  -- Existing AFTER INSERT ON whatsapp_order_consents stages a fresh COD event.
+  -- Prepaid remains pending until the verified payment transition trigger.
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_ff_attach_signup_whatsapp_to_new_order ON public.orders;
+CREATE TRIGGER trg_ff_attach_signup_whatsapp_to_new_order
+ AFTER INSERT ON public.orders FOR EACH ROW
+ EXECUTE FUNCTION public.ff_attach_signup_whatsapp_to_new_order();
+
+-- Signed Meta webhook controls transactional STOP and explicit restart.
+-- Does not change marketing opt-in, and never creates a new signup proof.
+CREATE OR REPLACE FUNCTION public.record_whatsapp_transactional_keyword(
+ p_phone_e164 text,p_external_message_id text,p_status text,p_event_at timestamptz)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $$
+DECLARE v_count integer;
+BEGIN
+  IF p_phone_e164 IS NULL OR p_phone_e164 !~ '^\+[1-9][0-9]{7,14}$'
+     OR p_external_message_id IS NULL OR
+        length(p_external_message_id) NOT BETWEEN 5 AND 255
+     OR p_status NOT IN ('opted_in','opted_out')
+     OR p_event_at IS NULL OR p_event_at>now()+interval '5 minutes'
+     OR p_event_at<'2020-01-01'::timestamptz
+  THEN RAISE EXCEPTION 'Invalid signed transactional opt-out metadata' USING errcode='22023'; END IF;
+
+  IF p_status='opted_in' THEN
+    -- START from WhatsApp may reactivate a previous explicit signup consent,
+    -- but cannot fabricate one for a number without owner-bound signup proof.
+    UPDATE public.whatsapp_contact_consents c
+    SET status='opted_in',consented_at=p_event_at,revoked_at=null,
+        last_event_at=p_event_at,last_event_id=p_external_message_id,updated_at=now()
+    WHERE c.phone_e164=p_phone_e164 AND c.purpose='transactional'
+      AND c.source='signup_verified_otp' AND c.proof_reference LIKE 'signup:%'
+      AND p_event_at > greatest(
+        coalesce(c.last_event_at,'-infinity'::timestamptz),
+        coalesce(c.consented_at,'-infinity'::timestamptz),
+        coalesce(c.revoked_at,'-infinity'::timestamptz));
+  ELSE
+    INSERT INTO public.whatsapp_contact_consents AS c
+      (phone_e164,purpose,status,source,proof_reference,
+       consented_at,revoked_at,updated_at,last_event_at,last_event_id)
+    VALUES(p_phone_e164,'transactional','opted_out',
+      'whatsapp_keyword_transactional',p_external_message_id,
+      null,p_event_at,now(),p_event_at,p_external_message_id)
+    ON CONFLICT(phone_e164,purpose) DO UPDATE SET
+      status='opted_out',revoked_at=p_event_at,updated_at=now(),
+      last_event_at=p_event_at,last_event_id=p_external_message_id
+    WHERE p_event_at > greatest(
+      coalesce(c.last_event_at,'-infinity'::timestamptz),
+      coalesce(c.consented_at,'-infinity'::timestamptz),
+      coalesce(c.revoked_at,'-infinity'::timestamptz))
+      OR (c.last_event_at=p_event_at AND c.status='opted_in');
+    -- Existing signup source/proof_reference are intentionally preserved:
+    -- STOP suppresses new orders and START can later restore the original.
+  END IF;
+  GET DIAGNOSTICS v_count=ROW_COUNT;
+  RETURN v_count>0;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.record_whatsapp_transactional_keyword(text,text,text,timestamptz)
+  TO service_role;
+
+        THEN '+'||normalized_phone.digits
+      ELSE NULL
+    END
     AND cc.purpose='transactional' AND cc.status='opted_in'
     AND cc.revoked_at IS NULL AND cc.consented_at IS NOT NULL
     AND cc.consented_at<=NEW.created_at
