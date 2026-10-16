@@ -29,3 +29,12 @@ test('verified order completion is not blocked by WhatsApp preference',()=>{
  const script=read('checkout.js');
  assert.match(script,/async function finish\(storeOrderId\)\{clearCompletedCheckout\(\);location\.href='order-confirmation\.html/);
 });
+
+test('login finalizes pending signup verification using signup metadata audience',()=>{
+ const code=read('csp-login.js');
+ assert.match(code,/metadata\.account_type\|\|p\?\.account_type/);
+ assert.match(code,/\['retailer','business','seller'\]\.includes\(accountType\)\?'retailer':'customer'/);
+ assert.match(code,/whatsapp_signup_challenge_id/);
+ assert.match(code,/throw new Error\(d\.error\|\|'Your verified WhatsApp number could not be linked/);
+ assert.doesNotMatch(code,/if\(r\.status===409\)return p/);
+});
