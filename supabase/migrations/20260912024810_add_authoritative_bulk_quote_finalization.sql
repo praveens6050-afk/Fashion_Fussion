@@ -68,7 +68,7 @@ begin
     raise exception 'Item prices are required';
   end if;
 
-  select count(*) into v_expected from public.bulk_quote_items where quote_id = p_quote_id;
+  select count(*) into v_expected from public.bulk_quote_items as bqi where bqi.quote_id = p_quote_id;
   if v_expected < 1 then raise exception 'Quote has no items'; end if;
 
   for v_item in
