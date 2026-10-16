@@ -9,6 +9,11 @@ ALTER TABLE public.whatsapp_order_consents
   ADD CONSTRAINT whatsapp_order_consents_source_check
   CHECK(source IN ('checkout_checkbox','signup_verified_otp'));
 
+-- Event ordering fields are required for idempotent STOP/START replay protection.
+ALTER TABLE public.whatsapp_contact_consents
+  ADD COLUMN IF NOT EXISTS last_event_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_event_id text;
+
 -- Complete verified OTP, attach profile phone, optionally store signed-up user
 -- consent, and consume OTP IN ONE DATABASE TRANSACTION.
 CREATE OR REPLACE FUNCTION public.finalize_whatsapp_signup_order_updates(
