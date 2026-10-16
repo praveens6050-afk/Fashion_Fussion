@@ -92,22 +92,32 @@ to authenticated
 using (exists (select 1 from public.profiles p where p.id=(select auth.uid()) and p.is_admin=true))
 with check (exists (select 1 from public.profiles p where p.id=(select auth.uid()) and p.is_admin=true));
 
-create or replace function public.admin_product_costs()
-returns table(product_id bigint, cost numeric)
-language sql
-security definer
-set search_path = ''
-as $$
-  select p.id, p.cost
-  from public.products p
-  where exists (
-    select 1 from public.profiles pr
-    where pr.id = auth.uid() and pr.is_admin = true
-  )
-  order by p.id;
-$$;
-revoke execute on function public.admin_product_costs() from public, anon;
-grant execute on function public.admin_product_costs() to authenticated;
+-- The reconstructed local baseline intentionally omits the production products
+-- table. Create this RPC only when its backing relation exists.
+do $admin_product_costs_guard$
+begin
+  if to_regclass('public.products') is not null then
+    execute $function$
+      create or replace function public.admin_product_costs()
+      returns table(product_id bigint, cost numeric)
+      language sql
+      security definer
+      set search_path = ''
+      as $body$
+        select p.id, p.cost
+        from public.products p
+        where exists (
+          select 1 from public.profiles pr
+          where pr.id = auth.uid() and pr.is_admin = true
+        )
+        order by p.id;
+      $body$
+    $function$;
+    execute 'revoke execute on function public.admin_product_costs() from public, anon';
+    execute 'grant execute on function public.admin_product_costs() to authenticated';
+  end if;
+end
+$admin_product_costs_guard$;
 
 create or replace function public.release_order_promotions(p_order_id bigint, p_user_id uuid)
 returns void
