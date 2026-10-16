@@ -52,7 +52,7 @@ jobs:
           fi
 
       - name: Start isolated local Supabase stack
-        run: supabase start
+        run: supabase start --exclude studio,kong,auth,rest,realtime,storage-api,imgproxy,meta,functions,analytics,vector,supavisor,mailpit
 
       - name: Replay all migrations from a clean local database
         shell: bash
