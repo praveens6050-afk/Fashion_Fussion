@@ -136,7 +136,7 @@ async function ingestMessage(env, message) {
 // Ordinary conversations and OTP replies must not be interpreted as marketing consent.
 function consentCommand(message) {
   if (message.type !== 'text') return null;
-  const command = String(message.text || '').trim().toUpperCase().replace(/\\s+/g, ' ');
+  const command = String(message.text || '').trim().toUpperCase().replace(/\s+/g, ' ');
   if (command === 'JOIN FASHION SELLER') return 'seller_opt_in';
   if (command === 'STOP' || command === 'STOP FASHION') return 'stop_all';
   if (command === 'START FASHION UPDATES') return 'transactional_opt_in';
@@ -148,8 +148,8 @@ async function storeConsentCommand(env, message) {
   if (!env.WHATSAPP_APP_SECRET) return;
   const command = consentCommand(message);
   if (!command) return;
-  const digits = String(message.from || '').replace(/\\D/g, '');
-  if (!/^\\d{8,15}$/.test(digits) || !message.id) {
+  const digits = String(message.from || '').replace(/\D/g, '');
+  if (!/^\d{8,15}$/.test(digits) || !message.id) {
     throw new Error('Invalid WhatsApp consent command metadata');
   }
   const seconds = Number(message.timestamp);
@@ -158,7 +158,7 @@ async function storeConsentCommand(env, message) {
     throw new Error('Invalid Meta consent event timestamp');
   }
   const eventAt = new Date(seconds * 1000).toISOString();
-  const base = String(env.SUPABASE_URL || '').replace(/\\/$/, '');
+  const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
   const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
   if (!base || !key) throw new Error('WhatsApp consent database configuration missing');
 
