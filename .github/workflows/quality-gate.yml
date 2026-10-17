@@ -166,6 +166,7 @@ jobs:
           node --check admin-panel/crm-auth.js
           node --check admin-panel/admin-crm.js
           node --check admin-panel/admin-crm-followups.js
+          node --check admin-panel/admin-crm-directory.js
           node scripts/check_crm_panel_contract.js
       - name: Source checks
         run: node scripts/check_source.js
