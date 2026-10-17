@@ -108,7 +108,7 @@
         if(record.source_url&&!safeHttpUrl(record.source_url)){dupes.push('Row '+(n+2)+': invalid source_url');continue}
         if(record.lead_status&&!statuses.includes(record.lead_status))throw new Error('Invalid lead_status on CSV row '+(n+2)+'.');
         if(record.priority&&!priorities.includes(record.priority))throw new Error('Invalid priority on CSV row '+(n+2)+'.');
-        if(record.public_contact_email&&!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(record.public_contact_email))throw new Error('Invalid contact email on CSV row '+(n+2)+'.');
+        if(record.public_contact_email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.public_contact_email))throw new Error('Invalid contact email on CSV row '+(n+2)+'.');
         records.push(record);
       }
       if(!records.length)throw new Error('No valid new leads found. '+dupes.slice(0,3).join(' '));
