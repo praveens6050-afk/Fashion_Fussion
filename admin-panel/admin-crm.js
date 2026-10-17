@@ -76,7 +76,7 @@
   }
   function parseCsv(text){
     const out=[];let row=[],field='',quoted=false;
-    for(let i=0;i<text.length;i++){const ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){field+='"';i++}else if(ch==='"')quoted=false;else field+=ch}else if(ch==='"'&&field==='')quoted=true;else if(ch===','){row.push(field);field=''}else if(ch==='\\n'||ch==='\\r'){if(ch==='\\r'&&text[i+1]==='\\n')i++;row.push(field);if(row.some(v=>v.trim()!==''))out.push(row);row=[];field=''}else field+=ch}
+    for(let i=0;i<text.length;i++){const ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){field+='"';i++}else if(ch==='"')quoted=false;else field+=ch}else if(ch==='"'&&field==='')quoted=true;else if(ch===','){row.push(field);field=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(v=>v.trim()!==''))out.push(row);row=[];field=''}else field+=ch}
     if(quoted)throw new Error('CSV has an unclosed quoted field.');if(field!==''||row.length){row.push(field);if(row.some(v=>v.trim()!==''))out.push(row)}return out;
   }
   async function importCsv(e){
@@ -107,7 +107,7 @@
         records.push(record);
       }
       if(!records.length)throw new Error('No valid new leads found. '+dupes.slice(0,3).join(' '));
-      const preview='CSV import preview\\nValid new leads: '+records.length+'\\nSkipped duplicates/invalid rows: '+dupes.length+'\\n'+dupes.slice(0,8).join('\\n')+'\\n\\nImport only the valid new leads? Existing leads will not be overwritten.';
+      const preview='CSV import preview\nValid new leads: '+records.length+'\nSkipped duplicates/invalid rows: '+dupes.length+'\n'+dupes.slice(0,8).join('\n')+'\n\nImport only the valid new leads? Existing leads will not be overwritten.';
       if(!confirm(preview))return;
       let inserted=0;
       for(let i=0;i<records.length;i+=100){const{error}=await db.from('seller_leads').insert(records.slice(i,i+100));if(error)throw error;inserted+=Math.min(100,records.length-i)}
