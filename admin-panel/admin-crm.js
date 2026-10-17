@@ -96,7 +96,7 @@
       for(const required of ['company_name','source_marketplace'])if(!headers.includes(required))throw new Error('Required CSV header missing: '+required);
       const index={};headers.forEach((h,i)=>{if(allowed.includes(h))index[h]=i});
       const clean=v=>String(v??'').trim();
-      const normalized=(name,source)=>clean(name).toLowerCase().replace(/\\s+/g,' ')+'::'+clean(source).toLowerCase().replace(/\\s+/g,' ');
+      const normalized=(name,source)=>clean(name).toLowerCase().replace(/\s+/g,' ')+'::'+clean(source).toLowerCase().replace(/\s+/g,' ');
       const existing=new Set(rows.map(r=>normalized(r.company_name,r.source_marketplace))),seen=new Set(),records=[],dupes=[];
       for(let n=0;n<parsed.length;n++){
         const cells=parsed[n],get=k=>clean(cells[index[k]]);
@@ -108,7 +108,7 @@
         if(record.source_url&&!safeHttpUrl(record.source_url)){dupes.push('Row '+(n+2)+': invalid source_url');continue}
         if(record.lead_status&&!statuses.includes(record.lead_status))throw new Error('Invalid lead_status on CSV row '+(n+2)+'.');
         if(record.priority&&!priorities.includes(record.priority))throw new Error('Invalid priority on CSV row '+(n+2)+'.');
-        if(record.public_contact_email&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(record.public_contact_email))throw new Error('Invalid contact email on CSV row '+(n+2)+'.');
+        if(record.public_contact_email&&!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(record.public_contact_email))throw new Error('Invalid contact email on CSV row '+(n+2)+'.');
         records.push(record);
       }
       if(!records.length)throw new Error('No valid new leads found. '+dupes.slice(0,3).join(' '));
