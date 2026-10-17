@@ -20,3 +20,11 @@ Added `admin-panel/admin-crm.js` and registered it in the Admin runtime loader. 
 
 ## Safety boundary
 No Supabase migration has been applied, no production deployment or scheduler has been activated, and no live WhatsApp/email has been sent. Do not merge or deploy without explicit approval.
+
+
+## Validation update — 2026-10-17
+- Compile-only JavaScript syntax checks passed for `admin-panel/admin-crm.js`, `admin-panel/admin-crm-followups.js`, and `admin-panel/supabase-config.js`.
+- Static CRM contract checks passed for CSV import/export safeguards, follow-up task and timeline calls, module registration, admin-only RLS policy markers, and the absence of outbound messaging.
+- Read-only inspection confirmed the new `seller_lead_tasks` and `seller_lead_activities` tables are not present in the live Supabase project. The migration remains unapplied.
+- No GitHub Actions run/status was returned for the latest PR head at this check. The JavaScript checks above were compile-only, not browser/E2E tests.
+- Release gates remain: fresh CI, authenticated browser E2E, isolated migration replay/RLS tests, customer/seller 360° integration review, and read-only notification-outbox integration.
