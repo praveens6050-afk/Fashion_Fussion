@@ -1,0 +1,9 @@
+{
+  "name": "fashion-fussion-admin-panel",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Static Cloudflare Pages assets for Fashion Fussion Admin and CRM",
+  "scripts": {
+    "build": "node scripts/build.js"
+  }
+}
