@@ -139,6 +139,27 @@ jobs:
           // admin-checkout-health.js?v=1','data-admin-checkout-health
           // admin-launch-readiness.js?v=1','data-admin-launch-readiness
           EOF
+      - name: Admin CRM JavaScript syntax and contract checks
+        run: |
+          node --check admin-panel/admin-crm.js
+          node --check admin-panel/admin-crm-followups.js
+          python3 - <<'PY'
+          from pathlib import Path
+          main = Path('admin-panel/admin-crm.js').read_text(encoding='utf-8')
+          followups = Path('admin-panel/admin-crm-followups.js').read_text(encoding='utf-8')
+          loader = Path('admin-panel/supabase-config.js').read_text(encoding='utf-8')
+          migration = Path('supabase/migrations/20261017110000_admin_seller_lead_crm.sql').read_text(encoding='utf-8')
+          checks = {
+              'CSV import validation': 'async function importCsv' in main and 'No existing lead was overwritten' in main,
+              'follow-up tasks': 'seller_lead_tasks' in followups and 'completeTask' in followups,
+              'activity timeline': 'seller_lead_activities' in followups and 'ffCrmFuTimeline' in followups,
+              'loader registration': 'admin-crm-followups.js?v=20261017-crm-followups' in loader,
+              'admin-only RLS': 'seller_lead_tasks_admin_select' in migration and 'seller_lead_activities_admin_select' in migration,
+              'no outbound messaging': 'never sends messages' in followups,
+          }
+          for name, ok in checks.items(): print(('PASS' if ok else 'FAIL') + ': ' + name)
+          if not all(checks.values()): raise SystemExit(1)
+          PY
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
