@@ -22,7 +22,8 @@
     container.appendChild(sec);
     $('ffCrmNew').onclick=()=>showForm(null);
     $('ffCrmRefresh').onclick=load;
-    $('ffCrmExport').onclick=exportCsv;\n    $('ffCrmImport').onclick=()=>$('ffCrmImportFile').click();
+    $('ffCrmExport').onclick=exportCsv;
+    $('ffCrmImport').onclick=()=>$('ffCrmImportFile').click();
     $('ffCrmImportFile').onchange=importCsv;
     $('ffCrmStatus').onchange=e=>{filterStatus=e.target.value;render()};
     $('ffCrmPriority').onchange=render;
