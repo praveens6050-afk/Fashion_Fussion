@@ -1,0 +1,4 @@
+create index if not exists creator_attribution_sessions_creator_link_idx on public.creator_attribution_sessions(creator_link_id);
+create index if not exists creator_attribution_sessions_product_idx on public.creator_attribution_sessions(product_id);
+drop policy if exists creator_attribution_no_direct_select on public.creator_attribution_sessions;
+create policy creator_attribution_no_direct_select on public.creator_attribution_sessions for select to authenticated using (false);
