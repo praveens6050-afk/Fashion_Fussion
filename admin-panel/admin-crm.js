@@ -45,16 +45,19 @@
     const value=name=>String(form.elements.namedItem(name)?.value||'').trim();
     const payload={company_name:value('company_name'),public_contact_name:value('public_contact_name')||null,public_contact_phone:value('public_contact_phone')||null,public_contact_email:value('public_contact_email')||null,business_type:value('business_type')||null,source_marketplace:value('source_marketplace'),source_url:value('source_url')||null,category:value('category')||null,city:value('city')||null,state:value('state')||null,gstin:value('gstin')||null,contact_method:value('contact_method')||'platform_inquiry',lead_status:value('lead_status'),priority:value('priority'),notes:value('notes')||null,updated_at:new Date().toISOString()};
     try{
-      const query=editing?db.from('seller_leads').update(payload).eq('id',editing.id):db.from('seller_leads').insert(payload);
-      const{error}=await query;if(error)throw error;
-      message(editing?'Lead updated.':'Lead created.','ok');$('ffCrmFormHost').innerHTML='';editing=null;await load();
+      const wasEditing=!!editing;
+      const query=wasEditing?db.from('seller_leads').update(payload).eq('id',editing.id).select('id').single():db.from('seller_leads').insert(payload).select('id').single();
+      const{data:saved,error}=await query;if(error)throw error;
+      let historyWarning=false;try{await writeActivity(saved.id,wasEditing?'updated':'created',wasEditing?'Lead details updated':'Lead created',null,null)}catch{historyWarning=true}
+      message((wasEditing?'Lead updated.':'Lead created.')+(historyWarning?' Activity history could not be recorded; check CRM migration status.':''),historyWarning?'err':'ok');$('ffCrmFormHost').innerHTML='';editing=null;await load();
     }catch(err){message(err.message||'Lead could not be saved.','err')}
     finally{btn.disabled=false}
   }
+  async function writeActivity(leadId,type,summary,details,channel){const{data:userData}=await db.auth.getUser();const{error}=await db.from('seller_lead_activities').insert({lead_id:leadId,activity_type:type,summary,details:details||null,contact_channel:channel||null,created_by:userData?.user?.id||null});if(error)throw error}
   async function setStatus(id,status){
     const row=rows.find(x=>Number(x.id)===Number(id));if(!row)return;
     if(status==='converted'&&!row.converted_seller_id&&!confirm('Mark this lead converted? Confirm that seller onboarding has actually completed.'))return;
-    try{const patch={lead_status:status,updated_at:new Date().toISOString()};if(status==='contacted')patch.contacted_at=row.contacted_at||new Date().toISOString();const{error}=await db.from('seller_leads').update(patch).eq('id',id);if(error)throw error;message('Lead status updated.','ok');await load()}catch(err){message(err.message||'Status update failed.','err')}
+    try{const patch={lead_status:status,updated_at:new Date().toISOString()};if(status==='contacted')patch.contacted_at=row.contacted_at||new Date().toISOString();const{error}=await db.from('seller_leads').update(patch).eq('id',id);if(error)throw error;let historyWarning=false;try{await writeActivity(id,status==='contacted'?'contacted':'status_changed','Lead status changed: '+row.lead_status+' → '+status,null,status==='contacted'?'other':null)}catch{historyWarning=true}message('Lead status updated.'+(historyWarning?' Activity history could not be recorded; check CRM migration status.':''),historyWarning?'err':'ok');await load()}catch(err){message(err.message||'Status update failed.','err')}
   }
   function render(){
     const priority=$('ffCrmPriority')?.value||'all';
