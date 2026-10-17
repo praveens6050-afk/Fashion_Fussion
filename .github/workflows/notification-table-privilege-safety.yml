@@ -1,0 +1,47 @@
+name: Notification Table Privilege Safety
+on:
+  push:
+    branches: [fix/notification-table-browser-privileges]
+  pull_request:
+    branches: [cloudflare-seller]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notification-table-acl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ff_ci
+          POSTGRES_PASSWORD: ci_only_not_production
+          POSTGRES_DB: ff_acl_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ff_ci -d ff_acl_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: ff_ci
+      PGPASSWORD: ci_only_not_production
+      PGDATABASE: ff_acl_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create isolated test roles and tables
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/notification_table_acl_fixture.sql
+      - name: Apply ACL migration twice to prove idempotency
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017090000_harden_notification_table_browser_privileges.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017090000_harden_notification_table_browser_privileges.sql
+      - name: Assert browser roles have no table privileges
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/notification_table_browser_privileges.sql
