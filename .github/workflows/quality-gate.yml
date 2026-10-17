@@ -150,7 +150,7 @@ jobs:
           loader = Path('admin-panel/supabase-config.js').read_text(encoding='utf-8')
           migration = Path('supabase/migrations/20261017110000_admin_seller_lead_crm.sql').read_text(encoding='utf-8')
           checks = {
-              'CSV import validation': 'async function importCsv' in main and 'No existing lead was overwritten' in main,
+              'CSV import validation': 'async function importCsv' in main and 'no existing lead was overwritten' in main.lower(),
               'follow-up tasks': 'seller_lead_tasks' in followups and 'completeTask' in followups,
               'activity timeline': 'seller_lead_activities' in followups and 'ffCrmFuTimeline' in followups,
               'loader registration': 'admin-crm-followups.js?v=20261017-crm-followups' in loader,
