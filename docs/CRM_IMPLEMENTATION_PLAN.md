@@ -9,7 +9,7 @@ Development branch: `crm-development`, based on `main`. No production changes ar
 - Admin modules are dynamically loaded from `admin-panel/supabase-config.js`.
 
 ## First implementation slice
-Added `admin-panel/admin-crm.js` and registered it in the Admin runtime loader. It uses the existing seller lead table for lead search, status/priority changes, lead creation/editing, summary counts, and CSV export.
+Added `admin-panel/admin-crm.js` and registered it in the Admin runtime loader. It uses the existing seller lead table for lead search, status/priority changes, lead creation/editing, public contact phone/email, summary counts, and CSV export.\n\n## Second implementation slice (branch only)\n- Added `supabase/migrations/20261017110000_admin_seller_lead_crm.sql` with additive public contact fields, admin-only follow-up task table, and admin-only activity timeline table/policies.\n- Added `admin-panel/admin-crm-followups.js` and registered it to provide follow-up task scheduling, completion, activity logging, and timeline view. No outbound communication is triggered.\n- Added public seller contact phone/email to the CRM form, search, list, and CSV export.\n- The migration is not applied to Supabase. Until it is applied in a reviewed environment, the task/activity panel reports the schema is unavailable; this is expected fail-safe behavior.
 
 ## Remaining work
 - Run JavaScript syntax/build checks and verify the CRM module in an authenticated admin browser session.
