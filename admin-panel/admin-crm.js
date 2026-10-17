@@ -56,7 +56,7 @@
     finally{btn.disabled=false}
   }
   async function writeActivity(leadId,type,summary,details,channel){const{data:userData}=await db.auth.getUser();const{error}=await db.from('seller_lead_activities').insert({lead_id:leadId,activity_type:type,summary,details:details||null,contact_channel:channel||null,created_by:userData?.user?.id||null});if(error)throw error}
-  async async function setStatus(id,status){
+  async function setStatus(id,status){
     const row=rows.find(x=>Number(x.id)===Number(id));if(!row)return;
     if(status==='converted'&&!row.converted_seller_id&&!confirm('Mark this lead converted? Confirm that seller onboarding has actually completed.'))return;
     try{const patch={lead_status:status,updated_at:new Date().toISOString()};if(status==='contacted')patch.contacted_at=row.contacted_at||new Date().toISOString();const{error}=await db.from('seller_leads').update(patch).eq('id',id);if(error)throw error;let historyWarning=false;try{await writeActivity(id,status==='contacted'?'contacted':'status_changed','Lead status changed: '+row.lead_status+' → '+status,null,status==='contacted'?'other':null)}catch{historyWarning=true}message('Lead status updated.'+(historyWarning?' Activity history could not be recorded; check CRM migration status.':''),historyWarning?'err':'ok');await load()}catch(err){message(err.message||'Status update failed.','err')}
