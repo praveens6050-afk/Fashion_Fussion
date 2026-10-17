@@ -139,6 +139,15 @@ jobs:
           // admin-checkout-health.js?v=1','data-admin-checkout-health
           // admin-launch-readiness.js?v=1','data-admin-launch-readiness
           EOF
+      - name: Cloudflare Admin and CRM Pages build
+        run: |
+          node --check admin-panel/scripts/build.js
+          npm run build --prefix admin-panel
+          test -f admin-panel/dist/index.html
+          test -f admin-panel/dist/crm.html
+          test -f admin-panel/dist/crm-login.html
+          test -f admin-panel/functions/api/admin-crm-notifications.js
+          test ! -e admin-panel/dist/functions
       - name: Admin CRM JavaScript syntax and contract checks
         run: |
           node --check admin-panel/admin-crm.js
