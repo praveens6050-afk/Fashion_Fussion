@@ -53,6 +53,7 @@ window.FF_API_ORIGIN='';
     add('admin-seller-approvals.js?v=1','data-admin-seller-approvals');
     add('admin-creators.js?v=20261001-growth','data-admin-creators');
     add('admin-owner-center.js?v=2','data-admin-owner-center');
+    add('admin-crm.js?v=20261017-crm','data-admin-crm');
   }
   function start(){
     if(!isAdminPage)return;
