@@ -3,8 +3,8 @@ const { withAdminRequest } = require('../backend/admin-auth-bootstrap.js');
 
 function respond(req,res,status,body){
   const origin=String(req?.headers?.origin||'').trim();
-  const allowed=String(process.env.ALLOWED_ORIGIN||'https://admin.fashionfussion.in,https://crm.fashionfussion.in')
-    .split(',').map(v=>v.trim()).filter(Boolean);
+  const allowed=[...new Set(String(process.env.ALLOWED_ORIGIN||'https://admin.fashionfussion.in')
+    .split(',').map(v=>v.trim()).filter(Boolean).concat('https://crm.fashionfussion.in'))];
   if(origin&&allowed.includes(origin))res.setHeader('Access-Control-Allow-Origin',origin);
   res.setHeader('Vary','Origin');
   res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS');
@@ -20,8 +20,8 @@ function respond(req,res,status,body){
 module.exports=async function adminCrmNotifications(req,res){
   if(req.method==='OPTIONS'){
     const origin=String(req?.headers?.origin||'').trim();
-    const allowed=String(process.env.ALLOWED_ORIGIN||'https://admin.fashionfussion.in,https://crm.fashionfussion.in')
-      .split(',').map(v=>v.trim()).filter(Boolean);
+    const allowed=[...new Set(String(process.env.ALLOWED_ORIGIN||'https://admin.fashionfussion.in')
+      .split(',').map(v=>v.trim()).filter(Boolean).concat('https://crm.fashionfussion.in'))];
     if(origin&&!allowed.includes(origin))return respond(req,res,403,{ok:false,error:'Origin not allowed'});
     res.statusCode=204;res.setHeader('Cache-Control','no-store');return res.end();
   }
