@@ -73,7 +73,7 @@ begin
       'recent', coalesce((select jsonb_agg(to_jsonb(t) order by t.created_at desc)
         from (
           select id, order_id, event_type, provider, status, attempt_count,
-                 last_error, last_attempt_at, sent_at, created_at
+                 (last_error is not null) as has_error, last_attempt_at, sent_at, created_at
           from public.payment_recovery_notifications
           order by created_at desc
           limit 100
