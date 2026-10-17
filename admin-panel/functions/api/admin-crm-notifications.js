@@ -1,7 +1,3 @@
-const DEFAULT_SUPABASE_URL = 'https://gmdevprqtvoshbbytsxf.supabase.co';
-const DEFAULT_PUBLISHABLE_KEY = 'sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
-const ALLOWED_DEFAULT_ORIGINS = ['https://admin.fashionfussion.in', 'https://crm.fashionfussion.in'];
-
 function json(body, status, origin, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
@@ -19,7 +15,7 @@ function json(body, status, origin, headers = {}) {
 
 function allowedOrigins(env) {
   const configured = String(env.ALLOWED_ORIGIN || '').split(',').map(v => v.trim()).filter(Boolean);
-  return [...new Set([...ALLOWED_DEFAULT_ORIGINS, ...configured])];
+  return [...new Set(configured)];
 }
 
 export async function onRequestOptions({ request, env }) {
@@ -51,8 +47,11 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: 'Please sign in again' }, 401, origin);
   }
 
-  const base = String(env.SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/$/, '');
-  const key = String(env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY || DEFAULT_PUBLISHABLE_KEY);
+  const base = String(env.SUPABASE_URL || '').replace(/\/$/, '');
+  const key = String(env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY || '');
+  if (!base || !key || !allowedOrigins(env).length) {
+    return json({ ok: false, error: 'CRM notification diagnostics are not configured' }, 503, origin);
+  }
   const headers = { apikey: key, Authorization: authorization, 'Content-Type': 'application/json' };
 
   try {
