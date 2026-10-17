@@ -22,7 +22,8 @@
     container.appendChild(sec);
     $('ffCrmNew').onclick=()=>showForm(null);
     $('ffCrmRefresh').onclick=load;
-    $('ffCrmExport').onclick=exportCsv;\n    $('ffCrmImport').onclick=()=>$('ffCrmImportFile').click();\n    $('ffCrmImportFile').onchange=importCsv;
+    $('ffCrmExport').onclick=exportCsv;\n    $('ffCrmImport').onclick=()=>$('ffCrmImportFile').click();
+    $('ffCrmImportFile').onchange=importCsv;
     $('ffCrmStatus').onchange=e=>{filterStatus=e.target.value;render()};
     $('ffCrmPriority').onchange=render;
     let timer;$('ffCrmSearch').oninput=e=>{clearTimeout(timer);timer=setTimeout(()=>{searchTerm=e.target.value.trim().toLowerCase();render()},180)};
