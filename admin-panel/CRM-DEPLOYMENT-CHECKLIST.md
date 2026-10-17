@@ -1,50 +1,43 @@
 # CRM deployment readiness checklist
 
-This checklist tracks the Seller Acquisition CRM in PR #334. Keep the PR in Draft until the open release gates below are verified.
+This checklist tracks the Seller Acquisition CRM in PR #334. Keep the PR in Draft until all release gates below are verified.
 
-## Verified on CRM code commit `de8f64460c7a0aaa561beb2f399f70e6f6969c8d` (CI still running for final browser/migration jobs)
-- [x] CRM source syntax and contract checks pass in GitHub Actions.
-- [x] Chromium checks pass at desktop and 390px mobile: entry redirect, login controls, fail-closed dashboard, and horizontal overflow.
-- [x] All repository migrations replay from a clean disposable local Supabase database; schema lint and DB contract tests pass.
-- [x] Cloudflare-only repository audit passes on `8cacdbd880d6dc07fc3f79a2cd80dcd40505b09e`.
-- [x] Latest Quality Gate passes on `8cacdbd880d6dc07fc3f79a2cd80dcd40505b09e` (including browser smoke and syntax/contract checks).
-- [x] Latest clean disposable Supabase migration replay, schema lint, and DB contract tests pass on `8cacdbd880d6dc07fc3f79a2cd80dcd40505b09e`.
-- [x] Added `admin-panel/package.json` and reproducible `npm run build` script; Cloudflare Pages build output and root Functions location pass in Quality Gate run `39039707125`.
+## Latest verified source checks — commit `5ffee3131a11db99eea2769f79795fdc57639fec`
+- [x] Quality Gate passed: https://github.com/praveens6050-afk/Fashion_Fussion/actions/runs/39039739062
+- [x] Cloudflare-only repository audit passed: https://github.com/praveens6050-afk/Fashion_Fussion/actions/runs/39039739067
+- [x] Clean disposable Supabase migration replay passed: https://github.com/praveens6050-afk/Fashion_Fussion/actions/runs/39039739283
+- [x] CRM JavaScript syntax/contract checks and unauthenticated browser smoke checks passed in CI.
+- [x] Reproducible `npm run build --prefix admin-panel` creates `admin-panel/dist`; Pages Function stays at project root `admin-panel/functions/`.
 - [ ] Authenticated CRM E2E using a real authorized admin account.
 - [ ] Cloudflare project, exact deployment URL, Pages Functions routing, environment bindings, and origin verified.
+- [ ] CRM migrations applied to an explicitly approved non-production database and end-to-end CRUD/follow-up/notification-snapshot tests passed.
 
 ## Cloudflare account/project verification — BLOCKER
-The repository now contains a reproducible `npm run build` script that writes static assets to `admin-panel/dist`; the native Pages Function remains at `admin-panel/functions/` so Pages can discover it from the project root. CI checks these assumptions. The documented project is `fashion-fussion-admin`, production branch `cloudflare-admin`, root `admin-panel`, output `dist`, hostname `admin.fashionfussion.in`. The CRM PR branch remains `crm-development`.
+The documented configuration is Cloudflare Pages project `fashion-fussion-admin`, production branch `cloudflare-admin`, root `admin-panel`, build command `npm run build`, output directory `dist`, hostname `admin.fashionfussion.in`. These are repository-documented values, not independently verified live Cloudflare settings. The CRM PR branch is `crm-development`.
 
-No Cloudflare account/project read access is available in this repository audit. Do not assume a separate `fashion-fussion-crm-dev` project exists or that the established Admin project deploys this branch. Before deployment, an authorized operator must choose and verify one route:
-1. **Isolated development Pages project (preferred for safe validation):** confirm/create the project in Cloudflare, set the project root to `admin-panel`, and configure a static Pages deployment consistent with this repository (no build command unless a real build script is added; output directory must include the static files and `functions/`). Verify Pages Functions are included; or
-2. **Integrate into established Admin project:** plan the merge/deployment through the documented `cloudflare-admin` release path only after review and approval.
+No Cloudflare account/project read access was available during this audit. Do not assume a separate development Pages project exists or that the established Admin project deploys this branch. Before deployment, an authorized operator must verify the target project and select a safe deployment route. With project root `admin-panel`, use build command `npm run build` and output directory `dist`; keep Pages Functions at `admin-panel/functions/` (the project-root Functions directory), not inside `dist`.
 
-No Cloudflare account/project read access is available in this repository audit, so actual project existence, settings, deployment URL, environment bindings, and DNS cannot be marked verified here. The build-script conflict is resolved in source, but actual Cloudflare settings still require verification.
-
-## Required development environment bindings
-Set these only in the chosen development Pages environment:
-- `SUPABASE_URL`: explicitly approved development Supabase URL.
+## Required environment bindings
+Configure only in the explicitly chosen development Pages environment:
+- `SUPABASE_URL`: approved development Supabase URL.
 - `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`): key for that same project.
-- `ALLOWED_ORIGIN`: exact deployed development origin, no trailing slash.
-- Confirm `admin-panel/supabase-config.js` points to that same approved development project before login tests. The currently configured project must not be presumed to be non-production.
+- `ALLOWED_ORIGIN`: exact deployed development origin, without a trailing slash.
+- Verify `admin-panel/supabase-config.js` points to that same approved development project. The currently configured project must not be presumed non-production.
+- Verify Pages Function route `/api/admin-crm-notifications`, sourced from `admin-panel/functions/api/admin-crm-notifications.js`.
 
-Pages Function route to verify: `/api/admin-crm-notifications`, sourced from `admin-panel/functions/api/admin-crm-notifications.js`.
+## Remote database status — BLOCKER
+Read-only inspection of Supabase project `gmdevprqtvoshbbytsxf` found that `public.seller_lead_tasks`, `public.seller_lead_activities`, `public.admin_crm_notification_snapshot()`, and the CRM phone column are absent. The remote migration history currently ends at `20261017122330`; CRM migrations `20261017110000_admin_seller_lead_crm.sql` and `20261017120000_admin_crm_notification_snapshot.sql` are not recorded there. The project environment (development vs production) has not been established. Therefore CRM follow-up and notification-snapshot functionality is not remotely ready, even though isolated local migration replay passes.
 
-## Database rollout gate
-- `20261017110000_admin_seller_lead_crm.sql` adds CRM follow-up tasks and activity records.
-- `20261017120000_admin_crm_notification_snapshot.sql` adds the admin-only notification snapshot RPC.
-- Clean local replay passing does **not** prove that either migration has been applied to a remote database.
-- Before a remote migration: verify project ref and migration history, verify a recoverable backup, review SQL/RLS, and obtain explicit approval. Never apply to production by default.
+Before applying remote migrations, verify the project environment/ref, confirm a recoverable backup, review SQL/RLS, and obtain explicit approval. Never apply to a possibly production database by default.
 
 ## Post-deployment verification (development only)
 1. Unauthenticated access redirects to sign-in; dashboard remains hidden.
-2. Non-admin account is denied; designated admin can sign in/out.
-3. Test lead search/filter/create/edit and CSV import/export using disposable records.
-4. Test follow-up task create/complete and activity timeline.
+2. A non-admin account is denied; a designated admin can sign in/out.
+3. Test lead search/filter/create/edit and CSV import/export with disposable records.
+4. Test follow-up task creation/completion and activity timeline.
 5. Confirm customer/order directory is read-only and bounded.
 6. Confirm notification diagnostics return sanitized status only; do not send/retry messages.
-7. Check browser console/network, mobile layout, CORS and Pages Function logs.
+7. Check browser console/network, mobile layout, CORS, and Pages Function logs.
 8. Remove disposable test data and record deployed commit/environment.
 
 ## Explicitly out of scope without separate approval
