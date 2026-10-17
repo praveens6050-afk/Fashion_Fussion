@@ -162,6 +162,7 @@ jobs:
           PY
       - name: Standalone CRM panel contract checks
         run: |
+          node --check admin-panel/functions/api/admin-crm-notifications.js
           node --check admin-panel/crm-login.js
           node --check admin-panel/crm-auth.js
           node --check admin-panel/admin-crm.js
