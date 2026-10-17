@@ -23,7 +23,14 @@ module.exports=async function adminCrmNotifications(req,res){
     const allowed=[...new Set(String(process.env.ALLOWED_ORIGIN||'https://admin.fashionfussion.in')
       .split(',').map(v=>v.trim()).filter(Boolean).concat('https://crm.fashionfussion.in'))];
     if(origin&&!allowed.includes(origin))return respond(req,res,403,{ok:false,error:'Origin not allowed'});
-    res.statusCode=204;res.setHeader('Cache-Control','no-store');return res.end();
+    if(origin)res.setHeader('Access-Control-Allow-Origin',origin);
+    res.setHeader('Vary','Origin');
+    res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization');
+    res.setHeader('Access-Control-Max-Age','600');
+    res.setHeader('Cache-Control','no-store');
+    res.setHeader('X-Content-Type-Options','nosniff');
+    res.statusCode=204;return res.end();
   }
   if(req.method!=='POST')return respond(req,res,405,{ok:false,error:'Method not allowed'});
   try{
