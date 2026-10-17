@@ -235,12 +235,29 @@ async function testLiveCatalogLifecycle(page) {
   await page.locator('#stock').fill('3');
   await page.locator('#brand').fill('Fashion Fussion QA');
   await page.locator('#countryOrigin').fill('India');
+  const nameBeforeSubmit = await page.locator('#name').inputValue();
+  const originBeforeSubmit = await page.locator('#countryOrigin').inputValue();
+  if (nameBeforeSubmit !== TEST_NAME) {
+    throw new Error(`Product name changed before submit: expected ${JSON.stringify(TEST_NAME)}, got ${JSON.stringify(nameBeforeSubmit)}; countryOrigin=${JSON.stringify(originBeforeSubmit)}.`);
+  }
+  const captureSubmitRpc = request => {
+    if (!request.url().includes('/rest/v1/rpc/submit_seller_product') || request.method() !== 'POST') return;
+    let body = {};
+    try { body = request.postDataJSON(); } catch {}
+    console.log(`CATALOG_RPC_DIAGNOSTIC p_name=${JSON.stringify(body.p_name)} p_country_origin=${JSON.stringify(body.p_country_origin)} p_sku=${JSON.stringify(body.p_sku)}`);
+  };
+  page.on('request', captureSubmitRpc);
   await page.locator('#submitProduct').click();
   await waitForToast(page, /Product submitted for admin review\./);
+  page.off('request', captureSubmitRpc);
 
   await openProductsAndSearch(page, TEST_SKU);
   let original = page.locator('#productsTable tr').filter({ hasText: TEST_SKU }).filter({ hasNotText: 'Copy' }).first();
   await original.waitFor({ state: 'visible', timeout: 15000 });
+  const savedName = (await original.locator('td').first().textContent())?.trim() || '';
+  if (savedName !== TEST_NAME) {
+    throw new Error(`Saved Seller product name mismatch: expected ${JSON.stringify(TEST_NAME)}, got ${JSON.stringify(savedName)}; countryOrigin=${JSON.stringify(originBeforeSubmit)}.`);
+  }
   if (!/pending/i.test((await original.locator('.status').textContent()) || '')) throw new Error('New Seller listing is not pending after submission.');
 
   await original.locator('[data-edit]').click();
@@ -258,6 +275,8 @@ async function testLiveCatalogLifecycle(page) {
   await original.locator('[data-duplicate]').click();
   await waitForToast(page, /Product submitted for admin review\./);
   await page.waitForFunction(previous => document.querySelectorAll('#productsTable tr').length > previous, beforeDuplicate, { timeout: 15000 });
+  // A duplicate receives a new SKU, so searching by the original SKU hides it.
+  await openProductsAndSearch(page, TEST_NAME);
   const copy = page.locator('#productsTable tr').filter({ hasText: `${TEST_NAME} Copy` }).first();
   await copy.waitFor({ state: 'visible', timeout: 10000 });
   if (!/pending/i.test((await copy.locator('.status').textContent()) || '')) throw new Error('Duplicated Seller listing is not pending.');
@@ -268,7 +287,8 @@ async function testLiveCatalogLifecycle(page) {
   await copy.locator('[data-delete]').click();
   await waitForBridgeStatus(page, copyId, 'withdrawn');
   await waitForToast(page, /Listing withdrawn\./);
-  await openProductsAndSearch(page, TEST_SKU);
+  // Keep the name search active because the duplicate SKU is intentionally different.
+  await openProductsAndSearch(page, TEST_NAME);
   const withdrawnCopy = page.locator('#productsTable tr').filter({ hasText: `${TEST_NAME} Copy` }).first();
   await withdrawnCopy.waitFor({ state: 'visible', timeout: 10000 });
   const withdrawnCopyStatus = (await withdrawnCopy.locator('.status').textContent())?.trim();
