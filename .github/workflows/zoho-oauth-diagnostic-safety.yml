@@ -1,0 +1,22 @@
+name: Zoho OAuth Diagnostic Safety
+on:
+  push:
+    branches:
+      - fix/zoho-oauth-safe-error-diagnostics
+  pull_request:
+    branches:
+      - cloudflare-seller
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  safe-oauth-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test safe OAuth error reporting (no real Zoho calls)
+        run: node --experimental-default-type=module --test seller-panel/tests/zoho-verify-diagnostics.test.mjs

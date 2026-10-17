@@ -55,10 +55,16 @@ async function checkZoho(env,purpose='outreach'){
     body:body.toString(),cache:'no-store'
   });
   const grant=await oauth.json().catch(()=>({}));
-  if(!oauth.ok||!grant?.access_token)return {
-    ready:false,oauthRefreshOk:false,accountFound:false,fromAddressAuthorized:false,mailboxEnabled:false,
-    issue:'ZOHO_OAUTH_REFRESH_FAILED'
-  };
+  if(!oauth.ok||!grant?.access_token){
+    // Expose only Zoho's machine-readable error code; never return error_description,
+    // OAuth response bodies, credentials, refresh tokens, or access tokens.
+    const rawProviderError=String(grant?.error||'UNKNOWN').slice(0,48);
+    const providerErrorCode=/^[A-Za-z0-9_-]{1,48}$/.test(rawProviderError)?rawProviderError:'UNKNOWN';
+    return {
+      ready:false,oauthRefreshOk:false,accountFound:false,fromAddressAuthorized:false,mailboxEnabled:false,
+      issue:'ZOHO_OAUTH_REFRESH_FAILED',providerErrorCode
+    };
+  }
   const lookup=await fetch(mail+'/api/accounts',{
     method:'GET',
     headers:{Authorization:'Zoho-oauthtoken '+grant.access_token,Accept:'application/json'},

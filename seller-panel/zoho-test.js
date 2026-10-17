@@ -64,6 +64,7 @@
       } else {
         setStatus('Verification not ready (' + response.status + '). Issue: ' +
           String(data.issue || data.error || 'unknown').slice(0, 180) +
+          (data.providerErrorCode ? '. Zoho provider code: ' + String(data.providerErrorCode).slice(0, 48) : '') +
           (Array.isArray(data.missingConfiguration) ? '. Missing: ' + data.missingConfiguration.join(', ') : '') +
           '. No email sent.');
       }
@@ -194,6 +195,7 @@
       } else {
         setStatus('Orders mailbox NOT verified (' + response.status + '). Issue: ' +
           String(data.issue || data.error || 'unknown').slice(0, 180) +
+          (data.providerErrorCode ? '. Zoho provider code: ' + String(data.providerErrorCode).slice(0, 48) : '') +
           '. Check the dedicated Orders OAuth credentials, Account ID and sender address. No email sent.');
       }
     } catch {
