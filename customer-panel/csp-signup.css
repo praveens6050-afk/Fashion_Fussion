@@ -15,3 +15,9 @@
 .whatsapp-consent-box strong{display:block;font-size:14px;color:#182a50}
 .whatsapp-consent-box small{display:block;margin-top:5px;font-size:12px;line-height:1.55;color:#516278;font-weight:400}
 .whatsapp-consent-box:focus-within{outline:2px solid #7f9dce;outline-offset:2px}
+
+/* Keep WhatsApp OTP action beside the phone field on desktop and narrow phones. */
+.ff-phone-otp-row{display:flex;align-items:stretch;gap:8px;min-width:0}
+.ff-phone-otp-row input{flex:1 1 auto;min-width:0}
+.ff-phone-otp-row button{flex:0 0 auto;width:auto;max-width:48%;margin:0;padding:10px 13px;font-size:13px;line-height:1.25;white-space:normal}
+@media(max-width:420px){.ff-phone-otp-row{gap:6px}.ff-phone-otp-row button{max-width:46%;padding:9px 8px;font-size:12px}}
