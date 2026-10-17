@@ -18,11 +18,11 @@
     if(!container||$('ffCrm'))return;
     style();
     const sec=document.createElement('section');sec.id='ffCrm';sec.className='ff-crm card';
-    sec.innerHTML='<div class="card-header"><div><h2>Seller Acquisition CRM</h2><p>Manage the existing seller lead pool and onboarding pipeline.</p></div><div><button class="secondary" id="ffCrmExport">Export CSV</button> <button class="primary" id="ffCrmNew">+ Add Lead</button></div></div><div class="card-body"><div id="ffCrmSummary" class="ff-crm-summary"></div><div id="ffCrmFormHost"></div><div class="ff-crm-toolbar"><input id="ffCrmSearch" type="search" placeholder="Search company, contact, city, category or source"><select id="ffCrmStatus"><option value="all">All statuses</option>'+statuses.map(s=>'<option value="'+s+'">'+s.replaceAll('_',' ')+'</option>').join('')+'</select><select id="ffCrmPriority"><option value="all">All priorities</option>'+priorities.map(s=>'<option value="'+s+'">'+s+'</option>').join('')+'</select><button class="secondary" id="ffCrmRefresh">Refresh</button></div><p id="ffCrmMessage" class="ff-crm-status" role="status"></p><div id="ffCrmRows" class="ff-crm-table-wrap">Loading leads…</div></div>';
+    sec.innerHTML='<div class="card-header"><div><h2>Seller Acquisition CRM</h2><p>Manage the existing seller lead pool and onboarding pipeline.</p></div><div><button class="secondary" id="ffCrmImport">Import CSV</button> <input id="ffCrmImportFile" type="file" accept=".csv,text/csv" hidden> <button class="secondary" id="ffCrmExport">Export CSV</button> <button class="primary" id="ffCrmNew">+ Add Lead</button></div></div><div class="card-body"><div id="ffCrmSummary" class="ff-crm-summary"></div><div id="ffCrmFormHost"></div><div class="ff-crm-toolbar"><input id="ffCrmSearch" type="search" placeholder="Search company, contact, city, category or source"><select id="ffCrmStatus"><option value="all">All statuses</option>'+statuses.map(s=>'<option value="'+s+'">'+s.replaceAll('_',' ')+'</option>').join('')+'</select><select id="ffCrmPriority"><option value="all">All priorities</option>'+priorities.map(s=>'<option value="'+s+'">'+s+'</option>').join('')+'</select><button class="secondary" id="ffCrmRefresh">Refresh</button></div><p id="ffCrmMessage" class="ff-crm-status" role="status"></p><div id="ffCrmRows" class="ff-crm-table-wrap">Loading leads…</div></div>';
     container.appendChild(sec);
     $('ffCrmNew').onclick=()=>showForm(null);
     $('ffCrmRefresh').onclick=load;
-    $('ffCrmExport').onclick=exportCsv;
+    $('ffCrmExport').onclick=exportCsv;\n    $('ffCrmImport').onclick=()=>$('ffCrmImportFile').click();\n    $('ffCrmImportFile').onchange=importCsv;
     $('ffCrmStatus').onchange=e=>{filterStatus=e.target.value;render()};
     $('ffCrmPriority').onchange=render;
     let timer;$('ffCrmSearch').oninput=e=>{clearTimeout(timer);timer=setTimeout(()=>{searchTerm=e.target.value.trim().toLowerCase();render()},180)};
@@ -73,6 +73,46 @@
     const box=$('ffCrmRows');if(box)box.textContent='Loading leads…';
     try{const{data,error}=await db.from('seller_leads').select('id,company_name,source_marketplace,source_url,category,city,state,business_type,gstin,public_contact_name,public_contact_phone,public_contact_email,assigned_to,contact_method,lead_status,priority,notes,source_checked_at,contacted_at,converted_seller_id,created_at,updated_at').order('updated_at',{ascending:false}).limit(1000);if(error)throw error;rows=data||[];render()}
     catch(err){if(box)box.innerHTML='<p class="status show err">'+esc(err.message||'Could not load seller leads.')+'</p>';message('Lead data is unavailable. Verify admin access and seller_leads policies.','err')}
+  }
+  function parseCsv(text){
+    const out=[];let row=[],field='',quoted=false;
+    for(let i=0;i<text.length;i++){const ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){field+='"';i++}else if(ch==='"')quoted=false;else field+=ch}else if(ch==='"'&&field==='')quoted=true;else if(ch===','){row.push(field);field=''}else if(ch==='\\n'||ch==='\\r'){if(ch==='\\r'&&text[i+1]==='\\n')i++;row.push(field);if(row.some(v=>v.trim()!==''))out.push(row);row=[];field=''}else field+=ch}
+    if(quoted)throw new Error('CSV has an unclosed quoted field.');if(field!==''||row.length){row.push(field);if(row.some(v=>v.trim()!==''))out.push(row)}return out;
+  }
+  async function importCsv(e){
+    const input=e.currentTarget,file=input.files?.[0];input.value='';if(!file)return;
+    if(file.size>2*1024*1024){message('CSV must be 2 MB or smaller.','err');return}
+    try{
+      const parsed=parseCsv((await file.text()).replace(/^\\uFEFF/,''));
+      if(parsed.length<2)throw new Error('CSV needs a header row and at least one data row.');
+      if(parsed.length>1001)throw new Error('Import is limited to 1,000 rows per batch.');
+      const headers=parsed.shift().map(h=>h.trim().toLowerCase());
+      const allowed=['company_name','source_marketplace','source_url','category','city','state','business_type','gstin','public_contact_name','public_contact_phone','public_contact_email','contact_method','lead_status','priority','notes'];
+      for(const required of ['company_name','source_marketplace'])if(!headers.includes(required))throw new Error('Required CSV header missing: '+required);
+      const index={};headers.forEach((h,i)=>{if(allowed.includes(h))index[h]=i});
+      const clean=v=>String(v??'').trim();
+      const normalized=(name,source)=>clean(name).toLowerCase().replace(/\\s+/g,' ')+'::'+clean(source).toLowerCase().replace(/\\s+/g,' ');
+      const existing=new Set(rows.map(r=>normalized(r.company_name,r.source_marketplace))),seen=new Set(),records=[],dupes=[];
+      for(let n=0;n<parsed.length;n++){
+        const cells=parsed[n],get=k=>clean(cells[index[k]]);
+        const company=get('company_name'),source=get('source_marketplace');
+        if(!company||!source){dupes.push('Row '+(n+2)+': missing company_name or source_marketplace');continue}
+        const key=normalized(company,source);if(existing.has(key)||seen.has(key)){dupes.push('Row '+(n+2)+': duplicate '+company+' / '+source);continue}seen.add(key);
+        const record={company_name:company,source_marketplace:source};
+        for(const k of allowed){if(k==='company_name'||k==='source_marketplace'||index[k]===undefined)continue;const v=get(k);if(v)record[k]=v}
+        if(record.source_url&&!safeHttpUrl(record.source_url)){dupes.push('Row '+(n+2)+': invalid source_url');continue}
+        if(record.lead_status&&!statuses.includes(record.lead_status))throw new Error('Invalid lead_status on CSV row '+(n+2)+'.');
+        if(record.priority&&!priorities.includes(record.priority))throw new Error('Invalid priority on CSV row '+(n+2)+'.');
+        if(record.public_contact_email&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(record.public_contact_email))throw new Error('Invalid contact email on CSV row '+(n+2)+'.');
+        records.push(record);
+      }
+      if(!records.length)throw new Error('No valid new leads found. '+dupes.slice(0,3).join(' '));
+      const preview='CSV import preview\\nValid new leads: '+records.length+'\\nSkipped duplicates/invalid rows: '+dupes.length+'\\n'+dupes.slice(0,8).join('\\n')+'\\n\\nImport only the valid new leads? Existing leads will not be overwritten.';
+      if(!confirm(preview))return;
+      let inserted=0;
+      for(let i=0;i<records.length;i+=100){const{error}=await db.from('seller_leads').insert(records.slice(i,i+100));if(error)throw error;inserted+=Math.min(100,records.length-i)}
+      message('Imported '+inserted+' leads. Skipped '+dupes.length+' rows; no existing lead was overwritten.','ok');await load();
+    }catch(err){message(err.message||'CSV import failed.','err')}
   }
   function exportCsv(){
     const cols=['id','company_name','public_contact_name','public_contact_phone','public_contact_email','business_type','source_marketplace','source_url','category','city','state','gstin','contact_method','lead_status','priority','notes','contacted_at','created_at','updated_at'];
