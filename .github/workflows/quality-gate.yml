@@ -160,6 +160,13 @@ jobs:
           for name, ok in checks.items(): print(('PASS' if ok else 'FAIL') + ': ' + name)
           if not all(checks.values()): raise SystemExit(1)
           PY
+      - name: Standalone CRM panel contract checks
+        run: |
+          node --check admin-panel/crm-login.js
+          node --check admin-panel/crm-auth.js
+          node --check admin-panel/admin-crm.js
+          node --check admin-panel/admin-crm-followups.js
+          node scripts/check_crm_panel_contract.js
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
