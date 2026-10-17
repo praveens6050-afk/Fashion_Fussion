@@ -6,18 +6,20 @@ This checklist tracks the Seller Acquisition CRM in PR #334. Keep the PR in Draf
 - [x] CRM source syntax and contract checks pass in GitHub Actions.
 - [x] Chromium checks pass at desktop and 390px mobile: entry redirect, login controls, fail-closed dashboard, and horizontal overflow.
 - [x] All repository migrations replay from a clean disposable local Supabase database; schema lint and DB contract tests pass.
-- [x] Cloudflare-only repository audit passes.
+- [x] Cloudflare-only repository audit passes on `8cacdbd880d6dc07fc3f79a2cd80dcd40505b09e`.
+- [x] Latest Quality Gate passes on `8cacdbd880d6dc07fc3f79a2cd80dcd40505b09e` (including browser smoke and syntax/contract checks).
+- [x] Latest clean disposable Supabase migration replay, schema lint, and DB contract tests pass on `8cacdbd880d6dc07fc3f79a2cd80dcd40505b09e`.
 - [ ] Authenticated CRM E2E using a real authorized admin account.
 - [ ] Cloudflare project, exact deployment URL, Pages Functions routing, environment bindings, and origin verified.
 
 ## Important Cloudflare configuration conflict — BLOCKER
-The existing `admin-panel/README.md` describes the established project as `fashion-fussion-admin`, production branch `cloudflare-admin`, root `admin-panel`, build command `npm run build`, output `dist`, and hostname `admin.fashionfussion.in`. The CRM PR branch is `crm-development` and adds standalone `crm.html`, `crm-login.html`, and a Pages Function.
+The existing `admin-panel/README.md` describes the established project as `fashion-fussion-admin`, production branch `cloudflare-admin`, root `admin-panel`, build command `npm run build`, output `dist`, and hostname `admin.fashionfussion.in`. However, the repository's `admin-panel/` directory has no `package.json` and no checked-in build script, so `npm run build` cannot be assumed to work. The CRM PR branch is `crm-development` and adds standalone `crm.html`, `crm-login.html`, and a Pages Function.
 
 Do not assume a separate `fashion-fussion-crm-dev` project exists or that the established Admin project deploys this branch. Before deployment, an authorized operator must choose and verify one route:
-1. **Isolated development Pages project (preferred for safe validation):** confirm/create the project in Cloudflare, set the project root to `admin-panel`, configure its actual build/output settings, and verify Pages Functions are included; or
+1. **Isolated development Pages project (preferred for safe validation):** confirm/create the project in Cloudflare, set the project root to `admin-panel`, and configure a static Pages deployment consistent with this repository (no build command unless a real build script is added; output directory must include the static files and `functions/`). Verify Pages Functions are included; or
 2. **Integrate into established Admin project:** plan the merge/deployment through the documented `cloudflare-admin` release path only after review and approval.
 
-No Cloudflare account/project read access is available in this repository audit, so actual project existence, settings, deployment URL, and DNS cannot be marked verified here.
+No Cloudflare account/project read access is available in this repository audit, so actual project existence, settings, deployment URL, and DNS cannot be marked verified here. The documented `npm run build` / `dist` settings must be reconciled with the absent `admin-panel/package.json` before deployment.
 
 ## Required development environment bindings
 Set these only in the chosen development Pages environment:
