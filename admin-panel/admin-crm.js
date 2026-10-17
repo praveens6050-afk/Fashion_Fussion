@@ -86,7 +86,7 @@
     const input=e.currentTarget,file=input.files?.[0];input.value='';if(!file)return;
     if(file.size>2*1024*1024){message('CSV must be 2 MB or smaller.','err');return}
     try{
-      const parsed=parseCsv((await file.text()).replace(/^\\uFEFF/,''));
+      const parsed=parseCsv((await file.text()).replace(/^\uFEFF/,''));
       if(parsed.length<2)throw new Error('CSV needs a header row and at least one data row.');
       if(parsed.length>1001)throw new Error('Import is limited to 1,000 rows per batch.');
       const headers=parsed.shift().map(h=>h.trim().toLowerCase());
