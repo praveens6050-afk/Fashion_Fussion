@@ -37,6 +37,13 @@ window.FF_API_ORIGIN='';
   function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
   const page=(location.pathname.split('/').pop()||'login.html').toLowerCase();
   const isAdminPage=page==='admin'||page==='admin.html';
+  const isCrmPage=page==='crm.html';
+  function loadCrmModules(){
+    add('admin-crm.js?v=20261017-crm','data-admin-crm');
+    add('admin-crm-followups.js?v=20261017-crm-followups','data-admin-crm-followups');
+    add('admin-crm-directory.js?v=20261017-crm-directory','data-admin-crm-directory');
+    add('admin-crm-notifications.js?v=20261017-crm-notifications','data-admin-crm-notifications');
+  }
   function loadAdminModules(){
     add('admin-notifications.js?v=2','data-admin-notifications');
     add('support-chat.js?v=10','data-support-chat');
@@ -55,14 +62,15 @@ window.FF_API_ORIGIN='';
     add('admin-owner-center.js?v=2','data-admin-owner-center');
   }
   function start(){
-    if(!isAdminPage)return;
+    if(!isAdminPage&&!isCrmPage)return;
     const dashboard=document.getElementById('dashboard');
     if(!dashboard)return;
-    if(dashboard.dataset.adminReady==='true'){loadAdminModules();return}
+    const loadModules=()=>isCrmPage?loadCrmModules():loadAdminModules();
+    if(dashboard.dataset.adminReady==='true'){loadModules();return}
     const observer=new MutationObserver(()=>{
       if(dashboard.dataset.adminReady!=='true')return;
       observer.disconnect();
-      loadAdminModules();
+      loadModules();
     });
     observer.observe(dashboard,{attributes:true,attributeFilter:['data-admin-ready']});
   }
