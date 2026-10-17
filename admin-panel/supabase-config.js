@@ -41,6 +41,7 @@ window.FF_API_ORIGIN='';
   function loadCrmModules(){
     add('admin-crm.js?v=20261017-crm','data-admin-crm');
     add('admin-crm-followups.js?v=20261017-crm-followups','data-admin-crm-followups');
+    add('admin-crm-directory.js?v=20261017-crm-directory','data-admin-crm-directory');
   }
   function loadAdminModules(){
     add('admin-notifications.js?v=2','data-admin-notifications');
