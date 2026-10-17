@@ -28,6 +28,7 @@
     let timer;$('ffCrmSearch').oninput=e=>{clearTimeout(timer);timer=setTimeout(()=>{searchTerm=e.target.value.trim().toLowerCase();render()},180)};
     load();
   }
+  function safeHttpUrl(value){try{const u=new URL(String(value||''));return u.protocol==='https:'||u.protocol==='http:'?u.href:''}catch{return ''}}
   function message(text,type=''){const el=$('ffCrmMessage');if(el){el.textContent=text;el.className='ff-crm-status '+type}}
   function showForm(row){
     editing=row||null;
@@ -62,7 +63,7 @@
     $('ffCrmSummary').innerHTML='<span>Total leads <b>'+rows.length+'</b></span>'+counts.map(([s,n])=>'<span>'+esc(s.replaceAll('_',' '))+' <b>'+n+'</b></span>').join('');
     const box=$('ffCrmRows');
     if(!data.length){box.innerHTML='<p>No leads match these filters.</p>';return}
-    box.innerHTML='<table><thead><tr><th>Business</th><th>Location / Category</th><th>Source</th><th>Status</th><th>Priority</th><th>Last contact</th><th>Actions</th></tr></thead><tbody>'+data.map(r=>'<tr><td><b>'+esc(r.company_name)+'</b><div class="ff-crm-muted">'+esc(r.public_contact_name||'No contact name')+'</div><div class="ff-crm-muted">'+esc(r.business_type||'')+'</div></td><td>'+esc([r.city,r.state].filter(Boolean).join(', ')||'—')+'<div class="ff-crm-muted">'+esc(r.category||'')+'</div></td><td>'+esc(r.source_marketplace)+'<div class="ff-crm-muted">'+(r.source_url?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener noreferrer">Open source</a>':'')+'</div></td><td><select data-status="'+r.id+'" aria-label="Lead status">'+statuses.map(s=>'<option value="'+s+'" '+(s===r.lead_status?'selected':'')+'>'+s.replaceAll('_',' ')+'</option>').join('')+'</select></td><td><select data-priority="'+r.id+'" aria-label="Lead priority">'+priorities.map(s=>'<option value="'+s+'" '+(s===r.priority?'selected':'')+'>'+s+'</option>').join('')+'</select></td><td>'+esc(r.contacted_at?new Date(r.contacted_at).toLocaleDateString('en-IN'):'Not contacted')+'</td><td><div class="ff-crm-actions"><button class="secondary" data-edit="'+r.id+'">Edit</button><button class="secondary" data-contact="'+r.id+'">Mark contacted</button></div></td></tr>').join('')+'</tbody></table>';
+    box.innerHTML='<table><thead><tr><th>Business</th><th>Location / Category</th><th>Source</th><th>Status</th><th>Priority</th><th>Last contact</th><th>Actions</th></tr></thead><tbody>'+data.map(r=>'<tr><td><b>'+esc(r.company_name)+'</b><div class="ff-crm-muted">'+esc(r.public_contact_name||'No contact name')+'</div><div class="ff-crm-muted">'+esc(r.business_type||'')+'</div></td><td>'+esc([r.city,r.state].filter(Boolean).join(', ')||'—')+'<div class="ff-crm-muted">'+esc(r.category||'')+'</div></td><td>'+esc(r.source_marketplace)+'<div class="ff-crm-muted">'+(safeHttpUrl(r.source_url)?'<a href="'+esc(safeHttpUrl(r.source_url))+'" target="_blank" rel="noopener noreferrer">Open source</a>':'')+'</div></td><td><select data-status="'+r.id+'" aria-label="Lead status">'+statuses.map(s=>'<option value="'+s+'" '+(s===r.lead_status?'selected':'')+'>'+s.replaceAll('_',' ')+'</option>').join('')+'</select></td><td><select data-priority="'+r.id+'" aria-label="Lead priority">'+priorities.map(s=>'<option value="'+s+'" '+(s===r.priority?'selected':'')+'>'+s+'</option>').join('')+'</select></td><td>'+esc(r.contacted_at?new Date(r.contacted_at).toLocaleDateString('en-IN'):'Not contacted')+'</td><td><div class="ff-crm-actions"><button class="secondary" data-edit="'+r.id+'">Edit</button><button class="secondary" data-contact="'+r.id+'">Mark contacted</button></div></td></tr>').join('')+'</tbody></table>';
     box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>showForm(rows.find(r=>Number(r.id)===Number(b.dataset.edit))));
     box.querySelectorAll('[data-status]').forEach(s=>s.onchange=()=>setStatus(s.dataset.status,s.value));
     box.querySelectorAll('[data-priority]').forEach(s=>s.onchange=async()=>{try{const{error}=await db.from('seller_leads').update({priority:s.value,updated_at:new Date().toISOString()}).eq('id',s.dataset.priority);if(error)throw error;await load();message('Priority updated.','ok')}catch(e){message(e.message||'Priority update failed.','err')}});
@@ -75,7 +76,7 @@
   }
   function exportCsv(){
     const cols=['id','company_name','public_contact_name','business_type','source_marketplace','source_url','category','city','state','gstin','contact_method','lead_status','priority','notes','contacted_at','created_at','updated_at'];
-    const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+    const cell=v=>{let s=String(v??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
     const csv=[cols.join(','),...rows.map(r=>cols.map(c=>cell(r[c])).join(','))].join('\r\n');
     const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
     const a=document.createElement('a');a.href=url;a.download='fashion-fussion-seller-leads.csv';a.click();URL.revokeObjectURL(url);
