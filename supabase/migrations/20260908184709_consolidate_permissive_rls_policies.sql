@@ -106,23 +106,38 @@ USING (
   OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true)
 );
 
--- products: remove duplicate active-product SELECT and split admin ALL
-DROP POLICY IF EXISTS "Admins can manage products" ON public.products;
-DROP POLICY IF EXISTS "Anyone can view active products" ON public.products;
-DROP POLICY IF EXISTS "Public can view active products" ON public.products;
-CREATE POLICY "Public can view active products"
-ON public.products FOR SELECT TO anon, authenticated
-USING (
-  is_active=true
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true)
-);
-CREATE POLICY "Admins can insert products" ON public.products FOR INSERT TO authenticated
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true));
-CREATE POLICY "Admins can update products" ON public.products FOR UPDATE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true));
-CREATE POLICY "Admins can delete products" ON public.products FOR DELETE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true));
+-- products: this reconstructed baseline may not include the production products table.
+-- Apply consolidation only when the table exists; do not fabricate a products schema here.
+do $products_policy_guard$
+begin
+  if to_regclass('public.products') is not null then
+    execute 'DROP POLICY IF EXISTS "Admins can manage products" ON public.products';
+    execute 'DROP POLICY IF EXISTS "Anyone can view active products" ON public.products';
+    execute 'DROP POLICY IF EXISTS "Public can view active products" ON public.products';
+    execute $policy$
+      CREATE POLICY "Public can view active products"
+      ON public.products FOR SELECT TO anon, authenticated
+      USING (
+        is_active=true
+        OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true)
+      )
+    $policy$;
+    execute $policy$
+      CREATE POLICY "Admins can insert products" ON public.products FOR INSERT TO authenticated
+      WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true))
+    $policy$;
+    execute $policy$
+      CREATE POLICY "Admins can update products" ON public.products FOR UPDATE TO authenticated
+      USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true))
+      WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true))
+    $policy$;
+    execute $policy$
+      CREATE POLICY "Admins can delete products" ON public.products FOR DELETE TO authenticated
+      USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id=(SELECT auth.uid()) AND p.is_admin=true))
+    $policy$;
+  end if;
+end
+$products_policy_guard$;
 
 -- profiles: remove redundant broader UPDATE policy; keep the policy that prevents changing is_admin
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
