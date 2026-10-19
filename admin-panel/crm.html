@@ -6,10 +6,10 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Seller Acquisition CRM — Fashion Fussion</title>
   <script src="https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
-  <script src="supabase-config.js?v=20261017-crm-route"></script>
+  <script src="supabase-config.js?v=20261019-team-management"></script>
   <link rel="stylesheet" href="csp-admin.css?v=2">
   <link rel="stylesheet" href="csp-dynamic.css?v=2">
-  <link rel="stylesheet" href="crm-panel.css?v=20261017-crm-route">
+  <link rel="stylesheet" href="crm-panel.css?v=20261019-team-management">
 </head>
 <body>
   <header class="header"><div class="header-inner"><div><div class="logo">Fashion Fussion</div><div class="admin-badge">CRM WORKSPACE</div></div><div class="header-actions"><a href="https://fashionfussion.in" target="_blank" rel="noopener noreferrer">Open Store</a><span id="crmEmail">Verifying access…</span><button id="crmLogout" type="button">Sign Out</button></div></div></header>
@@ -21,6 +21,6 @@
     <section id="crmSupportPending" class="crm-welcome card" hidden><div class="card-body"><h2>Support workspace setup pending</h2><p>Your role is recognized, but its dedicated tools and data permissions are not enabled yet. Customer Support and Seller Support will not be shown seller-acquisition data until their separate access rules and workflows are validated.</p></div></section>
     <section id="crmTeamManagement" class="crm-welcome card" hidden><div class="card-body"><h2>Team Management</h2><p>Invite each employee in Supabase Authentication first, then register their exact Auth UUID and email here. This screen never creates a Supabase Auth account or sends an invitation itself.</p><form id="crmTeamForm" class="crm-team-form"><label for="crmMemberEmail">Work email</label><input id="crmMemberEmail" type="email" autocomplete="off" required placeholder="employee@company.com"><label for="crmMemberId">Supabase Auth user UUID</label><input id="crmMemberId" type="text" required pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"><label for="crmMemberRole">Department</label><select id="crmMemberRole" required><option value="customer_support">Customer Support</option><option value="seller_support">Seller Support</option><option value="sales">Sales</option><option value="marketing">Marketing</option></select><button class="primary" id="crmMemberSave" type="submit">Add / Update Team Member</button></form><p id="crmTeamNotice" class="crm-team-notice" role="status" aria-live="polite"></p><div class="crm-team-table-wrap"><table class="crm-team-table"><thead><tr><th>Team member</th><th>Department</th><th>Status</th><th>Action</th></tr></thead><tbody id="crmTeamRows"><tr><td colspan="4">Loading team roster…</td></tr></tbody></table></div></div></section>
   </div></main>
-  <script src="crm-auth.js?v=20261017-crm-route"></script>
+  <script src="crm-auth.js?v=20261019-team-management"></script>
 </body>
 </html>
