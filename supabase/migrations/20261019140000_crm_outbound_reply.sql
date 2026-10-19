@@ -74,8 +74,8 @@ begin
      return v_id;
    end if;
  end if;
- insert into public.crm_inbox_conversations(provider,provider_thread_id,provider_message_id,department,contact_type,contact_user_id,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,metadata)
- values(p_provider,p_provider_thread_id,p_provider_message_id,v_department,v_contact_type,v_contact_user,nullif(trim(p_sender_name),''),v_email,v_phone,p_inbox_address,p_subject,left(p_body,10000),now(),coalesce(p_metadata,'{}'::jsonb))
+ insert into public.crm_inbox_conversations(provider,provider_thread_id,provider_message_id,department,contact_type,contact_user_id,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,last_inbound_at,metadata)
+ values(p_provider,p_provider_thread_id,p_provider_message_id,v_department,v_contact_type,v_contact_user,nullif(trim(p_sender_name),''),v_email,v_phone,p_inbox_address,p_subject,left(p_body,10000),now(),now(),coalesce(p_metadata,'{}'::jsonb))
  on conflict(provider,provider_message_id) do nothing returning id into v_id;
  if v_id is null then select c.id into v_id from public.crm_inbox_conversations c where c.provider=p_provider and c.provider_message_id=p_provider_message_id; return v_id; end if;
  insert into public.crm_inbox_messages(conversation_id,provider_message_id,direction,sender_label,body,metadata,delivery_status)
