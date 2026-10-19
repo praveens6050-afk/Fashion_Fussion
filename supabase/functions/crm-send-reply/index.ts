@@ -34,16 +34,19 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   const accountId=Deno.env.get("ZOHO_MAIL_ACCOUNT_ID");
   const sender=fromEnv(role);
   const recipient=clean(c.contact_email,254);
+  const zohoMessageId=clean(c.metadata?.zoho_message_id,80);
   if(!accountId||!sender||!recipient||!recipient.includes("@")) throw new Error("EMAIL_SENDER_NOT_CONFIGURED");
+  // Zoho's documented reply endpoint needs the provider's internal message ID.
+  // Do not silently send a new thread when the adapter has not supplied it.
+  if(!/^\\d+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
   const token=await zohoToken();
-  const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\/$/,"");
-  const subject=clean(c.subject,500);
-  const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")+"</p>";
-  const payload={fromAddress:sender,toAddress:recipient,subject:subject.toLowerCase().startsWith("re:")?subject:"Re: "+(subject||"Your message to Fashion Fussion"),content,mailFormat:"html"};
-  const res=await fetch(api+"/accounts/"+encodeURIComponent(accountId)+"/messages",{method:"POST",headers:{"authorization":"Zoho-oauthtoken "+token,"content-type":"application/json","idempotency-key":requestId},body:JSON.stringify(payload)});
+  const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\\/$/,"");
+  const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\\n/g,"<br>")+"</p>";
+  const payload={fromAddress:sender,toAddress:recipient,content,action:"reply",mailFormat:"html",encoding:"UTF-8"};
+  const res=await fetch(api+"/accounts/"+encodeURIComponent(accountId)+"/messages/"+encodeURIComponent(zohoMessageId),{method:"POST",headers:{"authorization":"Zoho-oauthtoken "+token,"content-type":"application/json"},body:JSON.stringify(payload)});
   const data=await res.json().catch(()=>({}));
-  if(!res.ok || (data?.status && String(data.status.code||"")!=="200")) throw new Error("ZOHO_SEND_FAILED");
-  const msgId=String(data?.data?.messageId||data?.data?.message_id||"zoho-"+requestId);
+  if(!res.ok || (data?.status && String(data.status.code||"")!=="200")) throw new Error("ZOHO_REPLY_FAILED");
+  const msgId=String(data?.data?.messageId||data?.data?.message_id||"zoho-reply-"+requestId);
   return {id:msgId,provider:"email"};
 }
 async function sendWhatsApp(c:any, body:string, requestId:string) {
