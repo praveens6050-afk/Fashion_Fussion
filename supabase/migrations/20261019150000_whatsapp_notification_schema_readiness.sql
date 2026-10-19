@@ -16,6 +16,11 @@ DECLARE
   admin_identity_missing text[];
   admin_alert_storage_missing text[];
   seller_alert_storage_missing text[];
+  inbound_support_missing text[];
+  seller_claim_exists boolean;
+  seller_finish_exists boolean;
+  admin_claim_exists boolean;
+  admin_finish_exists boolean;
 BEGIN
   SELECT array_agg(required.column_name ORDER BY required.column_name)
     INTO missing_columns
@@ -137,11 +142,39 @@ BEGIN
       AND c.column_name=required.column_name
   );
 
+  SELECT array_agg(required.column_name ORDER BY required.column_name)
+    INTO inbound_support_missing
+  FROM (VALUES
+    ('whatsapp_inbound_events','id'),
+    ('whatsapp_inbound_events','sender_role'),
+    ('whatsapp_inbound_events','routing_status'),
+    ('whatsapp_inbound_events','support_team'),
+    ('whatsapp_inbound_events','created_at')
+  ) AS required(table_name,column_name)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema='public' AND c.table_name=required.table_name
+      AND c.column_name=required.column_name
+  );
+
   claim_exists := pg_catalog.to_regprocedure(
     'public.claim_whatsapp_order_confirmation(bigint,timestamp with time zone)'
   ) IS NOT NULL;
   finish_exists := pg_catalog.to_regprocedure(
     'public.finish_whatsapp_order_confirmation(bigint,text,text)'
+  ) IS NOT NULL;
+
+  seller_claim_exists := pg_catalog.to_regprocedure(
+    'public.claim_whatsapp_seller_order_alert(bigint,timestamp with time zone)'
+  ) IS NOT NULL;
+  seller_finish_exists := pg_catalog.to_regprocedure(
+    'public.finish_whatsapp_seller_order_alert(bigint,text,text)'
+  ) IS NOT NULL;
+  admin_claim_exists := pg_catalog.to_regprocedure(
+    'public.claim_whatsapp_admin_alert(bigint,timestamp with time zone)'
+  ) IS NOT NULL;
+  admin_finish_exists := pg_catalog.to_regprocedure(
+    'public.finish_whatsapp_admin_alert(bigint,text,text)'
   ) IS NOT NULL;
 
   RETURN pg_catalog.jsonb_build_object(
@@ -152,6 +185,12 @@ BEGIN
     'claimFunctionPresent', claim_exists,
     'finishFunctionPresent', finish_exists,
     'sendingAuthorized', false,
+    'sellerClaimFunctionPresent', seller_claim_exists,
+    'sellerFinishFunctionPresent', seller_finish_exists,
+    'adminClaimFunctionPresent', admin_claim_exists,
+    'adminFinishFunctionPresent', admin_finish_exists,
+    'inboundSupportSchemaVerified', coalesce(pg_catalog.cardinality(inbound_support_missing),0)=0,
+    'inboundSupportMissingColumns', coalesce(to_jsonb(inbound_support_missing),'[]'::jsonb),
     'sellerMappingSchemaVerified', coalesce(pg_catalog.cardinality(seller_mapping_missing),0)=0,
     'sellerMappingMissingColumns', coalesce(to_jsonb(seller_mapping_missing),'[]'::jsonb),
     'sellerRecipientSchemaVerified', coalesce(pg_catalog.cardinality(seller_recipient_missing),0)=0,
