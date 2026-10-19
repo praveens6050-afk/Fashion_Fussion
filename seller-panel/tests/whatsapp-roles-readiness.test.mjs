@@ -66,7 +66,11 @@ test('read-only role inventory distinguishes seller opt-in and admin launch bloc
   assert.equal(data.roles.admin.dedicatedDispatcherVerified,false);
   assert.equal(data.roles.admin.verifiedAdminRecipients,false);
   assert.equal(data.inboundNeedsManualReview,29);
-  assert.equal(calls.length,6);
+  assert.equal(data.inboundSupportQueues.customerSupport,29);
+  assert.equal(data.inboundSupportQueues.sellerSupport,29);
+  assert.equal(data.inboundSupportQueues.salesMarketing,29);
+  assert.equal(data.inboundSupportQueues.adminOperations,29);
+  assert.equal(calls.length,10);
   assert.ok(!JSON.stringify(data).includes('synthetic-service-only'));
   assert.ok(!JSON.stringify(data).includes('synthetic-private-operator'));
 });
