@@ -56,6 +56,35 @@ BEGIN
     RAISE EXCEPTION 'Seller outbox must target the verified seller and remain unsent';
   END IF;
 
+
+  IF has_function_privilege('anon','public.claim_whatsapp_seller_order_alert(bigint,timestamp with time zone)','EXECUTE')
+     OR has_function_privilege('authenticated','public.claim_whatsapp_seller_order_alert(bigint,timestamp with time zone)','EXECUTE')
+     OR has_function_privilege('anon','public.finish_whatsapp_seller_order_alert(bigint,text,text)','EXECUTE')
+     OR has_function_privilege('authenticated','public.finish_whatsapp_seller_order_alert(bigint,text,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Browser roles must not claim or finish seller alerts';
+  END IF;
+  UPDATE public.whatsapp_seller_order_notification_outbox SET status='ready' WHERE order_id=987101;
+  IF (public.claim_whatsapp_seller_order_alert(
+       (SELECT id FROM public.whatsapp_seller_order_notification_outbox WHERE order_id=987101),
+       now()-interval '1 hour')->>'recipientPhone') <> '+918765432109' THEN
+    RAISE EXCEPTION 'Atomic seller claim must return the verified seller phone';
+  END IF;
+  IF public.claim_whatsapp_seller_order_alert(
+       (SELECT id FROM public.whatsapp_seller_order_notification_outbox WHERE order_id=987101),
+       now()-interval '1 hour') IS NOT NULL THEN
+    RAISE EXCEPTION 'Duplicate seller alert claim must be rejected';
+  END IF;
+  IF NOT public.finish_whatsapp_seller_order_alert(
+       (SELECT id FROM public.whatsapp_seller_order_notification_outbox WHERE order_id=987101),
+       'wamid.seller-ci',NULL) THEN
+    RAISE EXCEPTION 'Seller provider acknowledgement must be saved';
+  END IF;
+  IF public.finish_whatsapp_seller_order_alert(
+       (SELECT id FROM public.whatsapp_seller_order_notification_outbox WHERE order_id=987101),
+       'wamid.seller-ci',NULL) THEN
+    RAISE EXCEPTION 'Duplicate seller finish must be rejected';
+  END IF;
+
   UPDATE public.whatsapp_contact_consents SET revoked_at=now(),status='opted_out'
   WHERE phone_e164='+918765432109' AND purpose='transactional';
   INSERT INTO public.orders(id,user_id,status,fulfillment_status,payment_method,payment_verified_at,created_at,items)
