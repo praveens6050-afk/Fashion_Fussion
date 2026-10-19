@@ -18,7 +18,7 @@ Configure these only in Supabase Edge Function secrets, never in browser/Pages v
 
 ## Provider wiring
 1. Apply and validate migrations in an isolated Supabase branch first. The current project migration history/schema has known inconsistencies; do not apply this migration directly to production before dependency replay and RLS tests.
-2. Deploy `supabase/functions/crm-inbound-webhook/index.ts` only after secret configuration and review. Set the Meta WhatsApp webhook callback to the deployed function URL; subscribe to the `messages` field and use `WHATSAPP_VERIFY_TOKEN`. The function validates Meta's HMAC signature and is idempotent by provider message ID.
+2. Deploy `supabase/functions/crm-inbound-webhook/index.ts` only after secret configuration and review. The branch's `supabase/config.toml` sets `verify_jwt = false` for this endpoint because Meta cannot supply a Supabase JWT; the handler itself still verifies Meta's HMAC or the email HMAC. Never expose the service-role key. Set the Meta WhatsApp webhook callback to the deployed function URL; subscribe to the `messages` field and use `WHATSAPP_VERIFY_TOKEN`. The function validates Meta's HMAC signature and is idempotent by provider message ID.
 3. Configure Zoho Flow or a trusted email adapter to forward new incoming messages to the same function using the documented normalized payload:
    ```json
    {
