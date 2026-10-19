@@ -1,2 +1,6 @@
 # Supabase CLI project configuration for GitHub previews.
 project_id = "fashion-fussion"
+
+[functions.crm-inbound-webhook]
+# Provider callbacks authenticate with Meta HMAC or the dedicated email webhook HMAC.
+verify_jwt = false
