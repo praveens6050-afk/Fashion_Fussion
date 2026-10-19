@@ -60,9 +60,34 @@ BEGIN
    ON pv.id=CASE WHEN item->>'variant_id' ~ '^[0-9]+$'
      THEN (item->>'variant_id')::bigint ELSE NULL END
  JOIN public.seller_product_submissions sps
-   ON sps.approved_product_id=COALESCE(
-     CASE WHEN item->>'id' ~ '^[0-9]+$' THEN (item->>'id')::bigint ELSE NULL END,
-     pv.product_id)
+   ON (sps.approved_product_id=CASE WHEN item->>'id' ~ '^[0-9]+
+ JOIN public.seller_profiles sp ON sp.user_id=sps.seller_id
+ JOIN public.profiles pr ON pr.id=sp.user_id
+ JOIN public.whatsapp_contact_consents cc
+   ON cc.phone_e164=private.ff_whatsapp_e164(sp.phone)
+  AND cc.purpose='transactional' AND cc.status='opted_in'
+  AND cc.consented_at IS NOT NULL AND cc.revoked_at IS NULL
+ JOIN public.products prod ON prod.id=sps.approved_product_id AND prod.is_active IS TRUE
+ WHERE sps.approved_product_id IS NOT NULL
+   AND sp.status='active' AND sp.phone_verified_at IS NOT NULL
+   AND pr.phone_verified_at IS NOT NULL
+   AND private.ff_whatsapp_e164(pr.phone)=private.ff_whatsapp_e164(sp.phone)
+   AND private.ff_whatsapp_e164(sp.phone) IS NOT NULL
+ ON CONFLICT(order_id,seller_id,event_type) DO NOTHING;
+
+ GET DIAGNOSTICS v_inserted=ROW_COUNT;
+ RETURN v_inserted;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.stage_whatsapp_seller_order_alert(bigint,timestamptz)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.stage_whatsapp_seller_order_alert(bigint,timestamptz)
+ TO service_role;
+COMMENT ON TABLE public.whatsapp_seller_order_notification_outbox IS
+ 'Private, deduplicated seller transactional alerts. Only canonical approved product ownership routes orders; only verified, explicitly opted-in sellers qualify.';
+
+         THEN (item->>'id')::bigint ELSE NULL END
+       OR sps.approved_product_id=pv.product_id)
  JOIN public.seller_profiles sp ON sp.user_id=sps.seller_id
  JOIN public.profiles pr ON pr.id=sp.user_id
  JOIN public.whatsapp_contact_consents cc
