@@ -1,0 +1,37 @@
+name: CRM panel contract validation
+on:
+  pull_request:
+    paths:
+      - 'admin-panel/**'
+      - 'supabase/functions/crm-*/**'
+      - 'supabase/migrations/202610191*.sql'
+      - 'supabase/config.toml'
+      - 'scripts/check_crm_panel_contract.js'
+      - '.github/workflows/crm-panel-validate.yml'
+  push:
+    branches: [crm-team-access]
+    paths:
+      - 'admin-panel/**'
+      - 'supabase/functions/crm-*/**'
+      - 'supabase/migrations/202610191*.sql'
+      - 'supabase/config.toml'
+      - 'scripts/check_crm_panel_contract.js'
+jobs:
+  crm-static-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify CRM contract
+        run: node scripts/check_crm_panel_contract.js
+      - name: Check JavaScript syntax
+        run: |
+          node --check admin-panel/crm-auth.js
+          node --check admin-panel/crm-unified-inbox.js
+          node --check admin-panel/crm-team-management.js
+          node --check supabase/functions/crm-send-reply/index.ts
+      - name: Build Cloudflare Pages assets
+        working-directory: admin-panel
+        run: npm run build
