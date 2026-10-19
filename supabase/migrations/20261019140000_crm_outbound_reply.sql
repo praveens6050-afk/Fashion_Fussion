@@ -15,6 +15,8 @@ create index if not exists crm_inbox_send_attempts_conversation_idx on public.cr
 alter table public.crm_inbox_send_attempts enable row level security;
 revoke all on public.crm_inbox_send_attempts from anon,authenticated;
 grant all on public.crm_inbox_send_attempts to service_role;
+grant insert, update on public.crm_inbox_messages to service_role;
+grant update on public.crm_inbox_conversations to service_role;
 
 alter table public.crm_inbox_conversations add column if not exists last_inbound_at timestamptz;
 update public.crm_inbox_conversations set last_inbound_at=received_at where last_inbound_at is null;
