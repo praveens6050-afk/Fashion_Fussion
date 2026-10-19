@@ -41,14 +41,23 @@ async function schemaReadiness(base,key) {
     body:'{}'
   });
   if(!response.ok)return {schemaVerified:false,probeAvailable:false,
-    missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false};
+    missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false,
+    sellerMappingSchemaVerified:false,sellerMappingMissingColumns:[],
+    sellerRecipientSchemaVerified:false,sellerRecipientMissingColumns:[],
+    adminIdentitySchemaVerified:false,adminIdentityMissingColumns:[]};
   const result=await response.json().catch(()=>null);
   if(!result||typeof result!=='object')return {schemaVerified:false,probeAvailable:false,
     missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false};
   return {schemaVerified:result.schemaVerified===true,probeAvailable:true,
     missingColumns:Array.isArray(result.missingColumns)?result.missingColumns:[],
     claimFunctionPresent:result.claimFunctionPresent===true,
-    finishFunctionPresent:result.finishFunctionPresent===true};
+    finishFunctionPresent:result.finishFunctionPresent===true,
+    sellerMappingSchemaVerified:result.sellerMappingSchemaVerified===true,
+    sellerMappingMissingColumns:Array.isArray(result.sellerMappingMissingColumns)?result.sellerMappingMissingColumns:[],
+    sellerRecipientSchemaVerified:result.sellerRecipientSchemaVerified===true,
+    sellerRecipientMissingColumns:Array.isArray(result.sellerRecipientMissingColumns)?result.sellerRecipientMissingColumns:[],
+    adminIdentitySchemaVerified:result.adminIdentitySchemaVerified===true,
+    adminIdentityMissingColumns:Array.isArray(result.adminIdentityMissingColumns)?result.adminIdentityMissingColumns:[]};
 }
 function allowlisted(env,name) {
   return !!name && /^[a-z0-9_]{1,512}$/.test(name) &&
@@ -96,18 +105,22 @@ export async function onRequestGet({request,env}) {
           requestedTemplateConfigured:Boolean(sellerTemplate),
           requestedTemplateAllowlisted:allowlisted(env,sellerTemplate),
           metaTemplateVerified:false,
+          sellerMappingSchemaVerified:schema.sellerMappingSchemaVerified,
+          sellerRecipientSchemaVerified:schema.sellerRecipientSchemaVerified,
           automaticSendingConfigured:false,
-          status:marketing===0?'MARKETING_OPT_IN_REQUIRED':
+          status:!schema.sellerMappingSchemaVerified||!schema.sellerRecipientSchemaVerified
+            ?'SELLER_SCHEMA_NOT_VERIFIED':marketing===0?'MARKETING_OPT_IN_REQUIRED':
             'TEMPLATE_AND_CONTROLLED_OUTREACH_REVIEW_REQUIRED'
         },
         admin:{
           workflow:'operational_alerts',
           requestedTemplateConfigured:Boolean(adminTemplate),
           requestedTemplateAllowlisted:allowlisted(env,adminTemplate),
+          adminIdentitySchemaVerified:schema.adminIdentitySchemaVerified,
           verifiedAdminRecipients:false,
           metaTemplateVerified:false,
           dedicatedDispatcherVerified:false,
-          status:'ADMIN_ALERT_WORKFLOW_REQUIRED'
+          status:schema.adminIdentitySchemaVerified?'ADMIN_ALERT_WORKFLOW_REQUIRED':'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED'
         }
       },
       inboundNeedsManualReview:inboundReview,
