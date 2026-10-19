@@ -177,7 +177,10 @@ jobs:
           node --check admin-panel/admin-crm.js
           node --check admin-panel/admin-crm-followups.js
           node --check admin-panel/admin-crm-directory.js
+          node --check admin-panel/admin-crm-whatsapp-inbox.js
+          node --check admin-panel/functions/api/admin-crm-whatsapp-inbox.js
           node scripts/check_crm_panel_contract.js
+          node scripts/check_whatsapp_crm_inbox_contract.js
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
