@@ -27,6 +27,7 @@ Configure these only in Supabase Edge Function secrets, never in browser/Pages v
    {
      "messages": [{
        "id": "provider-unique-message-id",
+       "zoho_message_id": "1234567890123456789",
        "from_email": "buyer@example.com",
        "from_name": "Buyer",
        "from_phone": "+919999999999",
