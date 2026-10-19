@@ -7,8 +7,8 @@
     if(!user?.id)return null;
     const{data:profile,error:profileError}=await db.from('profiles').select('is_admin').eq('id',user.id).maybeSingle();
     if(!profileError&&profile?.is_admin===true)return 'administrator';
-    const{data:member,error:memberError}=await db.from('crm_team_members').select('role,is_active').eq('user_id',user.id).maybeSingle();
-    if(memberError||!member||member.is_active!==true||!['customer_support','seller_support','sales','marketing'].includes(member.role))return null;
+    const{data:member,error:memberError}=await db.from('crm_team_members').select('email,role,is_active').eq('user_id',user.id).maybeSingle();
+    if(memberError||!member||member.is_active!==true||String(member.email||'').toLowerCase()!==String(user.email||'').toLowerCase()||!['customer_support','seller_support','sales','marketing'].includes(member.role))return null;
     return member.role;
   }
   async function init(){
@@ -24,8 +24,13 @@
     const supportPending=$('crmSupportPending');
     if(salesWorkspace)salesWorkspace.hidden=!['sales','marketing','administrator'].includes(role);
     if(supportPending)supportPending.hidden=!['customer_support','seller_support'].includes(role);
+    const teamManagement=$('crmTeamManagement');
+    if(teamManagement)teamManagement.hidden=role!=='administrator';
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
     $('dashboard').dataset.adminReady='true';
+    if(role==='administrator'){
+      const roster=document.createElement('script');roster.src='crm-team-management.js?v=20261019-team-management';roster.async=false;document.body.appendChild(roster);
+    }
     db.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){location.replace('crm-login.html')}});
   }
   $('crmLogout').addEventListener('click',async()=>{const db=await ready;await db.auth.signOut();location.replace('crm-login.html')});
