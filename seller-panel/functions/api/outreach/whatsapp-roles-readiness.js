@@ -46,7 +46,10 @@ async function schemaReadiness(base,key) {
     sellerRecipientSchemaVerified:false,sellerRecipientMissingColumns:[],
     sellerAlertStorageVerified:false,sellerAlertStorageMissingColumns:[],
     adminIdentitySchemaVerified:false,adminIdentityMissingColumns:[],
-    adminAlertStorageVerified:false,adminAlertStorageMissingColumns:[]};
+    adminAlertStorageVerified:false,adminAlertStorageMissingColumns:[],
+    sellerClaimFunctionPresent:false,sellerFinishFunctionPresent:false,
+    adminClaimFunctionPresent:false,adminFinishFunctionPresent:false,
+    inboundSupportSchemaVerified:false,inboundSupportMissingColumns:[]};
   const result=await response.json().catch(()=>null);
   if(!result||typeof result!=='object')return {schemaVerified:false,probeAvailable:false,
     missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false};
@@ -63,7 +66,13 @@ async function schemaReadiness(base,key) {
     adminIdentitySchemaVerified:result.adminIdentitySchemaVerified===true,
     adminIdentityMissingColumns:Array.isArray(result.adminIdentityMissingColumns)?result.adminIdentityMissingColumns:[],
     adminAlertStorageVerified:result.adminAlertStorageVerified===true,
-    adminAlertStorageMissingColumns:Array.isArray(result.adminAlertStorageMissingColumns)?result.adminAlertStorageMissingColumns:[]};
+    adminAlertStorageMissingColumns:Array.isArray(result.adminAlertStorageMissingColumns)?result.adminAlertStorageMissingColumns:[],
+    sellerClaimFunctionPresent:result.sellerClaimFunctionPresent===true,
+    sellerFinishFunctionPresent:result.sellerFinishFunctionPresent===true,
+    adminClaimFunctionPresent:result.adminClaimFunctionPresent===true,
+    adminFinishFunctionPresent:result.adminFinishFunctionPresent===true,
+    inboundSupportSchemaVerified:result.inboundSupportSchemaVerified===true,
+    inboundSupportMissingColumns:Array.isArray(result.inboundSupportMissingColumns)?result.inboundSupportMissingColumns:[]};
 }
 function allowlisted(env,name) {
   return !!name && /^[a-z0-9_]{1,512}$/.test(name) &&
@@ -122,7 +131,9 @@ export async function onRequestGet({request,env}) {
           alertStorageSchemaVerified:schema.sellerAlertStorageVerified,
           alertStorageMissingColumns:schema.sellerAlertStorageMissingColumns,
           automaticSendingConfigured:false,
-          status:!schema.sellerMappingSchemaVerified||!schema.sellerRecipientSchemaVerified
+          claimFunctionPresent:schema.sellerClaimFunctionPresent,
+          finishFunctionPresent:schema.sellerFinishFunctionPresent,
+          status:!schema.sellerClaimFunctionPresent||!schema.sellerFinishFunctionPresent?'SELLER_DISPATCH_RPC_NOT_VERIFIED':!schema.sellerMappingSchemaVerified||!schema.sellerRecipientSchemaVerified
             ?'SELLER_SCHEMA_NOT_VERIFIED':!schema.sellerAlertStorageVerified?'SELLER_ALERT_STORAGE_NOT_VERIFIED':marketing===0?'MARKETING_OPT_IN_REQUIRED':
             'TEMPLATE_AND_CONTROLLED_OUTREACH_REVIEW_REQUIRED'
         },
@@ -137,9 +148,13 @@ export async function onRequestGet({request,env}) {
           verifiedAdminRecipients:false,
           metaTemplateVerified:false,
           dedicatedDispatcherVerified:false,
-          status:!schema.adminIdentitySchemaVerified?'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED':!schema.adminAlertStorageVerified?'ADMIN_ALERT_STORAGE_NOT_VERIFIED':'ADMIN_ALERT_WORKFLOW_REQUIRED'
+          claimFunctionPresent:schema.adminClaimFunctionPresent,
+          finishFunctionPresent:schema.adminFinishFunctionPresent,
+          status:!schema.adminClaimFunctionPresent||!schema.adminFinishFunctionPresent?'ADMIN_DISPATCH_RPC_NOT_VERIFIED':!schema.adminIdentitySchemaVerified?'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED':!schema.adminAlertStorageVerified?'ADMIN_ALERT_STORAGE_NOT_VERIFIED':'ADMIN_ALERT_WORKFLOW_REQUIRED'
         }
       },
+      inboundSupportSchemaVerified:schema.inboundSupportSchemaVerified,
+      inboundSupportMissingColumns:schema.inboundSupportMissingColumns,
       inboundNeedsManualReview:inboundReview,
       inboundSupportQueues:{customerSupport:customerQueue,sellerSupport:sellerQueue,salesMarketing:salesMarketingQueue,adminOperations:adminQueue},
       disclaimers:[
