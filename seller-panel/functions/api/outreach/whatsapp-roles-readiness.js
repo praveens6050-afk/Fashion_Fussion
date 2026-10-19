@@ -44,7 +44,8 @@ async function schemaReadiness(base,key) {
     missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false,
     sellerMappingSchemaVerified:false,sellerMappingMissingColumns:[],
     sellerRecipientSchemaVerified:false,sellerRecipientMissingColumns:[],
-    adminIdentitySchemaVerified:false,adminIdentityMissingColumns:[]};
+    adminIdentitySchemaVerified:false,adminIdentityMissingColumns:[],
+    adminAlertStorageVerified:false,adminAlertStorageMissingColumns:[]};
   const result=await response.json().catch(()=>null);
   if(!result||typeof result!=='object')return {schemaVerified:false,probeAvailable:false,
     missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false};
@@ -57,7 +58,9 @@ async function schemaReadiness(base,key) {
     sellerRecipientSchemaVerified:result.sellerRecipientSchemaVerified===true,
     sellerRecipientMissingColumns:Array.isArray(result.sellerRecipientMissingColumns)?result.sellerRecipientMissingColumns:[],
     adminIdentitySchemaVerified:result.adminIdentitySchemaVerified===true,
-    adminIdentityMissingColumns:Array.isArray(result.adminIdentityMissingColumns)?result.adminIdentityMissingColumns:[]};
+    adminIdentityMissingColumns:Array.isArray(result.adminIdentityMissingColumns)?result.adminIdentityMissingColumns:[],
+    adminAlertStorageVerified:result.adminAlertStorageVerified===true,
+    adminAlertStorageMissingColumns:Array.isArray(result.adminAlertStorageMissingColumns)?result.adminAlertStorageMissingColumns:[]};
 }
 function allowlisted(env,name) {
   return !!name && /^[a-z0-9_]{1,512}$/.test(name) &&
@@ -120,10 +123,12 @@ export async function onRequestGet({request,env}) {
           requestedTemplateAllowlisted:allowlisted(env,adminTemplate),
           adminIdentitySchemaVerified:schema.adminIdentitySchemaVerified,
           adminIdentityMissingColumns:schema.adminIdentityMissingColumns,
+          alertStorageSchemaVerified:schema.adminAlertStorageVerified,
+          alertStorageMissingColumns:schema.adminAlertStorageMissingColumns,
           verifiedAdminRecipients:false,
           metaTemplateVerified:false,
           dedicatedDispatcherVerified:false,
-          status:schema.adminIdentitySchemaVerified?'ADMIN_ALERT_WORKFLOW_REQUIRED':'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED'
+          status:!schema.adminIdentitySchemaVerified?'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED':!schema.adminAlertStorageVerified?'ADMIN_ALERT_STORAGE_NOT_VERIFIED':'ADMIN_ALERT_WORKFLOW_REQUIRED'
         }
       },
       inboundNeedsManualReview:inboundReview,
