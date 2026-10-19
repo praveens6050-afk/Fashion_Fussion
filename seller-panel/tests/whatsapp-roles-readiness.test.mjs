@@ -12,7 +12,7 @@ const env={
   WHATSAPP_SELLER_ONBOARDING_TEMPLATE:'seller_onboarding'
 };
 const request=(token=env.OUTREACH_API_TOKEN)=>new Request('https://seller.fashionfussion.in/api/outreach/whatsapp-roles-readiness',{headers:{authorization:'Bearer '+token}});
-function fixture(t, counts=[2,0,1,29,0], schema={schemaVerified:true,missingColumns:[],claimFunctionPresent:true,finishFunctionPresent:true}) {
+function fixture(t, counts=[2,0,1,29,0], schema={schemaVerified:true,missingColumns:[],claimFunctionPresent:true,finishFunctionPresent:true,sellerMappingSchemaVerified:true,sellerMappingMissingColumns:[],sellerRecipientSchemaVerified:true,sellerRecipientMissingColumns:[],adminIdentitySchemaVerified:true,adminIdentityMissingColumns:[]}) {
   const previous=globalThis.fetch;
   const calls=[];
   globalThis.fetch=async(url,opts)=>{
@@ -57,6 +57,9 @@ test('read-only role inventory distinguishes seller opt-in and admin launch bloc
   assert.equal(data.roles.customer.status,'SCHEMA_VERIFIED_META_PREFLIGHT_REQUIRED');
   assert.equal(data.roles.seller.marketingOptIns,0);
   assert.equal(data.roles.seller.status,'MARKETING_OPT_IN_REQUIRED');
+  assert.equal(data.roles.seller.sellerMappingSchemaVerified,true);
+  assert.equal(data.roles.seller.sellerRecipientSchemaVerified,true);
+  assert.equal(data.roles.admin.adminIdentitySchemaVerified,true);
   assert.equal(data.roles.seller.requestedTemplateAllowlisted,true);
   assert.equal(data.roles.admin.dedicatedDispatcherVerified,false);
   assert.equal(data.roles.admin.verifiedAdminRecipients,false);
@@ -73,6 +76,14 @@ test('schema probe fails closed when migration or RPCs are missing',async t=>{
   assert.deepEqual(data.roles.customer.missingColumns,['orders.fulfillment_status']);
   assert.equal(data.roles.customer.finishFunctionPresent,false);
   assert.equal(data.roles.customer.status,'SCHEMA_NOT_VERIFIED');
+});
+test('seller and admin schema gaps are reported independently from customer readiness',async t=>{
+  fixture(t,[3,2,1,2,0],{schemaVerified:true,missingColumns:[],claimFunctionPresent:true,finishFunctionPresent:true,sellerMappingSchemaVerified:false,sellerMappingMissingColumns:['seller_product_submissions.approved_product_id'],sellerRecipientSchemaVerified:true,sellerRecipientMissingColumns:[],adminIdentitySchemaVerified:false,adminIdentityMissingColumns:['profiles.phone_verified_at']});
+  const data=await (await onRequestGet({request:request(),env})).json();
+  assert.equal(data.roles.customer.schemaVerified,true);
+  assert.equal(data.roles.seller.status,'SELLER_SCHEMA_NOT_VERIFIED');
+  assert.deepEqual(data.roles.seller.sellerMappingMissingColumns,['seller_product_submissions.approved_product_id']);
+  assert.equal(data.roles.admin.status,'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED');
 });
 test('missing readiness RPC fails closed without claiming schema is verified',async t=>{
   const old=globalThis.fetch;
