@@ -1,12 +1,13 @@
 // Authenticated CRM reply sender. Provider credentials are server-side only.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const allowedOrigins = new Set(["https://www.crm.fashionfussion.in","https://crm.fashionfussion.in"]);
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://www.crm.fashionfussion.in",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
 };
-const response = (body: unknown, status=200) => new Response(JSON.stringify(body), {status,headers:{...corsHeaders,"Content-Type":"application/json","Cache-Control":"no-store"}});
+const corsFor = (origin: string | null) => ({...corsHeaders,...(origin && allowedOrigins.has(origin) ? {"Access-Control-Allow-Origin": origin} : {})});
+const response = (body: unknown, status=200, origin: string | null = null) => new Response(JSON.stringify(body), {status,headers:{...corsFor(origin),"Content-Type":"application/json","Cache-Control":"no-store"}});
 const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0,max);
 const label: Record<string,string> = {customer_support:"Customer Support",seller_support:"Seller Support",sales:"Sales",marketing:"Marketing"};
 const fromEnv = (role:string) => {
@@ -60,22 +61,22 @@ async function sendWhatsApp(c:any, body:string, requestId:string) {
 }
 Deno.serve(async(req)=>{
   const origin=req.headers.get("origin");
-  if(req.method==="OPTIONS") return new Response("ok",{headers:{...corsHeaders,...(origin==="https://crm.fashionfussion.in"?{"Access-Control-Allow-Origin":origin}:{})}});
-  if(req.method!=="POST") return response({error:"METHOD_NOT_ALLOWED"},405);
-  if(origin && !["https://www.crm.fashionfussion.in","https://crm.fashionfussion.in"].includes(origin)) return response({error:"ORIGIN_NOT_ALLOWED"},403);
+  if(req.method==="OPTIONS") return new Response("ok",{headers:corsFor(origin)});
+  if(req.method!=="POST") return response({error:"METHOD_NOT_ALLOWED"},405,origin);
+  if(origin && !["https://www.crm.fashionfussion.in","https://crm.fashionfussion.in"].includes(origin)) return response({error:"ORIGIN_NOT_ALLOWED"},403,origin);
   const url=Deno.env.get("SUPABASE_URL"), serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const authHeader=req.headers.get("authorization")||"";
   const token=authHeader.replace(/^Bearer\s+/i,"");
-  if(!url||!serviceKey||!token) return response({error:"AUTH_REQUIRED"},401);
+  if(!url||!serviceKey||!token) return response({error:"AUTH_REQUIRED"},401,origin);
   let payload:any;
   try{payload=await req.json()}catch{return response({error:"INVALID_JSON"},400)}
   const conversationId=Number(payload?.conversation_id), requestId=clean(payload?.request_id,64), body=clean(payload?.body,4000), mode=payload?.mode==="internal_note"?"internal_note":"reply";
-  if(!Number.isSafeInteger(conversationId)||conversationId<=0||!body||!requestId) return response({error:"INVALID_INPUT"},400);
-  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) return response({error:"INVALID_REQUEST_ID"},400);
+  if(!Number.isSafeInteger(conversationId)||conversationId<=0||!body||!requestId) return response({error:"INVALID_INPUT"},400,origin);
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) return response({error:"INVALID_REQUEST_ID"},400,origin);
   const db=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:userData,error:userError}=await db.auth.getUser(token);
   const user=userData?.user;
-  if(userError||!user) return response({error:"INVALID_SESSION"},401);
+  if(userError||!user) return response({error:"INVALID_SESSION"},401,origin);
   let role=""; 
   const {data:profile}=await db.from("profiles").select("is_admin").eq("id",user.id).maybeSingle();
   if(profile?.is_admin===true) role="administrator";
@@ -83,18 +84,18 @@ Deno.serve(async(req)=>{
     const {data:member}=await db.from("crm_team_members").select("email,role,is_active").eq("user_id",user.id).maybeSingle();
     if(member?.is_active===true&&String(member.email||"").toLowerCase()===String(user.email||"").toLowerCase()&&label[member.role]) role=member.role;
   }
-  if(!role) return response({error:"CRM_ACCESS_DENIED"},403);
+  if(!role) return response({error:"CRM_ACCESS_DENIED"},403,origin);
   const {data:c,error:cError}=await db.from("crm_inbox_conversations").select("*").eq("id",conversationId).maybeSingle();
-  if(cError||!c) return response({error:"CONVERSATION_NOT_FOUND"},404);
-  if(role!=="administrator"&&role!==c.department) return response({error:"DEPARTMENT_ACCESS_DENIED"},403);
-  if(mode==="internal_note") return response({error:"INTERNAL_NOTES_NOT_YET_SUPPORTED"},501);
-  if(c.provider==="email"&&!c.contact_email) return response({error:"CONTACT_EMAIL_MISSING"},422);
-  if(c.provider==="whatsapp"&&!c.contact_phone) return response({error:"CONTACT_PHONE_MISSING"},422);
+  if(cError||!c) return response({error:"CONVERSATION_NOT_FOUND"},404,origin);
+  if(role!=="administrator"&&role!==c.department) return response({error:"DEPARTMENT_ACCESS_DENIED"},403,origin);
+  if(mode==="internal_note") return response({error:"INTERNAL_NOTES_NOT_YET_SUPPORTED"},501,origin);
+  if(c.provider==="email"&&!c.contact_email) return response({error:"CONTACT_EMAIL_MISSING"},422,origin);
+  if(c.provider==="whatsapp"&&!c.contact_phone) return response({error:"CONTACT_PHONE_MISSING"},422,origin);
   const {error:claimError}=await db.from("crm_inbox_send_attempts").insert({request_id:requestId,conversation_id:conversationId,actor_user_id:user.id,provider:c.provider,state:"sending"});
   if(claimError) {
     const {data:prior}=await db.from("crm_inbox_send_attempts").select("state,provider_message_id").eq("request_id",requestId).maybeSingle();
-    if(prior?.state==="sent") return response({ok:true,duplicate:true,provider_message_id:prior.provider_message_id});
-    return response({error:"SEND_ALREADY_ATTEMPTED",state:prior?.state||"unknown"},409);
+    if(prior?.state==="sent") return response({ok:true,duplicate:true,provider_message_id:prior.provider_message_id},200,origin);
+    return response({error:"SEND_ALREADY_ATTEMPTED",state:prior?.state||"unknown"},409,origin);
   }
   try{
     const sent=c.provider==="email"?await sendEmail(c,body,requestId,c.department):await sendWhatsApp(c,body,requestId);
@@ -102,11 +103,11 @@ Deno.serve(async(req)=>{
     if(messageError) throw new Error("MESSAGE_AUDIT_WRITE_FAILED");
     await db.from("crm_inbox_conversations").update({latest_message:body,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conversationId);
     await db.from("crm_inbox_send_attempts").update({state:"sent",provider_message_id:sent.id,updated_at:new Date().toISOString()}).eq("request_id",requestId);
-    return response({ok:true,provider_message_id:sent.id,provider:sent.provider});
+    return response({ok:true,provider_message_id:sent.id,provider:sent.provider},200,origin);
   }catch(e){
     const code=e instanceof Error?e.message:"PROVIDER_SEND_FAILED";
     await db.from("crm_inbox_send_attempts").update({state:"failed",error_code:code,updated_at:new Date().toISOString()}).eq("request_id",requestId);
     const status=code==="WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H"?422:502;
-    return response({error:code},status);
+    return response({error:code},status,origin);
   }
 });
