@@ -57,3 +57,45 @@ create policy crm_inbox_conversations_department_update on public.crm_inbox_conv
 drop policy if exists crm_inbox_messages_department_read on public.crm_inbox_messages;
 create policy crm_inbox_messages_department_read on public.crm_inbox_messages for select to authenticated using (exists(select 1 from public.crm_inbox_conversations c where c.id=conversation_id and public.crm_inbox_can_access(c.department)));
 comment on table public.crm_inbox_conversations is 'Inbound WhatsApp and email messages routed to a CRM department. Provider webhooks write using service role; team users can read only their department.';
+
+create or replace function public.crm_ingest_inbound_message(
+ p_provider text,p_provider_message_id text,p_sender_phone text,p_sender_email text,p_sender_name text,
+ p_inbox_address text,p_subject text,p_body text,p_provider_thread_id text,p_metadata jsonb default '{}'::jsonb
+) returns bigint
+language plpgsql security definer set search_path=pg_catalog,public,auth
+as $$
+declare v_department text:='customer_support'; v_contact_type text:='unknown'; v_contact_user uuid; v_phone text; v_email text; v_id bigint;
+begin
+ if p_provider not in ('whatsapp','email') or nullif(trim(p_provider_message_id),'') is null or nullif(trim(p_body),'') is null then
+   raise exception 'Invalid inbound message' using errcode='22023';
+ end if;
+ v_phone:=nullif(regexp_replace(coalesce(p_sender_phone,''),'[^0-9]','','g'),'');
+ v_email:=nullif(lower(trim(coalesce(p_sender_email,''))),'');
+ if p_provider='email' then
+   if lower(coalesce(p_inbox_address,'')) ~ '(^|[+._-])(seller[-_.]?support|sellerhelp)(@|$)' then v_department:='seller_support'; v_contact_type:='seller';
+   elsif lower(coalesce(p_inbox_address,'')) ~ '(^|[+._-])(sales|wholesale|b2b)(@|$)' then v_department:='sales'; v_contact_type:='prospect';
+   elsif lower(coalesce(p_inbox_address,'')) ~ '(^|[+._-])(marketing|campaigns)(@|$)' then v_department:='marketing'; v_contact_type:='prospect';
+   else v_department:='customer_support'; end if;
+ else
+   if nullif(p_metadata->>'business_phone_number_id','')=nullif(current_setting('app.crm_sales_phone_number_id',true),'') and current_setting('app.crm_sales_phone_number_id',true) is not null then v_department:='sales'; v_contact_type:='prospect';
+   elsif nullif(p_metadata->>'business_phone_number_id','')=nullif(current_setting('app.crm_marketing_phone_number_id',true),'') and current_setting('app.crm_marketing_phone_number_id',true) is not null then v_department:='marketing'; v_contact_type:='prospect';
+   elsif v_phone is not null and exists(select 1 from public.seller_profiles s where regexp_replace(coalesce(s.phone,''),'[^0-9]','','g')=v_phone) then
+     v_department:='seller_support'; v_contact_type:='seller';
+     select s.user_id into v_contact_user from public.seller_profiles s where regexp_replace(coalesce(s.phone,''),'[^0-9]','','g')=v_phone limit 1;
+   else
+     v_department:='customer_support'; v_contact_type:='customer';
+     if v_phone is not null then select p.id into v_contact_user from public.profiles p where regexp_replace(coalesce(p.phone,''),'[^0-9]','','g')=v_phone limit 1; end if;
+   end if;
+ end if;
+ if v_contact_user is null and v_email is not null then select u.id into v_contact_user from auth.users u where lower(u.email)=v_email limit 1; end if;
+ insert into public.crm_inbox_conversations(provider,provider_thread_id,provider_message_id,department,contact_type,contact_user_id,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,metadata)
+ values(p_provider,p_provider_thread_id,p_provider_message_id,v_department,v_contact_type,v_contact_user,nullif(trim(p_sender_name),''),v_email,v_phone,p_inbox_address,p_subject,left(p_body,10000),now(),coalesce(p_metadata,'{}'::jsonb))
+ on conflict(provider,provider_message_id) do nothing returning id into v_id;
+ if v_id is null then select c.id into v_id from public.crm_inbox_conversations c where c.provider=p_provider and c.provider_message_id=p_provider_message_id; return v_id; end if;
+ insert into public.crm_inbox_messages(conversation_id,provider_message_id,direction,sender_label,body,metadata)
+ values(v_id,p_provider_message_id,'inbound',coalesce(nullif(trim(p_sender_name),''),v_email,v_phone,'External contact'),left(p_body,10000),coalesce(p_metadata,'{}'::jsonb))
+ on conflict(provider_message_id,direction) do nothing;
+ return v_id;
+end $$;
+revoke all on function public.crm_ingest_inbound_message(text,text,text,text,text,text,text,text,text,jsonb) from public,anon,authenticated;
+grant execute on function public.crm_ingest_inbound_message(text,text,text,text,text,text,text,text,text,jsonb) to service_role;
