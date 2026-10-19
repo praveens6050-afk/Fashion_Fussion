@@ -17,6 +17,7 @@ const notificationMigration=read('supabase/migrations/20261017120000_admin_crm_n
 const migration=read('supabase/migrations/20261017110000_admin_seller_lead_crm.sql');
 const teamMigration=read('supabase/migrations/20261019100000_crm_team_access.sql');
 const teamManagement=read('admin-panel/crm-team-management.js');
+const supportWorkspace=read('admin-panel/crm-support-workspace.js');
 assert(login.includes('crm-login.js?v=20261019-team-management'),'CRM login page must load the team-aware auth controller');
 assert(login.includes('invitation-only')&&login.includes('no public registration'),'CRM login must not advertise public signup');
 assert(loginJs.includes("select('is_admin')")&&loginJs.includes("profile?.is_admin===true"),'Existing admins must retain CRM access');
@@ -49,6 +50,10 @@ assert(teamMigration.includes('create table if not exists public.crm_team_member
 assert(teamMigration.includes("role in ('customer_support','seller_support','sales','marketing')")&&teamMigration.includes('is_active')&&teamMigration.includes('email text not null'),'CRM roles must be constrained, email-bound and revocable');
 assert(page.includes('id="crmTeamManagement"')&&page.includes('id="crmTeamForm"'),'Admin CRM must include Team Management');
 assert(page.includes('id="crmMemberId"')&&page.includes('id="crmMemberRole"'),'Team Management must assign an Auth UUID and department');
+assert(page.includes('id="crmSupportWorkspace"')&&page.includes('id="crmSupportRows"'),'Support departments must have a separate queue workspace');
+assert(auth.includes("crm-support-workspace.js?v=20261019-support-queue"),'Support staff must load only their support queue module');
+assert(teamMigration.includes('create or replace function public.crm_support_ticket_queue()')&&teamMigration.includes("'sla_due_at', t.sla_due_at")&&teamMigration.includes('revoke all on function public.crm_support_ticket_queue() from public, anon'),'Support queue must be a narrow, authenticated-only database RPC');
+assert(supportWorkspace.includes("rpc('crm_support_ticket_queue')")&&supportWorkspace.includes('customer_support')&&supportWorkspace.includes('seller_support'),'Support queue must call the scoped RPC and identify department');
 assert(teamManagement.includes("from('crm_team_members').select('user_id,email,role,is_active,created_at')"),'Team Management must load the CRM staff roster');
 assert(teamManagement.includes("upsert({user_id:userId,email,role,is_active:true")&&teamManagement.includes('data-deactivate')&&teamManagement.includes('data-reactivate'),'Team Management must assign roles and allow access revocation/reactivation');
 assert(teamManagement.includes("Only verified CRM administrators can manage team access")&&teamManagement.includes('confirm('),'Team Management must verify admin privileges and confirm access changes');
