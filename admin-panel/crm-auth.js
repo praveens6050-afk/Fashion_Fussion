@@ -20,6 +20,10 @@
     $('crmEmail').textContent=(session.user.email||'CRM user')+' · '+role;
     $('dashboard').dataset.crmRole=role;
     $('dashboard').dataset.crmDepartment=role;
+    const salesWorkspace=$('crmSalesWorkspace');
+    const supportPending=$('crmSupportPending');
+    if(salesWorkspace)salesWorkspace.hidden=!['sales','marketing','administrator'].includes(role);
+    if(supportPending)supportPending.hidden=!['customer_support','seller_support'].includes(role);
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
     $('dashboard').dataset.adminReady='true';
     db.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){location.replace('crm-login.html')}});
