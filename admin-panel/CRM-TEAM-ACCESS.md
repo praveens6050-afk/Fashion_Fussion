@@ -29,4 +29,4 @@ This implementation is on the `crm-team-access` branch only. It does not deploy 
 - The Supabase project ref configured in `admin-panel/supabase-config.js` must be verified as the intended CRM environment before applying migrations; it has not been proven to be non-production.
 - Do not deploy to Cloudflare or apply remote migrations without explicit owner approval.
 - Sales and marketing currently share lead write access; implement/verify granular permissions if their duties should differ.
-- Customer Support and Seller Support may be rostered, but their roles do not receive seller-lead table access until dedicated support workspaces and RLS policies are implemented.
+- Customer Support and Seller Support may be rostered and can sign in, but see a setup-pending screen only; they do not receive seller-lead table access until dedicated support workspaces and RLS policies are implemented.
