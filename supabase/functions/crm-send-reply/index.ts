@@ -92,6 +92,14 @@ Deno.serve(async(req)=>{
   if(cError||!c) return response({error:"CONVERSATION_NOT_FOUND"},404,origin);
   const sharedSalesMarketing = String(c.inbox_address||"").trim().toLowerCase()==="sales.team@fashionfussion.in" && ["sales","marketing"].includes(role);
   if(role!=="administrator"&&role!==c.department&&!sharedSalesMarketing) return response({error:"DEPARTMENT_ACCESS_DENIED"},403,origin);
+  if(sharedSalesMarketing&&!c.assigned_to){
+    const {data:claimed}=await db.from("crm_inbox_conversations").update({assigned_to:user.id,updated_at:new Date().toISOString()}).eq("id",conversationId).is("assigned_to",null).select("id").maybeSingle();
+    if(claimed) c.assigned_to=user.id;
+    else {
+      const {data:latest}=await db.from("crm_inbox_conversations").select("assigned_to").eq("id",conversationId).maybeSingle();
+      c.assigned_to=latest?.assigned_to||null;
+    }
+  }
   if(sharedSalesMarketing&&c.assigned_to&&c.assigned_to!==user.id) return response({error:"CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT"},409,origin);
   if(mode==="internal_note") return response({error:"INTERNAL_NOTES_NOT_YET_SUPPORTED"},501,origin);
   if(c.provider==="email"&&!c.contact_email) return response({error:"CONTACT_EMAIL_MISSING"},422,origin);
