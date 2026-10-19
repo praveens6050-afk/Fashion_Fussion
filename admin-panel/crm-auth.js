@@ -11,7 +11,7 @@
     if(profileError||profile?.is_admin!==true){await db.auth.signOut();deny('This account is not authorized to access the CRM workspace.');return}
     $('crmEmail').textContent=session.user.email||'Administrator';
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
-    $('dashboard').dataset.adminReady='true';
+    $('dashboard').dataset.adminReady='true';document.dispatchEvent(new Event('ff-crm-ready'));
     db.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){location.replace('crm-login.html')}});
   }
   $('crmLogout').addEventListener('click',async()=>{const db=await ready;await db.auth.signOut();location.replace('crm-login.html')});
