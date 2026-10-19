@@ -21,6 +21,19 @@ BEGIN
      OR NOT has_table_privilege('service_role','public.whatsapp_admin_alert_outbox','INSERT') THEN
     RAISE EXCEPTION 'Service role must have private operational access';
   END IF;
+  IF has_function_privilege('anon','public.stage_whatsapp_admin_alert(text,text,text)','EXECUTE')
+     OR has_function_privilege('authenticated','public.stage_whatsapp_admin_alert(text,text,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Browser roles must not stage admin alerts';
+  END IF;
+  IF NOT has_function_privilege('service_role','public.stage_whatsapp_admin_alert(text,text,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Service role must stage admin alerts';
+  END IF;
+  IF public.stage_whatsapp_admin_alert('order:123456','order_attention','ORD-123') <> 0 THEN
+    RAISE EXCEPTION 'No admin recipients are configured in the isolated fixture';
+  END IF;
+  IF public.stage_whatsapp_admin_alert('short','order_attention','ORD-123') <> 0 THEN
+    RAISE EXCEPTION 'Invalid event keys must fail closed';
+  END IF;
   IF NOT EXISTS (
     SELECT 1 FROM pg_catalog.pg_constraint
     WHERE conrelid='public.whatsapp_admin_alert_outbox'::regclass
