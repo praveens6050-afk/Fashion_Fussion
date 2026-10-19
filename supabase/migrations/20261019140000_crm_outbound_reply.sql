@@ -16,6 +16,8 @@ alter table public.crm_inbox_send_attempts enable row level security;
 revoke all on public.crm_inbox_send_attempts from anon,authenticated;
 grant all on public.crm_inbox_send_attempts to service_role;
 
+alter table public.crm_inbox_conversations add column if not exists last_inbound_at timestamptz;
+update public.crm_inbox_conversations set last_inbound_at=received_at where last_inbound_at is null;
 alter table public.crm_inbox_messages add column if not exists send_request_id uuid;
 alter table public.crm_inbox_messages add column if not exists delivery_status text not null default 'received'
   check (delivery_status in ('received','queued','sent','delivered','read','failed'));
@@ -60,7 +62,7 @@ begin
    where c.provider=p_provider and c.provider_thread_id=p_provider_thread_id
    order by c.updated_at desc limit 1;
    if v_id is not null then
-     update public.crm_inbox_conversations set latest_message=left(p_body,10000),received_at=now(),updated_at=now(),
+     update public.crm_inbox_conversations set latest_message=left(p_body,10000),received_at=now(),last_inbound_at=now(),updated_at=now(),
        subject=coalesce(nullif(trim(p_subject),''),subject),
        contact_name=coalesce(nullif(trim(p_sender_name),''),contact_name),
        contact_email=coalesce(v_email,contact_email),contact_phone=coalesce(v_phone,contact_phone),
