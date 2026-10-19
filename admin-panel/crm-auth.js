@@ -21,15 +21,20 @@
     $('dashboard').dataset.crmRole=role;
     $('dashboard').dataset.crmDepartment=role;
     const salesWorkspace=$('crmSalesWorkspace');
-    const supportPending=$('crmSupportPending');
+    const supportWorkspace=$('crmSupportWorkspace');
     if(salesWorkspace)salesWorkspace.hidden=!['sales','marketing','administrator'].includes(role);
-    if(supportPending)supportPending.hidden=!['customer_support','seller_support'].includes(role);
+    if(supportWorkspace)supportWorkspace.hidden=!['customer_support','seller_support'].includes(role);
+    const supportTitle=$('crmSupportTitle');
+    if(supportTitle)supportTitle.textContent=role==='customer_support'?'Customer Support Queue':'Seller Support Queue';
     const teamManagement=$('crmTeamManagement');
     if(teamManagement)teamManagement.hidden=role!=='administrator';
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
     $('dashboard').dataset.adminReady='true';
     if(role==='administrator'){
       const roster=document.createElement('script');roster.src='crm-team-management.js?v=20261019-team-management';roster.async=false;document.body.appendChild(roster);
+    }
+    if(role==='customer_support'||role==='seller_support'){
+      const support=document.createElement('script');support.src='crm-support-workspace.js?v=20261019-support-queue';support.async=false;document.body.appendChild(support);
     }
     db.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){location.replace('crm-login.html')}});
   }
