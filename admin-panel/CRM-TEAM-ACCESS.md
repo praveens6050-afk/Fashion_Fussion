@@ -30,3 +30,10 @@ This implementation is on the `crm-team-access` branch only. It does not deploy 
 - Do not deploy to Cloudflare or apply remote migrations without explicit owner approval.
 - Sales and marketing currently share lead write access; implement/verify granular permissions if their duties should differ.
 - Customer Support and Seller Support can view their own department's read-only support queue. Ticket replies and status changes remain disabled in this first release; they do not receive seller-lead table access.
+
+## Department modules added on this branch
+- **Sales:** B2B company accounts (including parent accounts and credit-limit fields), deal stages, quotation/proforma logs with discount/freight/expiry, and manual sales activity records. These are logs only; they do not issue invoices or collect payments.
+- **Customer Support / Seller Support:** separate ticket queues, SLA urgency labels and department-specific canned-response templates. Ticket queue is read-only; refund/store-credit/RMA/address-change commands and ticket replies are not enabled.
+- **Marketing:** manual campaign/journey plans, order-history-based RFM snapshots, coupon performance summary, and A/B test archive. Planning does not send email/WhatsApp/SMS or trigger journeys automatically. Browse recency, ROAS attribution and unsubscribe rates require event/consent instrumentation and approved integrations.
+- **Cross-department sharing:** first slice uses role-isolated modules and narrow projections; shared customer-event routing, cart-abandonment suppression, VIP routing and sales/service handoff rules remain future work.
+- **Data safety:** no production migration/deploy was performed. Migration replay must be checked in a safe environment because the earlier team migration references CRM follow-up tables that are absent in the connected project's current schema listing.
