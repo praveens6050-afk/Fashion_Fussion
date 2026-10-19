@@ -15,6 +15,7 @@ DECLARE
   seller_recipient_missing text[];
   admin_identity_missing text[];
   admin_alert_storage_missing text[];
+  seller_alert_storage_missing text[];
 BEGIN
   SELECT array_agg(required.column_name ORDER BY required.column_name)
     INTO missing_columns
@@ -98,6 +99,24 @@ BEGIN
   );
 
   SELECT array_agg(required.column_name ORDER BY required.column_name)
+    INTO seller_alert_storage_missing
+  FROM (VALUES
+    ('whatsapp_seller_order_notification_outbox','order_id'),
+    ('whatsapp_seller_order_notification_outbox','seller_id'),
+    ('whatsapp_seller_order_notification_outbox','event_type'),
+    ('whatsapp_seller_order_notification_outbox','status'),
+    ('whatsapp_seller_order_notification_outbox','attempt_count'),
+    ('whatsapp_seller_order_notification_outbox','template_name'),
+    ('whatsapp_seller_order_notification_outbox','provider_message_id'),
+    ('whatsapp_seller_order_notification_outbox','attempt_started_at')
+  ) AS required(table_name,column_name)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema='public' AND c.table_name=required.table_name
+      AND c.column_name=required.column_name
+  );
+
+  SELECT array_agg(required.column_name ORDER BY required.column_name)
     INTO admin_alert_storage_missing
   FROM (VALUES
     ('whatsapp_admin_alert_recipients','user_id'),
@@ -137,6 +156,8 @@ BEGIN
     'sellerMappingMissingColumns', coalesce(to_jsonb(seller_mapping_missing),'[]'::jsonb),
     'sellerRecipientSchemaVerified', coalesce(pg_catalog.cardinality(seller_recipient_missing),0)=0,
     'sellerRecipientMissingColumns', coalesce(to_jsonb(seller_recipient_missing),'[]'::jsonb),
+    'sellerAlertStorageVerified', coalesce(pg_catalog.cardinality(seller_alert_storage_missing),0)=0,
+    'sellerAlertStorageMissingColumns', coalesce(to_jsonb(seller_alert_storage_missing),'[]'::jsonb),
     'adminIdentitySchemaVerified', coalesce(pg_catalog.cardinality(admin_identity_missing),0)=0,
     'adminIdentityMissingColumns', coalesce(to_jsonb(admin_identity_missing),'[]'::jsonb),
     'adminAlertStorageVerified', coalesce(pg_catalog.cardinality(admin_alert_storage_missing),0)=0,
