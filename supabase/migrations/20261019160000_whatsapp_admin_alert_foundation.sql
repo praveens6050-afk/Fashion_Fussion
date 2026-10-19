@@ -80,3 +80,89 @@ REVOKE ALL ON FUNCTION public.stage_whatsapp_admin_alert(text,text,text)
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.stage_whatsapp_admin_alert(text,text,text)
   TO service_role;
+
+
+-- Atomic at-most-once claim for the future private admin dispatcher.
+CREATE OR REPLACE FUNCTION public.claim_whatsapp_admin_alert(
+ p_outbox_id bigint,
+ p_activation_cutoff timestamptz
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE v_claim record;
+BEGIN
+ IF p_outbox_id IS NULL OR p_outbox_id<=0 OR p_activation_cutoff IS NULL
+    OR p_activation_cutoff>now() OR p_activation_cutoff<'2026-10-01'::timestamptz
+ THEN RETURN NULL; END IF;
+
+ PERFORM pg_catalog.pg_advisory_xact_lock(733013,417021);
+ IF (SELECT count(*) FROM public.whatsapp_admin_alert_outbox
+      WHERE attempt_started_at>=now()-interval '1 hour')>=5
+    OR (SELECT count(*) FROM public.whatsapp_admin_alert_outbox
+      WHERE attempt_started_at>=now()-interval '24 hours')>=20
+ THEN RETURN NULL; END IF;
+
+ UPDATE public.whatsapp_admin_alert_outbox ob
+ SET status='sending',attempt_count=1,attempt_started_at=now(),updated_at=now()
+ FROM public.whatsapp_admin_alert_recipients r
+ JOIN public.profiles p ON p.id=r.user_id AND p.is_admin IS TRUE
+ WHERE ob.id=p_outbox_id AND ob.recipient_id=r.id
+   AND ob.status='ready' AND ob.attempt_count=0
+   AND ob.provider_message_id IS NULL AND ob.attempt_started_at IS NULL
+   AND ob.created_at>=greatest(p_activation_cutoff,now()-interval '24 hours')
+   AND ob.created_at<=now()
+   AND r.enabled IS TRUE AND r.verified_at IS NOT NULL
+   AND p.phone_verified_at IS NOT NULL
+   AND private.ff_whatsapp_e164(p.phone)=r.phone_e164
+ RETURNING ob.id,r.phone_e164,ob.alert_type,ob.reference_code
+ INTO v_claim;
+ IF NOT FOUND THEN RETURN NULL; END IF;
+
+ RETURN pg_catalog.jsonb_build_object(
+   'outboxId',v_claim.id,'recipientPhone',v_claim.phone_e164,
+   'alertType',v_claim.alert_type,'referenceCode',v_claim.reference_code
+ );
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.claim_whatsapp_admin_alert(bigint,timestamptz)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_whatsapp_admin_alert(bigint,timestamptz)
+ TO service_role;
+
+CREATE OR REPLACE FUNCTION public.finish_whatsapp_admin_alert(
+ p_outbox_id bigint,
+ p_provider_message_id text,
+ p_error_code text DEFAULT NULL
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE v_changed integer;
+BEGIN
+ IF p_outbox_id IS NULL OR p_outbox_id<=0
+    OR length(coalesce(p_error_code,''))>64
+    OR (p_error_code IS NOT NULL AND p_error_code !~ '^[A-Z0-9_:-]{1,64}$')
+    OR (p_provider_message_id IS NOT NULL AND
+      (length(p_provider_message_id)>255 OR p_provider_message_id !~ '^wamid[.][^[:space:]]+$'))
+ THEN RETURN false; END IF;
+
+ UPDATE public.whatsapp_admin_alert_outbox
+ SET status=CASE WHEN p_provider_message_id IS NOT NULL THEN 'accepted'
+                 WHEN p_error_code='PROVIDER_OUTCOME_UNKNOWN' THEN 'blocked'
+                 ELSE 'failed' END,
+     provider_message_id=p_provider_message_id,last_error_code=p_error_code,updated_at=now()
+ WHERE id=p_outbox_id AND status='sending' AND attempt_count=1
+   AND provider_message_id IS NULL;
+ GET DIAGNOSTICS v_changed=ROW_COUNT;
+ RETURN v_changed=1;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.finish_whatsapp_admin_alert(bigint,text,text)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.finish_whatsapp_admin_alert(bigint,text,text)
+ TO service_role;
