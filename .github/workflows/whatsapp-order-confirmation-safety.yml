@@ -79,6 +79,9 @@ jobs:
           psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019170000_whatsapp_seller_order_alert_foundation.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019170000_whatsapp_seller_order_alert_foundation.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/whatsapp_seller_order_alert_foundation.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019180000_whatsapp_inbound_support_routing.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019180000_whatsapp_inbound_support_routing.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/whatsapp_inbound_support_routing.sql
           cmp -s seller-panel/sql/whatsapp_signup_once_transactional_consent.sql supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
