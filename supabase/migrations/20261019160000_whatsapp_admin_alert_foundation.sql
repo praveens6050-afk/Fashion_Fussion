@@ -35,3 +35,48 @@ GRANT USAGE,SELECT ON SEQUENCE public.whatsapp_admin_alert_recipients_id_seq TO 
 GRANT USAGE,SELECT ON SEQUENCE public.whatsapp_admin_alert_outbox_id_seq TO service_role;
 COMMENT ON TABLE public.whatsapp_admin_alert_recipients IS 'Server-managed verified admin WhatsApp allowlist. Never expose phone numbers to browser roles.';
 COMMENT ON TABLE public.whatsapp_admin_alert_outbox IS 'Deduplicated admin alert delivery ledger. Contains references only, never customer PII or message payloads.';
+
+
+-- Stage an alert only for currently verified, enabled admin recipients.
+-- Does not claim an outbox row or send a message.
+CREATE OR REPLACE FUNCTION public.stage_whatsapp_admin_alert(
+  p_event_key text,
+  p_alert_type text,
+  p_reference_code text
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE
+  v_inserted integer;
+BEGIN
+  IF p_event_key IS NULL OR length(p_event_key) NOT BETWEEN 8 AND 160
+     OR p_event_key !~ '^[A-Za-z0-9._:-]+$'
+     OR p_alert_type NOT IN ('order_attention','payment_attention','support_escalation','seller_review')
+     OR p_reference_code IS NULL OR length(p_reference_code) NOT BETWEEN 1 AND 80
+     OR p_reference_code ~ '[[:cntrl:]]'
+  THEN
+    RETURN 0;
+  END IF;
+
+  INSERT INTO public.whatsapp_admin_alert_outbox
+    (recipient_id,event_key,alert_type,reference_code,status)
+  SELECT r.id,p_event_key,p_alert_type,p_reference_code,'pending_review'
+  FROM public.whatsapp_admin_alert_recipients r
+  JOIN public.profiles p ON p.id=r.user_id AND p.is_admin IS TRUE
+  WHERE r.enabled IS TRUE AND r.verified_at IS NOT NULL
+    AND p.phone_verified_at IS NOT NULL
+    AND private.ff_whatsapp_e164(p.phone) = r.phone_e164
+  ON CONFLICT (recipient_id,event_key) DO NOTHING;
+
+  GET DIAGNOSTICS v_inserted = ROW_COUNT;
+  RETURN v_inserted;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.stage_whatsapp_admin_alert(text,text,text)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.stage_whatsapp_admin_alert(text,text,text)
+  TO service_role;
