@@ -41,9 +41,12 @@ window.FF_API_ORIGIN='';
   function loadCrmModules(){
     const dashboard=document.getElementById('dashboard');
     const role=dashboard?.dataset.crmRole;
-    if(role==='sales'||role==='marketing'){
+    if(role==='sales'){
       add('admin-crm.js?v=20261017-crm','data-admin-crm');
       add('admin-crm-followups.js?v=20261017-crm-followups','data-admin-crm-followups');
+    }
+    if(['sales','marketing','customer_support','seller_support'].includes(role)){
+      add('crm-department-workspaces.js?v=20261019-department-modules','data-crm-department-workspaces');
     }
     // Team staff only get the modules permitted for their role; customer/seller directories and notification diagnostics stay admin-only.
     if(dashboard?.dataset.crmRole==='administrator'){
