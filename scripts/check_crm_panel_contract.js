@@ -60,4 +60,17 @@ assert(teamManagement.includes("Only verified CRM administrators can manage team
 assert(teamMigration.includes('create or replace function public.is_crm_staff()')&&teamMigration.includes('revoke all on function public.is_crm_staff() from public, anon'),'CRM authorization helper must be restricted to authenticated users');
 for(const marker of ['seller_leads_crm_select','seller_leads_crm_insert','seller_leads_crm_update','seller_leads_crm_delete','seller_lead_tasks_crm_select','seller_lead_activities_crm_select'])assert(teamMigration.includes(marker),'Missing CRM team RLS policy: '+marker);
 assert(teamMigration.includes('public.is_crm_staff()'),'CRM team policies must use database-side role enforcement');
+
+const departmentMigration=read('supabase/migrations/20261019110000_crm_department_modules.sql');
+const departmentUi=read('admin-panel/crm-department-workspaces.js');
+assert(departmentMigration.includes('crm_b2b_accounts')&&departmentMigration.includes('crm_b2b_deals')&&departmentMigration.includes('crm_b2b_quotes'),'B2B company, deal and quotation schema must exist');
+assert(departmentMigration.includes('crm_sales_activities')&&departmentMigration.includes('crm_support_macros'),'Sales activity logs and support response macros must exist');
+assert(departmentMigration.includes('crm_marketing_campaigns')&&departmentMigration.includes('crm_rfm_segments')&&departmentMigration.includes('crm_ab_tests'),'Marketing campaign, RFM and experiment schema must exist');
+assert(departmentMigration.includes('crm_coupon_performance()')&&departmentMigration.includes('crm_refresh_rfm_segments()'),'Marketing analytics RPCs must be present');
+assert(departmentMigration.includes("public.crm_has_role(array['sales'])")&&departmentMigration.includes("public.crm_has_role(array['marketing'])"),'Department tables must have database-enforced role policies');
+assert(departmentUi.includes('B2B Company Accounts')&&departmentUi.includes('Quotation / Proforma Log')&&departmentUi.includes('Sales Activity'),'Sales workspace must expose company/deal/quote/activity tools');
+assert(departmentUi.includes('Canned Response Directory')&&departmentUi.includes('SLA Monitor'),'Support workspace must expose SLA and macro tools');
+assert(departmentUi.includes('Campaign & Journey Planner')&&departmentUi.includes('Refresh order-based RFM')&&departmentUi.includes('Coupon Performance')&&departmentUi.includes('A/B Test Archive'),'Marketing workspace must expose campaign, RFM, coupon and experiment views');
+assert(departmentUi.includes('no messages were sent')||departmentUi.includes('No messages were sent')||departmentUi.includes('does not send'), 'Marketing campaign planning must remain manual-only');
+
 console.log('CRM panel contract checks passed: invitation-only team auth, active CRM roles, isolated module loading, CSV safety, read-only customer/seller views, read-only notification API, follow-ups, and staff RLS markers.');
