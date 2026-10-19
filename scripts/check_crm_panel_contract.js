@@ -73,4 +73,10 @@ assert(departmentUi.includes('Canned Response Directory')&&departmentUi.includes
 assert(departmentUi.includes('Campaign & Journey Planner')&&departmentUi.includes('Refresh order-based RFM')&&departmentUi.includes('Coupon Performance')&&departmentUi.includes('A/B Test Archive'),'Marketing workspace must expose campaign, RFM, coupon and experiment views');
 assert(departmentUi.includes('no messages were sent')||departmentUi.includes('No messages were sent')||departmentUi.includes('does not send'), 'Marketing campaign planning must remain manual-only');
 
+
+assert(departmentMigration.includes('crm_sales_quotas')&&departmentMigration.includes('crm_b2b_deal_stage_history')&&departmentMigration.includes('crm_sales_metrics()'),'Sales quota and pipeline velocity metrics must be present');
+assert(departmentMigration.includes('crm_support_metrics()')&&departmentMigration.includes('avg_first_response_minutes')&&departmentMigration.includes('first_contact_resolution_pct'),'Support FRT/FCR metrics must be present');
+assert(departmentUi.includes('crm_sales_metrics')&&departmentUi.includes('crm_support_metrics'),'Sales and support metrics must be wired into role workspaces');
+assert(read('admin-panel/crm-team-management.js').includes('crmQuotaForm'),'CRM admins must have a quota management form');
+
 console.log('CRM panel contract checks passed: invitation-only team auth, active CRM roles, isolated module loading, CSV safety, read-only customer/seller views, read-only notification API, follow-ups, and staff RLS markers.');
