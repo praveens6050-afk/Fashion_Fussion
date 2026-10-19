@@ -84,6 +84,7 @@ export async function onRequestGet({request,env}) {
           transactionalOptIns:transactional,
           activePerOrderConsents:orders,queueCount:queue,
           ...schema,
+          atomicDispatchSchemaVerified:schema.schemaVerified,
           metaTemplateVerified:false,
           status:schema.schemaVerified
             ?'SCHEMA_VERIFIED_META_PREFLIGHT_REQUIRED'
