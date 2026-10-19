@@ -119,7 +119,7 @@ begin
  when x.last_order>=now()-interval '90 days' then 'Recent'
  when x.last_order<now()-interval '180 days' then 'At risk' else 'Needs nurture' end,now()
  from (select o.user_id,max(o.created_at) last_order,count(*)::integer order_count,coalesce(sum(o.total_amount),0)::numeric(12,2) total_spend
- from public.orders o where o.user_id is not null and lower(coalesce(o.status,'')) in ('paid','completed','delivered','fulfilled') group by o.user_id) x
+ from public.orders o where o.user_id is not null and lower(coalesce(o.status,'')) in ('paid','cod_collected') group by o.user_id) x
  on conflict(customer_id) do update set recency_days=excluded.recency_days,order_frequency=excluded.order_frequency,monetary_value=excluded.monetary_value,segment=excluded.segment,calculated_at=now();
  get diagnostics n=row_count; return n;
 end $$;
@@ -139,7 +139,7 @@ begin
  select coalesce(jsonb_agg(jsonb_build_object('code',x.code,'redemptions',x.redemptions,'revenue',x.revenue,'discount_total',x.discount_total,'active',x.active) order by x.redemptions desc),'[]'::jsonb)
  into result
  from (select c.code,c.is_active active,count(o.id)::integer redemptions,coalesce(sum(o.total_amount),0)::numeric(12,2) revenue,coalesce(sum(o.coupon_discount),0)::numeric(12,2) discount_total
- from public.coupons c left join public.orders o on lower(o.coupon_code)=lower(c.code)
+ from public.coupons c left join public.orders o on lower(o.coupon_code)=lower(c.code) and lower(coalesce(o.status,'')) in ('paid','cod_collected')
  group by c.code,c.is_active) x;
  return result;
 end $$;
