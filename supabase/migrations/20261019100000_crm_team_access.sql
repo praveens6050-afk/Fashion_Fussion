@@ -4,7 +4,7 @@
 
 create table if not exists public.crm_team_members (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  role text not null check (role in ('sales','marketing')),
+  role text not null check (role in ('customer_support','seller_support','sales','marketing')),
   is_active boolean not null default true,
   invited_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -27,7 +27,7 @@ as $$
     where p.id = (select auth.uid()) and p.is_admin is true
   ) or exists (
     select 1 from public.crm_team_members m
-    where m.user_id = (select auth.uid()) and m.is_active is true
+    where m.user_id = (select auth.uid()) and m.is_active is true and m.role in ('sales','marketing')
   );
 $$;
 revoke all on function public.is_crm_staff() from public, anon;
@@ -73,4 +73,4 @@ create policy seller_lead_activities_crm_insert on public.seller_lead_activities
 create policy seller_lead_activities_crm_update on public.seller_lead_activities for update to authenticated using (public.is_crm_staff()) with check (public.is_crm_staff());
 create policy seller_lead_activities_crm_delete on public.seller_lead_activities for delete to authenticated using (public.is_crm_staff());
 
-comment on table public.crm_team_members is 'CRM-only staff allowlist. No public self-signup; admins provision Supabase Auth users and assign sales/marketing roles.';
+comment on table public.crm_team_members is 'CRM-only staff allowlist. No public self-signup; admins provision Supabase Auth users and assign customer_support, seller_support, sales, or marketing roles. Support roles are rostered but do not receive seller-acquisition table access until dedicated support permissions are implemented.';
