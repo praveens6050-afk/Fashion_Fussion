@@ -8,8 +8,8 @@
     if(!user?.id)return null;
     const{data:profile,error:profileError}=await db.from('profiles').select('is_admin').eq('id',user.id).maybeSingle();
     if(!profileError&&profile?.is_admin===true)return 'administrator';
-    const{data:member,error}=await db.from('crm_team_members').select('role,is_active').eq('user_id',user.id).maybeSingle();
-    if(error||!member||member.is_active!==true||!['customer_support','seller_support','sales','marketing'].includes(member.role))return null;
+    const{data:member,error}=await db.from('crm_team_members').select('email,role,is_active').eq('user_id',user.id).maybeSingle();
+    if(error||!member||member.is_active!==true||String(member.email||'').toLowerCase()!==String(user.email||'').toLowerCase()||!['customer_support','seller_support','sales','marketing'].includes(member.role))return null;
     return member.role;
   }
   async function routeExisting(){const db=await client();const{data:{session},error}=await db.auth.getSession();if(error||!session?.user)return;if(await roleFor(db,session.user)){location.replace('crm.html');return}await db.auth.signOut();show('This account is not authorized for the CRM. Contact your CRM administrator.')}
