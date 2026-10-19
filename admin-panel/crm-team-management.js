@@ -22,8 +22,9 @@
     mountQuotaTools(db,members);
   }
   function mountQuotaTools(db,members){
-    const body=$('crmTeamManagement')?.querySelector('.card-body');if(!body||$('crmQuotaTools'))return;
+    const body=$('crmTeamManagement')?.querySelector('.card-body');if(!body)return;
     const sales=members.filter(m=>m.role==='sales'&&m.is_active);
+    if($('crmQuotaTools')){const select=$('crmQuotaUser');if(select)select.innerHTML=sales.map(m=>'<option value="'+esc(m.user_id)+'">'+esc(m.email)+'</option>').join('');const save=$('crmQuotaForm')?.querySelector('button[type="submit"]');if(save)save.disabled=!sales.length;return;}
     const section=document.createElement('section');section.id='crmQuotaTools';section.innerHTML='<h3>Sales Quotas</h3><p>Set monthly or custom-period revenue targets for active Sales team members.</p><form id="crmQuotaForm" class="crm-team-form"><label for="crmQuotaUser">Sales representative</label><select id="crmQuotaUser" required>'+sales.map(m=>'<option value="'+esc(m.user_id)+'">'+esc(m.email)+'</option>').join('')+'</select><label for="crmQuotaStart">Period start</label><input id="crmQuotaStart" type="date" required><label for="crmQuotaEnd">Period end</label><input id="crmQuotaEnd" type="date" required><label for="crmQuotaTarget">Revenue target (INR)</label><input id="crmQuotaTarget" type="number" min="0" step="0.01" required><button class="primary" type="submit" '+(!sales.length?'disabled':'')+'>Save quota</button></form><div id="crmQuotaNotice" role="status"></div><div id="crmQuotaRows"></div>';
     body.appendChild(section);
     const qnotice=message=>{const el=$('crmQuotaNotice');if(el)el.textContent=message};
