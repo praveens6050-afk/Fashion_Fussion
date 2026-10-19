@@ -8,7 +8,7 @@
     const{data:profile,error:profileError}=await db.from('profiles').select('is_admin').eq('id',user.id).maybeSingle();
     if(!profileError&&profile?.is_admin===true)return 'administrator';
     const{data:member,error:memberError}=await db.from('crm_team_members').select('role,is_active').eq('user_id',user.id).maybeSingle();
-    if(memberError||!member||member.is_active!==true||!['sales','marketing'].includes(member.role))return null;
+    if(memberError||!member||member.is_active!==true||!['customer_support','seller_support','sales','marketing'].includes(member.role))return null;
     return member.role;
   }
   async function init(){
@@ -19,6 +19,7 @@
     if(!role){await db.auth.signOut();deny('This account has no active CRM team access. Ask the CRM administrator to invite and authorize it.');return}
     $('crmEmail').textContent=(session.user.email||'CRM user')+' · '+role;
     $('dashboard').dataset.crmRole=role;
+    $('dashboard').dataset.crmDepartment=role;
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
     $('dashboard').dataset.adminReady='true';
     db.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){location.replace('crm-login.html')}});
