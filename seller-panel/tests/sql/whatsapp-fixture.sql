@@ -2,6 +2,7 @@
 -- This creates ONLY synthetic tables/users inside the ephemeral GitHub Actions DB.
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS private;
+CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY);
 DO $roles$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='anon') THEN
