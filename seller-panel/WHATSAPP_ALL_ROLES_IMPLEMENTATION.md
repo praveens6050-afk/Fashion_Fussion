@@ -7,7 +7,7 @@ Finish the integration before end-to-end testing for customer, seller, admin and
 
 ## Verified gaps from the connected production schema and Pages configuration
 - The customer order-confirmation outbox and atomic claim/finish RPCs exist, but the outbox currently has no records. Actual delivery is unproven.
-- The live `orders` table has no `seller_id` column. A read-only audit of the 14 existing order lines found zero matches from item `id` to `seller_product_submissions.approved_product_id`. Do not infer seller ownership from unverified JSON or send seller alerts until canonical ownership is modeled and backfilled safely.
+- The live `orders` table has no `seller_id` column. A read-only audit of 14 existing order lines found zero matches from item `id` to `seller_product_submissions.approved_product_id`, so those legacy lines cannot safely route to sellers. The canonical seller product-approval workflow does store `approved_product_id` and `seller_id`; new seller-order routing should use that relationship and must skip unmapped/ambiguous legacy products.
 - The read-only role readiness endpoint previously hard-coded customer atomic schema readiness to false. This branch adds a restricted, read-only schema probe and wires readiness to its result; it still must be replayed/tested in an isolated database before production use.
 - Seller onboarding automation and a dedicated admin-alert pipeline are not configured in production.
 - The Seller Pages project has WhatsApp credentials configured, but the order-send gates and a dedicated private dispatch token are not configured in the production environment-variable inventory.
@@ -30,7 +30,7 @@ Finish the integration before end-to-end testing for customer, seller, admin and
 
 ### 2. Seller
 - Keep seller marketing opt-in separate from transactional order alerts.
-- First establish a canonical product-to-seller relationship. Current production data does not map existing order item IDs to approved seller submissions, so routing is blocked until schema/backfill design and integrity checks are implemented.
+- Use the canonical `seller_product_submissions.approved_product_id` → `seller_id` relationship for seller-approved products, and validate the order item's product/variant ID against the actual schema. The 14 sampled existing order lines were not mapped to approved seller submissions; skip those legacy items rather than guessing or backfilling ownership without evidence.
 - Implement order alerts only after the verified canonical order-item-to-seller relationship is available.
 - Require a registered, verified seller recipient and approved utility template. Never treat a seller's public listing phone number as WhatsApp consent.
 - Use a dedicated private outbox/claim/finish flow, event-level idempotency, rate limits, signed delivery receipts and no blind retry after uncertain provider outcome.
