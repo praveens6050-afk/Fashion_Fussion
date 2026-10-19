@@ -40,7 +40,7 @@ create index if not exists crm_inbox_messages_conversation_idx on public.crm_inb
 alter table public.crm_inbox_conversations enable row level security;
 alter table public.crm_inbox_messages enable row level security;
 revoke all on public.crm_inbox_conversations,public.crm_inbox_messages from anon,authenticated;
-grant select,update on public.crm_inbox_conversations to authenticated;
+grant select on public.crm_inbox_conversations to authenticated;
 grant select on public.crm_inbox_messages to authenticated;
 create or replace function public.crm_inbox_can_access(p_department text)
 returns boolean language sql stable security definer set search_path=pg_catalog,public,auth
@@ -53,7 +53,7 @@ grant execute on function public.crm_inbox_can_access(text) to authenticated;
 drop policy if exists crm_inbox_conversations_department_read on public.crm_inbox_conversations;
 create policy crm_inbox_conversations_department_read on public.crm_inbox_conversations for select to authenticated using (public.crm_inbox_can_access(department));
 drop policy if exists crm_inbox_conversations_department_update on public.crm_inbox_conversations;
-create policy crm_inbox_conversations_department_update on public.crm_inbox_conversations for update to authenticated using (public.crm_inbox_can_access(department)) with check (public.crm_inbox_can_access(department));
+-- Conversation routing fields remain immutable to team users; webhook/service role owns ingestion.
 drop policy if exists crm_inbox_messages_department_read on public.crm_inbox_messages;
 create policy crm_inbox_messages_department_read on public.crm_inbox_messages for select to authenticated using (exists(select 1 from public.crm_inbox_conversations c where c.id=conversation_id and public.crm_inbox_can_access(c.department)));
 comment on table public.crm_inbox_conversations is 'Inbound WhatsApp and email messages routed to a CRM department. Provider webhooks write using service role; team users can read only their department.';
