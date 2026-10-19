@@ -92,3 +92,14 @@ assert(inboxUi.includes('crm_inbox_conversations')&&inboxUi.includes('crm_inbox_
 assert(read('admin-panel/crm.html').includes('crmUnifiedInbox')&&read('admin-panel/crm-auth.js').includes('crm-unified-inbox.js'),'Authorized CRM roles must load the unified inbox');
 
 console.log('CRM panel contract checks passed: invitation-only team auth, active CRM roles, isolated module loading, CSV safety, read-only customer/seller views, read-only notification API, follow-ups, and staff RLS markers.');
+
+const sendMigration=read('supabase/migrations/20261019140000_crm_outbound_reply.sql');
+const sendFunction=read('supabase/functions/crm-send-reply/index.ts');
+assert(sendMigration.includes('crm_inbox_send_attempts')&&sendMigration.includes('request_id uuid not null unique'),'Outbound send attempts must have unique idempotency keys');
+assert(sendMigration.includes("orders@fashionfussion.in")&&sendMigration.includes("v_department:='seller_support'")&&sendMigration.includes("v_department:='sales'"),'Inbound aliases must route exactly and transactional orders mail must be excluded from support');
+assert(sendFunction.includes('db.auth.getUser(token)')&&sendFunction.includes('crm_team_members')&&sendFunction.includes('DEPARTMENT_ACCESS_DENIED'),'Outbound sending must verify session and department access server-side');
+assert(sendFunction.includes('META_WHATSAPP_ACCESS_TOKEN')&&sendFunction.includes('WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H'),'WhatsApp replies must use server credentials and enforce 24-hour service window');
+assert(sendFunction.includes('ZOHO_REFRESH_TOKEN')&&sendFunction.includes('ZOHO_MAIL_ACCOUNT_ID')&&sendFunction.includes('CRM_FROM_CUSTOMER_CARE'),'Email replies must use server-side Zoho OAuth and department sender aliases');
+assert(sendFunction.includes('crm_inbox_send_attempts')&&sendFunction.includes('crm_inbox_messages')&&sendFunction.includes('delivery_status:"sent"'),'Provider sends must be recorded in the CRM audit/message history');
+assert(inboxUi.includes("functions.invoke('crm-send-reply'")&&inboxUi.includes('crypto.randomUUID()')&&inboxUi.includes('crmInboxReplyForm'),'CRM inbox must include an idempotency-keyed reply composer');
+assert(!/SUPABASE_SERVICE_ROLE_KEY|META_WHATSAPP_ACCESS_TOKEN|ZOHO_REFRESH_TOKEN/.test(read('admin-panel/crm-unified-inbox.js')),'Provider credentials must never be placed in browser code');
