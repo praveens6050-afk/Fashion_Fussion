@@ -18,6 +18,28 @@ grant all on public.crm_inbox_send_attempts to service_role;
 grant insert, update on public.crm_inbox_messages to service_role;
 grant update on public.crm_inbox_conversations to service_role;
 
+
+-- Shared Sales + Marketing mailbox visibility; the conversation still has one canonical department.
+create or replace function public.crm_inbox_can_access_conversation(p_department text,p_inbox_address text)
+returns boolean
+language sql stable security definer set search_path=pg_catalog,public,auth
+as $
+ select public.crm_inbox_can_access(p_department)
+   or (lower(trim(coalesce(p_inbox_address,'')))='sales.team@fashionfussion.in'
+       and (public.crm_inbox_can_access('sales') or public.crm_inbox_can_access('marketing')));
+$;
+revoke all on function public.crm_inbox_can_access_conversation(text,text) from public,anon;
+grant execute on function public.crm_inbox_can_access_conversation(text,text) to authenticated;
+drop policy if exists crm_inbox_conversations_department_read on public.crm_inbox_conversations;
+create policy crm_inbox_conversations_department_read on public.crm_inbox_conversations
+ for select to authenticated using (public.crm_inbox_can_access_conversation(department,inbox_address));
+drop policy if exists crm_inbox_messages_department_read on public.crm_inbox_messages;
+create policy crm_inbox_messages_department_read on public.crm_inbox_messages
+ for select to authenticated using (exists(
+   select 1 from public.crm_inbox_conversations c where c.id=conversation_id
+   and public.crm_inbox_can_access_conversation(c.department,c.inbox_address)
+ ));
+
 alter table public.crm_inbox_conversations add column if not exists last_inbound_at timestamptz;
 update public.crm_inbox_conversations set last_inbound_at=received_at where last_inbound_at is null;
 alter table public.crm_inbox_messages add column if not exists send_request_id uuid;
