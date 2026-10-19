@@ -77,7 +77,7 @@ export async function onRequestGet({request,env}) {
   if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(base) || !key)
     return json({error:'Private database configuration unavailable'},503);
   try {
-    const [transactional,marketing,orders,inboundReview,queue,schema]=await Promise.all([
+    const [transactional,marketing,orders,inboundReview,customerQueue,sellerQueue,salesMarketingQueue,adminQueue,queue,schema]=await Promise.all([
       exactCount(base,key,'whatsapp_contact_consents','phone_e164',
         '&purpose=eq.transactional&status=eq.opted_in&revoked_at=is.null'),
       exactCount(base,key,'whatsapp_contact_consents','phone_e164',
@@ -86,6 +86,10 @@ export async function onRequestGet({request,env}) {
         '&revoked_at=is.null'),
       exactCount(base,key,'whatsapp_inbound_events','id',
         '&routing_status=eq.needs_review'),
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.customer_support'),
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.seller_support'),
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.sales_marketing'),
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.admin_operations'),
       exactCount(base,key,'whatsapp_order_notification_outbox','id',''),
       schemaReadiness(base,key)
     ]);
@@ -137,6 +141,7 @@ export async function onRequestGet({request,env}) {
         }
       },
       inboundNeedsManualReview:inboundReview,
+      inboundSupportQueues:{customerSupport:customerQueue,sellerSupport:sellerQueue,salesMarketing:salesMarketingQueue,adminOperations:adminQueue},
       disclaimers:[
         'This is an operator-only privacy-safe inventory, not a sending authorization.',
         'Active marketing consent is purpose-specific; public business phone listings do not constitute opt-in.',
