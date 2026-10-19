@@ -31,6 +31,25 @@ async function exactCount(base,key,table,select,filter) {
   if(!match)throw Error('COUNT_HEADER_UNAVAILABLE');
   return Number(match[1]);
 }
+async function schemaReadiness(base,key) {
+  // This RPC is STABLE/read-only and returns only schema booleans, never rows
+  // or recipient information. Missing migration fails closed as "unverified".
+  const response=await fetch(base+'/rest/v1/rpc/whatsapp_notification_schema_readiness',{
+    method:'POST',cache:'no-store',
+    headers:{apikey:key,Authorization:'Bearer '+key,
+      'content-type':'application/json',Accept:'application/json'},
+    body:'{}'
+  });
+  if(!response.ok)return {schemaVerified:false,probeAvailable:false,
+    missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false};
+  const result=await response.json().catch(()=>null);
+  if(!result||typeof result!=='object')return {schemaVerified:false,probeAvailable:false,
+    missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false};
+  return {schemaVerified:result.schemaVerified===true,probeAvailable:true,
+    missingColumns:Array.isArray(result.missingColumns)?result.missingColumns:[],
+    claimFunctionPresent:result.claimFunctionPresent===true,
+    finishFunctionPresent:result.finishFunctionPresent===true};
+}
 function allowlisted(env,name) {
   return !!name && /^[a-z0-9_]{1,512}$/.test(name) &&
     String(env.WHATSAPP_ALLOWED_TEMPLATES||'').split(',')
@@ -43,7 +62,7 @@ export async function onRequestGet({request,env}) {
   if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(base) || !key)
     return json({error:'Private database configuration unavailable'},503);
   try {
-    const [transactional,marketing,orders,inboundReview,queue]=await Promise.all([
+    const [transactional,marketing,orders,inboundReview,queue,schema]=await Promise.all([
       exactCount(base,key,'whatsapp_contact_consents','phone_e164',
         '&purpose=eq.transactional&status=eq.opted_in&revoked_at=is.null'),
       exactCount(base,key,'whatsapp_contact_consents','phone_e164',
@@ -52,7 +71,8 @@ export async function onRequestGet({request,env}) {
         '&revoked_at=is.null'),
       exactCount(base,key,'whatsapp_inbound_events','id',
         '&routing_status=eq.needs_review'),
-      exactCount(base,key,'whatsapp_order_notification_outbox','id','')
+      exactCount(base,key,'whatsapp_order_notification_outbox','id',''),
+      schemaReadiness(base,key)
     ]);
     const sellerTemplate=String(env.WHATSAPP_SELLER_ONBOARDING_TEMPLATE||'').trim();
     const adminTemplate=String(env.WHATSAPP_ADMIN_ALERT_TEMPLATE||'').trim();
@@ -63,8 +83,11 @@ export async function onRequestGet({request,env}) {
           workflow:'order_confirmed',
           transactionalOptIns:transactional,
           activePerOrderConsents:orders,queueCount:queue,
-          atomicDispatchSchemaVerified:false,metaTemplateVerified:false,
-          status:'AWAITING_STAGING_AND_LIVE_META_PREFLIGHT'
+          ...schema,
+          metaTemplateVerified:false,
+          status:schema.schemaVerified
+            ?'SCHEMA_VERIFIED_META_PREFLIGHT_REQUIRED'
+            :'SCHEMA_NOT_VERIFIED'
         },
         seller:{
           workflow:'seller_onboarding',
