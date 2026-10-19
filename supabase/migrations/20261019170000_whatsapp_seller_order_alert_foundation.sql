@@ -87,3 +87,119 @@ GRANT EXECUTE ON FUNCTION public.stage_whatsapp_seller_order_alert(bigint,timest
  TO service_role;
 COMMENT ON TABLE public.whatsapp_seller_order_notification_outbox IS
  'Private, deduplicated seller transactional alerts. Only canonical approved product ownership routes orders; only verified, explicitly opted-in sellers qualify.';
+
+
+-- Atomic at-most-once claim for a future private seller dispatcher.
+CREATE OR REPLACE FUNCTION public.claim_whatsapp_seller_order_alert(
+ p_outbox_id bigint,
+ p_activation_cutoff timestamptz
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE v_claim record;
+BEGIN
+ IF p_outbox_id IS NULL OR p_outbox_id<=0 OR p_activation_cutoff IS NULL
+    OR p_activation_cutoff>now() OR p_activation_cutoff<'2026-10-01'::timestamptz
+ THEN RETURN NULL; END IF;
+
+ PERFORM pg_catalog.pg_advisory_xact_lock(733014,417021);
+ IF (SELECT count(*) FROM public.whatsapp_seller_order_notification_outbox
+      WHERE seller_id=(SELECT seller_id FROM public.whatsapp_seller_order_notification_outbox WHERE id=p_outbox_id)
+        AND attempt_started_at>=now()-interval '1 hour')>=3
+    OR (SELECT count(*) FROM public.whatsapp_seller_order_notification_outbox
+      WHERE seller_id=(SELECT seller_id FROM public.whatsapp_seller_order_notification_outbox WHERE id=p_outbox_id)
+        AND attempt_started_at>=now()-interval '24 hours')>=10
+ THEN RETURN NULL; END IF;
+
+ UPDATE public.whatsapp_seller_order_notification_outbox ob
+ SET status='sending',attempt_count=1,attempt_started_at=now(),updated_at=now()
+ FROM public.orders ord,public.seller_profiles sp,public.profiles pr
+ WHERE ob.id=p_outbox_id AND ob.order_id=ord.id
+   AND ob.seller_id=sp.user_id AND sp.user_id=pr.id
+   AND ob.event_type='seller_order_received'
+   AND ob.template_name='seller_order_received'
+   AND ob.status='ready' AND ob.attempt_count=0
+   AND ob.provider_message_id IS NULL AND ob.attempt_started_at IS NULL
+   AND ob.created_at>=greatest(p_activation_cutoff,now()-interval '24 hours')
+   AND ob.created_at<=now()
+   AND ord.created_at>=greatest(p_activation_cutoff,now()-interval '24 hours')
+   AND ord.created_at<=now()
+   AND ord.fulfillment_status='ordered'
+   AND ((ord.payment_method='prepaid' AND ord.status='paid' AND ord.payment_verified_at IS NOT NULL)
+     OR (ord.payment_method='cod' AND ord.status IN ('cod_pending','cod_collected')))
+   AND sp.status='active' AND sp.phone_verified_at IS NOT NULL
+   AND pr.phone_verified_at IS NOT NULL
+   AND private.ff_whatsapp_e164(pr.phone)=private.ff_whatsapp_e164(sp.phone)
+   AND private.ff_whatsapp_e164(sp.phone) IS NOT NULL
+   AND EXISTS (
+     SELECT 1 FROM public.whatsapp_contact_consents cc
+     WHERE cc.phone_e164=private.ff_whatsapp_e164(sp.phone)
+       AND cc.purpose='transactional' AND cc.status='opted_in'
+       AND cc.consented_at IS NOT NULL AND cc.revoked_at IS NULL
+   )
+   AND EXISTS (
+     SELECT 1
+     FROM pg_catalog.jsonb_array_elements(ord.items) AS item(value)
+     LEFT JOIN public.product_variants pv
+       ON pv.id=CASE WHEN item.value->>'variant_id' ~ '^[0-9]{1,18}$'
+         THEN (item.value->>'variant_id')::bigint ELSE NULL END
+     JOIN public.seller_product_submissions sps
+       ON sps.seller_id=ob.seller_id
+      AND (sps.approved_product_id=CASE WHEN item.value->>'id' ~ '^[0-9]{1,18}$'
+             THEN (item.value->>'id')::bigint ELSE NULL END
+        OR sps.approved_product_id=pv.product_id)
+     JOIN public.products prod ON prod.id=sps.approved_product_id AND prod.is_active IS TRUE
+     WHERE sps.approved_product_id IS NOT NULL
+   )
+ RETURNING ob.id,private.ff_whatsapp_e164(sp.phone),sp.store_name,ord.display_order_id
+ INTO v_claim;
+ IF NOT FOUND THEN RETURN NULL; END IF;
+
+ RETURN pg_catalog.jsonb_build_object(
+   'outboxId',v_claim.id,'recipientPhone',v_claim.ff_whatsapp_e164,
+   'storeName',v_claim.store_name,'displayOrderId',v_claim.display_order_id
+ );
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.claim_whatsapp_seller_order_alert(bigint,timestamptz)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_whatsapp_seller_order_alert(bigint,timestamptz)
+ TO service_role;
+
+CREATE OR REPLACE FUNCTION public.finish_whatsapp_seller_order_alert(
+ p_outbox_id bigint,
+ p_provider_message_id text,
+ p_error_code text DEFAULT NULL
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE v_changed integer;
+BEGIN
+ IF p_outbox_id IS NULL OR p_outbox_id<=0
+    OR length(coalesce(p_error_code,''))>64
+    OR (p_error_code IS NOT NULL AND p_error_code !~ '^[A-Z0-9_:-]{1,64}$')
+    OR (p_provider_message_id IS NOT NULL AND
+      (length(p_provider_message_id)>255 OR p_provider_message_id !~ '^wamid[.][^[:space:]]+$'))
+ THEN RETURN false; END IF;
+
+ UPDATE public.whatsapp_seller_order_notification_outbox
+ SET status=CASE WHEN p_provider_message_id IS NOT NULL THEN 'accepted'
+                 WHEN p_error_code='PROVIDER_OUTCOME_UNKNOWN' THEN 'blocked'
+                 ELSE 'failed' END,
+     provider_message_id=p_provider_message_id,last_error_code=p_error_code,updated_at=now()
+ WHERE id=p_outbox_id AND status='sending' AND attempt_count=1
+   AND provider_message_id IS NULL;
+ GET DIAGNOSTICS v_changed=ROW_COUNT;
+ RETURN v_changed=1;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.finish_whatsapp_seller_order_alert(bigint,text,text)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.finish_whatsapp_seller_order_alert(bigint,text,text)
+ TO service_role;
