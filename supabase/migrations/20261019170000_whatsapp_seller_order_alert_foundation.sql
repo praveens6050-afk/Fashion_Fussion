@@ -148,6 +148,7 @@ BEGIN
          THEN (item.value->>'variant_id')::bigint ELSE NULL END
      JOIN public.seller_product_submissions sps
        ON sps.seller_id=ob.seller_id
+      AND sps.status='approved'
       AND (sps.approved_product_id=CASE WHEN item.value->>'id' ~ '^[0-9]{1,18}$'
              THEN (item.value->>'id')::bigint ELSE NULL END
         OR sps.approved_product_id=pv.product_id)
