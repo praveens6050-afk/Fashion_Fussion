@@ -40,8 +40,8 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   // Do not silently send a new thread when the adapter has not supplied it.
   if(!/^\\d+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
   const token=await zohoToken();
-  const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\\/$/,"");
-  const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\\n/g,"<br>")+"</p>";
+  const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\/$/,"");
+  const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")+"</p>";
   const payload={fromAddress:sender,toAddress:recipient,content,action:"reply",mailFormat:"html",encoding:"UTF-8"};
   const res=await fetch(api+"/accounts/"+encodeURIComponent(accountId)+"/messages/"+encodeURIComponent(zohoMessageId),{method:"POST",headers:{"authorization":"Zoho-oauthtoken "+token,"content-type":"application/json"},body:JSON.stringify(payload)});
   const data=await res.json().catch(()=>({}));
