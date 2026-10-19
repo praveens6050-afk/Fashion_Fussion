@@ -41,7 +41,7 @@ jobs:
       - name: Apply ACL migration twice to prove idempotency
         run: |
           set -euo pipefail
-          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017090000_harden_notification_table_browser_privileges.sql
-          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017090000_harden_notification_table_browser_privileges.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017122330_harden_notification_table_browser_privileges_20261017.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017122330_harden_notification_table_browser_privileges_20261017.sql
       - name: Assert browser roles have no table privileges
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/notification_table_browser_privileges.sql
