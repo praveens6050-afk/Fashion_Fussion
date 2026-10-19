@@ -79,4 +79,16 @@ assert(departmentMigration.includes('crm_support_metrics()')&&departmentMigratio
 assert(departmentUi.includes('crm_sales_metrics')&&departmentUi.includes('crm_support_metrics'),'Sales and support metrics must be wired into role workspaces');
 assert(read('admin-panel/crm-team-management.js').includes('crmQuotaForm'),'CRM admins must have a quota management form');
 
+
+const inboxMigration=read('supabase/migrations/20261019130000_crm_unified_inbox.sql');
+const inboxUi=read('admin-panel/crm-unified-inbox.js');
+const inboxWebhook=read('supabase/functions/crm-inbound-webhook/index.ts');
+assert(inboxMigration.includes('crm_inbox_conversations')&&inboxMigration.includes('crm_inbox_messages'),'Unified inbound inbox tables must exist');
+assert(inboxMigration.includes('crm_inbox_can_access')&&inboxMigration.includes('crm_inbox_messages_department_read'),'Inbox database access must be department-scoped');
+assert(inboxMigration.includes('crm_ingest_inbound_message')&&inboxMigration.includes('seller_profiles'),'Inbound messages must be deduplicated and seller-routed');
+assert(inboxWebhook.includes('x-hub-signature-256')&&inboxWebhook.includes('CRM_EMAIL_WEBHOOK_SECRET'),'WhatsApp and email webhook signatures must be verified');
+assert(inboxWebhook.includes('WHATSAPP_SALES_PHONE_NUMBER_ID')&&inboxWebhook.includes('WHATSAPP_MARKETING_PHONE_NUMBER_ID'),'Dedicated Sales/Marketing WhatsApp number routing must be supported');
+assert(inboxUi.includes('crm_inbox_conversations')&&inboxUi.includes('crm_inbox_messages')&&inboxUi.includes('30000'),'Inbox UI must load authorized messages and refresh periodically');
+assert(read('admin-panel/crm.html').includes('crmUnifiedInbox')&&read('admin-panel/crm-auth.js').includes('crm-unified-inbox.js'),'Authorized CRM roles must load the unified inbox');
+
 console.log('CRM panel contract checks passed: invitation-only team auth, active CRM roles, isolated module loading, CSV safety, read-only customer/seller views, read-only notification API, follow-ups, and staff RLS markers.');
