@@ -90,7 +90,9 @@ Deno.serve(async(req)=>{
   if(!role) return response({error:"CRM_ACCESS_DENIED"},403,origin);
   const {data:c,error:cError}=await db.from("crm_inbox_conversations").select("*").eq("id",conversationId).maybeSingle();
   if(cError||!c) return response({error:"CONVERSATION_NOT_FOUND"},404,origin);
-  if(role!=="administrator"&&role!==c.department) return response({error:"DEPARTMENT_ACCESS_DENIED"},403,origin);
+  const sharedSalesMarketing = String(c.inbox_address||"").trim().toLowerCase()==="sales.team@fashionfussion.in" && ["sales","marketing"].includes(role);
+  if(role!=="administrator"&&role!==c.department&&!sharedSalesMarketing) return response({error:"DEPARTMENT_ACCESS_DENIED"},403,origin);
+  if(sharedSalesMarketing&&c.assigned_to&&c.assigned_to!==user.id) return response({error:"CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT"},409,origin);
   if(mode==="internal_note") return response({error:"INTERNAL_NOTES_NOT_YET_SUPPORTED"},501,origin);
   if(c.provider==="email"&&!c.contact_email) return response({error:"CONTACT_EMAIL_MISSING"},422,origin);
   if(c.provider==="whatsapp"&&!c.contact_phone) return response({error:"CONTACT_PHONE_MISSING"},422,origin);
