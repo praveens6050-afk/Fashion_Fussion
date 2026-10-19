@@ -18,6 +18,7 @@
     const role=await access(db,session.user);
     if(!role){await db.auth.signOut();deny('This account has no active CRM team access. Ask the CRM administrator to invite and authorize it.');return}
     $('crmEmail').textContent=(session.user.email||'CRM user')+' · '+role;
+    $('dashboard').dataset.crmRole=role;
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
     $('dashboard').dataset.adminReady='true';
     db.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){location.replace('crm-login.html')}});
