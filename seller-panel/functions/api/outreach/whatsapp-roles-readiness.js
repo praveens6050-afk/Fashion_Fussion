@@ -44,6 +44,7 @@ async function schemaReadiness(base,key) {
     missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false,
     sellerMappingSchemaVerified:false,sellerMappingMissingColumns:[],
     sellerRecipientSchemaVerified:false,sellerRecipientMissingColumns:[],
+    sellerAlertStorageVerified:false,sellerAlertStorageMissingColumns:[],
     adminIdentitySchemaVerified:false,adminIdentityMissingColumns:[],
     adminAlertStorageVerified:false,adminAlertStorageMissingColumns:[]};
   const result=await response.json().catch(()=>null);
@@ -57,6 +58,8 @@ async function schemaReadiness(base,key) {
     sellerMappingMissingColumns:Array.isArray(result.sellerMappingMissingColumns)?result.sellerMappingMissingColumns:[],
     sellerRecipientSchemaVerified:result.sellerRecipientSchemaVerified===true,
     sellerRecipientMissingColumns:Array.isArray(result.sellerRecipientMissingColumns)?result.sellerRecipientMissingColumns:[],
+    sellerAlertStorageVerified:result.sellerAlertStorageVerified===true,
+    sellerAlertStorageMissingColumns:Array.isArray(result.sellerAlertStorageMissingColumns)?result.sellerAlertStorageMissingColumns:[],
     adminIdentitySchemaVerified:result.adminIdentitySchemaVerified===true,
     adminIdentityMissingColumns:Array.isArray(result.adminIdentityMissingColumns)?result.adminIdentityMissingColumns:[],
     adminAlertStorageVerified:result.adminAlertStorageVerified===true,
@@ -112,9 +115,11 @@ export async function onRequestGet({request,env}) {
           sellerMappingMissingColumns:schema.sellerMappingMissingColumns,
           sellerRecipientSchemaVerified:schema.sellerRecipientSchemaVerified,
           sellerRecipientMissingColumns:schema.sellerRecipientMissingColumns,
+          alertStorageSchemaVerified:schema.sellerAlertStorageVerified,
+          alertStorageMissingColumns:schema.sellerAlertStorageMissingColumns,
           automaticSendingConfigured:false,
           status:!schema.sellerMappingSchemaVerified||!schema.sellerRecipientSchemaVerified
-            ?'SELLER_SCHEMA_NOT_VERIFIED':marketing===0?'MARKETING_OPT_IN_REQUIRED':
+            ?'SELLER_SCHEMA_NOT_VERIFIED':!schema.sellerAlertStorageVerified?'SELLER_ALERT_STORAGE_NOT_VERIFIED':marketing===0?'MARKETING_OPT_IN_REQUIRED':
             'TEMPLATE_AND_CONTROLLED_OUTREACH_REVIEW_REQUIRED'
         },
         admin:{
