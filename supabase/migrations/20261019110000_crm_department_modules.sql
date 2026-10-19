@@ -129,3 +129,19 @@ grant execute on function public.crm_refresh_rfm_segments() to authenticated;
 comment on table public.crm_marketing_campaigns is 'Manual campaign and journey planning records only; does not send messages.';
 comment on table public.crm_rfm_segments is 'Order-derived RFM snapshot; browse behavior needs event instrumentation.';
 comment on table public.crm_b2b_quotes is 'Quotation log only; not an invoice or payment request.';
+
+create or replace function public.crm_coupon_performance()
+returns jsonb language plpgsql stable security definer set search_path=pg_catalog,public,auth
+as $$
+declare result jsonb;
+begin
+ if not public.crm_has_role(array['marketing']) then raise exception 'Marketing access required' using errcode='42501'; end if;
+ select coalesce(jsonb_agg(jsonb_build_object('code',x.code,'redemptions',x.redemptions,'revenue',x.revenue,'discount_total',x.discount_total,'active',x.active) order by x.redemptions desc),'[]'::jsonb)
+ into result
+ from (select c.code,c.is_active active,count(o.id)::integer redemptions,coalesce(sum(o.total_amount),0)::numeric(12,2) revenue,coalesce(sum(o.coupon_discount),0)::numeric(12,2) discount_total
+ from public.coupons c left join public.orders o on lower(o.coupon_code)=lower(c.code)
+ group by c.code,c.is_active) x;
+ return result;
+end $$;
+revoke all on function public.crm_coupon_performance() from public,anon;
+grant execute on function public.crm_coupon_performance() to authenticated;
