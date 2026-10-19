@@ -106,7 +106,9 @@ export async function onRequestGet({request,env}) {
           requestedTemplateAllowlisted:allowlisted(env,sellerTemplate),
           metaTemplateVerified:false,
           sellerMappingSchemaVerified:schema.sellerMappingSchemaVerified,
+          sellerMappingMissingColumns:schema.sellerMappingMissingColumns,
           sellerRecipientSchemaVerified:schema.sellerRecipientSchemaVerified,
+          sellerRecipientMissingColumns:schema.sellerRecipientMissingColumns,
           automaticSendingConfigured:false,
           status:!schema.sellerMappingSchemaVerified||!schema.sellerRecipientSchemaVerified
             ?'SELLER_SCHEMA_NOT_VERIFIED':marketing===0?'MARKETING_OPT_IN_REQUIRED':
@@ -117,6 +119,7 @@ export async function onRequestGet({request,env}) {
           requestedTemplateConfigured:Boolean(adminTemplate),
           requestedTemplateAllowlisted:allowlisted(env,adminTemplate),
           adminIdentitySchemaVerified:schema.adminIdentitySchemaVerified,
+          adminIdentityMissingColumns:schema.adminIdentityMissingColumns,
           verifiedAdminRecipients:false,
           metaTemplateVerified:false,
           dedicatedDispatcherVerified:false,
