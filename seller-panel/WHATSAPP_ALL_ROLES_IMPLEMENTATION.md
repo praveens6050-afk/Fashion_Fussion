@@ -17,7 +17,9 @@ Finish the integration before end-to-end testing for customer, seller, admin and
 ## Work committed to the implementation branch
 - Added `supabase/migrations/20261019150000_whatsapp_notification_schema_readiness.sql`: a service-role-only, stable read-only RPC that checks required customer notification columns and the claim/finish function signatures. It does not stage rows, alter consent, authorize sends, or return recipient data.
 - Updated `seller-panel/functions/api/outreach/whatsapp-roles-readiness.js` to call that probe and report schema readiness accurately instead of a hard-coded false.
-- Updated `seller-panel/tests/whatsapp-roles-readiness.test.mjs` with positive, missing-schema, missing-RPC and fail-closed cases.
+- Updated `seller-panel/tests/whatsapp-roles-readiness.test.mjs` with positive, missing-schema, missing-RPC and fail-closed cases; readiness now reports customer, seller product mapping/recipient, admin identity and admin-alert storage gaps independently.
+- Added `supabase/migrations/20261019160000_whatsapp_admin_alert_foundation.sql`: a private verified-admin recipient registry and deduplicated outbox with RLS, service-role-only grants, event allowlists, safe reference codes and one-attempt constraints. This is storage only; no automatic sender exists yet.
+- Added isolated SQL assertions for admin recipient/outbox privacy and idempotency, and wired the new migration to run twice in the WhatsApp SQL CI job.
 - The existing customer dispatcher remains gated on explicit flags, recent eligible orders, consent, atomic claim, Meta GET-only template/phone verification, and no automatic retry after uncertain outcomes.
 
 ## Required implementation
