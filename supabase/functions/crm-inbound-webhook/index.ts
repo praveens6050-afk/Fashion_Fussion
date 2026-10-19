@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
           p_sender_email: String(m.from_email), p_sender_name: String(m.from_name || ""),
           p_inbox_address: String(m.to || m.inbox_address || ""), p_subject: String(m.subject || "Incoming email").slice(0, 500),
           p_body: body, p_provider_thread_id: m.thread_id ? String(m.thread_id) : null,
-          p_metadata: { provider: String(m.provider || "zoho-flow"), headers: m.headers && typeof m.headers === "object" ? { message_id: m.headers.message_id || null, in_reply_to: m.headers.in_reply_to || null } : {} }
+          p_metadata: { provider: String(m.provider || "zoho-flow"), zoho_message_id: m.zoho_message_id || m.zohoMessageId || m.messageId || null, headers: m.headers && typeof m.headers === "object" ? { message_id: m.headers.message_id || null, in_reply_to: m.headers.in_reply_to || null } : {} }
         });
         if (error) throw error;
         stored++;
