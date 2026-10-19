@@ -17,8 +17,8 @@ This implementation is on the `crm-team-access` branch only. It does not deploy 
 
 ## Roles in this slice
 - `administrator`: existing verified Fashion Fussion admin.
-- `customer_support`: roster role for customer-support staff; dedicated support tools and scoped data policies are required before live work.
-- `seller_support`: roster role for seller-support staff; dedicated support tools and scoped data policies are required before live work.
+- `customer_support`: read-only customer-support ticket queue, scoped by database RPC to the customer-support channel.
+- `seller_support`: read-only seller-support ticket queue, scoped by database RPC to the seller-support channel.
 - `sales`: access to the shared seller-acquisition CRM.
 - `marketing`: access to the shared seller-acquisition CRM.
 - Admins provision accounts and control membership. Inactive or unlisted accounts are denied.
@@ -29,4 +29,4 @@ This implementation is on the `crm-team-access` branch only. It does not deploy 
 - The Supabase project ref configured in `admin-panel/supabase-config.js` must be verified as the intended CRM environment before applying migrations; it has not been proven to be non-production.
 - Do not deploy to Cloudflare or apply remote migrations without explicit owner approval.
 - Sales and marketing currently share lead write access; implement/verify granular permissions if their duties should differ.
-- Customer Support and Seller Support may be rostered and can sign in, but see a setup-pending screen only; they do not receive seller-lead table access until dedicated support workspaces and RLS policies are implemented.
+- Customer Support and Seller Support can view their own department's read-only support queue. Ticket replies and status changes remain disabled in this first release; they do not receive seller-lead table access.
