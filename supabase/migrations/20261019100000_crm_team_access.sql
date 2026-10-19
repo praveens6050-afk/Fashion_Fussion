@@ -4,6 +4,7 @@
 
 create table if not exists public.crm_team_members (
   user_id uuid primary key references auth.users(id) on delete cascade,
+  email text not null check (email = lower(btrim(email))),
   role text not null check (role in ('customer_support','seller_support','sales','marketing')),
   is_active boolean not null default true,
   invited_by uuid references auth.users(id) on delete set null,
@@ -11,6 +12,8 @@ create table if not exists public.crm_team_members (
   updated_at timestamptz not null default now()
 );
 
+alter table public.crm_team_members add column if not exists email text;
+-- Keep legacy rows migratable; login still requires an exact email match.
 alter table public.crm_team_members enable row level security;
 revoke all on public.crm_team_members from anon, authenticated;
 grant select, insert, update, delete on public.crm_team_members to authenticated;
@@ -72,5 +75,7 @@ create policy seller_lead_activities_crm_select on public.seller_lead_activities
 create policy seller_lead_activities_crm_insert on public.seller_lead_activities for insert to authenticated with check (public.is_crm_staff());
 create policy seller_lead_activities_crm_update on public.seller_lead_activities for update to authenticated using (public.is_crm_staff()) with check (public.is_crm_staff());
 create policy seller_lead_activities_crm_delete on public.seller_lead_activities for delete to authenticated using (public.is_crm_staff());
+
+create unique index if not exists crm_team_members_email_lower_idx on public.crm_team_members (lower(email)) where email is not null;
 
 comment on table public.crm_team_members is 'CRM-only staff allowlist. No public self-signup; admins provision Supabase Auth users and assign customer_support, seller_support, sales, or marketing roles. Support roles are rostered but do not receive seller-acquisition table access until dedicated support permissions are implemented.';
