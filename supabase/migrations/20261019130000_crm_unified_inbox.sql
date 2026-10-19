@@ -77,8 +77,7 @@ begin
    elsif lower(coalesce(p_inbox_address,'')) ~ '(^|[+._-])(marketing|campaigns)(@|$)' then v_department:='marketing'; v_contact_type:='prospect';
    else v_department:='customer_support'; end if;
  else
-   if nullif(p_metadata->>'business_phone_number_id','')=nullif(current_setting('app.crm_sales_phone_number_id',true),'') and current_setting('app.crm_sales_phone_number_id',true) is not null then v_department:='sales'; v_contact_type:='prospect';
-   elsif nullif(p_metadata->>'business_phone_number_id','')=nullif(current_setting('app.crm_marketing_phone_number_id',true),'') and current_setting('app.crm_marketing_phone_number_id',true) is not null then v_department:='marketing'; v_contact_type:='prospect';
+   if p_metadata->>'route_department' in ('sales','marketing') then v_department:=p_metadata->>'route_department'; v_contact_type:='prospect';
    elsif v_phone is not null and exists(select 1 from public.seller_profiles s where regexp_replace(coalesce(s.phone,''),'[^0-9]','','g')=v_phone) then
      v_department:='seller_support'; v_contact_type:='seller';
      select s.user_id into v_contact_user from public.seller_profiles s where regexp_replace(coalesce(s.phone,''),'[^0-9]','','g')=v_phone limit 1;
