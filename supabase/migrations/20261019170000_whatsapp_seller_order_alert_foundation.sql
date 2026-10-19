@@ -154,13 +154,13 @@ BEGIN
      JOIN public.products prod ON prod.id=sps.approved_product_id AND prod.is_active IS TRUE
      WHERE sps.approved_product_id IS NOT NULL
    )
- RETURNING ob.id,private.ff_whatsapp_e164(sp.phone),sp.store_name,ord.display_order_id
+ RETURNING ob.id,private.ff_whatsapp_e164(sp.phone),ord.display_order_id
  INTO v_claim;
  IF NOT FOUND THEN RETURN NULL; END IF;
 
  RETURN pg_catalog.jsonb_build_object(
    'outboxId',v_claim.id,'recipientPhone',v_claim.ff_whatsapp_e164,
-   'storeName',v_claim.store_name,'displayOrderId',v_claim.display_order_id
+   'displayOrderId',v_claim.display_order_id
  );
 END;
 $function$;
