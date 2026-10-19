@@ -15,7 +15,7 @@
     const{data,error}=await db.rpc('crm_support_ticket_queue');
     if(error)throw error;
     const rows=$('crmSupportRows');
-    if(!Array.isArray(data)||data.length===0){rows.innerHTML='<tr><td colspan="6">No tickets in your department queue.</td></tr>';notice('Queue loaded. No tickets found.',true);return}
+    if(!Array.isArray(data)||data.length===0){rows.innerHTML='<tr><td colspan="5">No tickets in your department queue.</td></tr>';notice('Queue loaded. No tickets found.',true);return}
     rows.innerHTML=data.map(t=>'<tr><td><strong>'+esc(t.ticket_code||('Ticket #'+t.id))+'</strong></td><td>'+esc(t.subject||t.issue_type||'Support request')+'</td><td>'+esc(t.status)+'</td><td>'+esc(t.priority)+'</td><td>'+esc(t.created_at?new Date(t.created_at).toLocaleString():'—')+'</td></tr>').join('');
     notice('Loaded '+data.length+' ticket(s). Read-only access.',true);
   }
