@@ -59,3 +59,73 @@ create table if not exists public.crm_ab_tests (
  status text not null default 'draft' check (status in ('draft','running','completed')),
  created_by uuid references auth.users(id) on delete set null, created_at timestamptz not null default now()
 );
+
+create or replace function public.crm_has_role(p_roles text[])
+returns boolean language sql stable security definer
+set search_path = pg_catalog, public, auth
+as $$
+ select exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.is_admin is true)
+ or exists(select 1 from public.crm_team_members m where m.user_id=(select auth.uid()) and m.is_active is true and m.role=any(p_roles));
+$$;
+revoke all on function public.crm_has_role(text[]) from public, anon;
+grant execute on function public.crm_has_role(text[]) to authenticated;
+
+do $$
+declare t text;
+begin
+ foreach t in array array['crm_b2b_accounts','crm_b2b_deals','crm_b2b_quotes','crm_sales_activities','crm_support_macros','crm_marketing_campaigns','crm_rfm_segments','crm_ab_tests'] loop
+  execute format('alter table public.%I enable row level security',t);
+  execute format('revoke all on public.%I from anon, authenticated',t);
+  execute format('grant select, insert, update, delete on public.%I to authenticated',t);
+ end loop;
+end $$;
+
+drop policy if exists crm_b2b_accounts_sales_access on public.crm_b2b_accounts;
+create policy crm_b2b_accounts_sales_access on public.crm_b2b_accounts for all to authenticated using (public.crm_has_role(array['sales'])) with check (public.crm_has_role(array['sales']));
+drop policy if exists crm_b2b_deals_sales_access on public.crm_b2b_deals;
+create policy crm_b2b_deals_sales_access on public.crm_b2b_deals for all to authenticated using (public.crm_has_role(array['sales'])) with check (public.crm_has_role(array['sales']));
+drop policy if exists crm_b2b_quotes_sales_access on public.crm_b2b_quotes;
+create policy crm_b2b_quotes_sales_access on public.crm_b2b_quotes for all to authenticated using (public.crm_has_role(array['sales'])) with check (public.crm_has_role(array['sales']));
+drop policy if exists crm_sales_activities_sales_access on public.crm_sales_activities;
+create policy crm_sales_activities_sales_access on public.crm_sales_activities for all to authenticated using (public.crm_has_role(array['sales'])) with check (public.crm_has_role(array['sales']));
+drop policy if exists crm_support_macros_department_access on public.crm_support_macros;
+create policy crm_support_macros_department_access on public.crm_support_macros for all to authenticated
+using ((department='customer_support' and public.crm_has_role(array['customer_support'])) or (department='seller_support' and public.crm_has_role(array['seller_support'])))
+with check ((department='customer_support' and public.crm_has_role(array['customer_support'])) or (department='seller_support' and public.crm_has_role(array['seller_support'])));
+drop policy if exists crm_marketing_campaigns_marketing_access on public.crm_marketing_campaigns;
+create policy crm_marketing_campaigns_marketing_access on public.crm_marketing_campaigns for all to authenticated using (public.crm_has_role(array['marketing'])) with check (public.crm_has_role(array['marketing']));
+drop policy if exists crm_rfm_segments_marketing_access on public.crm_rfm_segments;
+create policy crm_rfm_segments_marketing_access on public.crm_rfm_segments for all to authenticated using (public.crm_has_role(array['marketing'])) with check (public.crm_has_role(array['marketing']));
+drop policy if exists crm_ab_tests_marketing_access on public.crm_ab_tests;
+create policy crm_ab_tests_marketing_access on public.crm_ab_tests for all to authenticated using (public.crm_has_role(array['marketing'])) with check (public.crm_has_role(array['marketing']));
+
+create index if not exists crm_b2b_deals_stage_updated_idx on public.crm_b2b_deals(stage,updated_at desc);
+create index if not exists crm_b2b_deals_account_idx on public.crm_b2b_deals(account_id);
+create index if not exists crm_sales_activities_deal_idx on public.crm_sales_activities(deal_id,created_at desc);
+create index if not exists crm_marketing_campaigns_status_idx on public.crm_marketing_campaigns(status,created_at desc);
+create index if not exists crm_support_macros_department_idx on public.crm_support_macros(department,is_active);
+
+-- RFM is order-based only; browse activity is not inferred without event tracking.
+create or replace function public.crm_refresh_rfm_segments()
+returns integer language plpgsql security definer set search_path=pg_catalog,public,auth
+as $$
+declare n integer;
+begin
+ if not public.crm_has_role(array['marketing']) then raise exception 'Marketing access required' using errcode='42501'; end if;
+ insert into public.crm_rfm_segments(customer_id,recency_days,order_frequency,monetary_value,segment,calculated_at)
+ select x.user_id,greatest(0,floor(extract(epoch from (now()-x.last_order))/86400)::integer),x.order_count,x.total_spend,
+ case when x.order_count>=5 and x.total_spend>=10000 and x.last_order>=now()-interval '90 days' then 'VIP'
+ when x.last_order>=now()-interval '30 days' and x.order_count>=2 then 'Loyal'
+ when x.last_order>=now()-interval '90 days' then 'Recent'
+ when x.last_order<now()-interval '180 days' then 'At risk' else 'Needs nurture' end,now()
+ from (select o.user_id,max(o.created_at) last_order,count(*)::integer order_count,coalesce(sum(o.total_amount),0)::numeric(12,2) total_spend
+ from public.orders o where o.user_id is not null and lower(coalesce(o.status,'')) in ('paid','completed','delivered','fulfilled') group by o.user_id) x
+ on conflict(customer_id) do update set recency_days=excluded.recency_days,order_frequency=excluded.order_frequency,monetary_value=excluded.monetary_value,segment=excluded.segment,calculated_at=now();
+ get diagnostics n=row_count; return n;
+end $$;
+revoke all on function public.crm_refresh_rfm_segments() from public,anon;
+grant execute on function public.crm_refresh_rfm_segments() to authenticated;
+
+comment on table public.crm_marketing_campaigns is 'Manual campaign and journey planning records only; does not send messages.';
+comment on table public.crm_rfm_segments is 'Order-derived RFM snapshot; browse behavior needs event instrumentation.';
+comment on table public.crm_b2b_quotes is 'Quotation log only; not an invoice or payment request.';
