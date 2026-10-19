@@ -12,7 +12,7 @@ const env={
   WHATSAPP_SELLER_ONBOARDING_TEMPLATE:'seller_onboarding'
 };
 const request=(token=env.OUTREACH_API_TOKEN)=>new Request('https://seller.fashionfussion.in/api/outreach/whatsapp-roles-readiness',{headers:{authorization:'Bearer '+token}});
-function fixture(t, counts=[2,0,1,29,0], schema={schemaVerified:true,missingColumns:[],claimFunctionPresent:true,finishFunctionPresent:true,sellerMappingSchemaVerified:true,sellerMappingMissingColumns:[],sellerRecipientSchemaVerified:true,sellerRecipientMissingColumns:[],sellerAlertStorageVerified:true,sellerAlertStorageMissingColumns:[],adminIdentitySchemaVerified:true,adminIdentityMissingColumns:[],adminAlertStorageVerified:true,adminAlertStorageMissingColumns:[]}) {
+function fixture(t, counts=[2,0,1,29,0], schema={schemaVerified:true,missingColumns:[],claimFunctionPresent:true,finishFunctionPresent:true,sellerMappingSchemaVerified:true,sellerMappingMissingColumns:[],sellerRecipientSchemaVerified:true,sellerRecipientMissingColumns:[],sellerAlertStorageVerified:true,sellerAlertStorageMissingColumns:[],adminIdentitySchemaVerified:true,adminIdentityMissingColumns:[],adminAlertStorageVerified:true,adminAlertStorageMissingColumns:[],sellerClaimFunctionPresent:true,sellerFinishFunctionPresent:true,adminClaimFunctionPresent:true,adminFinishFunctionPresent:true,inboundSupportSchemaVerified:true,inboundSupportMissingColumns:[]}) {
   const previous=globalThis.fetch;
   const calls=[];
   globalThis.fetch=async(url,opts)=>{
@@ -84,12 +84,14 @@ test('schema probe fails closed when migration or RPCs are missing',async t=>{
   assert.equal(data.roles.customer.status,'SCHEMA_NOT_VERIFIED');
 });
 test('seller and admin schema gaps are reported independently from customer readiness',async t=>{
-  fixture(t,[3,2,1,2,0],{schemaVerified:true,missingColumns:[],claimFunctionPresent:true,finishFunctionPresent:true,sellerMappingSchemaVerified:false,sellerMappingMissingColumns:['seller_product_submissions.approved_product_id'],sellerRecipientSchemaVerified:true,sellerRecipientMissingColumns:[],sellerAlertStorageVerified:false,sellerAlertStorageMissingColumns:['whatsapp_seller_order_notification_outbox.seller_id'],adminIdentitySchemaVerified:false,adminIdentityMissingColumns:['profiles.phone_verified_at'],adminAlertStorageVerified:false,adminAlertStorageMissingColumns:['whatsapp_admin_alert_outbox.event_key']});
+  fixture(t,[3,2,1,2,0],{schemaVerified:true,missingColumns:[],claimFunctionPresent:true,finishFunctionPresent:true,sellerMappingSchemaVerified:false,sellerMappingMissingColumns:['seller_product_submissions.approved_product_id'],sellerRecipientSchemaVerified:true,sellerRecipientMissingColumns:[],sellerAlertStorageVerified:false,sellerAlertStorageMissingColumns:['whatsapp_seller_order_notification_outbox.seller_id'],adminIdentitySchemaVerified:false,adminIdentityMissingColumns:['profiles.phone_verified_at'],adminAlertStorageVerified:false,adminAlertStorageMissingColumns:['whatsapp_admin_alert_outbox.event_key'],sellerClaimFunctionPresent:true,sellerFinishFunctionPresent:true,adminClaimFunctionPresent:true,adminFinishFunctionPresent:true,inboundSupportSchemaVerified:false,inboundSupportMissingColumns:['whatsapp_inbound_events.support_team']});
   const data=await (await onRequestGet({request:request(),env})).json();
   assert.equal(data.roles.customer.schemaVerified,true);
   assert.equal(data.roles.seller.status,'SELLER_SCHEMA_NOT_VERIFIED');
   assert.deepEqual(data.roles.seller.sellerMappingMissingColumns,['seller_product_submissions.approved_product_id']);
   assert.equal(data.roles.seller.alertStorageSchemaVerified,false);
+  assert.equal(data.roles.seller.claimFunctionPresent,true);
+  assert.equal(data.inboundSupportSchemaVerified,false);
   assert.deepEqual(data.roles.seller.alertStorageMissingColumns,['whatsapp_seller_order_notification_outbox.seller_id']);
   assert.equal(data.roles.admin.status,'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED');
   assert.equal(data.roles.admin.alertStorageSchemaVerified,false);
