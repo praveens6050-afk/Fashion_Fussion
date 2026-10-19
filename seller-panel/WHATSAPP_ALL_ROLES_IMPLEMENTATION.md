@@ -7,11 +7,18 @@ Finish the integration before end-to-end testing for customer, seller, admin and
 
 ## Verified gaps from the connected production schema and Pages configuration
 - The customer order-confirmation outbox and atomic claim/finish RPCs exist, but the outbox currently has no records. Actual delivery is unproven.
-- The live `orders` table has no `seller_id` column. Seller-order routing must derive from the canonical item/product relationship and be validated against the actual schema before implementation; do not guess seller IDs from arbitrary JSON.
-- A read-only role readiness endpoint currently reports the customer atomic schema as unverified and reports seller onboarding automation and dedicated admin alerts as not configured.
+- The live `orders` table has no `seller_id` column. A read-only audit of the 14 existing order lines found zero matches from item `id` to `seller_product_submissions.approved_product_id`. Do not infer seller ownership from unverified JSON or send seller alerts until canonical ownership is modeled and backfilled safely.
+- The read-only role readiness endpoint previously hard-coded customer atomic schema readiness to false. This branch adds a restricted, read-only schema probe and wires readiness to its result; it still must be replayed/tested in an isolated database before production use.
+- Seller onboarding automation and a dedicated admin-alert pipeline are not configured in production.
 - The Seller Pages project has WhatsApp credentials configured, but the order-send gates and a dedicated private dispatch token are not configured in the production environment-variable inventory.
 - The Admin and CRM Pages projects do not currently expose the seller's WhatsApp credential names. They should consume privacy-safe, authenticated server-side delivery status—not copy Meta credentials into browser projects.
 - A standalone Cloudflare Worker is not currently listed. Do not add a scheduler until dispatch has passed controlled tests and a separate operational approval is recorded.
+
+## Work committed to the implementation branch
+- Added `supabase/migrations/20261019150000_whatsapp_notification_schema_readiness.sql`: a service-role-only, stable read-only RPC that checks required customer notification columns and the claim/finish function signatures. It does not stage rows, alter consent, authorize sends, or return recipient data.
+- Updated `seller-panel/functions/api/outreach/whatsapp-roles-readiness.js` to call that probe and report schema readiness accurately instead of a hard-coded false.
+- Updated `seller-panel/tests/whatsapp-roles-readiness.test.mjs` with positive, missing-schema, missing-RPC and fail-closed cases.
+- The existing customer dispatcher remains gated on explicit flags, recent eligible orders, consent, atomic claim, Meta GET-only template/phone verification, and no automatic retry after uncertain outcomes.
 
 ## Required implementation
 
@@ -19,11 +26,12 @@ Finish the integration before end-to-end testing for customer, seller, admin and
 - Keep OTP identity verification separate from transactional consent.
 - Persist affirmative, unchecked-by-default consent only after verified signup; enforce STOP/revocation.
 - Keep order eligibility, order-specific consent, payment/COD checks, freshness cutoff, atomic at-most-once claim, rate limits, and no automatic retry after an uncertain Meta outcome.
-- Readiness must verify required database columns and service-only claim/finish RPCs rather than hard-code a boolean.
+- Readiness verifies required database columns and service-only claim/finish RPCs; migration and automated tests must pass before the probe can be trusted.
 
 ### 2. Seller
 - Keep seller marketing opt-in separate from transactional order alerts.
-- Implement order alerts only after a verified canonical order-item-to-seller relationship is established.
+- First establish a canonical product-to-seller relationship. Current production data does not map existing order item IDs to approved seller submissions, so routing is blocked until schema/backfill design and integrity checks are implemented.
+- Implement order alerts only after the verified canonical order-item-to-seller relationship is available.
 - Require a registered, verified seller recipient and approved utility template. Never treat a seller's public listing phone number as WhatsApp consent.
 - Use a dedicated private outbox/claim/finish flow, event-level idempotency, rate limits, signed delivery receipts and no blind retry after uncertain provider outcome.
 
