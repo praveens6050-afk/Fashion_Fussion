@@ -64,6 +64,7 @@ function configured(env,cfg){
   return env[cfg.flag]==='true'&&env[cfg.approval]==='true'&&env[cfg.acknowledgement]===cfg.ackValue
     &&env.WHATSAPP_ORDER_GLOBAL_LAUNCH_APPROVED==='true'
     &&env.WHATSAPP_ORDER_GLOBAL_LAUNCH_ACK==='verified_opt_in_orders_v1'
+    &&/^[0-9]{10,25}$/.test(String(env.WHATSAPP_BUSINESS_ACCOUNT_ID||''))
     &&/^[0-9]{13,25}$/.test(String(env.WHATSAPP_PHONE_NUMBER_ID||''))
     &&/^v\d{1,2}\.\d{1,2}$/.test(String(env.WHATSAPP_GRAPH_VERSION||''))
     &&String(env.WHATSAPP_ACCESS_TOKEN||'').length>=20
