@@ -7,7 +7,7 @@
   const root=$('crmDepartmentModules'); if(!root||!db||!['sales','marketing','customer_support','seller_support'].includes(role))return;
   const isSales=role==='sales',isMarketing=role==='marketing',isSupport=role==='customer_support'||role==='seller_support';
   const department=role;
-  root.hidden=false;
+  root.hidden=false;root.style.display='block';
   root.innerHTML='<div class="card-body"><h2>'+({sales:'B2B Sales & Deals',marketing:'Marketing & Retention',customer_support:'Customer Support Tools',seller_support:'Seller Support Tools'}[role])+'</h2><p id="crmModuleNotice" role="status" aria-live="polite"></p><div id="crmModuleBody">Loading workspace…</div></div>';
   const notice=(s,ok=false)=>{const n=$('crmModuleNotice');if(n){n.textContent=s;n.style.color=ok?'#067647':'#b42318'}};
   const table=(headers,rows)=>'<div class="crm-team-table-wrap"><table class="crm-team-table"><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
