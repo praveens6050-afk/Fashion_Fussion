@@ -94,6 +94,8 @@ assert(read('admin-panel/crm.html').includes('crmUnifiedInbox')&&read('admin-pan
 const sendMigration=read('supabase/migrations/20261019140000_crm_outbound_reply.sql');
 const sendFunction=read('supabase/functions/crm-send-reply/index.ts');
 assert(sendMigration.includes('crm_inbox_send_attempts')&&sendMigration.includes('request_id uuid not null unique'),'Outbound send attempts must have unique idempotency keys');
+assert(sendMigration.includes('crm_inbox_can_access_conversation')&&sendMigration.includes('sales.team@fashionfussion.in'),'Sales/Marketing shared inbox must be visible through database RLS');
+assert(sendFunction.includes('sharedSalesMarketing')&&sendFunction.includes('CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT'),'Shared Sales/Marketing replies must honor single assigned owner');
 assert(sendMigration.includes("orders@fashionfussion.in")&&sendMigration.includes("v_department:='seller_support'")&&sendMigration.includes("v_department:='sales'"),'Inbound aliases must route exactly and transactional orders mail must be excluded from support');
 assert(sendFunction.includes('db.auth.getUser(token)')&&sendFunction.includes('crm_team_members')&&sendFunction.includes('DEPARTMENT_ACCESS_DENIED'),'Outbound sending must verify session and department access server-side');
 assert(sendFunction.includes('META_WHATSAPP_ACCESS_TOKEN')&&sendFunction.includes('WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H'),'WhatsApp replies must use server credentials and enforce 24-hour service window');
