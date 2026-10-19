@@ -1,0 +1,88 @@
+'use strict';
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const date=v=>v?new Date(v).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
+  let rows=[];
+  function mount(){
+    const container=$('dashboard')?.querySelector('.container');
+    if(!container||$('ffWhatsAppSupportInbox'))return;
+    const section=document.createElement('section');
+    section.id='ffWhatsAppSupportInbox';section.className='card';
+    section.innerHTML='<div class="card-header"><div><h2>WhatsApp Support Inbox</h2><p>Customer, seller, sales/marketing and admin conversations. Replies are queued for review; this screen does not send WhatsApp messages.</p></div><button type="button" class="secondary" id="ffWaInboxRefresh">Refresh inbox</button></div><div class="card-body"><div class="ff-wa-queue-counts" id="ffWaQueueCounts"></div><div class="ff-wa-inbox-layout"><div><label for="ffWaTeamFilter">Team queue</label><select id="ffWaTeamFilter"><option value="all">All queues</option><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales_marketing">Sales / marketing</option><option value="admin_operations">Admin operations</option><option value="needs_review">Needs identity review</option></select><div id="ffWaInboxRows" aria-live="polite">Loading…</div></div><div class="ff-wa-conversation"><h3 id="ffWaSelectedTitle">Select a conversation</h3><p class="ff-wa-meta" id="ffWaSelectedMeta">Only administrator accounts can view message content.</p><div class="ff-wa-message" id="ffWaSelectedMessage">No conversation selected.</div><label for="ffWaReplyText">Reply draft (max 1000 characters)</label><textarea id="ffWaReplyText" maxlength="1000" rows="5" placeholder="Write a reply…"></textarea><div class="ff-wa-reply-actions"><span id="ffWaReplyCount">0 / 1000</span><button type="button" class="primary" id="ffWaQueueReply" disabled>Queue reply for review</button></div><p id="ffWaInboxStatus" role="status" aria-live="polite"></p><p class="ff-wa-note">Replies are saved as <b>pending review</b>. Sending and retries remain disabled until the approved dispatch workflow is configured.</p></div></div></div>';
+    const style=document.createElement('style');
+    style.textContent='#ffWhatsAppSupportInbox{margin-top:20px}#ffWhatsAppSupportInbox .ff-wa-queue-counts{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}#ffWhatsAppSupportInbox .ff-wa-queue-counts span{padding:9px 12px;border-radius:8px;background:#f2f4f7;font-size:12px}#ffWhatsAppSupportInbox .ff-wa-queue-counts b{display:block;font-size:18px}#ffWhatsAppSupportInbox .ff-wa-inbox-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}#ffWhatsAppSupportInbox select,#ffWhatsAppSupportInbox textarea{display:block;width:100%;box-sizing:border-box;margin:7px 0 12px;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font:inherit}#ffWhatsAppSupportInbox .ff-wa-row{display:block;width:100%;text-align:left;border:1px solid #eaecf0;border-radius:8px;background:#fff;padding:12px;margin-top:8px;cursor:pointer;color:inherit}#ffWhatsAppSupportInbox .ff-wa-row[aria-pressed=true]{border-color:#667085;background:#f8fafc}#ffWhatsAppSupportInbox .ff-wa-row strong{display:block;margin-bottom:4px}#ffWhatsAppSupportInbox .ff-wa-muted{font-size:12px;color:#667085;margin-top:4px;overflow-wrap:anywhere}#ffWhatsAppSupportInbox .ff-wa-conversation{border:1px solid #eaecf0;border-radius:10px;padding:14px;min-width:0}#ffWhatsAppSupportInbox .ff-wa-message{white-space:pre-wrap;overflow-wrap:anywhere;min-height:90px;background:#f8fafc;padding:12px;border-radius:8px;margin:12px 0 18px}#ffWhatsAppSupportInbox .ff-wa-reply-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#ffWhatsAppSupportInbox .ff-wa-note{font-size:12px;color:#667085}#ffWhatsAppSupportInbox .ff-wa-pill{display:inline-block;padding:3px 7px;border-radius:999px;background:#f2f4f7;font-size:11px}@media(max-width:900px){#ffWhatsAppSupportInbox .ff-wa-inbox-layout{grid-template-columns:1fr}}';
+    document.head.appendChild(style);container.appendChild(section);
+    $('ffWaInboxRefresh').addEventListener('click',load);
+    $('ffWaTeamFilter').addEventListener('change',renderRows);
+    $('ffWaReplyText').addEventListener('input',()=>{$('ffWaReplyCount').textContent=$('ffWaReplyText').value.length+' / 1000';});
+    $('ffWaQueueReply').addEventListener('click',queueReply);
+    load();
+  }
+  async function callApi(payload){
+    const db=window.supabaseClient;if(!db?.auth)throw new Error('CRM session is unavailable.');
+    const {data:{session},error}=await db.auth.getSession();
+    if(error||!session?.access_token)throw new Error('Please sign in again.');
+    const response=await fetch('/api/admin-crm-whatsapp-inbox',{method:'POST',
+      headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify(payload),cache:'no-store'});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok)throw new Error(result.error||'WhatsApp support inbox unavailable.');
+    return result.data||{};
+  }
+  async function load(){
+    $('ffWaInboxStatus').textContent='Loading WhatsApp support inbox…';
+    $('ffWaQueueReply').disabled=true;
+    try{
+      const data=await callApi({action:'snapshot'});
+      rows=Array.isArray(data.recent)?data.recent:[];
+      const q=data.queues||{};
+      $('ffWaQueueCounts').innerHTML=[
+        ['Customer support',q.customer_support],['Seller support',q.seller_support],
+        ['Sales / marketing',q.sales_marketing],['Admin operations',q.admin_operations],
+        ['Needs review',q.needs_review]
+      ].map(([name,n])=>'<span><b>'+Number(n||0)+'</b>'+esc(name)+'</span>').join('');
+      renderRows();
+      $('ffWaInboxStatus').textContent='Refreshed '+date(data.generated_at)+'. Read-only inbox; no messages sent.';
+    }catch(e){
+      $('ffWaInboxRows').textContent='Inbox unavailable.';
+      $('ffWaInboxStatus').textContent=e.message||'Inbox unavailable.';
+    }
+  }
+  function renderRows(){
+    const target=$('ffWaInboxRows');if(!target)return;
+    const filter=$('ffWaTeamFilter').value;
+    const filtered=rows.filter(r=>filter==='all'||(filter==='needs_review'?r.routing_status==='needs_review':r.support_team===filter));
+    if(!filtered.length){target.innerHTML='<p>No messages in this queue.</p>';return;}
+    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-event="'+Number(r.id)+'" aria-pressed="false"><strong>'+esc(r.sender_role||'unknown')+' · '+esc(r.sender_phone||'')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'unknown')+'</span><div class="ff-wa-muted">'+esc(r.message_type||'message')+' · '+date(r.created_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div><div class="ff-wa-muted">Latest reply: '+esc(r.latest_reply_status||'none')+'</div></button>').join('');
+    target.querySelectorAll('[data-event]').forEach(btn=>btn.addEventListener('click',()=>select(Number(btn.dataset.event),btn)));
+  }
+  function select(id,button){
+    const row=rows.find(r=>Number(r.id)===id);if(!row)return;
+    $('ffWaInboxRows').querySelectorAll('[data-event]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+    $('ffWaSelectedTitle').textContent=(row.sender_role||'Unknown sender')+' · '+(row.sender_phone||'');
+    $('ffWaSelectedMeta').textContent=(row.support_team||'unassigned')+' · '+(row.routing_status||'unknown')+' · '+date(row.created_at);
+    $('ffWaSelectedMessage').textContent=row.message_text||'[No text body received]';
+    $('ffWaReplyText').value='';
+    $('ffWaReplyCount').textContent='0 / 1000';
+    $('ffWaQueueReply').dataset.eventId=String(id);
+    $('ffWaQueueReply').disabled=row.routing_status!=='classified'||row.sender_role==='unclassified';
+    $('ffWaInboxStatus').textContent=$('ffWaQueueReply').disabled?'Identity review is required before queuing a reply.':'Reply can be queued for review; sending is not enabled.';
+  }
+  async function queueReply(){
+    const id=Number($('ffWaQueueReply').dataset.eventId);
+    const reply=$('ffWaReplyText').value.trim();
+    if(!Number.isSafeInteger(id)||id<=0||!reply||reply.length>1000)return;
+    $('ffWaQueueReply').disabled=true;
+    $('ffWaInboxStatus').textContent='Queueing reply for review…';
+    try{
+      const key='crm-reply:'+id+':'+Date.now()+':'+Math.random().toString(36).slice(2,10);
+      const data=await callApi({action:'queue_reply',inboundEventId:id,replyText:reply,requestKey:key});
+      $('ffWaInboxStatus').textContent=data.message||'Reply queued for review. No message sent.';
+      $('ffWaReplyText').value='';$('ffWaReplyCount').textContent='0 / 1000';
+      await load();
+    }catch(e){$('ffWaInboxStatus').textContent=e.message||'Reply could not be queued.';$('ffWaQueueReply').disabled=false;}
+  }
+  document.addEventListener('ff-crm-ready',mount);
+  if(document.readyState!=='loading'&&$('dashboard')?.dataset.adminReady==='true')mount();
+})();
