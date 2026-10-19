@@ -78,4 +78,59 @@ create policy seller_lead_activities_crm_delete on public.seller_lead_activities
 
 create unique index if not exists crm_team_members_email_lower_idx on public.crm_team_members (lower(email)) where email is not null;
 
+-- Department-scoped, read-only support queue. Returns a narrow projection, not customer/seller IDs or message bodies.
+create or replace function public.crm_support_ticket_queue()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = pg_catalog, public, auth
+as $function$
+declare
+  v_uid uuid := auth.uid();
+  v_role text;
+  v_channel text;
+  v_result jsonb;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required' using errcode = '28000';
+  end if;
+
+  select m.role into v_role
+  from public.crm_team_members m
+  where m.user_id = v_uid and m.is_active is true
+    and m.role in ('customer_support','seller_support');
+
+  if v_role is null then
+    raise exception 'Customer Support or Seller Support access required' using errcode = '42501';
+  end if;
+
+  v_channel := case when v_role = 'customer_support' then 'customer_support' else 'seller_support' end;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', t.id,
+    'ticket_code', t.ticket_code,
+    'channel', t.channel,
+    'issue_type', t.issue_type,
+    'subject', t.subject,
+    'status', t.status,
+    'priority', t.priority,
+    'created_at', t.created_at,
+    'sla_due_at', t.sla_due_at
+  ) order by t.created_at desc), '[]'::jsonb)
+  into v_result
+  from (
+    select id, ticket_code, channel, issue_type, subject, status, priority, created_at, sla_due_at
+    from public.support_tickets
+    where channel = v_channel
+    order by created_at desc
+    limit 200
+  ) t;
+
+  return v_result;
+end;
+$function$;
+revoke all on function public.crm_support_ticket_queue() from public, anon;
+grant execute on function public.crm_support_ticket_queue() to authenticated;
+
 comment on table public.crm_team_members is 'CRM-only staff allowlist. No public self-signup; admins provision Supabase Auth users and assign customer_support, seller_support, sales, or marketing roles. Support roles are rostered but do not receive seller-acquisition table access until dedicated support permissions are implemented.';
