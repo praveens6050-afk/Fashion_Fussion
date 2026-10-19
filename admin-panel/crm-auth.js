@@ -30,6 +30,7 @@
     if(teamManagement)teamManagement.hidden=role!=='administrator';
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
     $('dashboard').dataset.adminReady='true';
+    const inbox=document.createElement('script');inbox.src='crm-unified-inbox.js?v=20261019-unified-inbox';inbox.async=false;document.body.appendChild(inbox);
     if(role==='administrator'){
       const roster=document.createElement('script');roster.src='crm-team-management.js?v=20261019-team-management';roster.async=false;document.body.appendChild(roster);
     }
