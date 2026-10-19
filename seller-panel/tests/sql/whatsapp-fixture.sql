@@ -3,6 +3,12 @@
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS private;
 CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS public.profiles (
+ id uuid PRIMARY KEY REFERENCES auth.users(id),
+ phone text,
+ phone_verified_at timestamptz,
+ is_admin boolean NOT NULL DEFAULT false
+);
 DO $roles$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='anon') THEN
