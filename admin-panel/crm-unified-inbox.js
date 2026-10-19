@@ -17,7 +17,7 @@
   async function refresh(quiet=false){
     if(loading)return;loading=true;
     try{
-      const{data,error}=await db.from('crm_inbox_conversations').select('id,provider,department,contact_type,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,status,priority,assigned_to,metadata').order('received_at',{ascending:false}).limit(300);
+      const{data,error}=await db.from('crm_inbox_conversations').select('id,provider,department,contact_type,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,status,priority,assigned_to,metadata,last_inbound_at').order('received_at',{ascending:false}).limit(300);
       if(error)throw error;conversations=data||[];renderList();
       if(selected&&!conversations.some(c=>c.id===selected)){selected=null;$('crmInboxThread').innerHTML='<p>Select a conversation to view messages.</p>'}
       if(!quiet)notice('Inbox refreshed at '+new Date().toLocaleTimeString()+'. Reply sending requires configured provider credentials.');
@@ -30,7 +30,7 @@
     const box=$('crmInboxReplyBody'),button=$('crmInboxSend'),body=String(box?.value||'').trim();
     if(!body){notice('Write a reply before sending.');return}
     const c=conversations.find(x=>x.id===id);if(!c)return;
-    if(c.provider==='whatsapp'&&Date.now()-Date.parse(c.received_at)>24*60*60*1000){notice('WhatsApp customer-service window has expired. A pre-approved template sender must be configured before replying.');return}
+    if(c.provider==='whatsapp'&&Date.now()-Date.parse(c.last_inbound_at||c.received_at)>24*60*60*1000){notice('WhatsApp customer-service window has expired. A pre-approved template sender must be configured before replying.');return}
     if(!window.crypto?.randomUUID){notice('This browser cannot safely create a unique send ID. Update the browser before sending.');return}
     sending=true;if(button){button.disabled=true;button.textContent='Sending…'}
     try{
