@@ -16,7 +16,8 @@ const pagesNotificationApi=read('admin-panel/functions/api/admin-crm-notificatio
 const notificationMigration=read('supabase/migrations/20261017120000_admin_crm_notification_snapshot.sql');
 const migration=read('supabase/migrations/20261017110000_admin_seller_lead_crm.sql');
 const teamMigration=read('supabase/migrations/20261019100000_crm_team_access.sql');
-assert(login.includes('crm-login.js?v=20261019-team-access'),'CRM login page must load the team-aware auth controller');
+const teamManagement=read('admin-panel/crm-team-management.js');
+assert(login.includes('crm-login.js?v=20261019-team-management'),'CRM login page must load the team-aware auth controller');
 assert(login.includes('invitation-only')&&login.includes('no public registration'),'CRM login must not advertise public signup');
 assert(loginJs.includes("select('is_admin')")&&loginJs.includes("data?.is_admin===true"),'Existing admins must retain CRM access');
 assert(loginJs.includes("from('crm_team_members')")&&loginJs.includes("['customer_support','seller_support','sales','marketing']"),'CRM sign-in must allow only explicitly authorized sales/marketing roles');
@@ -48,6 +49,9 @@ assert(teamMigration.includes('create table if not exists public.crm_team_member
 assert(teamMigration.includes("role in ('customer_support','seller_support','sales','marketing')")&&teamMigration.includes('is_active')&&teamMigration.includes('email text not null'),'CRM roles must be constrained, email-bound and revocable');
 assert(page.includes('id="crmTeamManagement"')&&page.includes('id="crmTeamForm"'),'Admin CRM must include Team Management');
 assert(page.includes('id="crmMemberId"')&&page.includes('id="crmMemberRole"'),'Team Management must assign an Auth UUID and department');
+assert(teamManagement.includes("from('crm_team_members').select('user_id,email,role,is_active,created_at')"),'Team Management must load the CRM staff roster');
+assert(teamManagement.includes("upsert({user_id:userId,email,role,is_active:true")&&teamManagement.includes('data-deactivate')&&teamManagement.includes('data-reactivate'),'Team Management must assign roles and allow access revocation/reactivation');
+assert(teamManagement.includes("Only verified CRM administrators can manage team access")&&teamManagement.includes('confirm('),'Team Management must verify admin privileges and confirm access changes');
 assert(teamMigration.includes('create or replace function public.is_crm_staff()')&&teamMigration.includes('revoke all on function public.is_crm_staff() from public, anon'),'CRM authorization helper must be restricted to authenticated users');
 for(const marker of ['seller_leads_crm_select','seller_leads_crm_insert','seller_leads_crm_update','seller_leads_crm_delete','seller_lead_tasks_crm_select','seller_lead_activities_crm_select'])assert(teamMigration.includes(marker),'Missing CRM team RLS policy: '+marker);
 assert(teamMigration.includes('public.is_crm_staff()'),'CRM team policies must use database-side role enforcement');
