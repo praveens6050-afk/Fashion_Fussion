@@ -2,7 +2,11 @@
 -- This creates ONLY synthetic tables/users inside the ephemeral GitHub Actions DB.
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS private;
-CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS auth.users (
+ id uuid PRIMARY KEY,
+ email text NOT NULL,
+ raw_user_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb
+);
 CREATE TABLE IF NOT EXISTS public.profiles (
  id uuid PRIMARY KEY REFERENCES auth.users(id),
  phone text,
