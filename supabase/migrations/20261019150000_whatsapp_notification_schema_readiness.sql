@@ -11,6 +11,9 @@ DECLARE
   missing_columns text[];
   claim_exists boolean;
   finish_exists boolean;
+  seller_mapping_missing text[];
+  seller_recipient_missing text[];
+  admin_identity_missing text[];
 BEGIN
   SELECT array_agg(required.column_name ORDER BY required.column_name)
     INTO missing_columns
@@ -46,6 +49,53 @@ BEGIN
       AND c.column_name=required.column_name
   );
 
+  SELECT array_agg(required.column_name ORDER BY required.column_name)
+    INTO seller_mapping_missing
+  FROM (VALUES
+    ('seller_product_submissions','seller_id'),
+    ('seller_product_submissions','approved_product_id'),
+    ('seller_product_submissions','status'),
+    ('products','id'),
+    ('product_variants','id'),
+    ('product_variants','product_id')
+  ) AS required(table_name,column_name)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema='public' AND c.table_name=required.table_name
+      AND c.column_name=required.column_name
+  );
+
+  SELECT array_agg(required.column_name ORDER BY required.column_name)
+    INTO seller_recipient_missing
+  FROM (VALUES
+    ('seller_profiles','user_id'),
+    ('seller_profiles','phone'),
+    ('seller_profiles','phone_verified_at'),
+    ('seller_profiles','status'),
+    ('whatsapp_contact_consents','phone_e164'),
+    ('whatsapp_contact_consents','purpose'),
+    ('whatsapp_contact_consents','status'),
+    ('whatsapp_contact_consents','consented_at'),
+    ('whatsapp_contact_consents','revoked_at')
+  ) AS required(table_name,column_name)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema='public' AND c.table_name=required.table_name
+      AND c.column_name=required.column_name
+  );
+
+  SELECT array_agg(required.column_name ORDER BY required.column_name)
+    INTO admin_identity_missing
+  FROM (VALUES
+    ('profiles','id'),('profiles','phone'),('profiles','phone_verified_at'),
+    ('profiles','is_admin')
+  ) AS required(table_name,column_name)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema='public' AND c.table_name=required.table_name
+      AND c.column_name=required.column_name
+  );
+
   claim_exists := pg_catalog.to_regprocedure(
     'public.claim_whatsapp_order_confirmation(bigint,timestamp with time zone)'
   ) IS NOT NULL;
@@ -60,7 +110,13 @@ BEGIN
     'missingColumns', coalesce(to_jsonb(missing_columns),'[]'::jsonb),
     'claimFunctionPresent', claim_exists,
     'finishFunctionPresent', finish_exists,
-    'sendingAuthorized', false
+    'sendingAuthorized', false,
+    'sellerMappingSchemaVerified', coalesce(pg_catalog.cardinality(seller_mapping_missing),0)=0,
+    'sellerMappingMissingColumns', coalesce(to_jsonb(seller_mapping_missing),'[]'::jsonb),
+    'sellerRecipientSchemaVerified', coalesce(pg_catalog.cardinality(seller_recipient_missing),0)=0,
+    'sellerRecipientMissingColumns', coalesce(to_jsonb(seller_recipient_missing),'[]'::jsonb),
+    'adminIdentitySchemaVerified', coalesce(pg_catalog.cardinality(admin_identity_missing),0)=0,
+    'adminIdentityMissingColumns', coalesce(to_jsonb(admin_identity_missing),'[]'::jsonb)
   );
 END;
 $function$;
