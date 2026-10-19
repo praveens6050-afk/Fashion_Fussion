@@ -39,10 +39,13 @@ window.FF_API_ORIGIN='';
   const isAdminPage=page==='admin'||page==='admin.html';
   const isCrmPage=page==='crm.html';
   function loadCrmModules(){
-    add('admin-crm.js?v=20261017-crm','data-admin-crm');
-    add('admin-crm-followups.js?v=20261017-crm-followups','data-admin-crm-followups');
     const dashboard=document.getElementById('dashboard');
-    // Team staff only get seller-acquisition modules; 360-degree directories and notification diagnostics stay admin-only.
+    const role=dashboard?.dataset.crmRole;
+    if(role==='sales'||role==='marketing'){
+      add('admin-crm.js?v=20261017-crm','data-admin-crm');
+      add('admin-crm-followups.js?v=20261017-crm-followups','data-admin-crm-followups');
+    }
+    // Team staff only get the modules permitted for their role; customer/seller directories and notification diagnostics stay admin-only.
     if(dashboard?.dataset.crmRole==='administrator'){
       add('admin-crm-directory.js?v=20261017-crm-directory','data-admin-crm-directory');
       add('admin-crm-notifications.js?v=20261017-crm-notifications','data-admin-crm-notifications');
