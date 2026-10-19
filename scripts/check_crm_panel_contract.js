@@ -19,7 +19,7 @@ const teamMigration=read('supabase/migrations/20261019100000_crm_team_access.sql
 const teamManagement=read('admin-panel/crm-team-management.js');
 assert(login.includes('crm-login.js?v=20261019-team-management'),'CRM login page must load the team-aware auth controller');
 assert(login.includes('invitation-only')&&login.includes('no public registration'),'CRM login must not advertise public signup');
-assert(loginJs.includes("select('is_admin')")&&loginJs.includes("data?.is_admin===true"),'Existing admins must retain CRM access');
+assert(loginJs.includes("select('is_admin')")&&loginJs.includes("profile?.is_admin===true"),'Existing admins must retain CRM access');
 assert(loginJs.includes("from('crm_team_members')")&&loginJs.includes("['customer_support','seller_support','sales','marketing']"),'CRM sign-in must allow only explicitly authorized sales/marketing roles');
 assert(loginJs.includes("location.replace('crm.html')"),'Verified CRM users must be routed to CRM');
 assert(page.includes('id="dashboard"')&&page.includes('data-admin-ready="false"'),'CRM page must remain hidden until authorization succeeds');
