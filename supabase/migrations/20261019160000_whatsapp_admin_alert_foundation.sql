@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_admin_alert_outbox (
  recipient_id bigint NOT NULL REFERENCES public.whatsapp_admin_alert_recipients(id) ON DELETE RESTRICT,
  event_key text NOT NULL CHECK (length(event_key) BETWEEN 8 AND 160 AND event_key ~ '^[A-Za-z0-9._:-]+$'),
  alert_type text NOT NULL CHECK (alert_type IN ('order_attention','payment_attention','support_escalation','seller_review')),
- reference_code text NOT NULL CHECK (length(reference_code) BETWEEN 1 AND 80 AND reference_code !~ '[\\r\\n]'),
+ reference_code text NOT NULL CHECK (length(reference_code) BETWEEN 1 AND 80 AND reference_code !~ '[[:cntrl:]]'),
  status text NOT NULL DEFAULT 'pending_review' CHECK (status IN ('pending_review','ready','sending','accepted','delivered','read','failed','blocked')),
  attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 1),
  provider_message_id text CHECK (provider_message_id IS NULL OR (length(provider_message_id)<=255 AND provider_message_id ~ '^wamid[.][^[:space:]]+$')),
