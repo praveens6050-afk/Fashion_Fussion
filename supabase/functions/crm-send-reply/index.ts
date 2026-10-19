@@ -50,7 +50,7 @@ async function sendWhatsApp(c:any, body:string, requestId:string) {
   const phoneId=clean(c.metadata?.business_phone_number_id,100);
   const recipient=clean(c.contact_phone,30).replace(/[^0-9]/g,"");
   if(!token||!phoneId||!recipient) throw new Error("WHATSAPP_SENDER_NOT_CONFIGURED");
-  const lastInbound=Date.parse(String(c.received_at||""));
+  const lastInbound=Date.parse(String(c.last_inbound_at||c.received_at||""));
   if(!Number.isFinite(lastInbound)||Date.now()-lastInbound>24*60*60*1000) throw new Error("WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H");
   const graph=(Deno.env.get("META_GRAPH_API_VERSION")||"v23.0");
   const res=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"/messages",{method:"POST",headers:{"authorization":"Bearer "+token,"content-type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",recipient_type:"individual",to:recipient,type:"text",text:{preview_url:false,body},biz_opaque_callback_data:requestId})});
