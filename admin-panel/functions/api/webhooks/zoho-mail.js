@@ -21,6 +21,8 @@ export async function onRequestPost({request,env}){
     typeof input.text!=='string'||input.text.length>20000||
     typeof input.receivedAt!=='string'||!Number.isFinite(Date.parse(input.receivedAt)))
    return json({ok:false,error:'Invalid email event'},400);
+ const approvedRecipients=new Set(['customer.care@fashionfussion.in','seller.support@fashionfussion.in','sales.team@fashionfussion.in','orders@fashionfussion.in']);
+ if(!approvedRecipients.has(input.to.toLowerCase()))return json({ok:false,error:'Recipient mailbox is not an approved CRM route'},403);
  const received=Date.parse(input.receivedAt);
  if(received>Date.now()+300000||received<Date.now()-90*86400000)return json({ok:false,error:'Email event is outside the accepted time window'},400);
  const response=await fetch(base+'/rest/v1/rpc/ingest_crm_email_message',{method:'POST',
