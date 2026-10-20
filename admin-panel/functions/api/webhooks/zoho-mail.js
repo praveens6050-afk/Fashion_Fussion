@@ -26,31 +26,31 @@ export async function onRequestPost({request,env}){
  const routes={
    'customer.care@fashionfussion.in':'customer_support',
    'seller.support@fashionfussion.in':'seller_support',
-   'sales.team@fashionfussion.in':'sales'
+   'sales.team@fashionfussion.in':'sales_marketing'
  };
- // Orders email is intentionally not ingested into the support CRM.
+ // Orders notifications stay in the order workflow and must not enter CRM support queues.
  if(recipient==='orders@fashionfussion.in')return json({ok:true,stored:false,route:'orders_mailbox_excluded'},200);
- const department=routes[recipient];
- if(!department)return json({ok:false,error:'Recipient mailbox is not an approved CRM route'},403);
+ const team=routes[recipient];
+ if(!team)return json({ok:false,error:'Recipient mailbox is not an approved CRM route'},403);
  const received=Date.parse(input.receivedAt);
  if(received>Date.now()+300000||received<Date.now()-90*86400000)return json({ok:false,error:'Email event is outside the accepted time window'},400);
- const response=await fetch(base+'/rest/v1/rpc/crm_ingest_inbound_message',{method:'POST',
+ // The production Zoho Mail panel reads crm_email_inbound_events through
+ // admin_crm_email_support_snapshot; use its secured intake RPC, not the
+ // separate WhatsApp unified-inbox table.
+ const response=await fetch(base+'/rest/v1/rpc/ingest_crm_email_message',{method:'POST',
    headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Accept:'application/json'},
    body:JSON.stringify({
-     p_provider:'email',
-     p_provider_message_id:input.externalMessageId,
-     p_sender_phone:null,
-     p_sender_email:input.from.toLowerCase(),
-     p_sender_name:typeof input.fromName==='string'?input.fromName:'',
-     p_inbox_address:recipient,
+     p_external_message_id:input.externalMessageId,
+     p_sender_email:input.from,
+     p_recipient_email:recipient,
      p_subject:input.subject,
-     p_body:input.text,
-     p_provider_thread_id:input.externalMessageId,
-     p_metadata:{provider:'zoho-flow',department,received_at:new Date(received).toISOString(),external_message_id:input.externalMessageId}
+     p_message_text:input.text,
+     p_received_at:new Date(received).toISOString()
    })});
  if(!response.ok){return json({ok:false,error:'Email intake is temporarily unavailable'},503)}
  const data=await response.json().catch(()=>null);
- return json({ok:true,stored:true,data:data&&typeof data==='object'?data:{}},200);
+ if(!data||data.accepted!==true)return json({ok:false,error:'Email intake did not confirm storage'},503);
+ return json({ok:true,stored:Boolean(data.inserted),data:{team:data.team,status:data.status,eventId:data.eventId}},200);
 }
 export async function onRequestOptions(){return new Response(null,{status:204,headers:{'Allow':'POST, OPTIONS'}})}
 export async function onRequest({request}){return json({ok:false,error:'Method not allowed'},405)}
