@@ -24,7 +24,7 @@ export async function onRequestPost({request,env}){
   if(!pre.ok||!row||row.status!=='ready'||row.attempt_count!==0||!/^[0-9]{8,15}$/.test(row.recipient_phone||''))return json({ok:false,error:'Reply is not ready or recipient is invalid'},409);
   claimed=await rpc(base,key,'claim_crm_whatsapp_reply',{p_reply_id:input.replyId});
   if(!claimed?.claimed)return json({ok:false,error:'Reply window expired, identity review is required, or reply was already attempted'},409);
-  if(!/^[0-9]{8,15}$/.test(claimed.toPhone||'')||typeof claimed.text!=='string'||!claimed.text.trim()||claimed.text.length>1000)throw new Error('Claimed reply validation failed');
+  if(!/^[0-9]{8,15}$/.test(claimed.toPhone||'')||typeof claimed.text!=='string'||!claimed.text.trim()||claimed.text.length>1000||String(claimed.phoneNumberId||'')!==String(env.WHATSAPP_PHONE_NUMBER_ID))throw new Error('Claimed reply validation failed or originating WhatsApp number mismatch');
   const url='https://graph.facebook.com/'+env.WHATSAPP_GRAPH_VERSION+'/'+env.WHATSAPP_PHONE_NUMBER_ID+'/messages';
   const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+env.WHATSAPP_ACCESS_TOKEN,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to:claimed.toPhone,type:'text',text:{preview_url:false,body:claimed.text}})});
   const provider=await response.json().catch(()=>null);const id=provider?.messages?.[0]?.id;
