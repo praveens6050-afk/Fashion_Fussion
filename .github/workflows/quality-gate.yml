@@ -181,6 +181,8 @@ jobs:
           node --check admin-panel/functions/api/admin-crm-whatsapp-inbox.js
           node --check admin-panel/support-login.js
           node --check admin-panel/support-inbox-auth.js
+          node --check admin-panel/functions/api/webhooks/zoho-mail.js
+          node --test admin-panel/tests/zoho-mail-webhook.test.mjs
           node scripts/check_crm_panel_contract.js
           node scripts/check_whatsapp_crm_inbox_contract.js
       - name: Source checks
