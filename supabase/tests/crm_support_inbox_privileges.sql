@@ -1,6 +1,6 @@
 -- CRM inbox storage and dispatch RPCs must remain private; senders are not enabled by these tests.
 BEGIN;
-SELECT plan(14);
+SELECT plan(15);
 SELECT ok(to_regclass('public.crm_team_members') IS NOT NULL,'CRM team membership table exists');
 SELECT ok(NOT has_table_privilege('anon','public.crm_team_members','SELECT')
  AND NOT has_table_privilege('authenticated','public.crm_team_members','SELECT'),
