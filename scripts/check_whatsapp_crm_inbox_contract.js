@@ -26,7 +26,7 @@ const files={
 };
 for(const marker of ['admin_crm_whatsapp_support_snapshot','admin_crm_queue_whatsapp_reply','Origin not allowed'])
   assert.ok(files.api.includes(marker),'API missing security/action marker: '+marker);
-for(const marker of ['ffWaClassifyIdentity','classifyWhatsApp','ffWaTeamFilter','customer_support','seller_support','sales_marketing','admin_operations','Queue reply for review','pending review','identity review'])
+for(const marker of ['ffWaSendReply','ffEmailSendReply','sendWhatsAppReply','sendEmailReply','ffWaClassifyIdentity','classifyWhatsApp','ffWaTeamFilter','customer_support','seller_support','sales_marketing','admin_operations','Queue reply for review','pending review','identity review'])
   assert.ok(files.ui.includes(marker),'CRM inbox missing workflow marker: '+marker);
 assert.ok(files.html.includes('admin-crm-whatsapp-inbox.js'),'CRM page does not load WhatsApp inbox');
 assert.ok(files.supportLogin.includes('support-login.js'),'Restricted support login page missing its login controller');
@@ -35,6 +35,8 @@ assert.ok(files.supportAuth.includes("rpc('admin_crm_whatsapp_support_snapshot')
 assert.ok(!files.supportPage.includes('admin-crm.js')&&!files.supportPage.includes('admin-crm-directory.js'),'Support page must not load broad admin CRM modules');
 assert.ok(files.api.includes("action==='assign_team'"),'Team assignment API action missing');
 assert.ok(files.api.includes("action==='classify_whatsapp'"),'WhatsApp identity review API action missing');
+assert.ok(files.api.includes("action==='send_approved_reply'")&&files.api.includes("action==='send_approved_email_reply'"),'Explicit admin-triggered dispatch actions missing');
+assert.ok(files.api.includes('Administrator approval is required to send replies'),'Dispatch must be admin-only');
 assert.ok(files.whatsappReviewSql.includes('admin_crm_classify_whatsapp_event')&&files.whatsappReviewSql.includes("sender_role='unclassified'"),'Admin-only WhatsApp identity review migration missing');
 for(const marker of ['crm_email_inbound_events','ingest_crm_email_message','admin_crm_email_support_snapshot','service_role'])assert.ok(files.emailSql.includes(marker),'Email intake migration missing security marker: '+marker);
 for(const marker of ['admin_crm_queue_email_reply','pending_review','crm_whatsapp_actor_team'])assert.ok(files.emailReplySql.includes(marker),'Email reply review migration missing security marker: '+marker);
