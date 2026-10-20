@@ -33,40 +33,15 @@
     load();loadEmail();
   }
   async function callApi(payload){
-    const db=window.supabaseClient;
-    if(!db?.auth)throw new Error('CRM session is unavailable.');
-    const {data:{user},error:userError}=await db.auth.getUser();
-    if(userError||!user)throw new Error('Please sign in again.');
-    const [{data:profile,error:profileError},{data:member,error:memberError}]=await Promise.all([
-      db.from('profiles').select('is_admin').eq('id',user.id).maybeSingle(),
-      db.from('crm_team_members').select('email,role,is_active').eq('user_id',user.id).maybeSingle()
-    ]);
-    if(profileError)throw profileError;
-    if(memberError)throw memberError;
-    isAdmin=profile?.is_admin===true;
-    actorTeam=isAdmin?'administrator':(member?.is_active===true&&String(member.email||'').toLowerCase()===String(user.email||'').toLowerCase()?String(member.role||''):'');
-    if(!isAdmin&&!['customer_support','seller_support','sales','marketing'].includes(actorTeam))
-      throw new Error('Active CRM team access is required.');
-    if(payload?.action!=='snapshot'&&payload?.action!=='snapshot_email')
-      throw new Error('This legacy action is disabled. Use the unified CRM inbox; no message was sent.');
-    let query=db.from('crm_inbox_conversations')
-      .select('id,provider,provider_thread_id,provider_message_id,department,contact_type,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,status,priority,assigned_to,metadata')
-      .order('received_at',{ascending:false}).limit(100);
-    if(payload.action==='snapshot')query=query.eq('provider','whatsapp');
-    if(payload.action==='snapshot_email')query=query.eq('provider','email');
-    const {data,error}=await query;
-    if(error)throw error;
-    const recent=(data||[]).map(c=>({
-      id:Number(c.id),support_team:c.department==='sales'||c.department==='marketing'?'sales_marketing':c.department,
-      routing_status:c.status||'open',sender_role:c.contact_type||'unknown',sender_phone:c.contact_phone||'',
-      sender_email:c.contact_email||'',recipient_email:c.inbox_address||'',subject:c.subject||'',
-      message_type:c.provider,message_text:c.latest_message||'',created_at:c.received_at,
-      latest_reply_status:'Reply actions disabled',contact_name:c.contact_name||'',priority:c.priority||'normal'
-    }));
-    return {recent,actor_team:actorTeam,is_admin:isAdmin,generated_at:new Date().toISOString(),
-      queues:{customer_support:recent.filter(r=>r.support_team==='customer_support').length,
-      seller_support:recent.filter(r=>r.support_team==='seller_support').length,
-      sales_marketing:recent.filter(r=>r.support_team==='sales_marketing').length,admin_operations:0,needs_review:0}};
+    const db=window.supabaseClient;if(!db?.auth)throw new Error('CRM session is unavailable.');
+    const {data:{session},error}=await db.auth.getSession();
+    if(error||!session?.access_token)throw new Error('Please sign in again.');
+    const response=await fetch('/api/admin-crm-whatsapp-inbox',{method:'POST',
+      headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify(payload),cache:'no-store'});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok)throw new Error(result.error||'CRM support inbox unavailable.');
+    return result.data||{};
   }
   async function load(){
     $('ffWaInboxStatus').textContent='Loading WhatsApp support inbox…';
@@ -78,7 +53,7 @@
       $('ffWaTeamAdmin').hidden=true;
       const filter=$('ffWaTeamFilter');
       [...filter.options].forEach(option=>{if(option.value==='all')option.textContent=isAdmin?'All queues':'My team queue';});
-      [...filter.options].forEach(option=>{if(!['all','needs_review'].includes(option.value))option.hidden=!isAdmin&&option.value!==actorTeam&&!(actorTeam==='sales'||actorTeam==='marketing')});
+      [...filter.options].forEach(option=>{if(!['all','needs_review'].includes(option.value))option.hidden=!isAdmin&&option.value!==actorTeam;});
       const q=data.queues||{};
       $('ffWaQueueCounts').innerHTML=[
         ['Customer support',q.customer_support],['Seller support',q.seller_support],
@@ -126,7 +101,7 @@
       emailRows=Array.isArray(data.recent)?data.recent:[];
       const filter=$('ffEmailTeamFilter');
       [...filter.options].forEach(option=>{if(option.value==='all')option.textContent=data.is_admin?'All queues':'My team queue';});
-      [...filter.options].forEach(option=>{if(option.value!=='all')option.hidden=!data.is_admin&&option.value!==data.actor_team&&!(data.actor_team==='sales'||data.actor_team==='marketing');});
+      [...filter.options].forEach(option=>{if(option.value!=='all')option.hidden=!data.is_admin&&option.value!==data.actor_team;});
       renderEmails();
       $('ffEmailStatus').textContent='Email inbox refreshed '+date(data.generated_at)+'. Read-only mode; no email sent.';
     }catch(e){$('ffEmailRows').textContent='Email inbox unavailable.';$('ffEmailStatus').textContent=e.message||'Email inbox unavailable.';}
