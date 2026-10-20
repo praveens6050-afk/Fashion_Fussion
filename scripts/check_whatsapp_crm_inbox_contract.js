@@ -11,7 +11,12 @@ const files={
   supportLogin:fs.readFileSync('admin-panel/support-login.html','utf8'),
   supportPage:fs.readFileSync('admin-panel/support-inbox.html','utf8'),
   supportAuth:fs.readFileSync('admin-panel/support-inbox-auth.js','utf8'),
-  loginJs:fs.readFileSync('admin-panel/support-login.js','utf8')
+  loginJs:fs.readFileSync('admin-panel/support-login.js','utf8'),
+  emailSql:fs.readFileSync('supabase/migrations/20261020130000_crm_zoho_email_inbox.sql','utf8'),
+  emailReplySql:fs.readFileSync('supabase/migrations/20261020140000_crm_zoho_email_reply_queue.sql','utf8'),
+  emailReviewSql:fs.readFileSync('supabase/migrations/20261020150000_crm_zoho_email_identity_review.sql','utf8'),
+  emailWebhook:fs.readFileSync('admin-panel/functions/api/webhooks/zoho-mail.js','utf8'),
+  emailTest:fs.readFileSync('admin-panel/tests/zoho-mail-webhook.test.mjs','utf8')
 };
 for(const marker of ['admin_crm_whatsapp_support_snapshot','admin_crm_queue_whatsapp_reply','Origin not allowed'])
   assert.ok(files.api.includes(marker),'API missing security/action marker: '+marker);
@@ -23,6 +28,11 @@ assert.ok(files.supportPage.includes('support-inbox-auth.js')&&files.supportPage
 assert.ok(files.supportAuth.includes("rpc('admin_crm_whatsapp_support_snapshot')"),'Support page must validate access through the team-scoped RPC');
 assert.ok(!files.supportPage.includes('admin-crm.js')&&!files.supportPage.includes('admin-crm-directory.js'),'Support page must not load broad admin CRM modules');
 assert.ok(files.api.includes("action==='assign_team'"),'Team assignment API action missing');
+for(const marker of ['crm_email_inbound_events','ingest_crm_email_message','admin_crm_email_support_snapshot','service_role'])assert.ok(files.emailSql.includes(marker),'Email intake migration missing security marker: '+marker);
+for(const marker of ['admin_crm_queue_email_reply','pending_review','crm_whatsapp_actor_team'])assert.ok(files.emailReplySql.includes(marker),'Email reply review migration missing security marker: '+marker);
+assert.ok(files.emailReviewSql.includes('admin_crm_classify_email_event'),'Email identity review RPC missing');
+for(const marker of ['ZOHO_CRM_WEBHOOK_SECRET','approvedRecipients','ingest_crm_email_message'])assert.ok(files.emailWebhook.includes(marker),'Zoho webhook missing security marker: '+marker);
+assert.ok(files.emailTest.includes('unauthenticated Zoho intake'),'Zoho webhook security tests missing');
 assert.ok(files.auth.includes("new Event('ff-crm-ready')"),'CRM readiness event missing');
 for(const marker of ['auth.uid()','p.is_admin','routing_status','sender_role','pending_review','REVOKE ALL ON TABLE public.whatsapp_support_reply_outbox FROM PUBLIC,anon,authenticated','REVOKE ALL ON FUNCTION public.admin_crm_queue_whatsapp_reply'])
   assert.ok(files.sql.includes(marker),'Migration missing security marker: '+marker);
@@ -30,4 +40,4 @@ for(const marker of ['crm_team_members','auth.uid()','support_team=v_team','admi
   assert.ok(files.teamSql.includes(marker),'Team access migration missing security marker: '+marker);
 assert.ok(!files.api.includes('graph.facebook.com'),'CRM API must never call Meta directly');
 assert.ok(!files.ui.includes('graph.facebook.com'),'CRM UI must never call Meta directly');
-console.log('WhatsApp CRM inbox source contract passed: team-scoped database authorization, isolated support workspace, admin team assignment, reviewed queue only, no direct sending.');
+console.log('WhatsApp CRM inbox source contract passed: team-scoped database authorization, isolated support workspace, admin team assignment, reviewed queue only, no direct sending; Zoho email intake and reviewed reply staging contract verified.');
