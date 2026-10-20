@@ -23,6 +23,6 @@ test('dry run never claims or sends replies and launch gates remain closed by de
 test('dispatch cannot run while launch gates are closed',async t=>{
  const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;throw Error('closed gate must prevent calls')};t.after(()=>{globalThis.fetch=original});
  const e=await emailPost({request:req({replyId:7,dryRun:false},emailEnv.CRM_EMAIL_REPLY_INTERNAL_TOKEN),env:emailEnv});
- const w=await waPost({request:req({replyId:9,dryRun:false},waEnv),env:waEnv});
+ const w=await waPost({request:req({replyId:9,dryRun:false},waEnv.CRM_WHATSAPP_REPLY_INTERNAL_TOKEN),env:waEnv});
  assert.equal(e.status,423);assert.equal(w.status,423);assert.equal(calls,0);
 });
