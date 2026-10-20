@@ -43,8 +43,8 @@ for(const marker of ['admin_crm_queue_email_reply','pending_review','crm_whatsap
 assert.ok(files.emailReviewSql.includes('admin_crm_classify_email_event'),'Email identity review RPC missing');
 for(const marker of ['ZOHO_CRM_WEBHOOK_SECRET','approvedRecipients','ingest_crm_email_message'])assert.ok(files.emailWebhook.includes(marker),'Zoho webhook missing security marker: '+marker);
 assert.ok(files.emailTest.includes('unauthenticated Zoho intake'),'Zoho webhook security tests missing');
-for(const marker of ['admin_crm_approve_email_reply','admin_crm_approve_whatsapp_reply','pending_review','attempt_count=0'])assert.ok(files.replyReview.includes(marker),'Reply approval migration missing: '+marker);
-for(const marker of ['claim_crm_email_reply','finish_crm_email_reply','claim_crm_whatsapp_reply','finish_crm_whatsapp_reply','retryAllowed',"auth.role()"] )assert.ok(files.replyClaims.includes(marker),'Atomic reply claim migration missing: '+marker);
+for(const marker of ['admin_crm_approve_email_reply','admin_crm_approve_whatsapp_reply','pending_review','attempt_count=0','coalesce(e.meta_timestamp,e.created_at)'])assert.ok(files.replyReview.includes(marker),'Reply approval migration missing: '+marker);
+for(const marker of ['claim_crm_email_reply','finish_crm_email_reply','claim_crm_whatsapp_reply','finish_crm_whatsapp_reply','retryAllowed',"auth.role()",'coalesce(v_event.meta_timestamp,v_event.created_at)'])assert.ok(files.replyClaims.includes(marker),'Atomic reply claim migration missing: '+marker);
 for(const [name,source] of [['Zoho',files.emailDispatch],['WhatsApp',files.waDispatch]])for(const marker of ['dryRun','CRM_','claim_crm_','finish_crm_','PROVIDER_OUTCOME_UNCERTAIN'])assert.ok(source.includes(marker),name+' dispatcher missing safety marker: '+marker);
 assert.ok(files.dispatchTests.includes('launch gates are closed'),'Reply dispatch gate tests missing');
 assert.ok(files.auth.includes("new Event('ff-crm-ready')"),'CRM readiness event missing');
