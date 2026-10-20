@@ -80,6 +80,10 @@ export async function onRequestPost({request,env}) {
     rpc='admin_crm_set_whatsapp_team_member';
     body={p_user_id:input.userId,p_team_key:input.teamKey,p_active:input.active};
   }else return json({ok:false,error:'Invalid support inbox action'},400,origin);
+  try{
+    const userResponse=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:authorization}});
+    const user=await userResponse.json().catch(()=>null);
+    if(!userResponse.ok||!user?.id)return json({ok:false,error:'Please sign in again'},401,origin);
   const headers={apikey:key,Authorization:authorization,'Content-Type':'application/json',Accept:'application/json'};
   if(action==='snapshot'||action==='snapshot_email'){
     let stage='role_lookup';
