@@ -1,5 +1,6 @@
 name: CRM panel contract validation
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'admin-panel/**'
@@ -11,6 +12,7 @@ on:
   push:
     branches: [crm-team-access]
     paths:
+      - '.github/workflows/crm-panel-validate.yml'
       - 'admin-panel/**'
       - 'supabase/functions/crm-*/**'
       - 'supabase/migrations/202610191*.sql'
