@@ -23,7 +23,7 @@ grant update on public.crm_inbox_conversations to service_role;
 create or replace function public.crm_inbox_can_access_conversation(p_department text,p_inbox_address text)
 returns boolean
 language sql stable security definer set search_path=pg_catalog,public,auth
-as $
+as $$
  select public.crm_inbox_can_access(p_department)
    or (lower(trim(coalesce(p_inbox_address,'')))='sales.team@fashionfussion.in'
        and (public.crm_inbox_can_access('sales') or public.crm_inbox_can_access('marketing')));
