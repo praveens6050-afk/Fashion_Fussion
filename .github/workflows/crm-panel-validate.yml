@@ -10,7 +10,7 @@ on:
       - 'scripts/check_crm_panel_contract.js'
       - '.github/workflows/crm-panel-validate.yml'
   push:
-    branches: [crm-team-access]
+    branches: [crm-team-access, 'crm-live-ready-integration-*']
     paths:
       - '.github/workflows/crm-panel-validate.yml'
       - 'admin-panel/**'
