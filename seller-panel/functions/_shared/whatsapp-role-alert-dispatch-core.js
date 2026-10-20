@@ -125,7 +125,7 @@ export async function dispatchRoleAlert(request,env,role){
   const keys=input&&typeof input==='object'&&!Array.isArray(input)?Object.keys(input):[];
   const dry=keys.length===1&&input.dryRun===true,dispatch=keys.length===1&&input.dispatch===true;
   if(!dry&&!dispatch)return reply({error:'Only dryRun:true or dispatch:true accepted'},400);
-  const authorized=await equalSecret(request,dry?String(env.OUTREACH_API_TOKEN||''):String(env[cfg.token]||''),dry?1:40);
+  const authorized=await equalSecret(request,dry?String(env.OUTREACH_API_TOKEN||''):String(env[cfg.token]||''),40);
   if(!authorized)return reply({error:'Unauthorized'},401);
   const db=database(env);if(!db)return reply({error:'Database unavailable',sent:0},503);
   const active=configured(env,cfg);
