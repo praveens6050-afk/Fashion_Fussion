@@ -16,7 +16,12 @@ const files={
   emailReplySql:fs.readFileSync('supabase/migrations/20261020140000_crm_zoho_email_reply_queue.sql','utf8'),
   emailReviewSql:fs.readFileSync('supabase/migrations/20261020150000_crm_zoho_email_identity_review.sql','utf8'),
   emailWebhook:fs.readFileSync('admin-panel/functions/api/webhooks/zoho-mail.js','utf8'),
-  emailTest:fs.readFileSync('admin-panel/tests/zoho-mail-webhook.test.mjs','utf8')
+  emailTest:fs.readFileSync('admin-panel/tests/zoho-mail-webhook.test.mjs','utf8'),
+  replyReview:fs.readFileSync('supabase/migrations/20261020160000_crm_reply_review_controls.sql','utf8'),
+  replyClaims:fs.readFileSync('supabase/migrations/20261020170000_crm_reply_dispatch_claims.sql','utf8'),
+  emailDispatch:fs.readFileSync('admin-panel/functions/api/outreach/crm-email-reply-dispatch.js','utf8'),
+  waDispatch:fs.readFileSync('admin-panel/functions/api/outreach/crm-whatsapp-reply-dispatch.js','utf8'),
+  dispatchTests:fs.readFileSync('admin-panel/tests/crm-reply-dispatch.test.mjs','utf8')
 };
 for(const marker of ['admin_crm_whatsapp_support_snapshot','admin_crm_queue_whatsapp_reply','Origin not allowed'])
   assert.ok(files.api.includes(marker),'API missing security/action marker: '+marker);
@@ -33,6 +38,10 @@ for(const marker of ['admin_crm_queue_email_reply','pending_review','crm_whatsap
 assert.ok(files.emailReviewSql.includes('admin_crm_classify_email_event'),'Email identity review RPC missing');
 for(const marker of ['ZOHO_CRM_WEBHOOK_SECRET','approvedRecipients','ingest_crm_email_message'])assert.ok(files.emailWebhook.includes(marker),'Zoho webhook missing security marker: '+marker);
 assert.ok(files.emailTest.includes('unauthenticated Zoho intake'),'Zoho webhook security tests missing');
+for(const marker of ['admin_crm_approve_email_reply','admin_crm_approve_whatsapp_reply','pending_review','attempt_count=0'])assert.ok(files.replyReview.includes(marker),'Reply approval migration missing: '+marker);
+for(const marker of ['claim_crm_email_reply','finish_crm_email_reply','claim_crm_whatsapp_reply','finish_crm_whatsapp_reply','retryAllowed',"auth.role()"] )assert.ok(files.replyClaims.includes(marker),'Atomic reply claim migration missing: '+marker);
+for(const [name,source] of [['Zoho',files.emailDispatch],['WhatsApp',files.waDispatch]])for(const marker of ['dryRun','CRM_','claim_crm_','finish_crm_','PROVIDER_OUTCOME_UNCERTAIN'])assert.ok(source.includes(marker),name+' dispatcher missing safety marker: '+marker);
+assert.ok(files.dispatchTests.includes('launch gates are closed'),'Reply dispatch gate tests missing');
 assert.ok(files.auth.includes("new Event('ff-crm-ready')"),'CRM readiness event missing');
 for(const marker of ['auth.uid()','p.is_admin','routing_status','sender_role','pending_review','REVOKE ALL ON TABLE public.whatsapp_support_reply_outbox FROM PUBLIC,anon,authenticated','REVOKE ALL ON FUNCTION public.admin_crm_queue_whatsapp_reply'])
   assert.ok(files.sql.includes(marker),'Migration missing security marker: '+marker);
@@ -40,4 +49,4 @@ for(const marker of ['crm_team_members','auth.uid()','support_team=v_team','admi
   assert.ok(files.teamSql.includes(marker),'Team access migration missing security marker: '+marker);
 assert.ok(!files.api.includes('graph.facebook.com'),'CRM API must never call Meta directly');
 assert.ok(!files.ui.includes('graph.facebook.com'),'CRM UI must never call Meta directly');
-console.log('WhatsApp CRM inbox source contract passed: team-scoped database authorization, isolated support workspace, admin team assignment, reviewed queue only, no direct sending; Zoho email intake and reviewed reply staging contract verified.');
+console.log('WhatsApp CRM inbox source contract passed: team-scoped database authorization, isolated support workspace, admin team assignment, reviewed queue only, no direct sending; Zoho email intake, admin review, and one-attempt gated dispatch contracts verified.');
