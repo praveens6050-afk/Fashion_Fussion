@@ -3,7 +3,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const date=v=>v?new Date(v).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
-  let rows=[];
+  let rows=[];let actorTeam='';let isAdmin=false;
   function mount(){
     const container=$('dashboard')?.querySelector('.container');
     if(!container||$('ffWhatsAppSupportInbox'))return;
@@ -36,10 +36,14 @@
     try{
       const data=await callApi({action:'snapshot'});
       rows=Array.isArray(data.recent)?data.recent:[];
+      actorTeam=String(data.actor_team||'');isAdmin=data.is_admin===true;
+      const filter=$('ffWaTeamFilter');
+      [...filter.options].forEach(option=>{if(option.value==='all')option.textContent=isAdmin?'All queues':'My team queue';});
+      [...filter.options].forEach(option=>{if(!['all','needs_review'].includes(option.value))option.hidden=!isAdmin&&option.value!==actorTeam;});
       const q=data.queues||{};
       $('ffWaQueueCounts').innerHTML=[
         ['Customer support',q.customer_support],['Seller support',q.seller_support],
-        ['Sales / marketing',q.sales_marketing],['Admin operations',q.admin_operations],
+        ['Sales / marketing',q.sales_marketing],...(isAdmin?[['Admin operations',q.admin_operations]]:[]),
         ['Needs review',q.needs_review]
       ].map(([name,n])=>'<span><b>'+Number(n||0)+'</b>'+esc(name)+'</span>').join('');
       renderRows();
@@ -52,7 +56,7 @@
   function renderRows(){
     const target=$('ffWaInboxRows');if(!target)return;
     const filter=$('ffWaTeamFilter').value;
-    const filtered=rows.filter(r=>filter==='all'||(filter==='needs_review'?r.routing_status==='needs_review':r.support_team===filter));
+    const filtered=rows.filter(r=>(isAdmin||r.support_team===actorTeam)&&(filter==='all'||(filter==='needs_review'?r.routing_status==='needs_review':r.support_team===filter)));
     if(!filtered.length){target.innerHTML='<p>No messages in this queue.</p>';return;}
     target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-event="'+Number(r.id)+'" aria-pressed="false"><strong>'+esc(r.sender_role||'unknown')+' · '+esc(r.sender_phone||'')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'unknown')+'</span><div class="ff-wa-muted">'+esc(r.message_type||'message')+' · '+date(r.created_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div><div class="ff-wa-muted">Latest reply: '+esc(r.latest_reply_status||'none')+'</div></button>').join('');
     target.querySelectorAll('[data-event]').forEach(btn=>btn.addEventListener('click',()=>select(Number(btn.dataset.event),btn)));
