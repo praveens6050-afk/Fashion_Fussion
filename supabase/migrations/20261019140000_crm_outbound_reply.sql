@@ -54,7 +54,7 @@ create or replace function public.crm_ingest_inbound_message(
 ) returns bigint
 language plpgsql security definer set search_path=pg_catalog,public,auth
 as $$
-declare v_department text:='customer_support'; v_contact_type text:='unknown'; v_contact_user uuid; v_phone text; v_email text; v_id bigint; v_inbox text;
+declare v_department text:='customer_support'; v_contact_type text:='unknown'; v_contact_user uuid; v_phone text; v_email text; v_id bigint; v_inbox text; v_message_id bigint;
 begin
  if p_provider not in ('whatsapp','email') or nullif(trim(p_provider_message_id),'') is null or nullif(trim(p_body),'') is null then
    raise exception 'Invalid inbound message' using errcode='22023';
@@ -86,15 +86,18 @@ begin
    where c.provider=p_provider and c.provider_thread_id=p_provider_thread_id
    order by c.updated_at desc limit 1;
    if v_id is not null then
+     -- Record the unique provider event first. Replayed webhooks must not refresh
+     -- last_inbound_at, otherwise an old WhatsApp message could reopen the 24-hour window.
+     insert into public.crm_inbox_messages(conversation_id,provider_message_id,direction,sender_label,body,metadata,delivery_status)
+     values(v_id,p_provider_message_id,'inbound',coalesce(nullif(trim(p_sender_name),''),v_email,v_phone,'External contact'),left(p_body,10000),coalesce(p_metadata,'{}'::jsonb),'received')
+     on conflict(provider_message_id,direction) do nothing returning id into v_message_id;
+     if v_message_id is null then return v_id; end if;
      update public.crm_inbox_conversations set latest_message=left(p_body,10000),received_at=now(),last_inbound_at=now(),updated_at=now(),
        subject=coalesce(nullif(trim(p_subject),''),subject),
        contact_name=coalesce(nullif(trim(p_sender_name),''),contact_name),
        contact_email=coalesce(v_email,contact_email),contact_phone=coalesce(v_phone,contact_phone),
        metadata=coalesce(metadata,'{}'::jsonb)||coalesce(p_metadata,'{}'::jsonb),status='open'
      where id=v_id;
-     insert into public.crm_inbox_messages(conversation_id,provider_message_id,direction,sender_label,body,metadata,delivery_status)
-     values(v_id,p_provider_message_id,'inbound',coalesce(nullif(trim(p_sender_name),''),v_email,v_phone,'External contact'),left(p_body,10000),coalesce(p_metadata,'{}'::jsonb),'received')
-     on conflict(provider_message_id,direction) do nothing;
      return v_id;
    end if;
  end if;
