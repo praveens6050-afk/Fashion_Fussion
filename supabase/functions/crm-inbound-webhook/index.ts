@@ -128,16 +128,46 @@ Deno.serve(async (req) => {
       // { messages: [{ id, from_email, from_name, from_phone, to, subject, text, thread_id }] }.
       const messages = Array.isArray(payload.messages) ? payload.messages : [payload];
       for (const m of messages) {
-        const id = String(m.id || m.message_id || "");
-        const body = String(m.text || m.body || m.text_body || "").slice(0, 10000);
-        if (!id || !body || !m.from_email) continue;
+        // Accept the documented normalized Zoho bridge payload and common provider aliases.
+        const id = String(m.id || m.message_id || m.externalMessageId || m.external_message_id || "");
+        const body = String(m.text || m.body || m.text_body || m.textBody || "");
+        const senderRaw = String(m.from_email || m.fromEmail || m.from || "");
+        const senderMatch = senderRaw.match(/<([^<>]+)>/);
+        const senderEmail = (senderMatch ? senderMatch[1] : senderRaw).trim().toLowerCase();
+        const senderName = String(m.from_name || m.fromName || (senderMatch ? senderRaw.replace(senderMatch[0], "").replace(/["']/g, "").trim() : ""));
+        const toRaw = m.to || m.inbox_address || m.recipient || "";
+        const recipients = (Array.isArray(toRaw) ? toRaw : String(toRaw).split(/[;,]/))
+          .map((value: any) => String(value?.email || value?.address || value || "").trim())
+          .map((value: string) => {
+            const match = value.match(/<([^<>]+)>/);
+            return (match ? match[1] : value).trim().toLowerCase();
+          }).filter(Boolean);
+        // Orders are handled by the dedicated order-notification workflow, never the support CRM.
+        const crmRecipients = recipients.filter((address: string) =>
+          address !== "orders@fashionfussion.in" &&
+          ["customer.care@fashionfussion.in", "seller.support@fashionfussion.in", "seller-support@fashionfussion.in", "sales.team@fashionfussion.in", "sales@fashionfussion.in", "marketing@fashionfussion.in", "campaigns@fashionfussion.in"].includes(address)
+        );
+        if (!id || !body.trim() || !senderEmail.includes("@") || !crmRecipients.length) continue;
+        const inboxAddress = crmRecipients[0];
+        const internalZohoId = m.zoho_message_id || m.zohoMessageId || m.zohoInternalMessageId || null;
         const { error } = await db.rpc("crm_ingest_inbound_message", {
           p_provider: "email", p_provider_message_id: id,
-          p_sender_phone: m.from_phone ? String(m.from_phone) : null,
-          p_sender_email: String(m.from_email), p_sender_name: String(m.from_name || ""),
-          p_inbox_address: String(m.to || m.inbox_address || ""), p_subject: String(m.subject || "Incoming email").slice(0, 500),
-          p_body: body, p_provider_thread_id: m.thread_id ? String(m.thread_id) : null,
-          p_metadata: { provider: String(m.provider || "zoho-flow"), zoho_message_id: m.zoho_message_id || m.zohoMessageId || m.messageId || m.message_id || null, headers: m.headers && typeof m.headers === "object" ? { message_id: m.headers.message_id || null, in_reply_to: m.headers.in_reply_to || null } : {} }
+          p_sender_phone: m.from_phone || m.fromPhone ? String(m.from_phone || m.fromPhone) : null,
+          p_sender_email: senderEmail, p_sender_name: senderName,
+          p_inbox_address: inboxAddress,
+          p_subject: String(m.subject || "Incoming email").slice(0, 500),
+          p_body: body.slice(0, 10000),
+          p_provider_thread_id: m.thread_id || m.threadId ? String(m.thread_id || m.threadId) : null,
+          p_metadata: {
+            provider: String(m.provider || "zoho-flow"),
+            zoho_message_id: internalZohoId ? String(internalZohoId) : null,
+            external_message_id: id,
+            received_at: m.receivedAt || m.received_at || null,
+            headers: m.headers && typeof m.headers === "object" ? {
+              message_id: m.headers.message_id || null,
+              in_reply_to: m.headers.in_reply_to || null
+            } : {}
+          }
         });
         if (error) throw error;
         stored++;
