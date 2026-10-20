@@ -42,8 +42,8 @@ BEGIN
   VALUES (987101,'20000000-0000-4000-8000-000000000002','paid','ordered','prepaid',now(),now(),
     '[{"id":501,"variant_id":null,"qty":1}]'::jsonb);
 
-  IF public.stage_whatsapp_seller_order_alert(987101,now()-interval '1 hour') <> 1 THEN
-    RAISE EXCEPTION 'Eligible approved seller order should stage once';
+  IF NOT EXISTS (SELECT 1 FROM public.whatsapp_seller_order_notification_outbox WHERE order_id=987101) THEN
+    RAISE EXCEPTION 'New eligible order should auto-stage a seller alert';
   END IF;
   IF public.stage_whatsapp_seller_order_alert(987101,now()-interval '1 hour') <> 0 THEN
     RAISE EXCEPTION 'Duplicate seller order event must be idempotent';
