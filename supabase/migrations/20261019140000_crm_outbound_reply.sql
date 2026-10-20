@@ -27,7 +27,7 @@ as $
  select public.crm_inbox_can_access(p_department)
    or (lower(trim(coalesce(p_inbox_address,'')))='sales.team@fashionfussion.in'
        and (public.crm_inbox_can_access('sales') or public.crm_inbox_can_access('marketing')));
-$;
+$$;
 revoke all on function public.crm_inbox_can_access_conversation(text,text) from public,anon;
 grant execute on function public.crm_inbox_can_access_conversation(text,text) to authenticated;
 drop policy if exists crm_inbox_conversations_department_read on public.crm_inbox_conversations;
