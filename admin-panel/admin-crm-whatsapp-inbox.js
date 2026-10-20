@@ -13,12 +13,19 @@
     const style=document.createElement('style');
     style.textContent='#ffWhatsAppSupportInbox{margin-top:20px}#ffWhatsAppSupportInbox .ff-wa-queue-counts{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}#ffWhatsAppSupportInbox .ff-wa-queue-counts span{padding:9px 12px;border-radius:8px;background:#f2f4f7;font-size:12px}#ffWhatsAppSupportInbox .ff-wa-queue-counts b{display:block;font-size:18px}#ffWhatsAppSupportInbox .ff-wa-inbox-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}#ffWhatsAppSupportInbox select,#ffWhatsAppSupportInbox textarea{display:block;width:100%;box-sizing:border-box;margin:7px 0 12px;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font:inherit}#ffWhatsAppSupportInbox .ff-wa-row{display:block;width:100%;text-align:left;border:1px solid #eaecf0;border-radius:8px;background:#fff;padding:12px;margin-top:8px;cursor:pointer;color:inherit}#ffWhatsAppSupportInbox .ff-wa-row[aria-pressed=true]{border-color:#667085;background:#f8fafc}#ffWhatsAppSupportInbox .ff-wa-row strong{display:block;margin-bottom:4px}#ffWhatsAppSupportInbox .ff-wa-muted{font-size:12px;color:#667085;margin-top:4px;overflow-wrap:anywhere}#ffWhatsAppSupportInbox .ff-wa-conversation{border:1px solid #eaecf0;border-radius:10px;padding:14px;min-width:0}#ffWhatsAppSupportInbox .ff-wa-message{white-space:pre-wrap;overflow-wrap:anywhere;min-height:90px;background:#f8fafc;padding:12px;border-radius:8px;margin:12px 0 18px}#ffWhatsAppSupportInbox .ff-wa-reply-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#ffWhatsAppSupportInbox .ff-wa-note{font-size:12px;color:#667085}#ffWhatsAppSupportInbox .ff-wa-pill{display:inline-block;padding:3px 7px;border-radius:999px;background:#f2f4f7;font-size:11px}@media(max-width:900px){#ffWhatsAppSupportInbox .ff-wa-inbox-layout{grid-template-columns:1fr}}';
     document.head.appendChild(style);container.appendChild(section);
+    const emailSection=document.createElement('section');emailSection.id='ffCrmEmailInbox';emailSection.className='card';emailSection.style.marginTop='18px';
+    emailSection.innerHTML='<div class="card-header"><div><h2>Zoho Mail Support Inbox</h2><p>Incoming mail staged from approved support mailboxes. Review identity before drafting a reply; no email is sent from this screen.</p></div><button type="button" class="secondary" id="ffEmailRefresh">Refresh email</button></div><div class="card-body"><div class="ff-wa-inbox-layout"><div><label for="ffEmailTeamFilter">Team queue</label><select id="ffEmailTeamFilter"><option value="all">All queues</option><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales_marketing">Sales / marketing</option><option value="admin_operations">Orders / admin operations</option></select><div id="ffEmailRows" aria-live="polite">Loading…</div></div><div class="ff-wa-conversation"><h3 id="ffEmailSelectedTitle">Select an email</h3><p id="ffEmailSelectedMeta">Team-scoped email content.</p><div class="ff-wa-message" id="ffEmailSelectedMessage">No email selected.</div><button type="button" class="secondary" id="ffEmailClassify" disabled>Confirm identity / classify</button><label for="ffEmailReplyText">Reply draft (max 10000 characters)</label><textarea id="ffEmailReplyText" maxlength="10000" rows="5" placeholder="Write a reply…"></textarea><button type="button" class="primary" id="ffEmailQueueReply" disabled>Queue email reply for review</button><p id="ffEmailStatus" role="status" aria-live="polite"></p><p class="ff-wa-note">Email replies remain pending review. Zoho OAuth sending and delivery tracking are not enabled by this inbox.</p></div></div></div>';
+    container.appendChild(emailSection);
     $('ffWaInboxRefresh').addEventListener('click',load);
     $('ffWaTeamFilter').addEventListener('change',renderRows);
     $('ffWaReplyText').addEventListener('input',()=>{$('ffWaReplyCount').textContent=$('ffWaReplyText').value.length+' / 1000';});
     $('ffWaQueueReply').addEventListener('click',queueReply);
     $('ffWaAssignTeam').addEventListener('click',assignTeam);
-    load();
+    $('ffEmailRefresh').addEventListener('click',loadEmail);
+    $('ffEmailTeamFilter').addEventListener('change',renderEmails);
+    $('ffEmailClassify').addEventListener('click',classifyEmail);
+    $('ffEmailQueueReply').addEventListener('click',queueEmailReply);
+    load();loadEmail();
   }
   async function callApi(payload){
     const db=window.supabaseClient;if(!db?.auth)throw new Error('CRM session is unavailable.');
@@ -74,6 +81,54 @@
     $('ffWaQueueReply').dataset.eventId=String(id);
     $('ffWaQueueReply').disabled=row.routing_status!=='classified'||row.sender_role==='unclassified';
     $('ffWaInboxStatus').textContent=$('ffWaQueueReply').disabled?'Identity review is required before queuing a reply.':'Reply can be queued for review; sending is not enabled.';
+  }
+  let emailRows=[],selectedEmailId=null;
+  async function loadEmail(){
+    $('ffEmailStatus').textContent='Loading Zoho Mail inbox…';
+    try{
+      const data=await callApi({action:'snapshot_email'});
+      emailRows=Array.isArray(data.recent)?data.recent:[];
+      const filter=$('ffEmailTeamFilter');
+      [...filter.options].forEach(option=>{if(option.value==='all')option.textContent=data.is_admin?'All queues':'My team queue';});
+      [...filter.options].forEach(option=>{if(option.value!=='all')option.hidden=!data.is_admin&&option.value!==data.actor_team;});
+      renderEmails();
+      $('ffEmailStatus').textContent='Email inbox refreshed '+date(data.generated_at)+'. No email sent.';
+    }catch(e){$('ffEmailRows').textContent='Email inbox unavailable.';$('ffEmailStatus').textContent=e.message||'Email inbox unavailable.';}
+  }
+  function renderEmails(){
+    const target=$('ffEmailRows');if(!target)return;
+    const filter=$('ffEmailTeamFilter').value;
+    const filtered=emailRows.filter(r=>(isAdmin||r.support_team===actorTeam)&&(filter==='all'||r.support_team===filter));
+    if(!filtered.length){target.innerHTML='<p>No incoming email in this queue.</p>';return;}
+    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-email-event="'+Number(r.id)+'" aria-pressed="'+(Number(r.id)===selectedEmailId)+'"><strong>'+esc(r.subject||'(No subject)')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'needs_review')+'</span><div class="ff-wa-muted">From: '+esc(r.sender_email||'')+'</div><div class="ff-wa-muted">To: '+esc(r.recipient_email||'')+' · '+date(r.received_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div></button>').join('');
+    target.querySelectorAll('[data-email-event]').forEach(btn=>btn.addEventListener('click',()=>selectEmail(Number(btn.dataset.emailEvent))));
+  }
+  function selectEmail(id){
+    const row=emailRows.find(r=>Number(r.id)===id);if(!row)return;selectedEmailId=id;
+    $('ffEmailSelectedTitle').textContent=row.subject||'(No subject)';
+    $('ffEmailSelectedMeta').textContent=(row.support_team||'unassigned')+' · '+(row.routing_status||'needs_review')+' · From '+(row.sender_email||'')+' · '+date(row.received_at);
+    $('ffEmailSelectedMessage').textContent=row.message_text||'[No text body received]';
+    $('ffEmailReplyText').value='';
+    $('ffEmailClassify').disabled=row.routing_status==='classified';
+    $('ffEmailQueueReply').disabled=row.routing_status!=='classified';
+    $('ffEmailStatus').textContent=row.routing_status==='classified'?'Email reviewed; replies can be staged for review.':'Review the sender/content, then confirm classification before drafting a reply.';
+    renderEmails();
+  }
+  async function classifyEmail(){
+    if(!selectedEmailId)return;
+    $('ffEmailClassify').disabled=true;$('ffEmailStatus').textContent='Saving review…';
+    try{await callApi({action:'classify_email',inboundEventId:selectedEmailId});await loadEmail();selectEmail(selectedEmailId);}
+    catch(e){$('ffEmailClassify').disabled=false;$('ffEmailStatus').textContent=e.message||'Could not classify email.';}
+  }
+  async function queueEmailReply(){
+    if(!selectedEmailId)return;const reply=$('ffEmailReplyText').value.trim();
+    if(!reply||reply.length>10000)return;
+    $('ffEmailQueueReply').disabled=true;$('ffEmailStatus').textContent='Queueing email reply for review…';
+    try{
+      const key='crm-email-reply:'+selectedEmailId+':'+Date.now()+':'+Math.random().toString(36).slice(2,10);
+      const result=await callApi({action:'queue_email_reply',inboundEventId:selectedEmailId,replyText:reply,requestKey:key});
+      $('ffEmailReplyText').value='';$('ffEmailStatus').textContent=result.message||'Email reply queued for review; no email sent.';
+    }catch(e){$('ffEmailStatus').textContent=e.message||'Could not queue email reply.';$('ffEmailQueueReply').disabled=false;}
   }
   async function assignTeam(){
     const userId=$('ffWaMemberId').value.trim(),teamKey=$('ffWaMemberTeam').value,active=$('ffWaMemberActive').checked;
