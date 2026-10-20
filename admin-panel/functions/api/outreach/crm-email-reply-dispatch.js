@@ -4,7 +4,8 @@ async function equal(a,b){const[x,y]=await Promise.all([digest(a),digest(b)]);le
 const ROUTES={
  'customer.care@fashionfussion.in':{prefix:'ZOHO_CRM_CUSTOMER_CARE',from:'customer.care@fashionfussion.in'},
  'seller.support@fashionfussion.in':{prefix:'ZOHO_CRM_SELLER_SUPPORT',from:'seller.support@fashionfussion.in'},
- 'sales.team@fashionfussion.in':{prefix:'ZOHO_CRM_SALES_TEAM',from:'sales.team@fashionfussion.in'}
+ 'sales.team@fashionfussion.in':{prefix:'ZOHO_CRM_SALES_TEAM',from:'sales.team@fashionfussion.in'},
+ 'orders@fashionfussion.in':{prefix:'ZOHO_CRM_ORDERS',from:'orders@fashionfussion.in'}
 };
 async function rpc(base,key,name,body){
  const r=await fetch(base+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(body)});
@@ -32,7 +33,7 @@ export async function onRequestPost({request,env}){
  if(!gates.sendingEnabled||!gates.launchApproved||!gates.acknowledged)return json({ok:false,error:'CRM email reply launch gates are closed'},423);
  let claimed;
  try{
-  // Resolve sender from private outbox before claim; never use orders@ for support replies.
+  // Resolve sender from private outbox before claim; orders@ is only routed from its dedicated orders mailbox queue.
   const pre=await fetch(base+'/rest/v1/crm_email_reply_outbox?id=eq.'+input.replyId+'&select=id,from_email,status,attempt_count&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'}});
   const rows=await pre.json().catch(()=>[]);
   const row=Array.isArray(rows)?rows[0]:null;const route=row&&ROUTES[String(row.from_email||'').toLowerCase()];
