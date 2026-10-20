@@ -67,6 +67,11 @@ Deno.serve(async(req)=>{
   if(req.method==="OPTIONS") return new Response("ok",{headers:corsFor(origin)});
   if(req.method!=="POST") return response({error:"METHOD_NOT_ALLOWED"},405,origin);
   if(origin && !["https://www.crm.fashionfussion.in","https://crm.fashionfussion.in"].includes(origin)) return response({error:"ORIGIN_NOT_ALLOWED"},403,origin);
+  // Default-deny: live sends remain blocked until a separate, explicit CRM reply test is approved.
+  // These new dedicated flags intentionally do not reuse the marketplace notification gates.
+  const replyTestApproved = Deno.env.get("CRM_CRM_REPLY_LIVE_TEST_APPROVED") === "true"
+    && Deno.env.get("CRM_CRM_REPLY_LIVE_TEST_ACK") === "fashion_fussion_crm_reply_test_approved_20261020";
+  if (!replyTestApproved) return response({error:"CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL"},423,origin);
   const url=Deno.env.get("SUPABASE_URL"), serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const authHeader=req.headers.get("authorization")||"";
   const token=authHeader.replace(/^Bearer\s+/i,"");
