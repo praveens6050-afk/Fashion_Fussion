@@ -8,7 +8,7 @@ const files={
   auth:fs.readFileSync('admin-panel/crm-auth.js','utf8'),
   sql:fs.readFileSync('supabase/migrations/20261019190000_whatsapp_crm_support_inbox.sql','utf8'),
   teamSql:fs.readFileSync('supabase/migrations/20261020110000_crm_whatsapp_team_scoped_access.sql','utf8'),
-  whatsappReviewSql:fs.readFileSync('supabase/migrations/20261020180000_crm_whatsapp_identity_review.sql','utf8'),
+  whatsappReviewSql:fs.readFileSync('supabase/migrations/20261020181000_crm_whatsapp_identity_review.sql','utf8'),
   supportLogin:fs.readFileSync('admin-panel/support-login.html','utf8'),
   supportPage:fs.readFileSync('admin-panel/support-inbox.html','utf8'),
   supportAuth:fs.readFileSync('admin-panel/support-inbox-auth.js','utf8'),
