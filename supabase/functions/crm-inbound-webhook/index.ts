@@ -68,6 +68,43 @@ Deno.serve(async (req) => {
         const value = change.value || {};
         const businessId = String(value.metadata?.phone_number_id || "");
         const route = routeForBusinessNumber(businessId);
+        // Meta sends delivery receipts in the same signed webhook as inbound messages.
+        // Match by the provider message ID; never accept a status for an unrelated row.
+        for (const receipt of value.statuses || []) {
+          const providerMessageId = String(receipt.id || "");
+          const deliveryStatus = String(receipt.status || "").toLowerCase();
+          if (!providerMessageId || !["sent", "delivered", "read", "failed"].includes(deliveryStatus)) continue;
+          const { data: prior, error: lookupError } = await db.from("crm_inbox_messages")
+            .select("id,metadata,send_request_id")
+            .eq("provider_message_id", providerMessageId)
+            .eq("direction", "outbound")
+            .maybeSingle();
+          if (lookupError) throw lookupError;
+          if (!prior) continue;
+          const receiptErrors = Array.isArray(receipt.errors)
+            ? receipt.errors.map((e: any) => ({ code: e.code ?? null, title: e.title ?? null })).slice(0, 3)
+            : [];
+          const { error: updateError } = await db.from("crm_inbox_messages")
+            .update({
+              delivery_status: deliveryStatus,
+              metadata: {
+                ...(prior.metadata && typeof prior.metadata === "object" ? prior.metadata : {}),
+                meta_delivery_status: deliveryStatus,
+                meta_status_timestamp: receipt.timestamp ? String(receipt.timestamp) : null,
+                meta_status_errors: receiptErrors
+              }
+            })
+            .eq("id", prior.id);
+          if (updateError) throw updateError;
+          if (deliveryStatus === "failed" && prior.send_request_id) {
+            const code = receiptErrors[0]?.code;
+            const { error: attemptError } = await db.from("crm_inbox_send_attempts")
+              .update({ state: "failed", error_code: code ? "META_" + String(code) : "META_DELIVERY_FAILED", updated_at: new Date().toISOString() })
+              .eq("request_id", prior.send_request_id);
+            if (attemptError) throw attemptError;
+          }
+          stored++;
+        }
         const contacts = new Map((value.contacts || []).map((c: any) => [String(c.wa_id || ""), c]));
         for (const m of value.messages || []) {
           const sender = String(m.from || "");
