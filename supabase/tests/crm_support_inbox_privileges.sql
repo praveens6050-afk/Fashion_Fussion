@@ -1,6 +1,6 @@
 -- CRM inbox storage and dispatch RPCs must remain private; senders are not enabled by these tests.
 BEGIN;
-SELECT plan(15);
+SELECT plan(17);
 SELECT ok(to_regclass('public.crm_team_members') IS NOT NULL,'CRM team membership table exists');
 SELECT ok(NOT has_table_privilege('anon','public.crm_team_members','SELECT')
  AND NOT has_table_privilege('authenticated','public.crm_team_members','SELECT'),
@@ -39,5 +39,11 @@ SELECT ok(has_function_privilege('authenticated','public.admin_crm_whatsapp_supp
 SELECT ok(to_regprocedure('public.admin_crm_classify_email_event(bigint)') IS NOT NULL
  AND to_regprocedure('public.admin_crm_set_whatsapp_team_member(uuid,text,boolean)') IS NOT NULL,
  'email review and admin team assignment RPCs exist');
+SELECT ok(NOT has_function_privilege('anon','public.admin_crm_classify_whatsapp_event(bigint,text)','EXECUTE')
+ AND has_function_privilege('authenticated','public.admin_crm_classify_whatsapp_event(bigint,text)','EXECUTE'),
+ 'WhatsApp identity review requires authenticated RPC plus admin check');
+SELECT ok(has_sequence_privilege('service_role','public.crm_email_inbound_events_id_seq','USAGE')
+ AND NOT has_sequence_privilege('authenticated','public.crm_email_inbound_events_id_seq','USAGE'),
+ 'only server role can allocate CRM email inbox IDs');
 SELECT * FROM finish();
 ROLLBACK;
