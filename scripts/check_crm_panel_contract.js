@@ -101,7 +101,7 @@ assert(sendFunction.includes('db.auth.getUser(token)')&&sendFunction.includes('c
 assert(sendFunction.includes('META_WHATSAPP_ACCESS_TOKEN')&&sendFunction.includes('WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H'),'WhatsApp replies must use server credentials and enforce 24-hour service window');
 assert(sendFunction.includes('ZOHO_REFRESH_TOKEN')&&sendFunction.includes('ZOHO_MAIL_ACCOUNT_ID')&&sendFunction.includes('CRM_FROM_CUSTOMER_CARE'),'Email replies must use server-side Zoho OAuth and department sender aliases');
 assert(sendFunction.includes('/messages/\"+encodeURIComponent(zohoMessageId)')&&sendFunction.includes('ZOHO_ORIGINAL_MESSAGE_ID_MISSING'),'Email replies must use the original Zoho message ID and fail closed if absent');
-assert(inboxWebhook.includes('zoho_message_id: m.zoho_message_id || m.zohoMessageId || m.messageId'),'Email ingestion must retain Zoho internal message ID for replies');
+assert(inboxWebhook.includes('zoho_message_id: m.zoho_message_id || m.zohoMessageId || m.messageId || m.message_id'),'Email ingestion must retain Zoho internal message ID for replies');
 assert(sendMigration.includes('received_at,last_inbound_at,metadata')&&sendMigration.includes('now(),now(),coalesce(p_metadata'),'New WhatsApp conversations must record the inbound timestamp for 24-hour enforcement');
 assert(sendFunction.includes('crm_inbox_send_attempts')&&sendFunction.includes('crm_inbox_messages')&&sendFunction.includes('delivery_status:"sent"'),'Provider sends must be recorded in the CRM audit/message history');
 assert(inboxUi.includes("functions.invoke('crm-send-reply'")&&inboxUi.includes('crypto.randomUUID()')&&inboxUi.includes('crmInboxReplyForm'),'CRM inbox must include an idempotency-keyed reply composer');
