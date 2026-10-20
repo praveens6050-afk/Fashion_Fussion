@@ -111,7 +111,8 @@ Deno.serve(async(req)=>{
     return response({error:"SEND_ALREADY_ATTEMPTED",state:prior?.state||"unknown"},409,origin);
   }
   try{
-    const sent=c.provider==="email"?await sendEmail(c,body,requestId,c.department):await sendWhatsApp(c,body,requestId);
+    const senderRole=sharedSalesMarketing&&role==="marketing"?"marketing":c.department;
+    const sent=c.provider==="email"?await sendEmail(c,body,requestId,senderRole):await sendWhatsApp(c,body,requestId);
     const {error:messageError}=await db.from("crm_inbox_messages").insert({conversation_id:conversationId,provider_message_id:sent.id,direction:"outbound",sender_label:user.email||label[role],body,metadata:{provider:sent.provider,request_id:requestId,actor_user_id:user.id},send_request_id:requestId,delivery_status:"sent"});
     if(messageError) throw new Error("MESSAGE_AUDIT_WRITE_FAILED");
     await db.from("crm_inbox_conversations").update({latest_message:body,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conversationId);
