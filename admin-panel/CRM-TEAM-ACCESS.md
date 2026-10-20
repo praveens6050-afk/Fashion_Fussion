@@ -1,0 +1,39 @@
+# CRM Team Access — setup and security
+
+This implementation is on the `crm-team-access` branch only. It does not deploy the site or apply a database migration.
+
+## How team members sign in
+1. The CRM owner/admin creates an individual user in **Supabase Dashboard → Authentication → Users** using the Invite User flow. Do not enable public signup and do not share one common password.
+2. The user accepts the invite and completes their own sign-in credentials.
+3. After the Team Management screen and migration are deployed, an administrator can register the member's exact Auth UUID, matching email and department in CRM Team Management. The screen manages CRM membership only; it does not create Auth users or send invitations. Until that release is approved, use the SQL fallback below only after migration approval:
+   ```sql
+   insert into public.crm_team_members (user_id, role, is_active, invited_by)
+   values ('AUTH_USER_UUID', 'employee@company.com', 'sales', true, auth.uid())
+   on conflict (user_id) do update
+   set email = excluded.email, role = excluded.role, is_active = true, updated_at = now();
+   ```
+   Use one of these roles: `customer_support`, `seller_support`, `sales`, or `marketing`. This manual role assignment is the current first slice; no public signup or browser-side user provisioning is exposed.
+4. Staff sign in at `https://www.crm.fashionfussion.in/crm-login.html` with their own work email and password.
+
+## Roles in this slice
+- `administrator`: existing verified Fashion Fussion admin.
+- `customer_support`: read-only customer-support ticket queue, scoped by database RPC to the customer-support channel.
+- `seller_support`: read-only seller-support ticket queue, scoped by database RPC to the seller-support channel.
+- `sales`: access to the shared seller-acquisition CRM.
+- `marketing`: access to the shared seller-acquisition CRM.
+- Admins provision accounts and control membership. Inactive or unlisted accounts are denied.
+- This slice does not send email/WhatsApp automatically and does not grant customer/seller-panel access.
+
+## Release gates
+- Keep changes in draft until migration replay and RLS tests pass.
+- The Supabase project ref configured in `admin-panel/supabase-config.js` must be verified as the intended CRM environment before applying migrations; it has not been proven to be non-production.
+- Do not deploy to Cloudflare or apply remote migrations without explicit owner approval.
+- Sales and marketing currently share lead write access; implement/verify granular permissions if their duties should differ.
+- Customer Support and Seller Support can view their own department's read-only support queue. Ticket replies and status changes remain disabled in this first release; they do not receive seller-lead table access.
+
+## Department modules added on this branch
+- **Sales:** B2B company accounts (including parent accounts and credit-limit fields), deal stages, quotation/proforma logs with discount/freight/expiry, and manual sales activity records. These are logs only; they do not issue invoices or collect payments.
+- **Customer Support / Seller Support:** separate ticket queues, SLA urgency labels and department-specific canned-response templates. Ticket queue is read-only; refund/store-credit/RMA/address-change commands and ticket replies are not enabled.
+- **Marketing:** manual campaign/journey plans, order-history-based RFM snapshots, coupon performance summary, and A/B test archive. Planning does not send email/WhatsApp/SMS or trigger journeys automatically. Browse recency, ROAS attribution and unsubscribe rates require event/consent instrumentation and approved integrations.
+- **Cross-department sharing:** first slice uses role-isolated modules and narrow projections; shared customer-event routing, cart-abandonment suppression, VIP routing and sales/service handoff rules remain future work.
+- **Data safety:** no production migration/deploy was performed. Migration replay must be checked in a safe environment because the earlier team migration references CRM follow-up tables that are absent in the connected project's current schema listing.
