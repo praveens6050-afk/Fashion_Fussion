@@ -21,6 +21,7 @@ CREATE INDEX IF NOT EXISTS crm_email_inbound_queue_idx
 ALTER TABLE public.crm_email_inbound_events ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.crm_email_inbound_events FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE public.crm_email_inbound_events TO service_role;
+GRANT USAGE,SELECT ON SEQUENCE public.crm_email_inbound_events_id_seq TO service_role;
 
 CREATE OR REPLACE FUNCTION public.ingest_crm_email_message(
  p_external_message_id text,
