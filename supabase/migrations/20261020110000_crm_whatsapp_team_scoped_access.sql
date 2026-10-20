@@ -58,7 +58,9 @@ BEGIN
         SELECT e.id,e.sender_phone,e.sender_role,e.routing_status,e.support_team,
                e.message_type,e.message_text,e.created_at,
                (SELECT r.status FROM public.whatsapp_support_reply_outbox r
-                WHERE r.inbound_event_id=e.id ORDER BY r.created_at DESC LIMIT 1) AS latest_reply_status
+                WHERE r.inbound_event_id=e.id ORDER BY r.created_at DESC LIMIT 1) AS latest_reply_status,
+               (SELECT r.id FROM public.whatsapp_support_reply_outbox r
+                WHERE r.inbound_event_id=e.id ORDER BY r.created_at DESC LIMIT 1) AS latest_reply_id
         FROM public.whatsapp_inbound_events e
         WHERE (v_admin OR e.support_team=v_team)
         ORDER BY e.created_at DESC LIMIT 100
