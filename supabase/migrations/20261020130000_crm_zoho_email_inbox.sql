@@ -91,10 +91,12 @@ BEGIN
  RETURN jsonb_build_object(
   'actor_team',v_team,'is_admin',coalesce(v_admin,false),'generated_at',now(),
   'recent',coalesce((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.received_at DESC)
-   FROM (SELECT id,sender_email,recipient_email,subject,message_text,support_team,routing_status,received_at
-     FROM public.crm_email_inbound_events
-     WHERE (v_admin OR support_team=v_team)
-     ORDER BY received_at DESC LIMIT 100) t),'[]'::jsonb),
+   FROM (SELECT e.id,e.sender_email,e.recipient_email,e.subject,e.message_text,e.support_team,e.routing_status,e.received_at,
+       (SELECT r.id FROM public.crm_email_reply_outbox r WHERE r.inbound_event_id=e.id ORDER BY r.created_at DESC LIMIT 1) AS latest_reply_id,
+       (SELECT r.status FROM public.crm_email_reply_outbox r WHERE r.inbound_event_id=e.id ORDER BY r.created_at DESC LIMIT 1) AS latest_reply_status
+     FROM public.crm_email_inbound_events e
+     WHERE (v_admin OR e.support_team=v_team)
+     ORDER BY e.received_at DESC LIMIT 100) t),'[]'::jsonb),
   'queues',jsonb_build_object(
    'customer_support',(SELECT count(*) FROM public.crm_email_inbound_events WHERE support_team='customer_support' AND (v_admin OR support_team=v_team)),
    'seller_support',(SELECT count(*) FROM public.crm_email_inbound_events WHERE support_team='seller_support' AND (v_admin OR support_team=v_team)),
