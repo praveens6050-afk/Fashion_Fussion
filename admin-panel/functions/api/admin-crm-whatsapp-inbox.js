@@ -41,6 +41,10 @@ export async function onRequestPost({request,env}) {
   }else if(action==='classify_email'&&Object.keys(input).sort().join(',')==='action,inboundEventId'
     &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0){
     rpc='admin_crm_classify_email_event';body={p_inbound_event_id:input.inboundEventId};
+  }else if(action==='classify_whatsapp'&&Object.keys(input).sort().join(',')==='action,inboundEventId,senderRole'
+    &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0
+    &&['customer','seller','admin'].includes(input.senderRole)){
+    rpc='admin_crm_classify_whatsapp_event';body={p_inbound_event_id:input.inboundEventId,p_sender_role:input.senderRole};
   }else if(action==='approve_email_reply'&&Object.keys(input).sort().join(',')==='action,replyId'
     &&Number.isSafeInteger(input.replyId)&&input.replyId>0){
     rpc='admin_crm_approve_email_reply';body={p_reply_id:input.replyId};
