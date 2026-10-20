@@ -55,7 +55,7 @@
         ['Sales / marketing',q.sales_marketing],...(isAdmin?[['Admin operations',q.admin_operations]]:[]),
         ['Needs review',q.needs_review]
       ].map(([name,n])=>'<span><b>'+Number(n||0)+'</b>'+esc(name)+'</span>').join('');
-      renderRows();
+      renderRows();renderEmails();
       $('ffWaInboxStatus').textContent='Refreshed '+date(data.generated_at)+'. Read-only inbox; no messages sent.';
     }catch(e){
       $('ffWaInboxRows').textContent='Inbox unavailable.';
