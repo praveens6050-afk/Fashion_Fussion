@@ -1,5 +1,9 @@
 -- Seller-owned, guarded fulfilment transitions for the production order ledger.
--- This migration is intentionally additive. It does not alter existing orders.
+-- This migration does not alter existing order rows; it expands the allowed status set.
+ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_fulfillment_status_check;
+ALTER TABLE public.orders ADD CONSTRAINT orders_fulfillment_status_check
+  CHECK (fulfillment_status = ANY (ARRAY['ordered'::text, 'processing'::text, 'packed'::text, 'shipped'::text, 'out_for_delivery'::text, 'delivered'::text, 'cancelled'::text]));
+
 create or replace function public.seller_update_order_fulfillment(
   p_order_id bigint,
   p_new_fulfillment_status text
