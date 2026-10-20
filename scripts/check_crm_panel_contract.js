@@ -28,7 +28,7 @@ assert(auth.includes("from('crm_team_members')")&&auth.includes("member.is_activ
 assert(auth.includes("location.replace('crm-login.html')"),'CRM must redirect on sign-out');
 assert(config.includes("const isCrmPage=page==='crm.html'"),'CRM route must be detected explicitly');
 assert(config.includes("add('admin-crm.js?v=20261017-crm'")&&config.includes("add('admin-crm-followups.js?v=20261017-crm-followups'"),'Seller-acquisition modules must load on the CRM route');
-assert(config.includes("dashboard?.dataset.crmRole==='administrator'")&&config.includes("add('admin-crm-directory.js?v=20261017-crm-directory'")&&config.includes("add('admin-crm-notifications.js?v=20261017-crm-notifications'"),'Customer/seller directory and notification diagnostics must remain administrator-only');
+assert(config.includes("if(role==='administrator')")&&config.includes("add('admin-crm-directory.js?v=20261017-crm-directory'")&&config.includes("add('admin-crm-notifications.js?v=20261017-crm-notifications'"),'Customer/seller directory and notification diagnostics must remain administrator-only');
 assert(!/function loadCrmModules\(\)\s*\{[^}]*admin-orders\.js/s.test(config),'CRM route must not load admin order-management modules');
 assert(leads.includes('async function importCsv')&&leads.includes('no existing lead was overwritten'),'CSV import must validate and avoid overwriting existing records');
 assert(followups.includes('seller_lead_tasks')&&followups.includes('seller_lead_activities'),'Follow-up tasks and activity timeline must be wired');
