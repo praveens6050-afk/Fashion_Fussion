@@ -88,6 +88,7 @@ assert(inboxMigration.includes('crm_inbox_can_access')&&inboxMigration.includes(
 assert(inboxMigration.includes('crm_ingest_inbound_message')&&inboxMigration.includes('seller_profiles'),'Inbound messages must be deduplicated and seller-routed');
 assert(inboxWebhook.includes('x-hub-signature-256')&&inboxWebhook.includes('CRM_EMAIL_WEBHOOK_SECRET'),'WhatsApp and email webhook signatures must be verified');
 assert(inboxWebhook.includes('WHATSAPP_SALES_PHONE_NUMBER_ID')&&inboxWebhook.includes('WHATSAPP_MARKETING_PHONE_NUMBER_ID'),'Dedicated Sales/Marketing WhatsApp number routing must be supported');
+assert(inboxWebhook.includes('value.statuses')&&inboxWebhook.includes('delivery_status: deliveryStatus')&&inboxWebhook.includes('META_DELIVERY_FAILED'),'Signed Meta delivery receipts must update outbound message and failure audit status');
 assert(inboxUi.includes('crm_inbox_conversations')&&inboxUi.includes('crm_inbox_messages')&&inboxUi.includes('30000'),'Inbox UI must load authorized messages and refresh periodically');
 assert(read('admin-panel/crm.html').includes('crmUnifiedInbox')&&read('admin-panel/crm-auth.js').includes('crm-unified-inbox.js'),'Authorized CRM roles must load the unified inbox');
 
