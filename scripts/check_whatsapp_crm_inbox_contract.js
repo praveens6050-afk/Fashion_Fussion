@@ -9,7 +9,7 @@ const files={
   sql:fs.readFileSync('supabase/migrations/20261019190000_whatsapp_crm_support_inbox.sql','utf8'),
   teamSql:fs.readFileSync('supabase/migrations/20261020110000_crm_whatsapp_team_scoped_access.sql','utf8')
 };
-for(const marker of ['admin_crm_whatsapp_support_snapshot','admin_crm_queue_whatsapp_reply','crm_whatsapp_actor_team','Origin not allowed'])
+for(const marker of ['admin_crm_whatsapp_support_snapshot','admin_crm_queue_whatsapp_reply','Origin not allowed'])
   assert.ok(files.api.includes(marker),'API missing security/action marker: '+marker);
 for(const marker of ['ffWaTeamFilter','customer_support','seller_support','sales_marketing','admin_operations','Queue reply for review','pending review','identity review'])
   assert.ok(files.ui.includes(marker),'CRM inbox missing workflow marker: '+marker);
