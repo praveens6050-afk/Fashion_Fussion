@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 import {dispatchRoleAlert} from '../functions/_shared/whatsapp-role-alert-dispatch-core.js';
 globalThis.crypto ||=webcrypto;
-const operator='read-only-operator';
+const operator='read-only-operator-token-'.padEnd(48,'o');
 const sellerToken='seller-internal-token-'.padEnd(48,'s');
 const adminToken='admin-internal-token-'.padEnd(48,'a');
 const baseEnv={
