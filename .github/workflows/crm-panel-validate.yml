@@ -54,21 +54,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client
           psql -h localhost -U postgres -d crm_test -v ON_ERROR_STOP=1 <<'SQL'
-          DO $ BEGIN
+          DO $role$ BEGIN
             CREATE ROLE anon NOLOGIN;
             EXCEPTION WHEN duplicate_object THEN NULL;
-          END $;
-          DO $ BEGIN
+          END $role$;
+          DO $role$ BEGIN
             CREATE ROLE authenticated NOLOGIN;
             EXCEPTION WHEN duplicate_object THEN NULL;
-          END $;
-          DO $ BEGIN
+          END $role$;
+          DO $role$ BEGIN
             CREATE ROLE service_role NOLOGIN BYPASSRLS;
             EXCEPTION WHEN duplicate_object THEN NULL;
-          END $;
+          END $role$;
           CREATE SCHEMA auth;
           CREATE TABLE auth.users (id uuid PRIMARY KEY, email text);
-          CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $ SELECT NULL::uuid $;
+          CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $uid$ SELECT NULL::uuid $uid$;
           CREATE TABLE public.profiles (id uuid PRIMARY KEY, is_admin boolean DEFAULT false, phone text);
           CREATE TABLE public.seller_profiles (user_id uuid, phone text);
           CREATE TABLE public.crm_team_members (user_id uuid, email text, role text, is_active boolean);
