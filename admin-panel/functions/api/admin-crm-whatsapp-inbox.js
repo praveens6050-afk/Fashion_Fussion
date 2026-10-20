@@ -43,6 +43,12 @@ export async function onRequestPost({request,env}) {
     &&typeof input.requestKey==='string'&&/^[A-Za-z0-9._:-]{8,160}$/.test(input.requestKey)){
     rpc='admin_crm_queue_whatsapp_reply';
     body={p_inbound_event_id:input.inboundEventId,p_reply_text:input.replyText.trim(),p_request_key:input.requestKey};
+  }else if(action==='assign_team'&&Object.keys(input).sort().join(',')==='action,active,teamKey,userId'
+    &&typeof input.userId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.userId)
+    &&['customer_support','seller_support','sales_marketing'].includes(input.teamKey)
+    &&typeof input.active==='boolean'){
+    rpc='admin_crm_set_whatsapp_team_member';
+    body={p_user_id:input.userId,p_team_key:input.teamKey,p_active:input.active};
   }else return json({ok:false,error:'Invalid support inbox action'},400,origin);
   const headers={apikey:key,Authorization:authorization,'Content-Type':'application/json',Accept:'application/json'};
   try{
