@@ -27,7 +27,15 @@ The endpoint does not poll Zoho Mail and does not automatically configure a Zoho
 
 ## Replies and safety
 
-- The CRM can stage WhatsApp and email reply drafts as `pending_review`. The CRM UI does not send either type of message.
-- Email replies require an explicit identity review action first. Replies are staged using the team mailbox as `from_email` and the inbound sender as `to_email`.
-- A separately reviewed dispatch worker is still required for delivery. It must use the appropriate Zoho mailbox OAuth credentials, sender allowlist, reply-window/policy checks, one-attempt/idempotency controls, and delivery-status reconciliation. WhatsApp replies likewise require a dedicated support-reply dispatcher and Meta template/free-form policy checks. Do not point the order-notification dispatcher at support replies.
-- Do not deploy or apply migrations until the CRM PR is approved. After deploy, configure the webhook secret privately, configure the Zoho bridge, then run synthetic inbox tests before any live customer test. Keep outbound sends disabled until dispatcher review and explicit production cutover approval.
+- The CRM stages WhatsApp and email reply drafts as `pending_review`. An administrator must explicitly approve them before they can reach `ready`.
+- Email replies require an explicit identity review action first. Replies use the team mailbox as `from_email` and the inbound sender as `to_email`.
+- Private dispatch endpoints are implemented but default closed:
+  - `POST /api/outreach/crm-email-reply-dispatch`
+  - `POST /api/outreach/crm-whatsapp-reply-dispatch`
+- Both dispatchers require a private internal Bearer token of at least 40 characters, explicit sending-enabled and launch-approved flags, and a fixed launch acknowledgement. Both support `{"replyId":123,"dryRun":true}` and the dry run never claims or sends a message.
+- For Zoho email, configure separate mailbox credentials per approved sender. Required prefixes are `ZOHO_CRM_CUSTOMER_CARE`, `ZOHO_CRM_SELLER_SUPPORT`, and `ZOHO_CRM_SALES_TEAM`; each needs `_CLIENT_ID`, `_CLIENT_SECRET`, `_REFRESH_TOKEN`, and `_MAIL_ACCOUNT_ID`. OAuth must include `ZohoMail.messages.CREATE` or `ZohoMail.messages.ALL`. The dispatcher never sends CRM support replies from `orders@fashionfussion.in`.
+- Email gate secrets/vars: `CRM_EMAIL_REPLY_INTERNAL_TOKEN`, `CRM_EMAIL_REPLY_SENDING_ENABLED=true`, `CRM_EMAIL_REPLY_GLOBAL_LAUNCH_APPROVED=true`, and `CRM_EMAIL_REPLY_GLOBAL_LAUNCH_ACK=reviewed_support_reply_v1`.
+- WhatsApp gate secrets/vars: `CRM_WHATSAPP_REPLY_INTERNAL_TOKEN`, `CRM_WHATSAPP_REPLY_SENDING_ENABLED=true`, `CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_APPROVED=true`, and `CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_ACK=reviewed_support_reply_v1`, plus existing `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and `WHATSAPP_GRAPH_VERSION`.
+- Keep all gates closed until production secrets are present, template/window policy is reviewed, and a safe synthetic test passes. WhatsApp replies are only claimable while the inbound message is within the 24-hour customer-service window. A provider-uncertain attempt is never automatically retried.
+- The dispatcher records provider acceptance, not inbox delivery. Provider delivery receipts/reconciliation remain a separate validation item.
+- Do not deploy or apply migrations until the CRM PR is approved. After deploy, configure the Zoho bridge and secrets privately, run synthetic inbox/dispatcher tests with gates closed, then obtain explicit production cutover approval before enabling any sending gate.
