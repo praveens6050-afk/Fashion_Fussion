@@ -51,7 +51,7 @@ BEGIN
  IF NOT FOUND THEN RETURN jsonb_build_object('claimed',false,'reason','not_ready_or_already_attempted'); END IF;
  SELECT * INTO v_event FROM public.whatsapp_inbound_events WHERE id=v_row.inbound_event_id;
  IF NOT FOUND OR v_event.routing_status<>'classified' OR v_event.sender_role='unclassified'
-   OR v_event.created_at<now()-interval '24 hours' THEN
+   OR coalesce(v_event.meta_timestamp,v_event.created_at)<now()-interval '24 hours' THEN
    UPDATE public.whatsapp_support_reply_outbox SET status='blocked',last_error_code='REPLY_WINDOW_EXPIRED',updated_at=now() WHERE id=v_row.id;
    RETURN jsonb_build_object('claimed',false,'reason','reply_window_expired_or_identity_review_required');
  END IF;
