@@ -23,7 +23,7 @@ async function zohoToken(): Promise<string> {
   }
   const clientId=Deno.env.get("ZOHO_CLIENT_ID"), clientSecret=Deno.env.get("ZOHO_CLIENT_SECRET");
   if(!clientId||!clientSecret) throw new Error("ZOHO_OAUTH_NOT_CONFIGURED");
-  const dc=(Deno.env.get("ZOHO_ACCOUNTS_DOMAIN")||"https://accounts.zoho.in").replace(/\/$/,"");
+  const dc=(Deno.env.get("ZOHO_ACCOUNTS_DOMAIN")||"https://accounts.zoho.in").replace(/\/$/, "");
   const body=new URLSearchParams({refresh_token:refresh,client_id:clientId,client_secret:clientSecret,grant_type:"refresh_token"});
   const res=await fetch(dc+"/oauth/v2/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});
   const data=await res.json().catch(()=>({}));
@@ -38,9 +38,9 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   if(!accountId||!sender||!recipient||!recipient.includes("@")) throw new Error("EMAIL_SENDER_NOT_CONFIGURED");
   // Zoho's documented reply endpoint needs the provider's internal message ID.
   // Do not silently send a new thread when the adapter has not supplied it.
-  if(!/^\\d+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
+  if(!/^[0-9]+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
   const token=await zohoToken();
-  const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\/$/,"");
+  const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\/$/, "");
   const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")+"</p>";
   const payload={fromAddress:sender,toAddress:recipient,content,action:"reply",mailFormat:"html",encoding:"UTF-8"};
   const res=await fetch(api+"/accounts/"+encodeURIComponent(accountId)+"/messages/"+encodeURIComponent(zohoMessageId),{method:"POST",headers:{"authorization":"Zoho-oauthtoken "+token,"content-type":"application/json"},body:JSON.stringify(payload)});
