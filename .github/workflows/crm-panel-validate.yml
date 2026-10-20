@@ -48,6 +48,9 @@ jobs:
           node --check admin-panel/crm-auth.js
           node --check admin-panel/crm-unified-inbox.js
           node --check admin-panel/crm-team-management.js
+          node --check admin-panel/crm-support-workspace.js
+          node --check admin-panel/crm-department-workspaces.js
+          deno check --no-lock supabase/functions/crm-inbound-webhook/index.ts
           deno check --no-lock supabase/functions/crm-send-reply/index.ts
       - name: Validate CRM migrations on disposable PostgreSQL
         env:
