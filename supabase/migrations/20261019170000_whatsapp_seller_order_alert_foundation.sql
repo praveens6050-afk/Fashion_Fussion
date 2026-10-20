@@ -204,3 +204,33 @@ REVOKE ALL ON FUNCTION public.finish_whatsapp_seller_order_alert(bigint,text,tex
  FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.finish_whatsapp_seller_order_alert(bigint,text,text)
  TO service_role;
+
+
+-- Automatically stage eligible newly-paid/confirmed orders. The staging function
+-- remains idempotent, consent-gated, and limited to the last 24 hours.
+CREATE OR REPLACE FUNCTION public.trigger_stage_whatsapp_seller_order_alert()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+BEGIN
+ IF TG_OP='INSERT' THEN
+   PERFORM public.stage_whatsapp_seller_order_alert(NEW.id,now()-interval '24 hours');
+ ELSIF OLD.status IS DISTINCT FROM NEW.status
+    OR OLD.payment_method IS DISTINCT FROM NEW.payment_method
+    OR OLD.payment_verified_at IS DISTINCT FROM NEW.payment_verified_at
+    OR OLD.fulfillment_status IS DISTINCT FROM NEW.fulfillment_status
+    OR OLD.items IS DISTINCT FROM NEW.items THEN
+   PERFORM public.stage_whatsapp_seller_order_alert(NEW.id,now()-interval '24 hours');
+ END IF;
+ RETURN NEW;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.trigger_stage_whatsapp_seller_order_alert()
+ FROM PUBLIC,anon,authenticated,service_role;
+DROP TRIGGER IF EXISTS trg_stage_whatsapp_seller_order_alert ON public.orders;
+CREATE TRIGGER trg_stage_whatsapp_seller_order_alert
+ AFTER INSERT OR UPDATE OF status,payment_method,payment_verified_at,fulfillment_status,items
+ ON public.orders
+ FOR EACH ROW EXECUTE FUNCTION public.trigger_stage_whatsapp_seller_order_alert();
