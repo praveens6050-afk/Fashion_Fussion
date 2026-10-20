@@ -81,6 +81,65 @@ export async function onRequestPost({request,env}) {
     body={p_user_id:input.userId,p_team_key:input.teamKey,p_active:input.active};
   }else return json({ok:false,error:'Invalid support inbox action'},400,origin);
   const headers={apikey:key,Authorization:authorization,'Content-Type':'application/json',Accept:'application/json'};
+  if(action==='snapshot'||action==='snapshot_email'){
+    try{
+      const [profileResponse,memberResponse]=await Promise.all([
+        fetch(base+'/rest/v1/profiles?id=eq.'+encodeURIComponent(user.id)+'&select=is_admin&limit=1',{headers}),
+        fetch(base+'/rest/v1/crm_team_members?user_id=eq.'+encodeURIComponent(user.id)+'&select=email,role,is_active&limit=1',{headers})
+      ]);
+      const profiles=await profileResponse.json().catch(()=>[]);
+      const members=await memberResponse.json().catch(()=>[]);
+      if(!profileResponse.ok||!memberResponse.ok)throw new Error('CRM role lookup failed');
+      const profile=Array.isArray(profiles)?profiles[0]:null;
+      const member=Array.isArray(members)?members[0]:null;
+      const isAdmin=profile?.is_admin===true;
+      const userEmail=String(user.email||'').toLowerCase();
+      const role=member?.is_active===true&&String(member.email||'').toLowerCase()===userEmail?String(member.role||''):'';
+      if(!isAdmin&&!['customer_support','seller_support','sales','marketing'].includes(role))
+        return json({ok:false,error:'Active CRM team access is required'},403,origin);
+      const provider=action==='snapshot'?'whatsapp':'email';
+      const select='id,provider,provider_thread_id,provider_message_id,department,contact_type,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,status,priority,assigned_to,metadata';
+      const inboxResponse=await fetch(base+'/rest/v1/crm_inbox_conversations?select='+encodeURIComponent(select)+'&provider=eq.'+provider+'&order=received_at.desc&limit=100',{
+        headers:{...headers,Prefer:'count=exact'}
+      });
+      const conversations=await inboxResponse.json().catch(()=>null);
+      if(!inboxResponse.ok||!Array.isArray(conversations))throw new Error('Scoped CRM inbox query failed');
+      const canRead=(c)=>isAdmin||c.department===role||(String(c.inbox_address||'').trim().toLowerCase()==='sales.team@fashionfussion.in'&&['sales','marketing'].includes(role));
+      const scoped=conversations.filter(canRead);
+      const recent=scoped.map(c=>({
+        id:Number(c.id),
+        support_team:['sales','marketing'].includes(c.department)?'sales_marketing':c.department,
+        routing_status:c.status||'open',
+        sender_role:c.contact_type||'unknown',
+        sender_phone:c.contact_phone||'',
+        sender_email:c.contact_email||'',
+        recipient_email:c.inbox_address||'',
+        subject:c.subject||'',
+        message_type:c.provider,
+        message_text:c.latest_message||'',
+        created_at:c.received_at,
+        received_at:c.received_at,
+        latest_reply_status:'Reply actions disabled',
+        latest_reply_id:null,
+        contact_name:c.contact_name||'',
+        priority:c.priority||'normal'
+      }));
+      const count=(team)=>recent.filter(c=>c.support_team===team).length;
+      return json({ok:true,data:{
+        recent,actor_team:isAdmin?'admin_operations':(['sales','marketing'].includes(role)?'sales_marketing':role),
+        is_admin:isAdmin,generated_at:new Date().toISOString(),
+        queues:{
+          customer_support:isAdmin?count('customer_support'):role==='customer_support'?count('customer_support'):0,
+          seller_support:isAdmin?count('seller_support'):role==='seller_support'?count('seller_support'):0,
+          sales_marketing:isAdmin?count('sales_marketing'):['sales','marketing'].includes(role)?count('sales_marketing'):0,
+          admin_operations:isAdmin?count('admin_operations'):0,
+          needs_review:recent.filter(c=>c.routing_status==='needs_review').length
+        }
+      }},200,origin);
+    }catch{
+      return json({ok:false,error:'CRM inbox could not load. Check database permissions and try refresh.'},503,origin);
+    }
+  }
   try{
     const userResponse=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:authorization}});
     const user=await userResponse.json().catch(()=>null);
