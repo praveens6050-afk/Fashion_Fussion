@@ -1,3 +1,5 @@
+import { onRequestPost as dispatchCrmEmailReply } from './outreach/crm-email-reply-dispatch.js';
+import { onRequestPost as dispatchCrmWhatsAppReply } from './outreach/crm-whatsapp-reply-dispatch.js';
 function json(body,status,origin,headers={}) {
   return new Response(JSON.stringify(body),{status,headers:{
     'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',
@@ -51,6 +53,12 @@ export async function onRequestPost({request,env}) {
   }else if(action==='approve_reply'&&Object.keys(input).sort().join(',')==='action,replyId'
     &&Number.isSafeInteger(input.replyId)&&input.replyId>0){
     rpc='admin_crm_approve_whatsapp_reply';body={p_reply_id:input.replyId};
+  }else if(action==='send_approved_reply'&&Object.keys(input).sort().join(',')==='action,replyId'
+    &&Number.isSafeInteger(input.replyId)&&input.replyId>0){
+    rpc='__dispatch_whatsapp';body={replyId:input.replyId};
+  }else if(action==='send_approved_email_reply'&&Object.keys(input).sort().join(',')==='action,replyId'
+    &&Number.isSafeInteger(input.replyId)&&input.replyId>0){
+    rpc='__dispatch_email';body={replyId:input.replyId};
   }else if(action==='queue_email_reply'&&Object.keys(input).sort().join(',')==='action,inboundEventId,replyText,requestKey'
     &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0
     &&typeof input.replyText==='string'&&input.replyText.trim().length>=1
@@ -77,6 +85,21 @@ export async function onRequestPost({request,env}) {
     const userResponse=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:authorization}});
     const user=await userResponse.json().catch(()=>null);
     if(!userResponse.ok||!user?.id)return json({ok:false,error:'Please sign in again'},401,origin);
+    if(rpc==='__dispatch_whatsapp'||rpc==='__dispatch_email'){
+      const profileResponse=await fetch(base+'/rest/v1/profiles?id=eq.'+encodeURIComponent(user.id)+'&select=is_admin&limit=1',
+        {headers:{apikey:key,Authorization:authorization,Accept:'application/json'}});
+      const profiles=await profileResponse.json().catch(()=>[]);
+      if(!profileResponse.ok||profiles?.[0]?.is_admin!==true)
+        return json({ok:false,error:'Administrator approval is required to send replies'},403,origin);
+      const internalToken=String(rpc==='__dispatch_whatsapp'?env.CRM_WHATSAPP_REPLY_INTERNAL_TOKEN||'':env.CRM_EMAIL_REPLY_INTERNAL_TOKEN||'');
+      if(internalToken.length<40)return json({ok:false,error:'Reply dispatcher is not configured'},503,origin);
+      const dispatchRequest=new Request(new URL(request.url).toString(),{method:'POST',
+        headers:{Authorization:'Bearer '+internalToken,'Content-Type':'application/json'},
+        body:JSON.stringify({replyId:body.replyId,dryRun:false})});
+      const dispatchResponse=await (rpc==='__dispatch_whatsapp'?dispatchCrmWhatsAppReply:dispatchCrmEmailReply)({request:dispatchRequest,env});
+      const dispatchData=await dispatchResponse.json().catch(()=>({}));
+      return json({ok:dispatchResponse.ok,...dispatchData},dispatchResponse.status,origin);
+    }
     // Authorization is enforced inside the SECURITY DEFINER RPC using auth.uid().
     // This permits scoped team members without exposing the broader admin CRM.
     const response=await fetch(base+'/rest/v1/rpc/'+rpc,{method:'POST',headers,body:JSON.stringify(body)});
