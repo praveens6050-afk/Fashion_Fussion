@@ -12,7 +12,7 @@ BEGIN
  WHERE r.id=p_reply_id AND r.status='pending_review' AND r.attempt_count=0
  AND EXISTS(SELECT 1 FROM public.whatsapp_inbound_events e WHERE e.id=r.inbound_event_id
    AND e.routing_status='classified' AND e.sender_role<>'unclassified'
-   AND e.created_at>=now()-interval '24 hours')
+   AND coalesce(e.meta_timestamp,e.created_at)>=now()-interval '24 hours')
  RETURNING * INTO v_row;
  IF NOT FOUND THEN RAISE EXCEPTION 'Reply cannot be approved: it may be stale, reviewed already, or identity-unverified' USING errcode='42501'; END IF;
  RETURN jsonb_build_object('approved',true,'replyId',v_row.id,'status',v_row.status,
