@@ -15,7 +15,7 @@ create index if not exists crm_inbox_send_attempts_conversation_idx on public.cr
 alter table public.crm_inbox_send_attempts enable row level security;
 revoke all on public.crm_inbox_send_attempts from anon,authenticated;
 grant all on public.crm_inbox_send_attempts to service_role;
-grant insert, update on public.crm_inbox_messages to service_role;
+grant select, insert, update on public.crm_inbox_messages to service_role;
 grant update on public.crm_inbox_conversations to service_role;
 
 
