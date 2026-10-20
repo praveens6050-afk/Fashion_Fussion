@@ -36,6 +36,18 @@ export async function onRequestPost({request,env}) {
   let rpc,body;
   if(action==='snapshot'&&Object.keys(input).length===1){
     rpc='admin_crm_whatsapp_support_snapshot';body={};
+  }else if(action==='snapshot_email'&&Object.keys(input).length===1){
+    rpc='admin_crm_email_support_snapshot';body={};
+  }else if(action==='classify_email'&&Object.keys(input).sort().join(',')==='action,inboundEventId'
+    &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0){
+    rpc='admin_crm_classify_email_event';body={p_inbound_event_id:input.inboundEventId};
+  }else if(action==='queue_email_reply'&&Object.keys(input).sort().join(',')==='action,inboundEventId,replyText,requestKey'
+    &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0
+    &&typeof input.replyText==='string'&&input.replyText.trim().length>=1
+    &&input.replyText.trim().length<=10000
+    &&typeof input.requestKey==='string'&&/^[A-Za-z0-9._:-]{8,160}$/.test(input.requestKey)){
+    rpc='admin_crm_queue_email_reply';
+    body={p_inbound_event_id:input.inboundEventId,p_reply_text:input.replyText.trim(),p_request_key:input.requestKey};
   }else if(action==='queue_reply'&&Object.keys(input).sort().join(',')==='action,inboundEventId,replyText,requestKey'
     &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0
     &&typeof input.replyText==='string'&&input.replyText.trim().length>=1
