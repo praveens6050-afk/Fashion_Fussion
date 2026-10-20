@@ -56,7 +56,7 @@ BEGIN
    RETURN jsonb_build_object('claimed',false,'reason','reply_window_expired_or_identity_review_required');
  END IF;
  RETURN jsonb_build_object('claimed',true,'id',v_row.id,'toPhone',v_row.recipient_phone,
-   'text',v_row.reply_text,'inboundEventId',v_event.id,'attemptCount',v_row.attempt_count);
+   'text',v_row.reply_text,'inboundEventId',v_event.id,'phoneNumberId',v_event.phone_number_id,'attemptCount',v_row.attempt_count);
 END;
 $function$;
 REVOKE ALL ON FUNCTION public.claim_crm_whatsapp_reply(bigint) FROM PUBLIC,anon,authenticated;
