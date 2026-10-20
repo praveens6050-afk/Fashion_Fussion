@@ -31,12 +31,12 @@
     $('loadingScreen').hidden=true;$('accessDenied').hidden=true;$('dashboard').hidden=false;
     $('dashboard').dataset.adminReady='true';
     document.dispatchEvent(new Event('ff-crm-ready'));
-    const inbox=document.createElement('script');inbox.src='crm-unified-inbox.js?v=20261020-integration';inbox.async=false;document.body.appendChild(inbox);
+    const inbox=document.createElement('script');inbox.src='crm-unified-inbox.js?v=20261019-unified-inbox';inbox.async=false;document.body.appendChild(inbox);
     if(role==='administrator'){
-      const roster=document.createElement('script');roster.src='crm-team-management.js?v=20261020-integration';roster.async=false;document.body.appendChild(roster);
+      const roster=document.createElement('script');roster.src='crm-team-management.js?v=20261019-team-management';roster.async=false;document.body.appendChild(roster);
     }
     if(role==='customer_support'||role==='seller_support'){
-      const support=document.createElement('script');support.src='crm-support-workspace.js?v=20261020-integration';support.async=false;document.body.appendChild(support);
+      const support=document.createElement('script');support.src='crm-support-workspace.js?v=20261019-support-queue';support.async=false;document.body.appendChild(support);
     }
     db.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||!nextSession?.user){location.replace('crm-login.html')}});
   }
