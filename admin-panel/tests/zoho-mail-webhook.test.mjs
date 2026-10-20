@@ -19,6 +19,6 @@ test('valid Zoho event routes to private Supabase inbox without sending email',a
 });
 test('unknown mailbox and malformed input fail closed before database call',async t=>{
  const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;return new Response('{}',{status:403})};t.after(()=>{globalThis.fetch=original});
- const r=await onRequestPost({request:request({...payload,to:'other@example.com'}),env});assert.equal(r.status,403);
- const invalid=await onRequestPost({request:request({...payload,from:'not-an-email'}),env});assert.equal(invalid.status,400);assert.equal(calls,1);
+ const r=await onRequestPost({request:request({...payload,to:'other@example.com'}),env});assert.equal(r.status,403);assert.equal(calls,0);
+ const invalid=await onRequestPost({request:request({...payload,from:'not-an-email'}),env});assert.equal(invalid.status,400);assert.equal(calls,0);
 });
