@@ -26,7 +26,7 @@ assert(loginJs.includes("location.replace('crm.html')"),'Verified CRM users must
 assert(page.includes('id="dashboard"')&&page.includes('data-admin-ready="false"'),'CRM page must remain hidden until authorization succeeds');
 assert(auth.includes("from('crm_team_members')")&&auth.includes("member.is_active!==true")&&auth.includes("member.email||'').toLowerCase()"),'CRM route must independently enforce active membership and matching email');
 assert(auth.includes("location.replace('crm-login.html')"),'CRM must redirect on sign-out');
-assert(config.includes("const isCrmPage=page==='crm.html'"),'CRM route must be detected explicitly');
+assert(config.includes("isCrmPage=page==='crm.html'"),'CRM route must be detected explicitly');
 assert(config.includes("add('admin-crm.js?v=20261017-crm'")&&config.includes("add('admin-crm-followups.js?v=20261017-crm-followups'"),'Seller-acquisition modules must load on the CRM route');
 assert(config.includes("if(role==='administrator')")&&config.includes("add('admin-crm-directory.js?v=20261017-crm-directory'")&&config.includes("add('admin-crm-notifications.js?v=20261017-crm-notifications'"),'Customer/seller directory and notification diagnostics must remain administrator-only');
 assert(!/function loadCrmModules\(\)\s*\{[^}]*admin-orders\.js/s.test(config),'CRM route must not load admin order-management modules');
