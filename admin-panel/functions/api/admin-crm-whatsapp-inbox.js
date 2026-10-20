@@ -82,29 +82,34 @@ export async function onRequestPost({request,env}) {
   }else return json({ok:false,error:'Invalid support inbox action'},400,origin);
   const headers={apikey:key,Authorization:authorization,'Content-Type':'application/json',Accept:'application/json'};
   if(action==='snapshot'||action==='snapshot_email'){
+    let stage='role_lookup';
     try{
-      const [profileResponse,memberResponse]=await Promise.all([
-        fetch(base+'/rest/v1/profiles?id=eq.'+encodeURIComponent(user.id)+'&select=is_admin&limit=1',{headers}),
-        fetch(base+'/rest/v1/crm_team_members?user_id=eq.'+encodeURIComponent(user.id)+'&select=email,role,is_active&limit=1',{headers})
-      ]);
-      const profiles=await profileResponse.json().catch(()=>[]);
-      const members=await memberResponse.json().catch(()=>[]);
-      if(!profileResponse.ok||!memberResponse.ok)throw new Error('CRM role lookup failed');
-      const profile=Array.isArray(profiles)?profiles[0]:null;
-      const member=Array.isArray(members)?members[0]:null;
-      const isAdmin=profile?.is_admin===true;
-      const userEmail=String(user.email||'').toLowerCase();
-      const role=member?.is_active===true&&String(member.email||'').toLowerCase()===userEmail?String(member.role||''):'';
-      if(!isAdmin&&!['customer_support','seller_support','sales','marketing'].includes(role))
+      const roleResponse=await fetch(base+'/rest/v1/rpc/crm_whatsapp_actor_team',{
+        method:'POST',headers,body:JSON.stringify({})
+      });
+      const actor=await roleResponse.json().catch(()=>null);
+      if(!roleResponse.ok||typeof actor!=='string'){
+        console.error('CRM inbox role lookup failed',roleResponse.status);
+        return json({ok:false,error:roleResponse.status===401?'Please sign in again':'CRM team access is missing or role lookup failed'},roleResponse.status===401?401:403,origin);
+      }
+      const actorTeam=actor;
+      const isAdmin=actorTeam==='admin_operations';
+      if(!isAdmin&&!['customer_support','seller_support','sales_marketing'].includes(actorTeam))
         return json({ok:false,error:'Active CRM team access is required'},403,origin);
+      stage='inbox_query';
       const provider=action==='snapshot'?'whatsapp':'email';
       const select='id,provider,provider_thread_id,provider_message_id,department,contact_type,contact_name,contact_email,contact_phone,inbox_address,subject,latest_message,received_at,status,priority,assigned_to,metadata';
       const inboxResponse=await fetch(base+'/rest/v1/crm_inbox_conversations?select='+encodeURIComponent(select)+'&provider=eq.'+provider+'&order=received_at.desc&limit=100',{
         headers:{...headers,Prefer:'count=exact'}
       });
       const conversations=await inboxResponse.json().catch(()=>null);
-      if(!inboxResponse.ok||!Array.isArray(conversations))throw new Error('Scoped CRM inbox query failed');
-      const canRead=(c)=>isAdmin||c.department===role||(String(c.inbox_address||'').trim().toLowerCase()==='sales.team@fashionfussion.in'&&['sales','marketing'].includes(role));
+      if(!inboxResponse.ok||!Array.isArray(conversations)){
+        console.error('CRM inbox query failed',provider,inboxResponse.status);
+        return json({ok:false,error:'CRM inbox data query failed. Check table grants and department policies.'},503,origin);
+      }
+      const canRead=(c)=>isAdmin
+        ||c.department===actorTeam
+        ||(actorTeam==='sales_marketing'&&(['sales','marketing'].includes(c.department)||String(c.inbox_address||'').trim().toLowerCase()==='sales.team@fashionfussion.in'));
       const scoped=conversations.filter(canRead);
       const recent=scoped.map(c=>({
         id:Number(c.id),
@@ -126,25 +131,21 @@ export async function onRequestPost({request,env}) {
       }));
       const count=(team)=>recent.filter(c=>c.support_team===team).length;
       return json({ok:true,data:{
-        recent,actor_team:isAdmin?'admin_operations':(['sales','marketing'].includes(role)?'sales_marketing':role),
-        is_admin:isAdmin,generated_at:new Date().toISOString(),
+        recent,actor_team:actorTeam,is_admin:isAdmin,generated_at:new Date().toISOString(),
         queues:{
-          customer_support:isAdmin?count('customer_support'):role==='customer_support'?count('customer_support'):0,
-          seller_support:isAdmin?count('seller_support'):role==='seller_support'?count('seller_support'):0,
-          sales_marketing:isAdmin?count('sales_marketing'):['sales','marketing'].includes(role)?count('sales_marketing'):0,
+          customer_support:isAdmin||actorTeam==='customer_support'?count('customer_support'):0,
+          seller_support:isAdmin||actorTeam==='seller_support'?count('seller_support'):0,
+          sales_marketing:isAdmin||actorTeam==='sales_marketing'?count('sales_marketing'):0,
           admin_operations:isAdmin?count('admin_operations'):0,
           needs_review:recent.filter(c=>c.routing_status==='needs_review').length
         }
       }},200,origin);
-    }catch{
-      return json({ok:false,error:'CRM inbox could not load. Check database permissions and try refresh.'},503,origin);
+    }catch(error){
+      console.error('CRM inbox snapshot failed',stage,error instanceof Error?error.message:'unknown');
+      return json({ok:false,error:stage==='role_lookup'?'CRM role lookup failed. Please sign in again.':'CRM inbox could not load. Check database permissions and try refresh.'},503,origin);
     }
   }
-  try{
-    const userResponse=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:authorization}});
-    const user=await userResponse.json().catch(()=>null);
-    if(!userResponse.ok||!user?.id)return json({ok:false,error:'Please sign in again'},401,origin);
-    if(rpc==='__dispatch_whatsapp'||rpc==='__dispatch_email'){
+  if(rpc==='__dispatch_whatsapp'||rpc==='__dispatch_email'){
       const profileResponse=await fetch(base+'/rest/v1/profiles?id=eq.'+encodeURIComponent(user.id)+'&select=is_admin&limit=1',
         {headers:{apikey:key,Authorization:authorization,Accept:'application/json'}});
       const profiles=await profileResponse.json().catch(()=>[]);
