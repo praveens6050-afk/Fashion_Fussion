@@ -13,25 +13,44 @@ export async function onRequestPost({request,env}){
  const raw=await request.text();
  if(raw.length>30000)return json({ok:false,error:'Payload too large'},413);
  let input;try{input=JSON.parse(raw)}catch{return json({ok:false,error:'Invalid JSON'},400)}
- const allowed=['externalMessageId','from','to','subject','text','receivedAt'];
+ const allowed=['externalMessageId','from','fromName','to','subject','text','receivedAt'];
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!allowed.includes(k))||
     typeof input.externalMessageId!=='string'||input.externalMessageId.length<1||input.externalMessageId.length>255||
     !validEmail(input.from)||!validEmail(input.to)||
     typeof input.subject!=='string'||input.subject.length>500||
     typeof input.text!=='string'||input.text.length>20000||
-    typeof input.receivedAt!=='string'||!Number.isFinite(Date.parse(input.receivedAt)))
+    typeof input.receivedAt!=='string'||!Number.isFinite(Date.parse(input.receivedAt))||
+    (input.fromName!==undefined&&(typeof input.fromName!=='string'||input.fromName.length>200)))
    return json({ok:false,error:'Invalid email event'},400);
- const approvedRecipients=new Set(['customer.care@fashionfussion.in','seller.support@fashionfussion.in','sales.team@fashionfussion.in','orders@fashionfussion.in']);
- if(!approvedRecipients.has(input.to.toLowerCase()))return json({ok:false,error:'Recipient mailbox is not an approved CRM route'},403);
+ const recipient=String(input.to).toLowerCase();
+ const routes={
+   'customer.care@fashionfussion.in':'customer_support',
+   'seller.support@fashionfussion.in':'seller_support',
+   'sales.team@fashionfussion.in':'sales'
+ };
+ // Orders email is intentionally not ingested into the support CRM.
+ if(recipient==='orders@fashionfussion.in')return json({ok:true,stored:false,route:'orders_mailbox_excluded'},200);
+ const department=routes[recipient];
+ if(!department)return json({ok:false,error:'Recipient mailbox is not an approved CRM route'},403);
  const received=Date.parse(input.receivedAt);
  if(received>Date.now()+300000||received<Date.now()-90*86400000)return json({ok:false,error:'Email event is outside the accepted time window'},400);
- const response=await fetch(base+'/rest/v1/rpc/ingest_crm_email_message',{method:'POST',
+ const response=await fetch(base+'/rest/v1/rpc/crm_ingest_inbound_message',{method:'POST',
    headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Accept:'application/json'},
-   body:JSON.stringify({p_external_message_id:input.externalMessageId,p_sender_email:input.from,
-     p_recipient_email:input.to,p_subject:input.subject,p_message_text:input.text,p_received_at:new Date(received).toISOString()})});
- if(!response.ok){return json({ok:false,error:response.status===403?'Recipient mailbox is not an approved CRM route':'Email intake is temporarily unavailable'},response.status===403?403:503)}
+   body:JSON.stringify({
+     p_provider:'email',
+     p_provider_message_id:input.externalMessageId,
+     p_sender_phone:null,
+     p_sender_email:input.from.toLowerCase(),
+     p_sender_name:typeof input.fromName==='string'?input.fromName:'',
+     p_inbox_address:recipient,
+     p_subject:input.subject,
+     p_body:input.text,
+     p_provider_thread_id:input.externalMessageId,
+     p_metadata:{provider:'zoho-flow',department,received_at:new Date(received).toISOString(),external_message_id:input.externalMessageId}
+   })});
+ if(!response.ok){return json({ok:false,error:'Email intake is temporarily unavailable'},503)}
  const data=await response.json().catch(()=>null);
- return json({ok:true,data:data&&typeof data==='object'?data:{}},200);
+ return json({ok:true,stored:true,data:data&&typeof data==='object'?data:{}},200);
 }
 export async function onRequestOptions(){return new Response(null,{status:204,headers:{'Allow':'POST, OPTIONS'}})}
 export async function onRequest({request}){return json({ok:false,error:'Method not allowed'},405)}
