@@ -49,14 +49,11 @@ export async function onRequestPost({request,env}) {
     const userResponse=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:authorization}});
     const user=await userResponse.json().catch(()=>null);
     if(!userResponse.ok||!user?.id)return json({ok:false,error:'Please sign in again'},401,origin);
-    const profileResponse=await fetch(base+'/rest/v1/profiles?id=eq.'+encodeURIComponent(user.id)+'&select=is_admin&limit=1',
-      {headers:{apikey:key,Authorization:authorization}});
-    const profiles=await profileResponse.json().catch(()=>[]);
-    if(!profileResponse.ok||profiles?.[0]?.is_admin!==true)
-      return json({ok:false,error:'Administrator access is required'},403,origin);
+    // Authorization is enforced inside the SECURITY DEFINER RPC using auth.uid().
+    // This permits scoped team members without exposing the broader admin CRM.
     const response=await fetch(base+'/rest/v1/rpc/'+rpc,{method:'POST',headers,body:JSON.stringify(body)});
     if(!response.ok)return json({ok:false,error:response.status===401?'Please sign in again':
-      response.status===403?'Administrator access is required':
+      response.status===403?'CRM team access is missing or this conversation belongs to another queue':
       response.status===22023?'Invalid reply request':'WhatsApp support inbox is temporarily unavailable'},
       response.status===401?401:response.status===403?403:503,origin);
     const data=await response.json().catch(()=>null);
