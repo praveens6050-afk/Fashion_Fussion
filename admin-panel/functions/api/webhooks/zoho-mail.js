@@ -26,10 +26,9 @@ export async function onRequestPost({request,env}){
  const routes={
    'customer.care@fashionfussion.in':'customer_support',
    'seller.support@fashionfussion.in':'seller_support',
-   'sales.team@fashionfussion.in':'sales_marketing'
+   'sales.team@fashionfussion.in':'sales_marketing',
+   'orders@fashionfussion.in':'admin_operations'
  };
- // Orders notifications stay in the order workflow and must not enter CRM support queues.
- if(recipient==='orders@fashionfussion.in')return json({ok:true,stored:false,route:'orders_mailbox_excluded'},200);
  const team=routes[recipient];
  if(!team)return json({ok:false,error:'Recipient mailbox is not an approved CRM route'},403);
  const received=Date.parse(input.receivedAt);
