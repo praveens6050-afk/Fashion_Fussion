@@ -7,6 +7,7 @@ Safety boundary: no production migrations, deployment, secret changes, or outbou
 ## Verified database facts
 
 - `public.seller_leads` contains 49 rows. The CRM lead pool is not globally empty.
+- The CRM frontend intentionally loads the seller-acquisition lead module only for `administrator` and `sales` roles. A `customer_support` login will not see seller leads; that is role separation, not proof that the lead table is empty.
 - `public.crm_team_members` contains one active member, with role `customer_support`. No active Seller Support, Sales, or Marketing team members were found.
 - One profile is marked administrator.
 - `crm_b2b_accounts`, `crm_b2b_deals`, `crm_b2b_quotes`, `crm_sales_activities`, `crm_sales_quotas`, `crm_marketing_campaigns`, `crm_rfm_segments`, `crm_inbox_conversations`, and `crm_inbox_messages` had zero rows at the time of the read-only audit.
