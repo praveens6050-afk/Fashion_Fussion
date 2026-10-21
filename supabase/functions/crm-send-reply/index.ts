@@ -14,16 +14,24 @@ const fromEnv = (role:string) => {
   const key = ({customer_support:"CRM_FROM_CUSTOMER_CARE",seller_support:"CRM_FROM_SELLER_SUPPORT",sales:"CRM_FROM_SALES_TEAM",marketing:"CRM_FROM_MARKETING"} as Record<string,string>)[role];
   return key ? Deno.env.get(key) || "" : "";
 };
-async function zohoToken(): Promise<string> {
-  const existing=Deno.env.get("ZOHO_ACCESS_TOKEN");
-  const refresh=Deno.env.get("ZOHO_REFRESH_TOKEN");
+const zohoPrefixForRole: Record<string,string> = {
+  customer_support:"ZOHO_CRM_CUSTOMER_CARE",
+  seller_support:"ZOHO_CRM_SELLER_SUPPORT",
+  sales:"ZOHO_CRM_SALES_TEAM",
+  marketing:"ZOHO_CRM_MARKETING"
+};
+async function zohoToken(role:string): Promise<string> {
+  const prefix=zohoPrefixForRole[role];
+  if(!prefix) throw new Error("ZOHO_SENDER_NOT_CONFIGURED");
+  const existing=Deno.env.get(prefix+"_ACCESS_TOKEN");
+  const refresh=Deno.env.get(prefix+"_REFRESH_TOKEN");
   if (!refresh) {
     if (existing) return existing;
     throw new Error("ZOHO_SENDER_NOT_CONFIGURED");
   }
-  const clientId=Deno.env.get("ZOHO_CLIENT_ID"), clientSecret=Deno.env.get("ZOHO_CLIENT_SECRET");
+  const clientId=Deno.env.get(prefix+"_CLIENT_ID"), clientSecret=Deno.env.get(prefix+"_CLIENT_SECRET");
   if(!clientId||!clientSecret) throw new Error("ZOHO_OAUTH_NOT_CONFIGURED");
-  const dc=(Deno.env.get("ZOHO_ACCOUNTS_DOMAIN")||"https://accounts.zoho.in").replace(/\/$/, "");
+  const dc=(Deno.env.get(prefix+"_ACCOUNTS_DOMAIN")||Deno.env.get("ZOHO_ACCOUNTS_DOMAIN")||"https://accounts.zoho.in").replace(/\/$/, "");
   const body=new URLSearchParams({refresh_token:refresh,client_id:clientId,client_secret:clientSecret,grant_type:"refresh_token"});
   const res=await fetch(dc+"/oauth/v2/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});
   const data=await res.json().catch(()=>({}));
@@ -31,7 +39,8 @@ async function zohoToken(): Promise<string> {
   return String(data.access_token);
 }
 async function sendEmail(c:any, body:string, requestId:string, role:string) {
-  const accountId=Deno.env.get("ZOHO_MAIL_ACCOUNT_ID");
+  const prefix=zohoPrefixForRole[role];
+  const accountId=prefix ? Deno.env.get(prefix+"_MAIL_ACCOUNT_ID") : "";
   const sender=fromEnv(role);
   const recipient=clean(c.contact_email,254);
   const zohoMessageId=clean(c.metadata?.zoho_message_id,80);
@@ -39,7 +48,7 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   // Zoho's documented reply endpoint needs the provider's internal message ID.
   // Do not silently send a new thread when the adapter has not supplied it.
   if(!/^[0-9]+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
-  const token=await zohoToken();
+  const token=await zohoToken(role);
   const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\/$/, "");
   const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")+"</p>";
   const payload={fromAddress:sender,toAddress:recipient,content,action:"reply",mailFormat:"html",encoding:"UTF-8"};
