@@ -94,6 +94,8 @@ assert(read('admin-panel/crm.html').includes('crmUnifiedInbox')&&read('admin-pan
 
 const sendMigration=read('supabase/migrations/20261019140000_crm_outbound_reply.sql');
 const sendFunction=read('supabase/functions/crm-send-reply/index.ts');
+const zohoPagesWebhook=read('admin-panel/functions/api/webhooks/zoho-mail.js');
+assert(zohoPagesWebhook.includes("'orders@fashionfussion.in':'admin_operations'")&&!zohoPagesWebhook.includes('orders_mailbox_excluded'),'Orders email must route to the restricted Admin Operations queue, not be silently dropped');
 const hardeningMigration=read('supabase/migrations/20261021170000_harden_crm_trigger_function_acl.sql');
 assert(hardeningMigration.includes('revoke all on function public.crm_log_b2b_deal_stage() from public, anon, authenticated, service_role'),'Trigger-only CRM audit function must not be callable directly through client RPC');
 assert(sendMigration.includes('crm_inbox_send_attempts')&&sendMigration.includes('request_id uuid not null unique'),'Outbound send attempts must have unique idempotency keys');
