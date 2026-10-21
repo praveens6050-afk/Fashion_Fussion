@@ -50,13 +50,13 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   return {id:msgId,provider:"email"};
 }
 async function sendWhatsApp(c:any, body:string, requestId:string) {
-  const token=Deno.env.get("META_WHATSAPP_ACCESS_TOKEN");
+  const token=Deno.env.get("WHATSAPP_ACCESS_TOKEN");
   const phoneId=clean(c.metadata?.business_phone_number_id,100);
   const recipient=clean(c.contact_phone,30).replace(/[^0-9]/g,"");
   if(!token||!phoneId||!recipient) throw new Error("WHATSAPP_SENDER_NOT_CONFIGURED");
   const lastInbound=Date.parse(String(c.last_inbound_at||c.received_at||""));
   if(!Number.isFinite(lastInbound)||Date.now()-lastInbound>24*60*60*1000) throw new Error("WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H");
-  const graph=(Deno.env.get("META_GRAPH_API_VERSION")||"v23.0");
+  const graph=(Deno.env.get("WHATSAPP_GRAPH_VERSION")||"v23.0");
   const res=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"/messages",{method:"POST",headers:{"authorization":"Bearer "+token,"content-type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",recipient_type:"individual",to:recipient,type:"text",text:{preview_url:false,body},biz_opaque_callback_data:requestId})});
   const data=await res.json().catch(()=>({}));
   if(!res.ok||!data?.messages?.[0]?.id) throw new Error("WHATSAPP_SEND_FAILED");
@@ -69,8 +69,9 @@ Deno.serve(async(req)=>{
   if(origin && !["https://www.crm.fashionfussion.in","https://crm.fashionfussion.in"].includes(origin)) return response({error:"ORIGIN_NOT_ALLOWED"},403,origin);
   // Default-deny: live sends remain blocked until a separate, explicit CRM reply test is approved.
   // These new dedicated flags intentionally do not reuse the marketplace notification gates.
-  const replyTestApproved = Deno.env.get("CRM_CRM_REPLY_LIVE_TEST_APPROVED") === "true"
-    && Deno.env.get("CRM_CRM_REPLY_LIVE_TEST_ACK") === "fashion_fussion_crm_reply_test_approved_20261020";
+  const replyTestApproved = Deno.env.get("CRM_WHATSAPP_REPLY_SENDING_ENABLED") === "true"
+    && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_APPROVED") === "true"
+    && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_ACK") === "reviewed_support_reply_v1";
   if (!replyTestApproved) return response({error:"CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL"},423,origin);
   const url=Deno.env.get("SUPABASE_URL"), serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const authHeader=req.headers.get("authorization")||"";
