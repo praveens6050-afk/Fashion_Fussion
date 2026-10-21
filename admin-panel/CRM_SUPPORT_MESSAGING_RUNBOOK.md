@@ -5,7 +5,7 @@ This runbook describes the code path added on `crm-development`. It is not proof
 ## Current behavior
 
 - Meta WhatsApp inbound webhook writes signed inbound messages to the existing private Supabase inbound-event RPC. The CRM maps customer, seller, and sales/marketing queues from the server-classified sender role.
-- Zoho email intake accepts a normalized event only at `POST /api/webhooks/zoho-mail` and only with a bearer token configured as `ZOHO_CRM_WEBHOOK_SECRET` (minimum 40 characters). The event is deduplicated by Zoho message ID and staged as `needs_review`.
+- Zoho email intake accepts a normalized event only at `POST /api/webhooks/zoho-mail` and only with a bearer token configured as `ZOHO_CRM_WEBHOOK_SECRET` (minimum 40 characters). The event is deduplicated by Zoho message ID and staged as `needs_review`. Customer Care, Seller Support, and Sales Team map to their respective queues; `orders@fashionfussion.in` maps only to the restricted `admin_operations` queue and is never treated as a general support inbox.
 - CRM team members see only their assigned queue. An admin grants team access from the support inbox using the Supabase Auth user UUID.
 - Replies start as `pending_review`. Only an admin can approve a reply. Dispatchers are separate, one-attempt, and launch-gated; approval alone does not send.
 - No secrets belong in source control or browser variables.
