@@ -14,10 +14,10 @@ Configure these only in Supabase Edge Function secrets, never in browser/Pages v
 - `WHATSAPP_VERIFY_TOKEN` — a long random verification token you choose and also enter in Meta's webhook configuration.
 - `META_APP_SECRET` — the Meta app secret used to verify `X-Hub-Signature-256`.
 - `CRM_EMAIL_WEBHOOK_SECRET` — a separate high-entropy secret used to HMAC-sign normalized email webhook request bodies.
-- `META_WHATSAPP_ACCESS_TOKEN` — a long-lived/system-user token with WhatsApp message permissions.
+- `WHATSAPP_ACCESS_TOKEN` — a server-side Meta WhatsApp token with message permissions (used by the reply sender).
 - `ZOHO_MAIL_ACCOUNT_ID`, `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN` — Zoho Mail API account/OAuth credentials. `ZOHO_ACCOUNTS_DOMAIN` defaults to `https://accounts.zoho.in`; `ZOHO_MAIL_API_BASE` defaults to `https://mail.zoho.in/api`.
 - `CRM_FROM_CUSTOMER_CARE`, `CRM_FROM_SELLER_SUPPORT`, `CRM_FROM_SALES_TEAM`, `CRM_FROM_MARKETING` — verified Zoho sender aliases permitted to the corresponding department. Never use `orders@fashionfussion.in` for support replies.
-- Optional `META_GRAPH_API_VERSION` (defaults to `v23.0`), `WHATSAPP_SALES_PHONE_NUMBER_ID` and `WHATSAPP_MARKETING_PHONE_NUMBER_ID` for dedicated numbers assigned to those teams.
+- Optional `WHATSAPP_GRAPH_VERSION` (defaults to `v23.0`), `WHATSAPP_SALES_PHONE_NUMBER_ID` and `WHATSAPP_MARKETING_PHONE_NUMBER_ID` for dedicated numbers assigned to those teams.
 
 ## Provider wiring
 1. Apply and validate migrations in an isolated Supabase branch first. The current project migration history/schema has known inconsistencies; do not apply this migration directly to production before dependency replay and RLS tests.
