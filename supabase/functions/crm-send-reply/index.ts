@@ -76,12 +76,22 @@ Deno.serve(async(req)=>{
   if(req.method==="OPTIONS") return new Response("ok",{headers:corsFor(origin)});
   if(req.method!=="POST") return response({error:"METHOD_NOT_ALLOWED"},405,origin);
   if(origin && !["https://www.crm.fashionfussion.in","https://crm.fashionfussion.in"].includes(origin)) return response({error:"ORIGIN_NOT_ALLOWED"},403,origin);
-  // Default-deny: live sends remain blocked until a separate, explicit CRM reply test is approved.
-  // These new dedicated flags intentionally do not reuse the marketplace notification gates.
-  const replyTestApproved = Deno.env.get("CRM_WHATSAPP_REPLY_SENDING_ENABLED") === "true"
-    && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_APPROVED") === "true"
-    && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_ACK") === "reviewed_support_reply_v1";
-  if (!replyTestApproved) return response({error:"CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL"},423,origin);
+  // Provider-specific, default-deny launch gates are checked after authentication,
+  // conversation lookup, and department authorization. Email and WhatsApp approvals
+  // must never enable the other provider accidentally.
+  const replyLaunchApproved = (provider:string) => {
+    if (provider === "whatsapp") {
+      return Deno.env.get("CRM_WHATSAPP_REPLY_SENDING_ENABLED") === "true"
+        && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_APPROVED") === "true"
+        && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_ACK") === "reviewed_support_reply_v1";
+    }
+    if (provider === "email") {
+      return Deno.env.get("CRM_EMAIL_REPLY_SENDING_ENABLED") === "true"
+        && Deno.env.get("CRM_EMAIL_REPLY_GLOBAL_LAUNCH_APPROVED") === "true"
+        && Deno.env.get("CRM_EMAIL_REPLY_GLOBAL_LAUNCH_ACK") === "reviewed_support_reply_v1";
+    }
+    return false;
+  };
   const url=Deno.env.get("SUPABASE_URL"), serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const authHeader=req.headers.get("authorization")||"";
   const token=authHeader.replace(/^Bearer\s+/i,"");
@@ -116,6 +126,12 @@ Deno.serve(async(req)=>{
     }
   }
   if(sharedSalesMarketing&&c.assigned_to&&c.assigned_to!==user.id) return response({error:"CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT"},409,origin);
+  if (!replyLaunchApproved(c.provider)) {
+    const error = c.provider === "email"
+      ? "CRM_EMAIL_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL"
+      : "CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL";
+    return response({error},423,origin);
+  }
   if(mode==="internal_note") return response({error:"INTERNAL_NOTES_NOT_YET_SUPPORTED"},501,origin);
   if(c.provider==="email"&&!c.contact_email) return response({error:"CONTACT_EMAIL_MISSING"},422,origin);
   if(c.provider==="whatsapp"&&!c.contact_phone) return response({error:"CONTACT_PHONE_MISSING"},422,origin);
