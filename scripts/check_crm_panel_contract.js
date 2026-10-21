@@ -94,6 +94,8 @@ assert(read('admin-panel/crm.html').includes('crmUnifiedInbox')&&read('admin-pan
 
 const sendMigration=read('supabase/migrations/20261019140000_crm_outbound_reply.sql');
 const sendFunction=read('supabase/functions/crm-send-reply/index.ts');
+const hardeningMigration=read('supabase/migrations/20261021170000_harden_crm_trigger_function_acl.sql');
+assert(hardeningMigration.includes('revoke all on function public.crm_log_b2b_deal_stage() from public, anon, authenticated, service_role'),'Trigger-only CRM audit function must not be callable directly through client RPC');
 assert(sendMigration.includes('crm_inbox_send_attempts')&&sendMigration.includes('request_id uuid not null unique'),'Outbound send attempts must have unique idempotency keys');
 assert(sendMigration.includes('crm_inbox_can_access_conversation')&&sendMigration.includes('sales.team@fashionfussion.in'),'Sales/Marketing shared inbox must be visible through database RLS');
 assert(sendFunction.includes('sharedSalesMarketing')&&sendFunction.includes('CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT'),'Shared Sales/Marketing replies must honor single assigned owner');
