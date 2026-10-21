@@ -1,0 +1,88 @@
+FASHION FUSSION CRM — ENVIRONMENT VARIABLE CHECKLIST
+Revision date: 2026-10-21
+Scope: crm-audit-fixes-20261021 / PR #343
+Do not paste real secret values into GitHub, chat, or browser-visible variables.
+
+A. CLOUDFLARE PAGES FUNCTIONS — CRM PROJECT ONLY
+Required server-side variables:
+SUPABASE_URL=<Supabase project URL>
+SUPABASE_SERVICE_ROLE_KEY=<Supabase service-role secret; server-side only>
+ZOHO_CRM_WEBHOOK_SECRET=<random high-entropy secret, minimum 40 characters>
+
+The Zoho inbound endpoint is:
+POST /api/webhooks/zoho-mail
+It requires Authorization: Bearer <ZOHO_CRM_WEBHOOK_SECRET>.
+Configure a trusted Zoho Flow/custom function or server-side poller; adding this secret alone does not subscribe to Zoho Mail.
+
+B. SUPABASE EDGE FUNCTION SECRETS — crm-inbound-webhook
+SUPABASE_URL=<Supabase project URL>
+SUPABASE_SERVICE_ROLE_KEY=<server-side secret>
+WHATSAPP_VERIFY_TOKEN=<random webhook verification token; must match Meta webhook setup>
+META_APP_SECRET=<Meta app secret used for X-Hub-Signature-256 validation>
+CRM_EMAIL_WEBHOOK_SECRET=<separate high-entropy HMAC secret for normalized email webhook payloads>
+WHATSAPP_SALES_PHONE_NUMBER_ID=<optional dedicated Sales business phone-number ID>
+WHATSAPP_MARKETING_PHONE_NUMBER_ID=<optional dedicated Marketing business phone-number ID>
+
+Email events sent to crm-inbound-webhook must use the exact normalized payload contract and X-FF-Inbox-Signature HMAC. Do not disable signature validation.
+
+C. SUPABASE EDGE FUNCTION SECRETS — crm-send-reply
+SUPABASE_URL=<Supabase project URL>
+SUPABASE_SERVICE_ROLE_KEY=<server-side secret>
+WHATSAPP_ACCESS_TOKEN=<Meta WhatsApp access token>
+WHATSAPP_GRAPH_VERSION=v23.0
+
+Zoho credentials are role-specific. Each mailbox/role needs the applicable variables below:
+ZOHO_CRM_CUSTOMER_CARE_CLIENT_ID=<OAuth client ID>
+ZOHO_CRM_CUSTOMER_CARE_CLIENT_SECRET=<OAuth client secret>
+ZOHO_CRM_CUSTOMER_CARE_REFRESH_TOKEN=<refresh token>
+ZOHO_CRM_CUSTOMER_CARE_MAIL_ACCOUNT_ID=<Zoho Mail account ID>
+ZOHO_CRM_CUSTOMER_CARE_ACCESS_TOKEN=<optional pre-issued access-token fallback>
+
+ZOHO_CRM_SELLER_SUPPORT_CLIENT_ID=<OAuth client ID>
+ZOHO_CRM_SELLER_SUPPORT_CLIENT_SECRET=<OAuth client secret>
+ZOHO_CRM_SELLER_SUPPORT_REFRESH_TOKEN=<refresh token>
+ZOHO_CRM_SELLER_SUPPORT_MAIL_ACCOUNT_ID=<Zoho Mail account ID>
+ZOHO_CRM_SELLER_SUPPORT_ACCESS_TOKEN=<optional pre-issued access-token fallback>
+
+ZOHO_CRM_SALES_TEAM_CLIENT_ID=<OAuth client ID>
+ZOHO_CRM_SALES_TEAM_CLIENT_SECRET=<OAuth client secret>
+ZOHO_CRM_SALES_TEAM_REFRESH_TOKEN=<refresh token>
+ZOHO_CRM_SALES_TEAM_MAIL_ACCOUNT_ID=<Zoho Mail account ID>
+ZOHO_CRM_SALES_TEAM_ACCESS_TOKEN=<optional pre-issued access-token fallback>
+
+ZOHO_CRM_MARKETING_CLIENT_ID=<OAuth client ID>
+ZOHO_CRM_MARKETING_CLIENT_SECRET=<OAuth client secret>
+ZOHO_CRM_MARKETING_REFRESH_TOKEN=<refresh token>
+ZOHO_CRM_MARKETING_MAIL_ACCOUNT_ID=<Zoho Mail account ID>
+ZOHO_CRM_MARKETING_ACCESS_TOKEN=<optional pre-issued access-token fallback>
+
+Optional shared Zoho API settings:
+ZOHO_ACCOUNTS_DOMAIN=https://accounts.zoho.in
+ZOHO_MAIL_API_BASE=https://mail.zoho.in/api
+Role-specific _ACCOUNTS_DOMAIN may override ZOHO_ACCOUNTS_DOMAIN.
+
+Verified sender aliases (must be authorized by the matching Zoho account):
+CRM_FROM_CUSTOMER_CARE=customer.care@fashionfussion.in
+CRM_FROM_SELLER_SUPPORT=seller.support@fashionfussion.in
+CRM_FROM_SALES_TEAM=sales.team@fashionfussion.in
+CRM_FROM_MARKETING=<verified marketing sender alias>
+
+D. SEPARATE SEND APPROVAL GATES — KEEP DISABLED/UNSET
+WhatsApp reply sender:
+CRM_WHATSAPP_REPLY_SENDING_ENABLED=false
+CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_APPROVED=false
+CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_ACK=<leave unset until separately approved; if approved exact value is reviewed_support_reply_v1>
+
+Email reply sender:
+CRM_EMAIL_REPLY_SENDING_ENABLED=false
+CRM_EMAIL_REPLY_GLOBAL_LAUNCH_APPROVED=false
+CRM_EMAIL_REPLY_GLOBAL_LAUNCH_ACK=<leave unset until separately approved; if approved exact value is reviewed_support_reply_v1>
+
+Do not enable either provider by enabling the other. Approval flags are not a substitute for testing sender identity, recipient consent, routing, and a controlled test plan.
+
+E. IMPORTANT ROUTING AND SECURITY NOTES
+- orders@fashionfussion.in is routed to the restricted admin_operations queue; do not reuse its credentials for general support replies.
+- SUPABASE_SERVICE_ROLE_KEY must never be prefixed with PUBLIC, VITE_, NEXT_PUBLIC_, or placed in browser code.
+- Do not use SUPABASE_PUBLISHABLE_KEY for server-side database operations.
+- The CRM Zoho webhook and the unified HMAC webhook are separate endpoints with different secrets; do not interchange ZOHO_CRM_WEBHOOK_SECRET and CRM_EMAIL_WEBHOOK_SECRET.
+- This checklist documents required names only. It does not confirm that any secret currently exists, is valid, or has been configured in Cloudflare/Supabase.
