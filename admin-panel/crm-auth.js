@@ -35,6 +35,9 @@
     if(role==='administrator'){
       const roster=document.createElement('script');roster.src='crm-team-management.js?v=20261019-team-management';roster.async=false;document.body.appendChild(roster);
     }
+    if(['sales','marketing','administrator'].includes(role)){
+      const sales=document.createElement('script');sales.src='crm-sales-workspace.js?v=20261022-sales-import';sales.async=false;document.body.appendChild(sales);
+    }
     if(role==='customer_support'||role==='seller_support'){
       const support=document.createElement('script');support.src='crm-support-workspace.js?v=20261019-support-queue';support.async=false;document.body.appendChild(support);
     }
