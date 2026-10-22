@@ -1,0 +1,9 @@
+{
+  "name": "fashion-fussion-crm-preview",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Static Cloudflare Pages build for isolated CRM preview",
+  "scripts": {
+    "build": "node scripts/build.js"
+  }
+}
