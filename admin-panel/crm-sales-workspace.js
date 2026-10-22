@@ -61,9 +61,18 @@
     if(!leads.some(x=>String(x.id)===leadId)){alert('Choose a valid lead using Log activity, or enter an existing lead ID.');return}
     const {data:s}=await db.auth.getSession(),user=s?.session?.user;if(!user){alert('Sign in again.');return}
     const row=leads.find(x=>String(x.id)===leadId);
-    const activity={activity_type:type,summary,outcome:null,follow_up_at:follow?new Date(follow).toISOString():null,created_by:user.id};
-    const {error}=await db.from('crm_sales_activities').insert({...activity,account_id:null,deal_id:null});
-    if(error){alert('Activity table rejected the record: '+error.message+'. This may need a schema/RLS fix in non-production.');return}
+    let accountId=null;
+    const {data:matches,error:findError}=await db.from('crm_b2b_accounts').select('id').ilike('company_name',row.company_name).limit(1);
+    if(findError){alert('Cannot check CRM account: '+findError.message);return}
+    accountId=matches?.[0]?.id||null;
+    if(!accountId){
+      const {data:created,error:createError}=await db.from('crm_b2b_accounts').insert({company_name:row.company_name,billing_email:row.public_contact_email||null,account_status:'prospect',owner_user_id:row.assigned_to||user.id,notes:'Created from seller lead '+row.id+'; source: '+(row.source_url||row.source_marketplace||'unknown')}).select('id').single();
+      if(createError){alert('Could not link activity to a CRM account: '+createError.message);return}
+      accountId=created.id;
+    }
+    const activity={account_id:accountId,deal_id:null,activity_type:type,summary,outcome:null,follow_up_at:follow?new Date(follow).toISOString():null,created_by:user.id};
+    const {error}=await db.from('crm_sales_activities').insert(activity);
+    if(error){alert('Activity save failed: '+error.message);return}
     const {error:updateError}=await db.from('seller_leads').update({lead_status:row.lead_status==='new'?'contacted':row.lead_status,contacted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',leadId);
     if(updateError)alert('Activity saved, but lead status update failed: '+updateError.message);
     $('salesActivitySummary').value='';$('salesActivityDate').value='';await load();alert('Activity saved. No message was sent.');
