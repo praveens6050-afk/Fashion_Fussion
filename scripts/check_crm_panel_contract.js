@@ -93,6 +93,8 @@ assert(inboxUi.includes('crm_inbox_conversations')&&inboxUi.includes('crm_inbox_
 assert(read('admin-panel/crm.html').includes('crmUnifiedInbox')&&read('admin-panel/crm-auth.js').includes('crm-unified-inbox.js'),'Authorized CRM roles must load the unified inbox');
 
 const sendMigration=read('supabase/migrations/20261019140000_crm_outbound_reply.sql');
+const exactRoutingMigration=read('supabase/migrations/20261022100000_crm_inbox_exact_mailbox_routing.sql');
+assert(exactRoutingMigration.includes("'seller.support@fashionfussion.in','seller-support@fashionfussion.in','sellerhelp@fashionfussion.in'")&&exactRoutingMigration.includes("'sales.team@fashionfussion.in','sales@fashionfussion.in','wholesale@fashionfussion.in','b2b@fashionfussion.in'")&&exactRoutingMigration.includes("'marketing@fashionfussion.in','campaigns@fashionfussion.in'")&&exactRoutingMigration.includes("v_inbox='orders@fashionfussion.in'"),'Exact Fashion Fussion mailboxes must route to their intended departments and keep Orders separate');
 const sendFunction=read('supabase/functions/crm-send-reply/index.ts');
 const zohoPagesWebhook=read('admin-panel/functions/api/webhooks/zoho-mail.js');
 assert(zohoPagesWebhook.includes("'orders@fashionfussion.in':'admin_operations'")&&!zohoPagesWebhook.includes('orders_mailbox_excluded'),'Orders email must route to the restricted Admin Operations queue, not be silently dropped');
