@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Fashion_Fussion — CRM Dashboard</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP" crossorigin="anonymous"></script>
+<script src="supabase-config.js"></script>
+<link rel="stylesheet" href="csp-admin.css">
+<style>
+.crm-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:5px;background:#f2f4f7;border:1px solid #eaecf0;border-radius:12px;width:max-content;max-width:100%}
+.crm-tabs button{border:0;background:transparent;border-radius:9px;padding:9px 13px;font-weight:800;color:#475467;cursor:pointer;transition:.16s ease}
+.crm-tabs button:hover{background:#fff}
+.crm-tabs button.active{background:#111827;color:#fff;box-shadow:0 4px 10px rgba(16,24,40,.16)}
+.crm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.crm-card{position:relative;overflow:hidden;border:1px solid #e4e7ec;border-radius:13px;padding:15px 14px;background:linear-gradient(145deg,#fff,#fafcff);min-height:78px;box-shadow:0 3px 10px rgba(16,24,40,.03)}
+.crm-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#6172f3}
+.crm-card:nth-child(4n+2):before{background:#12b76a}
+.crm-card:nth-child(4n+3):before{background:#ffb000}
+.crm-card:nth-child(4n+4):before{background:#06aed4}
+.crm-card span{font-size:11px;color:#667085;font-weight:700}
+.crm-card b{display:block;font-size:22px;margin-top:6px;color:#101828}
+.crm-search{display:flex;gap:8px;margin-bottom:12px;padding:12px;background:#f8fafc;border:1px solid #eaecf0;border-radius:12px}
+.crm-search input{flex:1;padding:10px 12px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;outline:0}
+.crm-search input:focus{border-color:#6172f3;box-shadow:0 0 0 3px rgba(97,114,243,.12)}
+.crm-search button{padding:9px 13px}
+.crm-list{display:grid;gap:8px}
+.crm-row{display:grid;grid-template-columns:1fr 1fr .8fr .6fr auto;gap:10px;align-items:center;border:1px solid #e5e7eb;border-radius:11px;padding:12px 13px;background:#fff;text-align:left;cursor:pointer;transition:.16s ease}
+.crm-row:hover{border-color:#c7c7c7;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.crm-row b{display:block;color:#111;font-size:14px}
+.crm-row small{color:#667085;font-size:12px}
+.crm-row .badge{font-size:11px;padding:3px 8px;border-radius:20px;background:#f2f4f7;color:#344054;font-weight:700}
+.crm-row .badge-hot{background:#fef3f2;color:#b42318}
+.crm-row .badge-warm{background:#fffaeb;color:#b54708}
+.crm-row .badge-cold{background:#eff8ff;color:#175cd3}
+.crm-row .badge-won{background:#ecfdf3;color:#027a48}
+.crm-row .badge-lost{background:#f2f4f7;color:#344054}
+.crm-detail{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-top:12px}
+.crm-detail h3{margin:0 0 10px}
+.crm-detail p{margin:6px 0;font-size:13px;color:#475467}
+.crm-detail .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+.crm-detail .meta span{font-size:12px;color:#667085}
+.crm-detail .meta span b{color:#101828}
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.stage{background:#f8fafc;border:1px solid #eaecf0;border-radius:12px;padding:12px;min-height:200px}
+.stage h4{margin:0 0 10px;font-size:13px;color:#475467;text-transform:uppercase;letter-spacing:.5px}
+.stage .count{font-size:11px;color:#667085;margin-bottom:8px}
+.stage-card{background:#fff;border:1px solid #e5e7eb;border-radius:9px;padding:10px;margin-bottom:8px;cursor:pointer;transition:.16s ease}
+.stage-card:hover{border-color:#6172f3;box-shadow:0 2px 8px rgba(97,114,243,.08)}
+.stage-card b{display:block;font-size:13px;color:#101828;margin-bottom:4px}
+.stage-card span{font-size:11px;color:#667085}
+.lead-source{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.lead-source span{font-size:10px;padding:2px 8px;border-radius:20px;background:#f2f4f7;color:#475467}
+.ticket-priority{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700}
+.ticket-priority.high{background:#fef3f2;color:#b42318}
+.ticket-priority.medium{background:#fffaeb;color:#b54708}
+.ticket-priority.low{background:#ecfdf3;color:#027a48}
+.ticket-status{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;background:#f2f4f7;color:#344054}
+.ticket-status.open{background:#eff8ff;color:#175cd3}
+.ticket-status.resolved{background:#ecfdf3;color:#027a48}
+.ticket-status.pending{background:#fffaeb;color:#b54708}
+.crm-form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.crm-form .full{grid-column:1/-1}
+.crm-form label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}
+.crm-form input,.crm-form select,.crm-form textarea{width:100%;padding:10px;border:1px solid #bbb;border-radius:4px}
+.crm-form textarea{min-height:80px}
+@media(max-width:900px){.crm-grid{grid-template-columns:1fr 1fr}.pipeline{grid-template-columns:1fr 2}.crm-row{grid-template-columns:1fr}}
+@media(max-width:600px){.crm-grid{grid-template-columns:1fr}.pipeline{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div>
+      <div class="logo">Fashion_Fussion</div>
+      <div class="admin-badge">CRM PANEL</div>
+    </div>
+    <div class="header-actions">
+      <a href="admin.html">Admin</a>
+      <a href="https://fashionfussion.in" target="_blank" rel="noopener noreferrer">Open Store</a>
+      <button id="logoutButton" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<section id="loadingScreen">
+  <div class="message-card">
+    <h2>Checking CRM access…</h2>
+    <p>Please wait.</p>
+  </div>
+</section>
+
+<section id="accessDenied" hidden>
+  <div class="message-card">
+    <h2>Access Denied</h2>
+    <p id="accessDeniedMessage">CRM privileges are required.</p>
+    <button class="primary" id="goToLoginButton">Go to Login</button>
+  </div>
+</section>
+
+<main class="dashboard" id="dashboard" hidden data-admin-ready="false">
+  <div class="container">
+    <div class="page-title">
+      <div>
+        <h1>CRM Dashboard</h1>
+        <p id="adminEmail">Administrator</p>
+      </div>
+      <button class="primary" id="refreshAll">↻ Refresh</button>
+    </div>
+    <div id="status" class="status"></div>
+
+    <div class="crm-tabs">
+      <button class="active" data-crm-tab="overview">Overview</button>
+      <button data-crm-tab="accounts">B2B Accounts</button>
+      <button data-crm-tab="deals">Deals Pipeline</button>
+      <button data-crm-tab="leads">Leads</button>
+      <button data-crm-tab="tickets">Support Tickets</button>
+      <button data-crm-tab="campaigns">Campaigns</button>
+      <button data-crm-tab="team">Team</button>
+    </div>
+
+    <div id="crmBody"></div>
+  </div>
+</main>
+
+<div id="crmModal" class="modal">
+  <div class="modal-box" style="width:700px">
+    <div class="modal-head">
+      <h2 id="modalTitle">Add</h2>
+      <button class="secondary" id="closeModal" type="button">×</button>
+    </div>
+    <form id="crmForm" class="form">
+      <div id="modalBody"></div>
+      <div class="form-actions">
+        <button class="secondary" id="cancelModal" type="button">Cancel</button>
+        <button class="primary" id="saveBtn" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="crm-dashboard.js"></script>
+</body>
+</html>
