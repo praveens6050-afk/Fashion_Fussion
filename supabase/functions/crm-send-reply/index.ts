@@ -14,16 +14,24 @@ const fromEnv = (role:string) => {
   const key = ({customer_support:"CRM_FROM_CUSTOMER_CARE",seller_support:"CRM_FROM_SELLER_SUPPORT",sales:"CRM_FROM_SALES_TEAM",marketing:"CRM_FROM_MARKETING"} as Record<string,string>)[role];
   return key ? Deno.env.get(key) || "" : "";
 };
-async function zohoToken(): Promise<string> {
-  const existing=Deno.env.get("ZOHO_ACCESS_TOKEN");
-  const refresh=Deno.env.get("ZOHO_REFRESH_TOKEN");
+const zohoPrefixForRole: Record<string,string> = {
+  customer_support:"ZOHO_CRM_CUSTOMER_CARE",
+  seller_support:"ZOHO_CRM_SELLER_SUPPORT",
+  sales:"ZOHO_CRM_SALES_TEAM",
+  marketing:"ZOHO_CRM_MARKETING"
+};
+async function zohoToken(role:string): Promise<string> {
+  const prefix=zohoPrefixForRole[role];
+  if(!prefix) throw new Error("ZOHO_SENDER_NOT_CONFIGURED");
+  const existing=Deno.env.get(prefix+"_ACCESS_TOKEN");
+  const refresh=Deno.env.get(prefix+"_REFRESH_TOKEN");
   if (!refresh) {
     if (existing) return existing;
     throw new Error("ZOHO_SENDER_NOT_CONFIGURED");
   }
-  const clientId=Deno.env.get("ZOHO_CLIENT_ID"), clientSecret=Deno.env.get("ZOHO_CLIENT_SECRET");
+  const clientId=Deno.env.get(prefix+"_CLIENT_ID"), clientSecret=Deno.env.get(prefix+"_CLIENT_SECRET");
   if(!clientId||!clientSecret) throw new Error("ZOHO_OAUTH_NOT_CONFIGURED");
-  const dc=(Deno.env.get("ZOHO_ACCOUNTS_DOMAIN")||"https://accounts.zoho.in").replace(/\/$/, "");
+  const dc=(Deno.env.get(prefix+"_ACCOUNTS_DOMAIN")||Deno.env.get("ZOHO_ACCOUNTS_DOMAIN")||"https://accounts.zoho.in").replace(/\/$/, "");
   const body=new URLSearchParams({refresh_token:refresh,client_id:clientId,client_secret:clientSecret,grant_type:"refresh_token"});
   const res=await fetch(dc+"/oauth/v2/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});
   const data=await res.json().catch(()=>({}));
@@ -31,7 +39,8 @@ async function zohoToken(): Promise<string> {
   return String(data.access_token);
 }
 async function sendEmail(c:any, body:string, requestId:string, role:string) {
-  const accountId=Deno.env.get("ZOHO_MAIL_ACCOUNT_ID");
+  const prefix=zohoPrefixForRole[role];
+  const accountId=prefix ? Deno.env.get(prefix+"_MAIL_ACCOUNT_ID") : "";
   const sender=fromEnv(role);
   const recipient=clean(c.contact_email,254);
   const zohoMessageId=clean(c.metadata?.zoho_message_id,80);
@@ -39,7 +48,7 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   // Zoho's documented reply endpoint needs the provider's internal message ID.
   // Do not silently send a new thread when the adapter has not supplied it.
   if(!/^[0-9]+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
-  const token=await zohoToken();
+  const token=await zohoToken(role);
   const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\/$/, "");
   const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")+"</p>";
   const payload={fromAddress:sender,toAddress:recipient,content,action:"reply",mailFormat:"html",encoding:"UTF-8"};
@@ -50,13 +59,13 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   return {id:msgId,provider:"email"};
 }
 async function sendWhatsApp(c:any, body:string, requestId:string) {
-  const token=Deno.env.get("META_WHATSAPP_ACCESS_TOKEN");
+  const token=Deno.env.get("WHATSAPP_ACCESS_TOKEN");
   const phoneId=clean(c.metadata?.business_phone_number_id,100);
   const recipient=clean(c.contact_phone,30).replace(/[^0-9]/g,"");
   if(!token||!phoneId||!recipient) throw new Error("WHATSAPP_SENDER_NOT_CONFIGURED");
   const lastInbound=Date.parse(String(c.last_inbound_at||c.received_at||""));
   if(!Number.isFinite(lastInbound)||Date.now()-lastInbound>24*60*60*1000) throw new Error("WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H");
-  const graph=(Deno.env.get("META_GRAPH_API_VERSION")||"v23.0");
+  const graph=(Deno.env.get("WHATSAPP_GRAPH_VERSION")||"v23.0");
   const res=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"/messages",{method:"POST",headers:{"authorization":"Bearer "+token,"content-type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",recipient_type:"individual",to:recipient,type:"text",text:{preview_url:false,body},biz_opaque_callback_data:requestId})});
   const data=await res.json().catch(()=>({}));
   if(!res.ok||!data?.messages?.[0]?.id) throw new Error("WHATSAPP_SEND_FAILED");
@@ -67,11 +76,22 @@ Deno.serve(async(req)=>{
   if(req.method==="OPTIONS") return new Response("ok",{headers:corsFor(origin)});
   if(req.method!=="POST") return response({error:"METHOD_NOT_ALLOWED"},405,origin);
   if(origin && !["https://www.crm.fashionfussion.in","https://crm.fashionfussion.in"].includes(origin)) return response({error:"ORIGIN_NOT_ALLOWED"},403,origin);
-  // Default-deny: live sends remain blocked until a separate, explicit CRM reply test is approved.
-  // These new dedicated flags intentionally do not reuse the marketplace notification gates.
-  const replyTestApproved = Deno.env.get("CRM_CRM_REPLY_LIVE_TEST_APPROVED") === "true"
-    && Deno.env.get("CRM_CRM_REPLY_LIVE_TEST_ACK") === "fashion_fussion_crm_reply_test_approved_20261020";
-  if (!replyTestApproved) return response({error:"CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL"},423,origin);
+  // Provider-specific, default-deny launch gates are checked after authentication,
+  // conversation lookup, and department authorization. Email and WhatsApp approvals
+  // must never enable the other provider accidentally.
+  const replyLaunchApproved = (provider:string) => {
+    if (provider === "whatsapp") {
+      return Deno.env.get("CRM_WHATSAPP_REPLY_SENDING_ENABLED") === "true"
+        && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_APPROVED") === "true"
+        && Deno.env.get("CRM_WHATSAPP_REPLY_GLOBAL_LAUNCH_ACK") === "reviewed_support_reply_v1";
+    }
+    if (provider === "email") {
+      return Deno.env.get("CRM_EMAIL_REPLY_SENDING_ENABLED") === "true"
+        && Deno.env.get("CRM_EMAIL_REPLY_GLOBAL_LAUNCH_APPROVED") === "true"
+        && Deno.env.get("CRM_EMAIL_REPLY_GLOBAL_LAUNCH_ACK") === "reviewed_support_reply_v1";
+    }
+    return false;
+  };
   const url=Deno.env.get("SUPABASE_URL"), serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const authHeader=req.headers.get("authorization")||"";
   const token=authHeader.replace(/^Bearer\s+/i,"");
@@ -106,6 +126,12 @@ Deno.serve(async(req)=>{
     }
   }
   if(sharedSalesMarketing&&c.assigned_to&&c.assigned_to!==user.id) return response({error:"CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT"},409,origin);
+  if (!replyLaunchApproved(c.provider)) {
+    const error = c.provider === "email"
+      ? "CRM_EMAIL_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL"
+      : "CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL";
+    return response({error},423,origin);
+  }
   if(mode==="internal_note") return response({error:"INTERNAL_NOTES_NOT_YET_SUPPORTED"},501,origin);
   if(c.provider==="email"&&!c.contact_email) return response({error:"CONTACT_EMAIL_MISSING"},422,origin);
   if(c.provider==="whatsapp"&&!c.contact_phone) return response({error:"CONTACT_PHONE_MISSING"},422,origin);
