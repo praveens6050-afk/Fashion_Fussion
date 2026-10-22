@@ -69,4 +69,5 @@
     $('salesActivitySummary').value='';$('salesActivityDate').value='';await load();alert('Activity saved. No message was sent.');
   }
   document.addEventListener('ff-crm-ready',()=>{if(['sales','marketing','administrator'].includes(role()))mount()});
+  if(document.getElementById('dashboard')?.dataset.adminReady==='true'&&['sales','marketing','administrator'].includes(role()))mount();
 })();
