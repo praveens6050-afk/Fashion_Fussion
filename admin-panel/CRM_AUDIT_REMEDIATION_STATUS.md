@@ -46,3 +46,25 @@ Safety boundary: no production migrations, deployment, secret changes, or outbou
 ## Current status
 
 This branch is review/test work only. It does not make the live CRM fully operational and is not a production release.
+
+
+## Non-production CRM test update — 2026-10-22
+
+Scope: isolated Supabase project `dzpyxeryikadpuebmrit` (Sydney); production project `gmdevprqtvoshbbytsxf` was not modified.
+
+- Applied the CRM seller-lead base migration and the CRM team, B2B workspace, unified inbox, outbound queue, Zoho inbox/reply review, delivery-status, WhatsApp inbox and mailbox-routing migrations to the isolated project.
+- The CRM inbound-routing function passed synthetic database routing tests for `customer.care@fashionfussion.in` → `customer_support`, `seller.support@fashionfussion.in` → `seller_support`, `sales.team@fashionfussion.in` → `sales`, `marketing@fashionfussion.in` → `marketing`, and `fashionfussion@fashionfussion.in` → default `customer_support`.
+- `orders@fashionfussion.in` was rejected by the general inbox RPC as intended. Synthetic conversations were deleted after the test; inbox and reply queues are empty.
+- Revoked browser/service-role EXECUTE grants on `public.rls_auto_enable()`; the `ensure_rls` event trigger remains enabled. A matching reviewable migration was added as `20261022110000_revoke_client_execute_rls_auto_enable.sql`.
+- Deployed `crm-inbound-webhook` (JWT verification off only because the function verifies webhook tokens/signatures itself) and `crm-send-reply` (JWT verification on) to the isolated project. No provider messages were sent.
+- The audit branch's `admin-panel/supabase-config.js` now points to the isolated project, not the production Supabase project. This is a repository change only; no Cloudflare deployment was made.
+
+### Remaining blockers before the CRM is genuinely ready for staff
+
+1. No CRM team members exist in the isolated project's `crm_team_members` table and no staff sign-in was tested. Create/invite each intended staff account in Supabase Auth, then register its exact UUID and role.
+2. Edge Function custom secrets and provider credentials are not verified/configured. Required inbound secrets include `WHATSAPP_VERIFY_TOKEN`, `META_APP_SECRET`, and `CRM_EMAIL_WEBHOOK_SECRET`. Zoho per-mailbox OAuth credentials and Meta WhatsApp access token/phone configuration are also needed for real provider delivery.
+3. Email and WhatsApp reply gates remain disabled/unset. This is intentional; no outbound messages were sent.
+4. Supabase Security Advisor still reports inherited security-definer grants and service-only RLS tables with no policies. These require function-by-function review; no blanket grants or revokes were applied.
+5. GitHub Actions status for the latest branch commit was not available at the time of this update. The PR remains draft and unmerged.
+
+Do not merge, deploy to production, enable provider sending, or apply these changes to the main Supabase project without separate explicit approval.
