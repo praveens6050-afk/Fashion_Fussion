@@ -24,8 +24,8 @@ assert(loginJs.includes("select('is_admin')")&&loginJs.includes("profile?.is_adm
 assert(loginJs.includes("from('crm_team_members')")&&loginJs.includes("['customer_support','seller_support','sales','marketing']"),'CRM sign-in must allow only explicitly authorized sales/marketing roles');
 assert(loginJs.includes("location.replace('crm.html')"),'Verified CRM users must be routed to CRM');
 assert(page.includes('id="dashboard"')&&page.includes('data-admin-ready="false"'),'CRM page must remain hidden until authorization succeeds');
-assert(auth.includes("from('crm_team_members')")&&auth.includes("member.is_active!==true")&&auth.includes("member.email||'').toLowerCase()"),'CRM route must independently enforce active membership and matching email');
-assert(auth.includes("location.replace('crm-login.html')"),'CRM must redirect on sign-out');
+assert(auth.includes("from('crm_team_members')")&&auth.includes('member.is_active !== true')&&auth.includes('String(member && member.email || \'\').trim().toLowerCase()'),'CRM route must independently enforce active membership and matching email');
+assert(auth.includes('function redirectToLogin()')&&auth.includes('location.replace(LOGIN_URL)'),'CRM must redirect on sign-out');
 assert(config.includes("isCrmPage=page==='crm.html'"),'CRM route must be detected explicitly');
 assert(config.includes("add('admin-crm.js?v=20261017-crm'")&&config.includes("add('admin-crm-followups.js?v=20261017-crm-followups'"),'Seller-acquisition modules must load on the CRM route');
 assert(config.includes("if(role==='administrator')")&&config.includes("add('admin-crm-directory.js?v=20261017-crm-directory'")&&config.includes("add('admin-crm-notifications.js?v=20261017-crm-notifications'"),'Customer/seller directory and notification diagnostics must remain administrator-only');
@@ -51,7 +51,7 @@ assert(teamMigration.includes("role in ('customer_support','seller_support','sal
 assert(page.includes('id="crmTeamManagement"')&&page.includes('id="crmTeamForm"'),'Admin CRM must include Team Management');
 assert(page.includes('id="crmMemberId"')&&page.includes('id="crmMemberRole"'),'Team Management must assign an Auth UUID and department');
 assert(page.includes('id="crmSupportWorkspace"')&&page.includes('id="crmSupportRows"'),'Support departments must have a separate queue workspace');
-assert(auth.includes("crm-support-workspace.js?v=20261019-support-queue"),'Support staff must load only their support queue module');
+assert(auth.includes("crm-support-workspace.js?v=20261023-live-ready-1")&&auth.includes("['customer_support', 'seller_support'].includes(role)"),'Support staff must load only their support queue module');
 assert(teamMigration.includes('create or replace function public.crm_support_ticket_queue()')&&teamMigration.includes("'sla_due_at', t.sla_due_at")&&teamMigration.includes('revoke all on function public.crm_support_ticket_queue() from public, anon'),'Support queue must be a narrow, authenticated-only database RPC');
 assert(supportWorkspace.includes("rpc('crm_support_ticket_queue')")&&supportWorkspace.includes('customer_support')&&supportWorkspace.includes('seller_support'),'Support queue must call the scoped RPC and identify department');
 assert(teamManagement.includes("from('crm_team_members').select('user_id,email,role,is_active,created_at')"),'Team Management must load the CRM staff roster');
