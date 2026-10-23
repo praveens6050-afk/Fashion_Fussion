@@ -139,6 +139,54 @@ jobs:
           // admin-checkout-health.js?v=1','data-admin-checkout-health
           // admin-launch-readiness.js?v=1','data-admin-launch-readiness
           EOF
+      - name: Cloudflare Admin and CRM Pages build
+        run: |
+          node --check admin-panel/scripts/build.js
+          npm run build --prefix admin-panel
+          test -f admin-panel/dist/index.html
+          test -f admin-panel/dist/crm.html
+          test -f admin-panel/dist/crm-login.html
+          test -f admin-panel/functions/api/admin-crm-notifications.js
+          test ! -e admin-panel/dist/functions
+      - name: Admin CRM JavaScript syntax and contract checks
+        run: |
+          node --check admin-panel/admin-crm.js
+          node --check admin-panel/admin-crm-followups.js
+          python3 - <<'PY'
+          from pathlib import Path
+          main = Path('admin-panel/admin-crm.js').read_text(encoding='utf-8')
+          followups = Path('admin-panel/admin-crm-followups.js').read_text(encoding='utf-8')
+          loader = Path('admin-panel/supabase-config.js').read_text(encoding='utf-8')
+          migration = Path('supabase/migrations/20261017110000_admin_seller_lead_crm.sql').read_text(encoding='utf-8')
+          checks = {
+              'CSV import validation': 'async function importCsv' in main and 'no existing lead was overwritten' in main.lower(),
+              'follow-up tasks': 'seller_lead_tasks' in followups and 'completeTask' in followups,
+              'activity timeline': 'seller_lead_activities' in followups and 'ffCrmFuTimeline' in followups,
+              'loader registration': 'admin-crm-followups.js?v=20261017-crm-followups' in loader,
+              'admin-only RLS': 'seller_lead_tasks_admin_select' in migration and 'seller_lead_activities_admin_select' in migration,
+              'no outbound messaging': 'never sends messages' in followups,
+          }
+          for name, ok in checks.items(): print(('PASS' if ok else 'FAIL') + ': ' + name)
+          if not all(checks.values()): raise SystemExit(1)
+          PY
+      - name: Standalone CRM panel contract checks
+        run: |
+          node --check admin-panel/functions/api/admin-crm-notifications.js
+          node --check admin-panel/crm-login.js
+          node --check admin-panel/crm-auth.js
+          node --check admin-panel/admin-crm.js
+          node --check admin-panel/admin-crm-followups.js
+          node --check admin-panel/admin-crm-directory.js
+          node --check admin-panel/admin-crm-whatsapp-inbox.js
+          node --check admin-panel/functions/api/admin-crm-whatsapp-inbox.js
+          node --check admin-panel/support-login.js
+          node --check admin-panel/support-inbox-auth.js
+          node --check admin-panel/functions/api/webhooks/zoho-mail.js
+          node --check admin-panel/functions/api/outreach/crm-email-reply-dispatch.js
+          node --check admin-panel/functions/api/outreach/crm-whatsapp-reply-dispatch.js
+          node --test admin-panel/tests/zoho-mail-webhook.test.mjs admin-panel/tests/crm-reply-dispatch.test.mjs
+          node scripts/check_crm_panel_contract.js
+          node scripts/check_whatsapp_crm_inbox_contract.js
       - name: Source checks
         run: node scripts/check_source.js
       - name: Variant and inventory source checks
@@ -167,6 +215,7 @@ jobs:
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
           node scripts/browser_smoke.js
+          node scripts/crm_browser_smoke.js
           node scripts/catalog_variant_smoke.js
           node scripts/order_details_smoke.js
           node scripts/return_exchange_smoke.js

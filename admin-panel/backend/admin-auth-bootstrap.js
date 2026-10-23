@@ -36,10 +36,10 @@ function normalizeSupabaseEnv() {
 }
 
 function allowedOrigins() {
-  return String(process.env.ALLOWED_ORIGIN || 'https://admin.fashionfussion.in')
+  return [...new Set(String(process.env.ALLOWED_ORIGIN || 'https://admin.fashionfussion.in')
     .split(',')
     .map(value => value.trim())
-    .filter(Boolean);
+    .filter(Boolean).concat('https://crm.fashionfussion.in'))];
 }
 
 function accessToken(req) {
