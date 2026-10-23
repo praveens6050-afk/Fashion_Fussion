@@ -1,6 +1,15 @@
 'use strict';
 (function(){
+  if(location.hostname.endsWith('.pages.dev')){
+    const canonical=new URL(location.pathname+location.search+location.hash,'https://www.crm.fashionfussion.in');
+    location.replace(canonical.href);
+    return;
+  }
   const $=id=>document.getElementById(id);
+  function withTimeout(promise,ms,message){
+    let timer;
+    return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms)})]).finally(()=>clearTimeout(timer));
+  }
   const ready=window.ffAdminSupabaseReady||Promise.resolve(window.supabaseClient);
   function deny(message){$('loadingScreen').hidden=true;$('dashboard').hidden=true;$('dashboard').dataset.adminReady='false';$('accessDenied').hidden=false;$('accessDeniedMessage').textContent=message}
   async function access(db,user){
@@ -12,10 +21,10 @@
     return member.role;
   }
   async function init(){
-    const db=await ready;if(!db?.auth)throw new Error('CRM authentication service is unavailable.');
-    const{data:{session},error}=await db.auth.getSession();
+    const db=await withTimeout(ready,12000,'CRM authentication service did not initialize in time.');if(!db?.auth)throw new Error('CRM authentication service is unavailable.');
+    const{data:{session},error}=await withTimeout(db.auth.getSession(),12000,'CRM session check timed out.');
     if(error||!session?.user){deny('Please sign in with your authorized Fashion Fussion CRM account.');return}
-    const role=await access(db,session.user);
+    const role=await withTimeout(access(db,session.user),15000,'CRM access check timed out.');
     if(!role){await db.auth.signOut();deny('This account has no active CRM team access. Ask the CRM administrator to invite and authorize it.');return}
     $('crmEmail').textContent=(session.user.email||'CRM user')+' · '+role;
     $('dashboard').dataset.crmRole=role;
@@ -45,5 +54,5 @@
   }
   $('crmLogout').addEventListener('click',async()=>{const db=await ready;await db.auth.signOut();location.replace('crm-login.html')});
   $('crmGoLogin').addEventListener('click',()=>location.replace('crm-login.html'));
-  init().catch(error=>{console.error('[CRM] Access check failed',error);deny('Unable to verify CRM access. Please sign in again.')});
+  init().catch(error=>{console.error('[CRM] Access check failed',error);deny(error?.message||'Unable to verify CRM access. Please sign in again.')});
 })();
