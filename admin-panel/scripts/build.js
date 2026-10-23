@@ -5,6 +5,16 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist');
 const excluded = new Set(['dist', 'node_modules', '.git', 'functions']);
+const requiredFunctions = [
+  path.join(root, 'functions', 'api', 'admin-order-action.js'),
+  path.join(root, 'functions', 'api', 'admin-crm-notifications.js'),
+  path.join(root, 'functions', 'api', 'admin-crm-whatsapp-inbox.js')
+];
+for (const required of requiredFunctions) {
+  if (!fs.existsSync(required)) {
+    throw new Error('Required Cloudflare Pages Function is missing: ' + path.relative(root, required));
+  }
+}
 
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
@@ -33,4 +43,4 @@ for (const required of ['index.html', 'crm.html', 'crm-login.html', 'supabase-co
 if (fs.existsSync(path.join(output, 'functions'))) {
   throw new Error('Functions must remain at Pages project root, not inside the static output.');
 }
-console.log('Cloudflare Pages static build passed: Admin and CRM entry assets copied to dist; Functions remain at project root.');
+console.log('Cloudflare Pages static build passed: Admin and CRM entry assets copied to dist; required Functions remain at Pages project root.');
