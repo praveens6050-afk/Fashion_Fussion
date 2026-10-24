@@ -58,9 +58,8 @@ loadSellerStyle('sidebar-compact.css?v=20260921-menu');
 loadSellerStyle('seller-hub-premium.css?v=20260921-hub');
 loadSellerStyle('seller-growth-program.css?v=20261001-growth');
 
-loadSellerModule('seller-storage-scope.js');
-loadSellerModule('catalog-enhancements.js');
-loadSellerModule('product-image-upload.js?v=20260922-readiness');
+loadSellerModule('seller-storage-scope.js?v=20261024-audit-fix');
+loadSellerModule('catalog-enhancements.js?v=20261024-audit-fix');
 loadSellerModule('seller-support.js?v=20260930-support-readiness');
 loadSellerModule('seller-kyc-status.js?v=20260930-kyc-copy');
 loadSellerModule('seller-finance-onboarding.js?v=20260930-live-finance');
