@@ -4,8 +4,8 @@ import path from 'node:path';
 const root = process.cwd();
 const dist = path.join(root, 'dist');
 const excludedDirs = new Set(['dist', 'backend', 'api', 'functions', 'node_modules', '.git', '.github', 'tests', 'test', '__tests__', 'sql', 'db']);
-const excludedFiles = new Set(['package.json', 'package-lock.json', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc', 'cloudflare-build.mjs', 'README.md']);
-const RELEASE_TAG = '20260927-verification-fingerprint-v1';
+const excludedFiles = new Set(['package.json', 'package-lock.json', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc', 'cloudflare-build.mjs', 'README.md', 'zoho-test.html', 'zoho-test.js', 'whatsapp-readiness.html', 'whatsapp-readiness.js']);
+const RELEASE_TAG = '20261024-audit-fix';
 
 async function copyTree(src, dest, relative = '') {
   await mkdir(dest, { recursive: true });
