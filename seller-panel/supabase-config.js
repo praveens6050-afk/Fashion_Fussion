@@ -119,7 +119,6 @@ if(!isSellerLogin){
     guard.setAttribute('data-seller-launch-safety','true');
     appendScriptWhenReady(guard,'head').catch(error=>console.error('[Seller Center] Launch safety failed',error));
   }
-  if(!localStorage.getItem('ff_seller_session_v1')&&!sessionStorage.getItem('ff_seller_session_v1'))sessionStorage.setItem('ff_seller_session_v1',JSON.stringify({sellerId:'LIVE',storeName:'Seller',email:'',name:'Seller',authProvider:'supabase-pending'}));
 }
 
 window.ffSellerSupabaseReady=(async()=>{

@@ -57,6 +57,18 @@ jobs:
           test -s dist/_headers
           test -s dist/_redirects
           test ! -e "dist/${legacy}.json"
+          test ! -e dist/tests
+          test ! -e dist/sql
+          test ! -e dist/db
+          test ! -e dist/zoho-test.html
+          test ! -e dist/zoho-test.js
+          test ! -e dist/whatsapp-readiness.html
+          test ! -e dist/whatsapp-readiness.js
+          if find dist -type f -name '*.md' -print -quit | grep -q .; then
+            echo 'Internal Markdown documentation leaked into static output.' >&2
+            exit 1
+          fi
+          grep -Fq 'app.js?v=20261024-audit-fix' dist/index.html
 
       - name: Verify Cloudflare route and security safety
         working-directory: seller-panel

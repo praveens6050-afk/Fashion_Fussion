@@ -3,14 +3,15 @@ import path from 'node:path';
 
 const root = process.cwd();
 const dist = path.join(root, 'dist');
-const excludedDirs = new Set(['dist', 'backend', 'api', 'functions', 'node_modules', '.git', '.github']);
-const excludedFiles = new Set(['package.json', 'package-lock.json', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc', 'cloudflare-build.mjs', 'README.md']);
-const RELEASE_TAG = '20260927-verification-fingerprint-v1';
+const excludedDirs = new Set(['dist', 'backend', 'api', 'functions', 'node_modules', '.git', '.github', 'tests', 'test', '__tests__', 'sql', 'db']);
+const excludedFiles = new Set(['package.json', 'package-lock.json', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc', 'cloudflare-build.mjs', 'README.md', 'zoho-test.html', 'zoho-test.js', 'whatsapp-readiness.html', 'whatsapp-readiness.js']);
+const RELEASE_TAG = '20261024-audit-fix';
 
 async function copyTree(src, dest, relative = '') {
   await mkdir(dest, { recursive: true });
   for (const entry of await readdir(src, { withFileTypes: true })) {
-    if (!relative && entry.isDirectory() && excludedDirs.has(entry.name)) continue;
+    if (entry.isDirectory() && excludedDirs.has(entry.name)) continue;
+    if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) continue;
     if (!relative && entry.isFile() && excludedFiles.has(entry.name)) continue;
     const nextRelative = relative ? `${relative}/${entry.name}` : entry.name;
     const from = path.join(src, entry.name);
@@ -39,6 +40,7 @@ async function hardenSellerDashboardBootstrap() {
   html = html.replace(/src=["']supabase-config\.js(?:\?[^"']*)?["']/i, `src="supabase-config.js?v=${RELEASE_TAG}"`);
   html = html.replace(/src=["']portal\.js(?:\?[^"']*)?["']/i, `src="portal.js?v=${RELEASE_TAG}"`);
   html = html.replace(/src=["']navigation-fix\.js(?:\?[^"']*)?["']/i, `src="navigation-fix.js?v=${RELEASE_TAG}"`);
+  html = html.replace(/src=["']app\.js(?:\?[^"']*)?["']/i, `src="app.js?v=${RELEASE_TAG}"`);
 
   // supabase-config.js owns live-integration boot. Remove the legacy duplicate static loader from the page.
   html = html.replace(/\s*<script\b[^>]*src=["']seller-live-integration\.js(?:\?[^"']*)?["'][^>]*><\/script>/ig, '');
@@ -82,7 +84,7 @@ async function hardenRuntimeAssetVersions() {
 
   const portalPath = path.join(dist, 'portal.js');
   let portalSource = await readFile(portalPath, 'utf8');
-  portalSource = portalSource.replace(/seller-finance-compliance-live\.js\?v=[^'"\s]+/g, `seller-finance-compliance-live.js?v=${RELEASE_TAG}`);
+  // Module version strings are maintained by portal.js; do not silently rewrite an unreachable module.
   await writeFile(portalPath, portalSource, 'utf8');
 }
 

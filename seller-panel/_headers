@@ -28,6 +28,15 @@
 /portal.js
   Cache-Control: no-store, max-age=0, no-transform
 
+/app.js
+  Cache-Control: no-store, max-age=0, no-transform
+
+/seller-storage-scope.js
+  Cache-Control: no-store, max-age=0, no-transform
+
+/catalog-enhancements.js
+  Cache-Control: no-store, max-age=0, no-transform
+
 /sidebar-compact.css
   Cache-Control: no-store, max-age=0, no-transform
 
