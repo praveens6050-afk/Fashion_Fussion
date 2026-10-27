@@ -18,6 +18,39 @@ const migration=read('supabase/migrations/20261017110000_admin_seller_lead_crm.s
 const teamMigration=read('supabase/migrations/20261019100000_crm_team_access.sql');
 const teamManagement=read('admin-panel/crm-team-management.js');
 const supportWorkspace=read('admin-panel/crm-support-workspace.js');
+const navigation=read('admin-panel/crm-navigation.js');
+{
+  let observer=null,writes=0;
+  const targets={
+    crmDepartmentModules:{hidden:false,getBoundingClientRect(){return{top:0};}},
+    crmTeamManagement:{hidden:true,getBoundingClientRect(){return{top:0};}}
+  };
+  const links=['crmDepartmentModules','crmTeamManagement'].map(id=>{
+    let hidden=false;
+    const attrs={};
+    const link={dataset:{crmTarget:id},getAttribute(name){return attrs[name]??null;},hasAttribute(name){return Object.prototype.hasOwnProperty.call(attrs,name);},setAttribute(name,value){attrs[name]=String(value);},removeAttribute(name){delete attrs[name];}};
+    Object.defineProperty(link,'hidden',{get(){return hidden;},set(value){
+      if(value){hidden=true;writes++;if(observer)observer.callback([{type:'attributes',attributeName:'hidden',target:link}]);}
+      else hidden=false;
+    }});
+    return link;
+  });
+  const nav={querySelectorAll(selector){return selector==='[data-crm-target]'?links:links.filter(link=>!link.hidden);},contains(target){return links.includes(target);},addEventListener(){}};
+  const dashboard={hidden:true};
+  const document={querySelector(){return nav;},getElementById(id){return id==='dashboard'?dashboard:targets[id];},addEventListener(){}};
+  class MutationObserverMock{constructor(callback){this.callback=callback;observer=this;}observe(){}}
+  const window={addEventListener(){}};
+  const sandbox={document,window,MutationObserver:MutationObserverMock,getComputedStyle(target){return{display:target.hidden?'none':'block'};},innerHeight:900,setTimeout(){return 1;},history:{replaceState(){}}};
+  require('vm').runInNewContext(navigation,sandbox);
+  observer.callback([{type:'attributes',attributeName:'hidden',target:dashboard}]);
+  assert.strictEqual(writes,0,'Hidden CRM dashboard must not trigger navigation mutations');
+  dashboard.hidden=false;
+  observer.callback([{type:'attributes',attributeName:'hidden',target:dashboard}]);
+  assert.strictEqual(writes,1,'Navigation sync should change a hidden link only once');
+  assert.strictEqual(links[1].hidden,true,'Hidden workspace should stay out of navigation');
+  assert.doesNotThrow(()=>observer.callback([{type:'attributes',attributeName:'hidden',target:links[1]}]),'Navigation link updates must not retrigger the observer');
+  assert.strictEqual(writes,1,'Observer should ignore its own navigation-link updates');
+}
 assert(login.includes('crm-login.js?v=20261019-team-management'),'CRM login page must load the team-aware auth controller');
 assert(login.includes('invitation-only')&&login.includes('no public registration'),'CRM login must not advertise public signup');
 assert(loginJs.includes("select('is_admin')")&&loginJs.includes("profile?.is_admin===true"),'Existing admins must retain CRM access');
