@@ -45,6 +45,16 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(origin) });
   if (origin && !allowedOrigins.has(origin)) return json({ error: "ORIGIN_NOT_ALLOWED" }, 403, null);
   if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405, origin);
+  const requestBody = await req.json().catch(() => ({}));
+  const mailboxAddress = String(requestBody?.mailbox_address || "").trim().toLowerCase();
+  const mailboxDepartments: Record<string, string> = {
+    "customer.care@fashionfussion.in": "customer_support",
+    "seller.support@fashionfussion.in": "seller_support",
+    "sales@fashionfussion.in": "sales",
+    "orders@fashionfussion.in": "orders",
+  };
+  const department = mailboxDepartments[mailboxAddress];
+  if (!department) return json({ error: "CRM_MAILBOX_NOT_ALLOWED" }, 400, origin);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -88,6 +98,8 @@ Deno.serve(async (req: Request) => {
     p_state_hash: stateHash,
     p_actor_user_id: user.id,
     p_expires_at: expiresAt,
+    p_mailbox_address: mailboxAddress,
+    p_department: department,
   });
   if (stateError) {
     console.error("[CRM Zoho OAuth] Could not create one-time state:", stateError.message);

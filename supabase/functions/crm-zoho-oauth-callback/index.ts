@@ -1,8 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const callbackUrl = "https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/crm-zoho-oauth-callback";
-const crmUrl = "https://www.crm.fashionfussion.in/crm?zoho_oauth=connected#crmTeamManagement";
-const denialUrl = "https://www.crm.fashionfussion.in/crm?zoho_oauth=denied#crmTeamManagement";
+const crmUrl = "https://www.crm.fashionfussion.in/crm";
 
 function accountsDomain(): string {
   const value = (Deno.env.get("ZOHO_ACCOUNTS_DOMAIN") || "https://accounts.zoho.in").replace(/\/+$/g, "");
@@ -12,10 +11,14 @@ function accountsDomain(): string {
   }
   return value;
 }
-function page(success: boolean, message: string): Response {
+function page(success: boolean, message: string, mailboxAddress = ""): Response {
   const title = success ? "Zoho Mail connected" : "Zoho Mail setup not completed";
   const color = success ? "#067647" : "#b42318";
-  const link = success ? crmUrl : denialUrl;
+  const returnUrl = new URL(crmUrl);
+  returnUrl.searchParams.set("zoho_oauth", success ? "connected" : "denied");
+  if (mailboxAddress) returnUrl.searchParams.set("zoho_mailbox", mailboxAddress);
+  returnUrl.hash = "crmTeamManagement";
+  const link = returnUrl.toString();
   const html = "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
     "<title>" + title + "</title></head><body style=\"font-family:Arial,sans-serif;margin:48px auto;max-width:640px;padding:24px;color:#17202a\">" +
@@ -57,10 +60,15 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const stateHash = await sha256Hex(state);
-  const { data: actorId, error: stateError } = await db.rpc("crm_consume_zoho_oauth_state", {
+  const { data: stateData, error: stateError } = await db.rpc("crm_consume_zoho_oauth_state", {
     p_state_hash: stateHash,
   });
-  if (stateError || !actorId) return page(false, "This authorization request expired or was already used. Start a new connection from CRM.");
+  if (stateError || !stateData?.actor_user_id || !stateData?.mailbox_address || !stateData?.department) {
+    return page(false, "This authorization request expired or was already used. Start a new connection from CRM.");
+  }
+  const actorId = String(stateData.actor_user_id);
+  const mailboxAddress = String(stateData.mailbox_address).trim().toLowerCase();
+  const department = String(stateData.department).trim().toLowerCase();
 
   const { data: profile, error: profileError } = await db
     .from("profiles")
@@ -68,16 +76,16 @@ Deno.serve(async (req: Request) => {
     .eq("id", actorId)
     .maybeSingle();
   if (profileError || profile?.is_admin !== true) {
-    return page(false, "The CRM administrator could not be verified. Start a new connection from CRM.");
+    return page(false, "The CRM administrator could not be verified. Start a new connection from CRM.", mailboxAddress);
   }
-  if (oauthError) return page(false, "Zoho authorization was denied or cancelled.");
-  if (!code || code.length > 4096) return page(false, "Zoho did not return a valid authorization code.");
+  if (oauthError) return page(false, "Zoho authorization was denied or cancelled.", mailboxAddress);
+  if (!code || code.length > 4096) return page(false, "Zoho did not return a valid authorization code.", mailboxAddress);
 
   let authDomain: string;
   try {
     authDomain = accountsDomain();
   } catch {
-    return page(false, "The Zoho accounts region is not configured correctly.");
+    return page(false, "The Zoho accounts region is not configured correctly.", mailboxAddress);
   }
 
   const body = new URLSearchParams({
@@ -96,31 +104,62 @@ Deno.serve(async (req: Request) => {
       redirect: "error",
     });
   } catch {
-    return page(false, "Zoho token exchange could not reach the authorization service. Start a new connection after checking the regional domain.");
+    return page(false, "Zoho token exchange could not reach the authorization service. Start a new connection after checking the regional domain.", mailboxAddress);
   }
   const tokenPayload = await tokenResponse.json().catch(() => ({}));
   if (!tokenResponse.ok || !tokenPayload?.refresh_token) {
     console.error("[CRM Zoho OAuth] Token exchange failed with HTTP", tokenResponse.status);
-    return page(false, "Zoho did not issue a refresh token. Check the OAuth client, region and offline access request, then try again.");
+    return page(false, "Zoho did not issue a refresh token. Check the OAuth client, region and offline access request, then try again.", mailboxAddress);
   }
 
   const returnedScopes = typeof tokenPayload.scope === "string"
     ? tokenPayload.scope.split(/[,\s]+/).map((scope: string) => scope.toLowerCase()).filter(Boolean)
     : [];
-  if (returnedScopes.length && !returnedScopes.some((scope: string) =>
-    scope === "zohomail.messages.create" || scope === "zohomail.messages.all"
+  if (returnedScopes.length && (
+    !returnedScopes.some((scope: string) => scope === "zohomail.accounts.read" || scope === "zohomail.accounts.all") ||
+    !returnedScopes.some((scope: string) => scope === "zohomail.messages.read" || scope === "zohomail.messages.all") ||
+    !returnedScopes.some((scope: string) => scope === "zohomail.messages.create" || scope === "zohomail.messages.all")
   )) {
-    return page(false, "Zoho authorization did not include the mail-send scope. Reconnect and approve ZohoMail.messages.CREATE.");
+    return page(false, "Zoho authorization needs account-read, message-read and message-create access. Reconnect and approve the requested scopes.", mailboxAddress);
   }
 
-  const { error: storeError } = await db.rpc("crm_store_zoho_mail_refresh_token", {
+  const mailApiBase = (Deno.env.get("ZOHO_MAIL_API_BASE") || "https://mail.zoho.in/api").replace(/\/+$/g, "");
+  let accountsResponse: Response;
+  try {
+    accountsResponse = await fetch(mailApiBase + "/accounts", {
+      method: "GET",
+      headers: { "authorization": "Zoho-oauthtoken " + String(tokenPayload.access_token || ""), "accept": "application/json" },
+      redirect: "error",
+    });
+  } catch {
+    return page(false, "Zoho authorized the app, but the mailbox account list could not be read. Check the Zoho Mail API region and try again.", mailboxAddress);
+  }
+  const accountsPayload = await accountsResponse.json().catch(() => ({}));
+  const accounts = Array.isArray(accountsPayload?.data) ? accountsPayload.data : [];
+  const matchedAccount = accounts.find((account: any) => {
+    const candidates = [
+      account?.primaryEmailAddress,
+      account?.mailboxAddress,
+      ...(Array.isArray(account?.emailAddress) ? account.emailAddress.map((entry: any) => entry?.mailId) : []),
+    ];
+    return candidates.some((value: unknown) => String(value || "").trim().toLowerCase() === mailboxAddress);
+  });
+  const zohoAccountId = String(matchedAccount?.accountId || matchedAccount?.account_id || "");
+  if (!accountsResponse.ok || !zohoAccountId) {
+    return page(false, "The signed-in Zoho user does not expose " + mailboxAddress + " as an accessible mailbox. Sign in to that mailbox and connect it again.", mailboxAddress);
+  }
+
+  const { error: storeError } = await db.rpc("crm_store_zoho_mailbox_token", {
     p_actor_user_id: actorId,
+    p_mailbox_address: mailboxAddress,
+    p_department: department,
+    p_zoho_account_id: zohoAccountId,
     p_refresh_token: String(tokenPayload.refresh_token),
   });
   if (storeError) {
     console.error("[CRM Zoho OAuth] Vault storage failed:", storeError.message);
-    return page(false, "Zoho authorized the CRM, but the refresh token could not be saved securely. Contact the CRM administrator.");
+    return page(false, "Zoho authorized the CRM, but the refresh token could not be saved securely. Contact the CRM administrator.", mailboxAddress);
   }
 
-  return page(true, "Zoho Mail authorization succeeded. The refresh token was saved server-side in Supabase Vault.");
+  return page(true, "Connected " + mailboxAddress + ". The credential was saved server-side in Supabase Vault.", mailboxAddress);
 });

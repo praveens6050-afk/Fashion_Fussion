@@ -10,17 +10,18 @@
   const zohoNotice=$('crmZohoNotice');
   function showZohoNotice(message,ok=false){if(zohoNotice){zohoNotice.textContent=message;zohoNotice.style.color=ok?'#067647':'#b42318'}}
   const zohoParams=new URLSearchParams(window.location.search);
-  if(zohoParams.get('zoho_oauth')==='connected')showZohoNotice('Zoho Mail connected. No email was sent.',true);
-  else if(zohoParams.get('zoho_oauth')==='denied')showZohoNotice('Zoho Mail connection was not completed.');
+  const returnedMailbox=zohoParams.get('zoho_mailbox')||'';
+  if(zohoParams.get('zoho_oauth')==='connected')showZohoNotice('Connected '+returnedMailbox+'. Repeat for the other mailboxes. No email was sent.',true);
+  else if(zohoParams.get('zoho_oauth')==='denied')showZohoNotice('Connection was not completed for '+returnedMailbox+'.');
   $('crmZohoConnect')?.addEventListener('click',async()=>{
     const button=$('crmZohoConnect');button.disabled=true;button.textContent='Opening Zoho…';
     try{
       const db=await ready;if(!db?.auth)throw new Error('CRM authentication service unavailable');
       const{data:{session}}=await db.auth.getSession();if(!session?.user)throw new Error('Please sign in again');
-      const{data,error}=await db.functions.invoke('crm-zoho-oauth-start');
+      const mailboxAddress=$('crmZohoMailbox')?.value||'';const{data,error}=await db.functions.invoke('crm-zoho-oauth-start',{body:{mailbox_address:mailboxAddress}});
       if(error||!data?.authorization_url)throw new Error(data?.error||'Could not start Zoho authorization');
       window.location.assign(data.authorization_url);
-    }catch(error){showZohoNotice(error.message||'Could not start Zoho authorization');button.disabled=false;button.textContent='Connect Zoho Mail'}
+    }catch(error){showZohoNotice(error.message||'Could not start Zoho authorization');button.disabled=false;button.textContent='Connect selected mailbox'}
   });
   async function load(){
     const{db}=await client();
