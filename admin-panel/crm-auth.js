@@ -1,21 +1,51 @@
 'use strict';
 (function () {
-  const VERSION = '2026-10-23-live-ready-1';
+  const VERSION = '2026-10-27-auth-stall-timeout-1';
   window.__FF_CRM_AUTH_VERSION = VERSION;
 
   const $ = (id) => document.getElementById(id);
   const LOGIN_URL = 'crm-login.html';
   const ALLOWED_ROLES = ['customer_support', 'seller_support', 'sales', 'marketing'];
 
-  // Every external operation must settle or produce a visible failure state.
-  function withTimeout(value, ms, message) {
-    let timer;
-    return Promise.race([
-      Promise.resolve().then(() => value),
-      new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), ms);
-      })
-    ]).finally(() => clearTimeout(timer));
+  function setProgress(state, message) {
+    const dashboard = $('dashboard');
+    if (dashboard) dashboard.dataset.crmAuthState = state;
+    const label = $('crmEmail');
+    if (label) label.textContent = message;
+  }
+
+  // A stalled fetch must not keep the CRM on its loading screen indefinitely.
+  function withTimeout(value, ms, message, onTimeout) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (callback, result) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        callback(result);
+      };
+      const timer = setTimeout(() => {
+        try { if (onTimeout) onTimeout(); } catch (error) {
+          console.warn('[CRM] Could not abort timed-out request:', error);
+        }
+        finish(reject, new Error(message));
+      }, ms);
+      Promise.resolve().then(() => value).then(
+        (result) => finish(resolve, result),
+        (error) => finish(reject, error)
+      );
+    });
+  }
+
+  function queryWithTimeout(query, ms, message) {
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    if (controller && query && typeof query.abortSignal === 'function') {
+      query.abortSignal(controller.signal);
+    }
+    const pending = query && typeof query.maybeSingle === 'function' ? query.maybeSingle() : query;
+    return withTimeout(pending, ms, message, () => {
+      if (controller) controller.abort();
+    });
   }
 
   function showDenied(message) {
@@ -56,8 +86,9 @@
   async function resolveRole(db, user) {
     if (!user || !user.id) return null;
 
-    const profileResult = await withTimeout(
-      db.from('profiles').select('is_admin').eq('id', user.id).maybeSingle(),
+    setProgress('checking-profile', 'Checking administrator access…');
+    const profileResult = await queryWithTimeout(
+      db.from('profiles').select('is_admin').eq('id', user.id),
       10000,
       'Administrator profile check timed out.'
     );
@@ -65,8 +96,9 @@
       return 'administrator';
     }
 
-    const memberResult = await withTimeout(
-      db.from('crm_team_members').select('email,role,is_active').eq('user_id', user.id).maybeSingle(),
+    setProgress('checking-membership', 'Checking CRM team membership…');
+    const memberResult = await queryWithTimeout(
+      db.from('crm_team_members').select('email,role,is_active').eq('user_id', user.id),
       10000,
       'CRM team membership check timed out.'
     );
@@ -99,6 +131,7 @@
     const loading = $('loadingScreen');
     const dashboard = $('dashboard');
     if (loading) loading.hidden = false;
+    setProgress('checking-client', 'Connecting to CRM access service…');
     if (dashboard) {
       dashboard.hidden = true;
       dashboard.dataset.adminReady = 'false';
@@ -106,6 +139,7 @@
     }
 
     const db = await getClient();
+    setProgress('checking-session', 'Checking signed-in session…');
     const sessionResult = await withTimeout(
       db.auth.getSession(),
       10000,
@@ -140,6 +174,7 @@
 
     const email = $('crmEmail');
     if (email) email.textContent = (user.email || 'CRM user') + ' · ' + role;
+    setProgress('authorized', (user.email || 'CRM user') + ' · ' + role);
     if (dashboard) {
       dashboard.dataset.crmRole = role;
       dashboard.dataset.crmDepartment = role;
@@ -208,9 +243,9 @@
   const watchdog = setTimeout(() => {
     const dashboard = $('dashboard');
     if (dashboard && dashboard.dataset.adminReady !== 'true') {
-      showDenied('CRM access verification took too long. Refresh the page; if this repeats, check the Supabase SDK, session request, and CRM access-table requests in DevTools.');
+      showDenied('CRM access check did not finish within 25 seconds. Refresh the page; the last check is shown above.');
     }
-  }, 35000);
+  }, 25000);
 
   init().catch((error) => {
     console.error('[CRM] Access check failed:', error);
