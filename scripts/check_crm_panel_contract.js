@@ -57,6 +57,7 @@ assert(loginJs.includes("select('is_admin')")&&loginJs.includes("profile?.is_adm
 assert(loginJs.includes("from('crm_team_members')")&&loginJs.includes("['customer_support','seller_support','sales','marketing']"),'CRM sign-in must allow only explicitly authorized sales/marketing roles');
 assert(loginJs.includes("location.replace('crm.html')"),'Verified CRM users must be routed to CRM');
 assert(page.includes('id="dashboard"')&&page.includes('data-admin-ready="false"'),'CRM page must remain hidden until authorization succeeds');
+assert(page.includes('crm-navigation.js?v=20261027-observer-loop-1'),'CRM page must bypass cached navigation code after the observer fix');
 assert(auth.includes("from('crm_team_members')")&&auth.includes('member.is_active !== true')&&auth.includes('String(member && member.email || \'\').trim().toLowerCase()'),'CRM route must independently enforce active membership and matching email');
 assert(auth.includes('function redirectToLogin()')&&auth.includes('location.replace(LOGIN_URL)'),'CRM must redirect on sign-out');
 assert(config.includes('location.pathname.replace(')&&config.includes("isCrmPage=page==='crm'||page==='crm.html'"),'CRM clean and .html routes must be detected explicitly');
