@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
     return page(false, "Zoho authorization needs account-read, message-read and message-create access. Reconnect and approve the requested scopes.", mailboxAddress);
   }
 
-  const mailApiBase = (Deno.env.get("ZOHO_MAIL_API_BASE") || "https://mail.zoho.in/api").replace(/\\/+$/g, "");
+  const mailApiBase = (Deno.env.get("ZOHO_MAIL_API_BASE") || "https://mail.zoho.in/api").replace(/\/+$/g, "");
   let accountsResponse: Response;
   try {
     accountsResponse = await fetch(mailApiBase + "/accounts", {
