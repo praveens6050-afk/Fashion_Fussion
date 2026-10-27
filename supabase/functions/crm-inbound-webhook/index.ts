@@ -144,8 +144,7 @@ Deno.serve(async (req) => {
           }).filter(Boolean);
         // Orders are handled by the dedicated order-notification workflow, never the support CRM.
         const crmRecipients = recipients.filter((address: string) =>
-          address !== "orders@fashionfussion.in" &&
-          ["customer.care@fashionfussion.in", "seller.support@fashionfussion.in", "seller-support@fashionfussion.in", "sales.team@fashionfussion.in", "sales@fashionfussion.in", "marketing@fashionfussion.in", "campaigns@fashionfussion.in"].includes(address)
+          ["customer.care@fashionfussion.in", "seller.support@fashionfussion.in", "seller-support@fashionfussion.in", "orders@fashionfussion.in", "sales.team@fashionfussion.in", "sales@fashionfussion.in", "marketing@fashionfussion.in", "campaigns@fashionfussion.in"].includes(address)
         );
         if (!id || !body.trim() || !senderEmail.includes("@") || !crmRecipients.length) continue;
         const inboxAddress = crmRecipients[0];
