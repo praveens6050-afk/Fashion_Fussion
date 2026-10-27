@@ -2,7 +2,7 @@
 (function(){
   const $=id=>document.getElementById(id);
   const ready=window.ffAdminSupabaseReady||Promise.resolve(window.supabaseClient);
-  const labels={customer_support:'Customer Support',seller_support:'Seller Support',sales:'Sales',marketing:'Marketing'};
+  const labels={customer_support:'Customer Support',seller_support:'Seller Support',sales:'Sales',marketing:'Marketing',orders:'Orders'};
   const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   function notice(message,ok=false){const el=$('crmTeamNotice');if(el){el.textContent=message;el.style.color=ok?'#067647':'#b42318'}}
   function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
