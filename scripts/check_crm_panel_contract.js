@@ -16,6 +16,7 @@ const pagesNotificationApi=read('admin-panel/functions/api/admin-crm-notificatio
 const notificationMigration=read('supabase/migrations/20261017120000_admin_crm_notification_snapshot.sql');
 const migration=read('supabase/migrations/20261017110000_admin_seller_lead_crm.sql');
 const teamMigration=read('supabase/migrations/20261019100000_crm_team_access.sql');
+const inboxRoleMigration=read('supabase/migrations/20261027160000_crm_orders_role_and_inbox_routing.sql');
 const teamManagement=read('admin-panel/crm-team-management.js');
 const supportWorkspace=read('admin-panel/crm-support-workspace.js');
 const navigation=read('admin-panel/crm-navigation.js');
@@ -138,7 +139,7 @@ assert(sendFunction.includes('ZOHO_REFRESH_TOKEN')&&sendFunction.includes('ZOHO_
 assert(sendFunction.includes('/messages/\"+encodeURIComponent(zohoMessageId)')&&sendFunction.includes('ZOHO_ORIGINAL_MESSAGE_ID_MISSING'),'Email replies must use the original Zoho message ID and fail closed if absent');
 assert(inboxWebhook.includes('const internalZohoId = m.zoho_message_id || m.zohoMessageId || m.zohoInternalMessageId || null')&&inboxWebhook.includes('zoho_message_id: internalZohoId ? String(internalZohoId) : null'),'Email ingestion must retain the explicit Zoho internal message ID for replies without assuming the external ID is the Zoho ID');
 assert(inboxWebhook.includes('m.externalMessageId')&&inboxWebhook.includes('const senderRaw = String(m.from_email || m.fromEmail || m.from || "")'),'Zoho intake must accept the documented normalized bridge payload');
-assert(inboxWebhook.includes('address !== "orders@fashionfussion.in"'),'Orders mailbox must be excluded from the CRM support inbox');
+assert(inboxWebhook.includes('"orders@fashionfussion.in"')&&inboxRoleMigration.includes("v_department:='orders'")&&inboxRoleMigration.includes("'orders'::text"),'Orders mailbox must route into the separately scoped Orders CRM role');
 assert(sendMigration.includes('received_at,last_inbound_at,metadata')&&sendMigration.includes('now(),now(),coalesce(p_metadata'),'New WhatsApp conversations must record the inbound timestamp for 24-hour enforcement');
 assert(sendMigration.includes('on conflict(provider_message_id,direction) do nothing returning id into v_message_id')&&sendMigration.includes('if v_message_id is null then return v_id; end if;'),'Duplicate inbound webhook replays must not refresh the WhatsApp 24-hour reply window');
 assert(sendFunction.includes('crm_inbox_send_attempts')&&sendFunction.includes('crm_inbox_messages')&&sendFunction.includes('delivery_status:"sent"'),'Provider sends must be recorded in the CRM audit/message history');
