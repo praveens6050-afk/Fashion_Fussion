@@ -5,7 +5,7 @@ const allowedOrigins = new Set([
   "https://crm.fashionfussion.in",
 ]);
 const callbackUrl = "https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/crm-zoho-oauth-callback";
-const scopes = "ZohoMail.accounts.READ,ZohoMail.messages.CREATE";
+const scopes = "ZohoMail.accounts.READ,ZohoMail.messages.READ,ZohoMail.messages.CREATE";
 const baseHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
