@@ -12,26 +12,22 @@ const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0,max);
 const label: Record<string,string> = {customer_support:"Customer Support",seller_support:"Seller Support",sales:"Sales",marketing:"Marketing",orders:"Orders"};
 const fromEnv = (role:string) => {
   const key = ({customer_support:"CRM_FROM_CUSTOMER_CARE",seller_support:"CRM_FROM_SELLER_SUPPORT",sales:"CRM_FROM_SALES_TEAM",marketing:"CRM_FROM_MARKETING",orders:"CRM_FROM_ORDERS"} as Record<string,string>)[role];
-  return key ? Deno.env.get(key) || "" : "";
+  const fallback = ({customer_support:"customer.care@fashionfussion.in",seller_support:"seller.support@fashionfussion.in",sales:"sales@fashionfussion.in",marketing:"sales@fashionfussion.in",orders:"orders@fashionfussion.in"} as Record<string,string>)[role];
+  return key ? Deno.env.get(key) || fallback || "" : "";
 };
-async function zohoToken(): Promise<string> {
-  const existing=Deno.env.get("ZOHO_ACCESS_TOKEN");
-  const refresh=Deno.env.get("ZOHO_REFRESH_TOKEN");
-  if (!refresh) {
-    if (existing) return existing;
-    throw new Error("ZOHO_SENDER_NOT_CONFIGURED");
-  }
+async function zohoToken(db:any, role:string): Promise<{accessToken:string;accountId:string}> {
+  const {data:mailbox,error}=await db.rpc("crm_get_zoho_mailbox_auth",{p_department:role});
+  if(error||!mailbox?.refresh_token||!mailbox?.zoho_account_id) throw new Error("ZOHO_MAILBOX_NOT_CONNECTED");
   const clientId=Deno.env.get("ZOHO_CLIENT_ID"), clientSecret=Deno.env.get("ZOHO_CLIENT_SECRET");
   if(!clientId||!clientSecret) throw new Error("ZOHO_OAUTH_NOT_CONFIGURED");
   const dc=(Deno.env.get("ZOHO_ACCOUNTS_DOMAIN")||"https://accounts.zoho.in").replace(/\/$/, "");
-  const body=new URLSearchParams({refresh_token:refresh,client_id:clientId,client_secret:clientSecret,grant_type:"refresh_token"});
-  const res=await fetch(dc+"/oauth/v2/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});
+  const body=new URLSearchParams({refresh_token:String(mailbox.refresh_token),client_id:clientId,client_secret:clientSecret,grant_type:"refresh_token"});
+  const res=await fetch(dc+"/oauth/v2/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body,redirect:"error"});
   const data=await res.json().catch(()=>({}));
   if(!res.ok||!data.access_token) throw new Error("ZOHO_TOKEN_REFRESH_FAILED");
-  return String(data.access_token);
+  return {accessToken:String(data.access_token),accountId:String(mailbox.zoho_account_id)};
 }
-async function sendEmail(c:any, body:string, requestId:string, role:string) {
-  const accountId=Deno.env.get("ZOHO_MAIL_ACCOUNT_ID");
+async function sendEmail(db:any, c:any, body:string, requestId:string, role:string) {
   const sender=fromEnv(role);
   const recipient=clean(c.contact_email,254);
   const zohoMessageId=clean(c.metadata?.zoho_message_id,80);
@@ -39,7 +35,7 @@ async function sendEmail(c:any, body:string, requestId:string, role:string) {
   // Zoho's documented reply endpoint needs the provider's internal message ID.
   // Do not silently send a new thread when the adapter has not supplied it.
   if(!/^[0-9]+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
-  const token=await zohoToken();
+  const {accessToken:token,accountId}=await zohoToken(db,role);
   const api=(Deno.env.get("ZOHO_MAIL_API_BASE")||"https://mail.zoho.in/api").replace(/\/$/, "");
   const content="<p>"+body.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")+"</p>";
   const payload={fromAddress:sender,toAddress:recipient,content,action:"reply",mailFormat:"html",encoding:"UTF-8"};
@@ -95,7 +91,7 @@ Deno.serve(async(req)=>{
   if(!role) return response({error:"CRM_ACCESS_DENIED"},403,origin);
   const {data:c,error:cError}=await db.from("crm_inbox_conversations").select("*").eq("id",conversationId).maybeSingle();
   if(cError||!c) return response({error:"CONVERSATION_NOT_FOUND"},404,origin);
-  const sharedSalesMarketing = String(c.inbox_address||"").trim().toLowerCase()==="sales.team@fashionfussion.in" && ["sales","marketing"].includes(role);
+  const sharedSalesMarketing = ["sales.team@fashionfussion.in","sales@fashionfussion.in"].includes(String(c.inbox_address||"").trim().toLowerCase()) && ["sales","marketing"].includes(role);
   if(role!=="administrator"&&role!==c.department&&!sharedSalesMarketing) return response({error:"DEPARTMENT_ACCESS_DENIED"},403,origin);
   if(sharedSalesMarketing&&!c.assigned_to){
     const {data:claimed}=await db.from("crm_inbox_conversations").update({assigned_to:user.id,updated_at:new Date().toISOString()}).eq("id",conversationId).is("assigned_to",null).select("id").maybeSingle();
@@ -117,7 +113,7 @@ Deno.serve(async(req)=>{
   }
   try{
     const senderRole=sharedSalesMarketing ? role : c.department;
-    const sent=c.provider==="email"?await sendEmail(c,body,requestId,senderRole):await sendWhatsApp(c,body,requestId);
+    const sent=c.provider==="email"?await sendEmail(db,c,body,requestId,senderRole):await sendWhatsApp(c,body,requestId);
     const {error:messageError}=await db.from("crm_inbox_messages").insert({conversation_id:conversationId,provider_message_id:sent.id,direction:"outbound",sender_label:user.email||label[role],body,metadata:{provider:sent.provider,request_id:requestId,actor_user_id:user.id},send_request_id:requestId,delivery_status:"sent"});
     if(messageError) throw new Error("MESSAGE_AUDIT_WRITE_FAILED");
     await db.from("crm_inbox_conversations").update({latest_message:body,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conversationId);
