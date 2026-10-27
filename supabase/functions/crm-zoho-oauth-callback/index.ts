@@ -161,5 +161,5 @@ Deno.serve(async (req: Request) => {
     return page(false, "Zoho authorized the CRM, but the refresh token could not be saved securely. Contact the CRM administrator.", mailboxAddress);
   }
 
-  return page(true, "Connected " + mailboxAddress + ". The credential was saved server-side in Supabase Vault.");
+  return page(true, "Connected " + mailboxAddress + ". The credential was saved server-side in Supabase Vault.", mailboxAddress);
 });
