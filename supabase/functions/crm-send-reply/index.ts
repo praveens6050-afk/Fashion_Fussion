@@ -31,7 +31,7 @@ async function sendEmail(db:any, c:any, body:string, requestId:string, role:stri
   const sender=fromEnv(role);
   const recipient=clean(c.contact_email,254);
   const zohoMessageId=clean(c.metadata?.zoho_message_id,80);
-  if(!accountId||!sender||!recipient||!recipient.includes("@")) throw new Error("EMAIL_SENDER_NOT_CONFIGURED");
+  if(!sender||!recipient||!recipient.includes("@")) throw new Error("EMAIL_SENDER_NOT_CONFIGURED");
   // Zoho's documented reply endpoint needs the provider's internal message ID.
   // Do not silently send a new thread when the adapter has not supplied it.
   if(!/^[0-9]+$/.test(zohoMessageId)) throw new Error("ZOHO_ORIGINAL_MESSAGE_ID_MISSING");
