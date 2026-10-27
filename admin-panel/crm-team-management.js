@@ -2,11 +2,26 @@
 (function(){
   const $=id=>document.getElementById(id);
   const ready=window.ffAdminSupabaseReady||Promise.resolve(window.supabaseClient);
-  const labels={customer_support:'Customer Support',seller_support:'Seller Support',sales:'Sales',marketing:'Marketing'};
+  const labels={customer_support:'Customer Support',seller_support:'Seller Support',sales:'Sales',marketing:'Marketing',orders:'Orders'};
   const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   function notice(message,ok=false){const el=$('crmTeamNotice');if(el){el.textContent=message;el.style.color=ok?'#067647':'#b42318'}}
   function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
   async function client(){const db=await ready;if(!db?.auth)throw new Error('CRM authentication service unavailable');const{data:{session}}=await db.auth.getSession();if(!session?.user)throw new Error('Please sign in again');const{data:profile,error}=await db.from('profiles').select('is_admin').eq('id',session.user.id).maybeSingle();if(error||profile?.is_admin!==true)throw new Error('Only verified CRM administrators can manage team access');return{db,user:session.user}}
+  const zohoNotice=$('crmZohoNotice');
+  function showZohoNotice(message,ok=false){if(zohoNotice){zohoNotice.textContent=message;zohoNotice.style.color=ok?'#067647':'#b42318'}}
+  const zohoParams=new URLSearchParams(window.location.search);
+  if(zohoParams.get('zoho_oauth')==='connected')showZohoNotice('Zoho Mail connected. No email was sent.',true);
+  else if(zohoParams.get('zoho_oauth')==='denied')showZohoNotice('Zoho Mail connection was not completed.');
+  $('crmZohoConnect')?.addEventListener('click',async()=>{
+    const button=$('crmZohoConnect');button.disabled=true;button.textContent='Opening Zoho…';
+    try{
+      const db=await ready;if(!db?.auth)throw new Error('CRM authentication service unavailable');
+      const{data:{session}}=await db.auth.getSession();if(!session?.user)throw new Error('Please sign in again');
+      const{data,error}=await db.functions.invoke('crm-zoho-oauth-start');
+      if(error||!data?.authorization_url)throw new Error(data?.error||'Could not start Zoho authorization');
+      window.location.assign(data.authorization_url);
+    }catch(error){showZohoNotice(error.message||'Could not start Zoho authorization');button.disabled=false;button.textContent='Connect Zoho Mail'}
+  });
   async function load(){
     const{db}=await client();
     const{data,error}=await db.from('crm_team_members').select('user_id,email,role,is_active,created_at').order('created_at',{ascending:false});

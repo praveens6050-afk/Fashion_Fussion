@@ -9,9 +9,9 @@ const corsHeaders = {
 const corsFor = (origin: string | null) => ({...corsHeaders,...(origin && allowedOrigins.has(origin) ? {"Access-Control-Allow-Origin": origin} : {})});
 const response = (body: unknown, status=200, origin: string | null = null) => new Response(JSON.stringify(body), {status,headers:{...corsFor(origin),"Content-Type":"application/json","Cache-Control":"no-store"}});
 const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0,max);
-const label: Record<string,string> = {customer_support:"Customer Support",seller_support:"Seller Support",sales:"Sales",marketing:"Marketing"};
+const label: Record<string,string> = {customer_support:"Customer Support",seller_support:"Seller Support",sales:"Sales",marketing:"Marketing",orders:"Orders"};
 const fromEnv = (role:string) => {
-  const key = ({customer_support:"CRM_FROM_CUSTOMER_CARE",seller_support:"CRM_FROM_SELLER_SUPPORT",sales:"CRM_FROM_SALES_TEAM",marketing:"CRM_FROM_MARKETING"} as Record<string,string>)[role];
+  const key = ({customer_support:"CRM_FROM_CUSTOMER_CARE",seller_support:"CRM_FROM_SELLER_SUPPORT",sales:"CRM_FROM_SALES_TEAM",marketing:"CRM_FROM_MARKETING",orders:"CRM_FROM_ORDERS"} as Record<string,string>)[role];
   return key ? Deno.env.get(key) || "" : "";
 };
 async function zohoToken(): Promise<string> {

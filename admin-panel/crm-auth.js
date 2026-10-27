@@ -1,11 +1,11 @@
 'use strict';
 (function () {
-  const VERSION = '2026-10-27-auth-stall-timeout-1';
+  const VERSION = '2026-10-27-zoho-oauth-1';
   window.__FF_CRM_AUTH_VERSION = VERSION;
 
   const $ = (id) => document.getElementById(id);
   const LOGIN_URL = 'crm-login.html';
-  const ALLOWED_ROLES = ['customer_support', 'seller_support', 'sales', 'marketing'];
+  const ALLOWED_ROLES = ['customer_support', 'seller_support', 'sales', 'marketing', 'orders'];
 
   function setProgress(state, message) {
     const dashboard = $('dashboard');
@@ -202,7 +202,7 @@
     const modules = [
       ['crm-unified-inbox.js?v=20261023-live-ready-1', 'unified inbox']
     ];
-    if (role === 'administrator') modules.push(['crm-team-management.js?v=20261023-live-ready-1', 'team management']);
+    if (role === 'administrator') modules.push(['crm-team-management.js?v=20261027-zoho-oauth-1', 'team management']);
     if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261023-live-ready-1', 'sales workspace']);
     if (['customer_support', 'seller_support'].includes(role)) modules.push(['crm-support-workspace.js?v=20261023-live-ready-1', 'support workspace']);
 
