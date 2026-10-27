@@ -1,11 +1,11 @@
 'use strict';
 (function () {
-  const VERSION = '2026-10-27-auth-stall-timeout-1';
+  const VERSION = '2026-10-27-zoho-oauth-1';
   window.__FF_CRM_AUTH_VERSION = VERSION;
 
   const $ = (id) => document.getElementById(id);
   const LOGIN_URL = 'crm-login.html';
-  const ALLOWED_ROLES = ['customer_support', 'seller_support', 'sales', 'marketing'];
+  const ALLOWED_ROLES = ['customer_support', 'seller_support', 'sales', 'marketing', 'orders'];
 
   function setProgress(state, message) {
     const dashboard = $('dashboard');
