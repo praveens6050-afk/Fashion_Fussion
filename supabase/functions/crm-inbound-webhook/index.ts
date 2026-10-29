@@ -52,9 +52,19 @@ Deno.serve(async (req) => {
   if (isWhatsApp) {
     const secret = Deno.env.get("META_APP_SECRET");
     const signature = req.headers.get("x-hub-signature-256") || "";
-    if (!secret || !signature.startsWith("sha256=")) return json({ error: "WhatsApp signature configuration missing" }, 401);
+    if (!secret) {
+      console.warn("[CRM WhatsApp webhook] rejected: META_APP_SECRET_NOT_CONFIGURED");
+      return json({ error: "WhatsApp signature configuration missing" }, 401);
+    }
+    if (!signature.startsWith("sha256=")) {
+      console.warn("[CRM WhatsApp webhook] rejected: SIGNATURE_HEADER_MISSING");
+      return json({ error: "WhatsApp signature configuration missing" }, 401);
+    }
     const expected = "sha256=" + await hmac(secret, raw);
-    if (!safeEqual(signature, expected)) return json({ error: "Invalid WhatsApp signature" }, 401);
+    if (!safeEqual(signature, expected)) {
+      console.warn("[CRM WhatsApp webhook] rejected: SIGNATURE_MISMATCH");
+      return json({ error: "Invalid WhatsApp signature" }, 401);
+    }
   } else {
     const secret = Deno.env.get("CRM_EMAIL_WEBHOOK_SECRET");
     const signature = (req.headers.get("x-ff-inbox-signature") || "").replace(/^sha256=/, "");
