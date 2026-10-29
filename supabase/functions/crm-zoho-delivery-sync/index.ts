@@ -78,21 +78,30 @@ Deno.serve(async (req: Request) => {
     const now = Date.now();
     const logs: any[] = [];
     for (const fromAddress of fromAddresses) {
-      const body = {
-        fromDateTime: Math.max(cutoff, minSent - 15 * 60 * 1000), toDateTime: now,
-        searchCriteria: "fromAddr", searchKey: fromAddress, limit: 500,
-        isNext: false, isPrevious: false, pageKey: "false", prevKey: "false", isReverseSearch: false,
-      };
-      const logResponse = await fetch(apiBase + "/organization/" + encodeURIComponent(zoid) + "/smtplogs", {
-        method: "POST", headers: { ...authHeaders, "content-type": "application/json" }, body: JSON.stringify(body), redirect: "error",
-      });
-      const logPayload = await logResponse.json().catch(() => ({}));
-      if (logResponse.status === 401 || logResponse.status === 403 || String(logPayload?.status?.code || "") === "403") {
-        return json({ ok: false, error: "ZOHO_DELIVERY_SCOPE_REQUIRED" }, 200, origin);
+      let nextPage = false;
+      let pageKey = "false";
+      for (let page = 0; page < 5; page++) {
+        const body = {
+          fromDateTime: Math.max(cutoff, minSent - 15 * 60 * 1000), toDateTime: now,
+          searchCriteria: "fromAddr", searchKey: fromAddress, limit: 500,
+          isNext: nextPage, isPrevious: false, pageKey, prevKey: "false", isReverseSearch: false,
+        };
+        const logResponse = await fetch(apiBase + "/organization/" + encodeURIComponent(zoid) + "/smtplogs", {
+          method: "POST", headers: { ...authHeaders, "content-type": "application/json" }, body: JSON.stringify(body), redirect: "error",
+        });
+        const logPayload = await logResponse.json().catch(() => ({}));
+        if (logResponse.status === 401 || logResponse.status === 403 || String(logPayload?.status?.code || "") === "403") {
+          return json({ ok: false, error: "ZOHO_DELIVERY_SCOPE_REQUIRED" }, 200, origin);
+        }
+        if (!logResponse.ok || String(logPayload?.status?.code || "200") !== "200") return json({ error: "ZOHO_DELIVERY_LOGS_FAILED" }, 502, origin);
+        const logData = logPayload?.data;
+        const items = logData?.response;
+        if (Array.isArray(items)) logs.push(...items);
+        const nextKey = String(logData?.pagekey || "");
+        if (String(logData?.hnxt || "").toLowerCase() !== "true" || !nextKey) break;
+        nextPage = true;
+        pageKey = nextKey;
       }
-      if (!logResponse.ok || String(logPayload?.status?.code || "200") !== "200") return json({ error: "ZOHO_DELIVERY_LOGS_FAILED" }, 502, origin);
-      const items = logPayload?.data?.response;
-      if (Array.isArray(items)) logs.push(...items);
     }
 
     let updated = 0;
