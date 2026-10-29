@@ -1,0 +1,38 @@
+name: CRM module contract
+on:
+  pull_request:
+    paths:
+      - 'crm-panel/**'
+      - '.github/workflows/crm-module-contract.yml'
+  push:
+    branches:
+      - 'crm-panel/module-migration-phase1'
+    paths:
+      - 'crm-panel/**'
+      - '.github/workflows/crm-module-contract.yml'
+  workflow_dispatch:
+jobs:
+  module-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check CRM module assets and access contract
+        run: node crm-panel/check-module-contract.js
+      - name: Check copied CRM JavaScript syntax
+        run: |
+          node --check crm-panel/crm-auth.js
+          node --check crm-panel/crm-login.js
+          node --check crm-panel/crm-navigation.js
+          node --check crm-panel/crm-unified-inbox.js
+          node --check crm-panel/admin-crm-whatsapp-inbox.js
+          node --check crm-panel/crm-department-workspaces.js
+          node --check crm-panel/crm-sales-workspace.js
+          node --check crm-panel/crm-support-workspace.js
+          node --check crm-panel/crm-team-management.js
+          node --check crm-panel/admin-crm.js
+          node --check crm-panel/admin-crm-followups.js
+          node --check crm-panel/admin-crm-directory.js
+          node --check crm-panel/admin-crm-notifications.js
