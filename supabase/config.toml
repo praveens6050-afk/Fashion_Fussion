@@ -8,3 +8,8 @@ verify_jwt = false
 [functions.crm-send-reply]
 # The function validates the Supabase session and CRM role before sending.
 verify_jwt = true
+
+[functions.crm-zoho-inbox-sync]
+  # Only the authenticated CRM administrator may synchronize the connected Zoho inbox.
+  verify_jwt = true
+

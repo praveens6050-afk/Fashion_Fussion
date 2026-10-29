@@ -117,6 +117,7 @@ Deno.serve(async (req: Request) => {
     : [];
   if (returnedScopes.length && (
     !returnedScopes.some((scope: string) => scope === "zohomail.accounts.read" || scope === "zohomail.accounts.all") ||
+    !returnedScopes.some((scope: string) => scope === "zohomail.folders.read" || scope === "zohomail.folders.all") ||
     !returnedScopes.some((scope: string) => scope === "zohomail.messages.read" || scope === "zohomail.messages.all") ||
     !returnedScopes.some((scope: string) => scope === "zohomail.messages.create" || scope === "zohomail.messages.all")
   )) {

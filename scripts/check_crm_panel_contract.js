@@ -132,6 +132,7 @@ const sendFunction=read('supabase/functions/crm-send-reply/index.ts');
 const zohoPrimaryMigration=read('supabase/migrations/20261027180000_crm_zoho_primary_alias_oauth.sql');
 const zohoOAuthStart=read('supabase/functions/crm-zoho-oauth-start/index.ts');
 const zohoOAuthCallback=read('supabase/functions/crm-zoho-oauth-callback/index.ts');
+const zohoInboxSync=read('supabase/functions/crm-zoho-inbox-sync/index.ts');
 assert(sendMigration.includes('crm_inbox_send_attempts')&&sendMigration.includes('request_id uuid not null unique'),'Outbound send attempts must have unique idempotency keys');
 assert(sendMigration.includes('crm_inbox_can_access_conversation')&&sendMigration.includes('sales.team@fashionfussion.in'),'Sales/Marketing shared inbox must be visible through database RLS');
 assert(sendFunction.includes('sharedSalesMarketing')&&sendFunction.includes('CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT'),'Shared Sales/Marketing replies must honor single assigned owner');
@@ -143,6 +144,11 @@ assert(page.includes('Primary mailbox:</strong> admin@fashionfussion.in')&&!page
 assert(teamManagement.includes("const mailboxAddress='admin@fashionfussion.in'")&&teamManagement.includes('department aliases will use this mailbox'),'Admin OAuth must connect the primary mailbox and explain department alias mapping');
 assert(zohoOAuthStart.includes('"admin@fashionfussion.in": "administrator"')&&!zohoOAuthStart.includes('"customer.care@fashionfussion.in": "customer_support"'),'OAuth start must permit the primary account and reject separate alias connections');
 assert(zohoOAuthCallback.includes('primaryEmailAddress')&&zohoOAuthCallback.includes('mailboxAddress !== "admin@fashionfussion.in"'),'OAuth callback must verify the actual primary mailbox identity');
+assert(zohoOAuthStart.includes('ZohoMail.folders.READ')&&zohoOAuthCallback.includes('zohomail.folders.read'),'Zoho OAuth must request and validate read-only folder scope for inbox synchronization');
+assert(zohoInboxSync.includes('profile?.is_admin !== true')&&zohoInboxSync.includes('crm_get_zoho_mailbox_auth'),'Zoho inbox sync must require an administrator and use the server-side primary mailbox grant');
+assert(zohoInboxSync.includes('/folders",')&&zohoInboxSync.includes('/messages/view?')&&zohoInboxSync.includes('crm_ingest_inbound_message'),'Zoho inbox sync must list the Inbox folder and ingest new email into the CRM');
+assert(zohoInboxSync.includes('ZOHO_MAIL_API_BASE')&&zohoInboxSync.includes('ZOHO_TOKEN_REFRESH_FAILED'),'Zoho inbox sync must use the configured regional API and refresh the OAuth access token server-side');
+assert(inboxUi.includes("functions.invoke('crm-zoho-inbox-sync'")&&inboxUi.includes("role==='administrator'")&&inboxUi.includes('5*60*1000'),'Only CRM admins should trigger a periodic Zoho inbox sync');
 assert(zohoPrimaryMigration.includes("v_address <> 'admin@fashionfussion.in'")&&zohoPrimaryMigration.includes("c.mailbox_address IN ('admin@fashionfussion.in', v_address)")&&zohoPrimaryMigration.includes("ORDER BY (c.mailbox_address = 'admin@fashionfussion.in') DESC"),'All department auth lookups must prefer the single primary OAuth token while retaining legacy fallback');
 assert(sendFunction.includes('marketing:"marketing@fashionfussion.in"'),'Marketing replies must use the configured Marketing alias');
 assert(sendFunction.includes('/messages/\"+encodeURIComponent(zohoMessageId)')&&sendFunction.includes('ZOHO_ORIGINAL_MESSAGE_ID_MISSING'),'Email replies must use the original Zoho message ID and fail closed if absent');
@@ -154,10 +160,11 @@ assert(sendMigration.includes('on conflict(provider_message_id,direction) do not
 assert(sendFunction.includes('crm_inbox_send_attempts')&&sendFunction.includes('crm_inbox_messages')&&sendFunction.includes('delivery_status:"sent"'),'Provider sends must be recorded in the CRM audit/message history');
 assert(inboxUi.includes("functions.invoke('crm-send-reply'")&&inboxUi.includes('crypto.randomUUID()')&&inboxUi.includes('crmInboxReplyForm'),'CRM inbox must include an idempotency-keyed reply composer');
 assert(sendFunction.includes('CRM_CRM_REPLY_LIVE_TEST_APPROVED')&&sendFunction.includes('CRM_CRM_REPLY_LIVE_TEST_ACK')&&sendFunction.includes('CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL'),'CRM reply API must fail closed until separate test approval');
-assert(inboxUi.includes('const canReply=false')&&inboxUi.includes('separate CRM test send is explicitly approved'),'CRM inbox UI must remain read-only until separate test approval');
+assert(inboxUi.includes('const canReply=true')&&inboxUi.includes('server-side send gate'),'CRM inbox must expose replies while the server enforces its explicit test-send approval gate');
 assert(!/SUPABASE_SERVICE_ROLE_KEY|META_WHATSAPP_ACCESS_TOKEN|ZOHO_REFRESH_TOKEN/.test(read('admin-panel/crm-unified-inbox.js')),'Provider credentials must never be placed in browser code');
 
 assert(read('supabase/config.toml').includes('[functions.crm-send-reply]')&&read('supabase/config.toml').includes('verify_jwt = true'),'CRM reply sender must require JWT verification at the Supabase gateway');
+assert(read('supabase/config.toml').includes('[functions.crm-zoho-inbox-sync]')&&read('supabase/config.toml').includes('# Only the authenticated CRM administrator may synchronize the connected Zoho inbox.'),'Zoho inbox sync must require JWT verification at the Supabase gateway');
 assert(sendFunction.includes('allowedOrigins')&&sendFunction.includes('https://crm.fashionfussion.in'),'Reply sender must allow only the canonical CRM origins');
 console.log('CRM panel contract checks passed: CRM auth, department isolation, unified inbox, reply sender, provider safety, and build wiring.');
 
