@@ -63,25 +63,33 @@
   async function openWhatsAppAttachment(button){
     const messageId=button.dataset.messageId,mime=button.dataset.mime||'',filename=button.dataset.name||'whatsapp-attachment';
     if(!messageId)return;
-    const previous=button.textContent;button.disabled=true;button.textContent='Loading attachment…';notice('Downloading attachment securely from WhatsApp…');
+    const previous=button.textContent;button.disabled=true;button.textContent='Reading attachment…';notice('Retrieving attachment securely from WhatsApp…');
     try{
       const {data:{session},error}=await db.auth.getSession();
       if(error||!session?.access_token)throw new Error('Your CRM session expired. Sign in again.');
-      const response=await fetch('https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/crm-whatsapp-media',{
-        method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA','Content-Type':'application/json'},
-        body:JSON.stringify({provider_message_id:messageId}),cache:'no-store'
-      });
+      const endpoint='https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/crm-whatsapp-media';
+      const headers={Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA','Content-Type':'application/json'};
+      const extractable=['text/plain','application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel'].includes(mime);
+      if(extractable){
+        const parsedResponse=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({provider_message_id:messageId,action:'extract'}),cache:'no-store'});
+        if(parsedResponse.ok){
+          const parsed=await parsedResponse.json();
+          const panel=document.createElement('pre');panel.className='crm-wa-attachment-text';panel.textContent=String(parsed.text||'').slice(0,200000);panel.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:55vh;overflow:auto;padding:12px;border:1px solid #d0d5dd;border-radius:8px;background:#fff';
+          button.closest('.crm-wa-attachment').querySelector('.crm-wa-attachment-text')?.remove();button.closest('.crm-wa-attachment').appendChild(panel);
+          notice('Attachment text extracted successfully.'+(parsed.truncated?' Display limited to the first 200,000 characters.':''));return;
+        }
+        if(mime==='text/plain') {const detail=await parsedResponse.json().catch(()=>({}));throw new Error(detail.error||'Text file could not be read.');}
+      }
+      const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({provider_message_id:messageId,action:'download'}),cache:'no-store'});
       if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.error||'Attachment download failed (HTTP '+response.status+').')}
       const blob=await response.blob(),url=URL.createObjectURL(blob);
-      if(mime==='text/plain'){
-        const text=await blob.text();
-        const panel=document.createElement('pre');panel.className='crm-wa-attachment-text';panel.textContent=text.slice(0,200000);panel.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:55vh;overflow:auto;padding:12px;border:1px solid #d0d5dd;border-radius:8px;background:#fff';
-        button.closest('.crm-wa-attachment').querySelector('.crm-wa-attachment-text')?.remove();button.closest('.crm-wa-attachment').appendChild(panel);
-        URL.revokeObjectURL(url);notice('Text attachment read successfully.');
-      }else{
+      if(mime.startsWith('image/')||mime==='application/pdf'){
         const opened=window.open(url,'_blank','noopener,noreferrer');
         if(!opened){const link=document.createElement('a');link.href=url;link.download=filename;link.rel='noopener';link.click();}
-        window.setTimeout(()=>URL.revokeObjectURL(url),60000);notice(mime==='application/pdf'||mime.startsWith('image/')?'Attachment opened for preview.':'Attachment downloaded; use a compatible Word/Excel reader to view its contents.');
+        window.setTimeout(()=>URL.revokeObjectURL(url),60000);notice('Attachment opened for preview.');
+      }else{
+        const link=document.createElement('a');link.href=url;link.download=filename;link.rel='noopener';document.body.appendChild(link);link.click();link.remove();
+        window.setTimeout(()=>URL.revokeObjectURL(url),60000);notice('Attachment downloaded. Legacy Word (.doc) files require a compatible document reader.');
       }
     }catch(error){notice('Attachment could not be read: '+String(error?.message||error));}
     finally{button.disabled=false;button.textContent=previous;}
