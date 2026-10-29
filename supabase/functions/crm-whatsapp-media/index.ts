@@ -111,6 +111,46 @@ Deno.serve(async (req) => {
   if (bytes.byteLength > MAX_BYTES) return json({ error: "Attachment exceeds the 15 MB CRM preview limit" }, 413);
 
   const filename = safeFilename(attachment.filename || (mime === "application/pdf" ? "attachment.pdf" : "whatsapp-attachment"));
+  if (input?.action === "extract") {
+    let extractedText = "";
+    let extraction = "text";
+    try {
+      if (mime === "text/plain") {
+        extractedText = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+      } else if (mime === "application/pdf") {
+        const pdfjs = await import("npm:pdfjs-dist@4.10.38/legacy/build/pdf.mjs");
+        const pdf = await pdfjs.getDocument({ data: new Uint8Array(bytes), useSystemFonts: true, disableFontFace: true, isEvalSupported: false }).promise;
+        const pages: string[] = [];
+        for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, 100); pageNumber++) {
+          const page = await pdf.getPage(pageNumber);
+          const content = await page.getTextContent();
+          pages.push(content.items.map((item: any) => typeof item.str === "string" ? item.str : "").join(" "));
+        }
+        extractedText = pages.join("\\n\\n");
+        extraction = "pdf-text";
+      } else if (mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        const mammoth = await import("npm:mammoth@1.9.0");
+        const parsed = await mammoth.extractRawText({ buffer: new Uint8Array(bytes) });
+        extractedText = String(parsed.value || "");
+        extraction = "docx-text";
+      } else if (mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || mime === "application/vnd.ms-excel") {
+        const xlsx = await import("npm:xlsx@0.18.5");
+        const workbook = xlsx.read(bytes, { type: "array", cellDates: false });
+        extractedText = workbook.SheetNames.map((sheetName: string) => {
+          const sheet = workbook.Sheets[sheetName];
+          return "Sheet: " + sheetName + "\\n" + xlsx.utils.sheet_to_csv(sheet);
+        }).join("\\n\\n");
+        extraction = "spreadsheet-text";
+      } else {
+        return json({ error: "Text extraction is not available for this file type. Use Open / read attachment to preview or download it.", mime_type: mime }, 415);
+      }
+    } catch (error) {
+      console.error("[CRM WhatsApp attachment extraction]", error);
+      return json({ error: "The attachment downloaded, but its text could not be extracted. Try opening the original file." }, 422);
+    }
+    const limit = 200000;
+    return json({ ok: true, filename, mime_type: mime, extraction, text: extractedText.slice(0, limit), truncated: extractedText.length > limit });
+  }
   return new Response(bytes, {
     status: 200,
     headers: {
