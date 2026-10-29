@@ -34,10 +34,11 @@ window.FF_API_ORIGIN='';
     return client;
   })();
 
-  function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');document.head.appendChild(s)}
+  function add(src,marker){if(document.querySelector('script['+marker+']'))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(marker,'true');s.onerror=()=>{console.error('[Admin] Module failed to load',src);const status=document.getElementById('status');if(!status)return;const name=src.split(/[/?]/)[0].replace(/\\.js$/,'').replace(/^admin-/,'').replace(/-/g,' ');status.textContent='Could not load '+name+'. Check your connection, then refresh this page.';status.className='status show err'};document.head.appendChild(s)}
   const page=(location.pathname.split('/').pop()||'login.html').toLowerCase();
   const isAdminPage=page==='admin'||page==='admin.html';
   function loadAdminModules(){
+    add('admin-workspace.js?v=20261029-admin-workspace','data-admin-workspace');
     add('admin-notifications.js?v=2','data-admin-notifications');
     add('support-chat.js?v=10','data-support-chat');
     add('admin-orders.js?v=2','data-admin-orders');
