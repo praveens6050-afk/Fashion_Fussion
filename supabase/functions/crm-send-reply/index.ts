@@ -12,7 +12,7 @@ const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0,max);
 const label: Record<string,string> = {customer_support:"Customer Support",seller_support:"Seller Support",sales:"Sales",marketing:"Marketing",orders:"Orders"};
 const fromEnv = (role:string) => {
   const key = ({customer_support:"CRM_FROM_CUSTOMER_CARE",seller_support:"CRM_FROM_SELLER_SUPPORT",sales:"CRM_FROM_SALES_TEAM",marketing:"CRM_FROM_MARKETING",orders:"CRM_FROM_ORDERS"} as Record<string,string>)[role];
-  const fallback = ({customer_support:"customer.care@fashionfussion.in",seller_support:"seller.support@fashionfussion.in",sales:"sales@fashionfussion.in",marketing:"sales@fashionfussion.in",orders:"orders@fashionfussion.in"} as Record<string,string>)[role];
+  const fallback = ({customer_support:"customer.care@fashionfussion.in",seller_support:"seller.support@fashionfussion.in",sales:"sales@fashionfussion.in",marketing:"marketing@fashionfussion.in",orders:"orders@fashionfussion.in"} as Record<string,string>)[role];
   return key ? Deno.env.get(key) || fallback || "" : "";
 };
 async function zohoToken(db:any, role:string): Promise<{accessToken:string;accountId:string}> {
@@ -126,3 +126,4 @@ Deno.serve(async(req)=>{
     return response({error:code},status,origin);
   }
 });
+

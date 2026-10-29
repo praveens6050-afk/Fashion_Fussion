@@ -11,17 +11,17 @@
   function showZohoNotice(message,ok=false){if(zohoNotice){zohoNotice.textContent=message;zohoNotice.style.color=ok?'#067647':'#b42318'}}
   const zohoParams=new URLSearchParams(window.location.search);
   const returnedMailbox=zohoParams.get('zoho_mailbox')||'';
-  if(zohoParams.get('zoho_oauth')==='connected')showZohoNotice('Connected '+returnedMailbox+'. Repeat for the other mailboxes. No email was sent.',true);
+  if(zohoParams.get('zoho_oauth')==='connected')showZohoNotice('Connected '+returnedMailbox+'. CRM department aliases will use this mailbox. No email was sent.',true);
   else if(zohoParams.get('zoho_oauth')==='denied')showZohoNotice('Connection was not completed for '+returnedMailbox+'.');
   $('crmZohoConnect')?.addEventListener('click',async()=>{
     const button=$('crmZohoConnect');button.disabled=true;button.textContent='Opening Zoho…';
     try{
       const db=await ready;if(!db?.auth)throw new Error('CRM authentication service unavailable');
       const{data:{session}}=await db.auth.getSession();if(!session?.user)throw new Error('Please sign in again');
-      const mailboxAddress=$('crmZohoMailbox')?.value||'';const{data,error}=await db.functions.invoke('crm-zoho-oauth-start',{body:{mailbox_address:mailboxAddress}});
+      const mailboxAddress='admin@fashionfussion.in';const{data,error}=await db.functions.invoke('crm-zoho-oauth-start',{body:{mailbox_address:mailboxAddress}});
       if(error||!data?.authorization_url)throw new Error(data?.error||'Could not start Zoho authorization');
       window.location.assign(data.authorization_url);
-    }catch(error){showZohoNotice(error.message||'Could not start Zoho authorization');button.disabled=false;button.textContent='Connect selected mailbox'}
+    }catch(error){showZohoNotice(error.message||'Could not start Zoho authorization');button.disabled=false;button.textContent='Connect admin mailbox'}
   });
   async function load(){
     const{db}=await client();
@@ -74,3 +74,4 @@
   });
   load().catch(error=>notice(error.message||'Unable to load team roster'));
 })();
+

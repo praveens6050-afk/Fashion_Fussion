@@ -202,7 +202,7 @@
     const modules = [
       ['crm-unified-inbox.js?v=20261023-live-ready-1', 'unified inbox']
     ];
-    if (role === 'administrator') modules.push(['crm-team-management.js?v=20261027-zoho-multi-mailbox-1', 'team management']);
+    if (role === 'administrator') modules.push(['crm-team-management.js?v=20261029-zoho-primary-mailbox-1', 'team management']);
     if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261023-live-ready-1', 'sales workspace']);
     if (['customer_support', 'seller_support'].includes(role)) modules.push(['crm-support-workspace.js?v=20261023-live-ready-1', 'support workspace']);
 
@@ -252,3 +252,4 @@
     showDenied(error && error.message || 'Unable to verify CRM access. Please sign in again.');
   }).finally(() => clearTimeout(watchdog));
 })();
+
