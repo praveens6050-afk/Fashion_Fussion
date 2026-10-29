@@ -166,5 +166,8 @@ assert(!/SUPABASE_SERVICE_ROLE_KEY|META_WHATSAPP_ACCESS_TOKEN|ZOHO_REFRESH_TOKEN
 assert(read('supabase/config.toml').includes('[functions.crm-send-reply]')&&read('supabase/config.toml').includes('verify_jwt = true'),'CRM reply sender must require JWT verification at the Supabase gateway');
 assert(read('supabase/config.toml').includes('[functions.crm-zoho-inbox-sync]')&&read('supabase/config.toml').includes('# Only the authenticated CRM administrator may synchronize the connected Zoho inbox.'),'Zoho inbox sync must require JWT verification at the Supabase gateway');
 assert(sendFunction.includes('allowedOrigins')&&sendFunction.includes('https://crm.fashionfussion.in'),'Reply sender must allow only the canonical CRM origins');
+assert(read('supabase/functions/crm-zoho-delivery-sync/index.ts').includes('/smtplogs')&&read('supabase/functions/crm-zoho-delivery-sync/index.ts').includes('delivery_tracking'),'CRM email delivery tracking must use Zoho SMTP logs and persist provider status');
+assert(read('supabase/functions/crm-zoho-oauth-start/index.ts').includes('ZohoMail.partner.organization.READ')&&read('supabase/functions/crm-zoho-oauth-callback/index.ts').includes('zohomail.partner.organization.read'),'Zoho OAuth must request and validate read-only organization scope for delivery tracking');
+assert(read('admin-panel/crm-unified-inbox.js').includes("functions.invoke('crm-zoho-delivery-sync'")&&read('admin-panel/crm.html').includes('crmInboxDeliveryRefresh'),'Admin CRM must expose an explicit email delivery refresh action');
 console.log('CRM panel contract checks passed: CRM auth, department isolation, unified inbox, reply sender, provider safety, and build wiring.');
 

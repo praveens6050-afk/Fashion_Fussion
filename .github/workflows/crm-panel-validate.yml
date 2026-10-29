@@ -52,6 +52,7 @@ jobs:
           node --check admin-panel/crm-department-workspaces.js
           deno check --no-lock supabase/functions/crm-inbound-webhook/index.ts
           deno check --no-lock supabase/functions/crm-send-reply/index.ts
+          deno check --no-lock supabase/functions/crm-zoho-delivery-sync/index.ts
       - name: Validate CRM migrations on disposable PostgreSQL
         env:
           PGPASSWORD: postgres
