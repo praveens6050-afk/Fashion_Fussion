@@ -48,15 +48,15 @@ Deno.serve(async (req: Request) => {
     const refresh = new URLSearchParams({ grant_type: "refresh_token", client_id: clientId, client_secret: clientSecret, refresh_token: String(mailbox.refresh_token) });
     const tokenResponse = await fetch(accountsDomain + "/oauth/v2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: refresh, redirect: "error" });
     const tokenPayload = await tokenResponse.json().catch(() => ({}));
-    if (!tokenResponse.ok || !tokenPayload?.access_token) return json({ error: "ZOHO_TOKEN_REFRESH_FAILED" }, 502, origin);
+    if (!tokenResponse.ok || !tokenPayload?.access_token) return json({ error: "ZOHO_TOKEN_REFRESH_FAILED", provider_http_status: tokenResponse.status, provider_code: String(tokenPayload?.error || "").slice(0, 48) }, 502, origin);
 
     const apiBase = (Deno.env.get("ZOHO_MAIL_API_BASE") || "https://mail.zoho.in/api").replace(/\/+$/, "");
     const authHeaders = { authorization: "Zoho-oauthtoken " + String(tokenPayload.access_token), accept: "application/json" };
     const accountResponse = await fetch(apiBase + "/accounts/" + encodeURIComponent(String(mailbox.zoho_account_id)), { headers: authHeaders, redirect: "error" });
     const accountPayload = await accountResponse.json().catch(() => ({}));
-    if (!accountResponse.ok || String(accountPayload?.status?.code || "200") !== "200") return json({ error: "ZOHO_ACCOUNT_LOOKUP_FAILED" }, 502, origin);
+    if (!accountResponse.ok || String(accountPayload?.status?.code || "200") !== "200") return json({ error: "ZOHO_ACCOUNT_LOOKUP_FAILED", provider_http_status: accountResponse.status, provider_code: String(accountPayload?.status?.code || "").slice(0, 48) }, 502, origin);
     const zoid = String(accountPayload?.data?.zoid || accountPayload?.data?.account?.zoid || "");
-    if (!/^\d+$/.test(zoid)) return json({ error: "ZOHO_ORGANIZATION_ID_MISSING" }, 502, origin);
+    if (!/^\d+$/.test(zoid)) return json({ error: "ZOHO_ORGANIZATION_ID_MISSING", provider_http_status: accountResponse.status, provider_code: "ORGANIZATION_ID_MISSING" }, 502, origin);
 
     const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
     const { data: messages, error: messagesError } = await db.from("crm_inbox_messages")
@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
         if (logResponse.status === 401 || logResponse.status === 403 || String(logPayload?.status?.code || "") === "403") {
           return json({ ok: false, error: "ZOHO_DELIVERY_SCOPE_REQUIRED" }, 200, origin);
         }
-        if (!logResponse.ok || String(logPayload?.status?.code || "200") !== "200") return json({ error: "ZOHO_DELIVERY_LOGS_FAILED" }, 502, origin);
+        if (!logResponse.ok || String(logPayload?.status?.code || "200") !== "200") return json({ error: "ZOHO_DELIVERY_LOGS_FAILED", provider_http_status: logResponse.status, provider_code: String(logPayload?.status?.code || "").slice(0, 48) }, 502, origin);
         const logData = logPayload?.data;
         const items = logData?.response;
         if (Array.isArray(items)) logs.push(...items);
