@@ -13,3 +13,6 @@ verify_jwt = true
   # Only the authenticated CRM administrator may synchronize the connected Zoho inbox.
   verify_jwt = true
 
+[functions.crm-zoho-delivery-sync]
+# Only the authenticated CRM administrator may refresh Zoho delivery logs.
+verify_jwt = true

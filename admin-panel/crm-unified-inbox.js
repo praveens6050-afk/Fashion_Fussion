@@ -78,6 +78,22 @@
   const root=$('crmUnifiedInbox');if(!root||!db)return;
   root.hidden=false;root.style.display='block';
   $('crmInboxDepartment').textContent=label[role]||'Authorized department';
+  const deliveryButton=$('crmInboxDeliveryRefresh');
+  if(deliveryButton&&role==='administrator'){
+    deliveryButton.hidden=false;
+    deliveryButton.addEventListener('click',async()=>{
+      deliveryButton.disabled=true;deliveryButton.textContent='Checking…';notice('Checking Zoho recipient-server delivery logs…');
+      try{
+        const{data,error}=await db.functions.invoke('crm-zoho-delivery-sync',{body:{}});
+        if(data?.error==='ZOHO_DELIVERY_SCOPE_REQUIRED')throw new Error('Reconnect Zoho Mail and approve the organization read-only permission to enable delivery tracking.');
+        if(data?.error)throw new Error(data.error);
+        if(error)throw new Error(error.message||'Zoho delivery tracking unavailable');
+        await refresh(true);
+        notice('Zoho delivery check complete: '+Number(data.updated||0)+' status update(s); '+Number(data.not_yet_reported||0)+' still awaiting Zoho.');
+      }catch(e){console.error('[CRM Zoho delivery sync]',e);notice('Email delivery tracking could not refresh: '+String(e.message||e));}
+      finally{deliveryButton.disabled=false;deliveryButton.textContent='Refresh email delivery'}
+    });
+  }
   $('crmInboxSearch').addEventListener('input',renderList);
   $('crmInboxChannel').addEventListener('change',renderList);
   $('crmInboxStatus').addEventListener('change',renderList);

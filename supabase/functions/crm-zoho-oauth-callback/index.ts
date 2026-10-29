@@ -119,9 +119,10 @@ Deno.serve(async (req: Request) => {
     !returnedScopes.some((scope: string) => scope === "zohomail.accounts.read" || scope === "zohomail.accounts.all") ||
     !returnedScopes.some((scope: string) => scope === "zohomail.folders.read" || scope === "zohomail.folders.all") ||
     !returnedScopes.some((scope: string) => scope === "zohomail.messages.read" || scope === "zohomail.messages.all") ||
-    !returnedScopes.some((scope: string) => scope === "zohomail.messages.create" || scope === "zohomail.messages.all")
+    !returnedScopes.some((scope: string) => scope === "zohomail.messages.create" || scope === "zohomail.messages.all") ||
+    !returnedScopes.some((scope: string) => scope === "zohomail.partner.organization.read" || scope === "zohomail.partner.organization.all")
   )) {
-    return page(false, "Zoho authorization needs account-read, message-read and message-create access. Reconnect and approve the requested scopes.", mailboxAddress);
+    return page(false, "Zoho authorization needs account-read, message-read, message-create and organization-read access for delivery tracking. Reconnect and approve the requested scopes.", mailboxAddress);
   }
 
   const mailApiBase = (Deno.env.get("ZOHO_MAIL_API_BASE") || "https://mail.zoho.in/api").replace(/\/+$/g, "");
