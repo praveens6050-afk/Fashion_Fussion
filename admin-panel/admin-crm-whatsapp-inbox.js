@@ -83,14 +83,82 @@
     target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-event="'+Number(r.id)+'" aria-pressed="false"><strong>'+esc(r.sender_role||'unknown')+' · '+esc(r.sender_phone||'')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'unknown')+'</span><div class="ff-wa-muted">'+esc(r.message_type||'message')+' · '+date(r.created_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div><div class="ff-wa-muted">Latest reply: '+esc(r.latest_reply_status||'none')+'</div></button>').join('');
     target.querySelectorAll('[data-event]').forEach(btn=>btn.addEventListener('click',()=>select(Number(btn.dataset.event),btn)));
   }
+  async function openWaAttachment(button){
+    const providerMessageId=button.dataset.messageId||'',mime=button.dataset.mime||'',filename=button.dataset.name||'whatsapp-attachment';
+    if(!providerMessageId)return;
+    const original=button.textContent;button.disabled=true;button.textContent='Loading…';
+    const status=$('ffWaInboxStatus');
+    try{
+      const db=window.supabaseClient;
+      const {data:{session},error:sessionError}=await db.auth.getSession();
+      if(sessionError||!session?.access_token)throw new Error('CRM session expired. Sign in again.');
+      const endpoint='https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/crm-whatsapp-media';
+      const headers={Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA','Content-Type':'application/json'};
+      const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({provider_message_id:providerMessageId,action:'download'}),cache:'no-store'});
+      if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.error||'Attachment unavailable (HTTP '+response.status+').');}
+      const blob=await response.blob();
+      if(button.dataset.action==='ocr'){
+        if(!mime.startsWith('image/'))throw new Error('OCR is available only for image attachments.');
+        if(blob.size>8*1024*1024)throw new Error('Image OCR limit is 8 MB. Open or download the image instead.');
+        const host=button.closest('.ff-wa-attachment');host.querySelector('.ff-wa-attachment-text')?.remove();
+        const panel=document.createElement('pre');panel.className='ff-wa-attachment-text';panel.textContent='Loading local OCR engine…';panel.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:55vh;overflow:auto;padding:12px;border:1px solid #d0d5dd;border-radius:8px;background:#fff';
+        host.appendChild(panel);
+        const {createWorker}=await import('https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/+esm');
+        const worker=await createWorker('eng');
+        try{const result=await worker.recognize(blob);const text=String(result?.data?.text||'').trim();panel.textContent=text||'No readable text detected. Try a clearer image.';status.textContent=text?'Image text extracted in your browser. Verify any OTP manually; OCR can misread digits.':'No readable text detected.';}
+        finally{await worker.terminate();}
+        return;
+      }
+      const objectUrl=URL.createObjectURL(blob);
+      if(mime.startsWith('image/')||mime==='application/pdf'){
+        const opened=window.open(objectUrl,'_blank','noopener,noreferrer');
+        if(!opened){const link=document.createElement('a');link.href=objectUrl;link.download=filename;link.rel='noopener';link.click();}
+      }else{
+        const link=document.createElement('a');link.href=objectUrl;link.download=filename;link.rel='noopener';document.body.appendChild(link);link.click();link.remove();
+      }
+      window.setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);
+      status.textContent='Attachment opened or downloaded.';
+    }catch(error){status.textContent='Attachment could not be read: '+String(error?.message||error);}
+    finally{button.disabled=false;button.textContent=original;}
+  }
+  function attachmentMarkup(message){
+    const meta=message?.metadata&&typeof message.metadata==='object'?message.metadata:{};
+    const attachment=meta.whatsapp_attachment&&typeof meta.whatsapp_attachment==='object'?meta.whatsapp_attachment:null;
+    const type=String(meta.message_type||'').toLowerCase();
+    if(!attachment?.media_id){
+      if(['image','document','video','audio','sticker'].includes(type)||String(message?.body||'').includes('[Incoming image message')){
+        return '<div class="ff-wa-attachment"><strong>Attachment reference missing</strong><p>This message has no usable media ID saved in CRM. The attachment cannot be fetched securely; ask the sender to resend it after the inbox webhook is fixed.</p></div>';
+      }
+      return '';
+    }
+    const mime=String(attachment.mime_type||'').toLowerCase();
+    const supported=attachment.supported===true&&!!mime;
+    const attrs=' data-message-id="'+esc(message.provider_message_id||'')+'" data-mime="'+esc(mime)+'" data-name="'+esc(attachment.filename||'whatsapp-attachment')+'"';
+    const image=supported&&mime.startsWith('image/');
+    return '<div class="ff-wa-attachment" style="margin:10px 0;padding:10px;border:1px solid #d0d5dd;border-radius:8px"><strong>Attachment: '+esc(attachment.filename||mime||'WhatsApp file')+'</strong><p>'+esc(mime||'Unknown MIME type')+' · '+(supported?'Available securely':'Unsupported file type')+'</p>'+(supported?'<button type="button" class="ff-wa-attachment-open"'+attrs+'>Open / read attachment</button>'+(image?'<button type="button" class="ff-wa-attachment-open" data-action="ocr"'+attrs+'>Read image text / OTP</button>':''):'')+'</div>';
+  }
+  async function loadSelectedMessages(id){
+    const host=$('ffWaSelectedMessage');host.textContent='Loading message history…';
+    try{
+      const db=window.supabaseClient;
+      const {data,error}=await db.from('crm_inbox_messages').select('id,direction,sender_label,body,received_at,delivery_status,provider_message_id,metadata').eq('conversation_id',id).order('received_at',{ascending:true}).limit(100);
+      if(error)throw error;
+      if(Number($('ffWaSendReply').dataset.conversationId)!==Number(id))return;
+      const messages=data||[];
+      host.innerHTML=messages.length?messages.map(m=>'<article class="ff-wa-message-item" style="padding:10px 0;border-bottom:1px solid #eaecf0"><small>'+esc(m.sender_label||m.direction)+' · '+date(m.received_at)+' · '+esc(m.delivery_status||'received')+'</small><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(m.body||'[No text body]')+'</p>'+attachmentMarkup(m)+'</article>').join(''):'<p>No message history found for this conversation.</p>';
+      host.querySelectorAll('.ff-wa-attachment-open').forEach(button=>button.addEventListener('click',()=>openWaAttachment(button)));
+      if(!messages.length)$('ffWaInboxStatus').textContent='No message history found. Refresh the inbox or verify inbound webhook storage.';
+    }catch(error){host.textContent='Message history could not load. Check CRM message-table access.';$('ffWaInboxStatus').textContent=String(error?.message||'Message history unavailable.');}
+  }
   function select(id,button){
     const row=rows.find(r=>Number(r.id)===id);if(!row)return;
     $('ffWaInboxRows').querySelectorAll('[data-event]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
     $('ffWaSelectedTitle').textContent=(row.sender_role||'Unknown sender')+' · '+(row.sender_phone||'');
     $('ffWaSelectedMeta').textContent=(row.support_team||'unassigned')+' · '+(row.routing_status||'unknown')+' · '+date(row.created_at);
-    $('ffWaSelectedMessage').textContent=row.message_text||'[No text body received]';
-    $('ffWaReplyText').value='';$('ffWaReplyCount').textContent='0 / 1000';
     $('ffWaSendReply').dataset.conversationId=String(id);
+    $('ffWaSelectedMessage').textContent='Loading message history…';
+    loadSelectedMessages(id);
+    $('ffWaReplyText').value='';$('ffWaReplyCount').textContent='0 / 1000';
     pendingWhatsappRequest=null;pendingWhatsappBody='';
     const expired=Date.now()-Date.parse(row.last_inbound_at||row.created_at)>24*60*60*1000;
     $('ffWaInboxStatus').textContent=expired?'The 24-hour WhatsApp service window has expired; a template reply is required.':'Reply is ready to send through the CRM provider workflow.';
