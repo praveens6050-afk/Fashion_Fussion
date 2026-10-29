@@ -32,3 +32,15 @@ html.ff-customer-compat{-webkit-text-size-adjust:100%;text-size-adjust:100%;over
 }
 @media(max-width:380px){html.ff-page-index .grid,html.ff-page-search .grid{grid-template-columns:1fr!important}.ff-page-index .product-actions,.ff-page-search .actions{grid-template-columns:1fr!important}.ff-page-cart .links,.ff-page-product .nav,.ff-page-search .links{gap:10px!important;font-size:11px!important}}
 @media(prefers-reduced-motion:reduce){html.ff-customer-compat{scroll-behavior:auto!important}html.ff-customer-compat *,html.ff-customer-compat *:before,html.ff-customer-compat *:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* Premium depth: tactile cards without changing layout or behavior. */
+html.ff-customer-compat :is(article.product,.ff-discovery-card,.trust-item,.benefit,.card,.panel,.account-card,.order-card,.address-card,.summary,.support-card){border:1px solid rgba(20,42,76,.10);box-shadow:inset 0 1px 0 rgba(255,255,255,.92),0 2px 4px rgba(16,36,68,.04),0 16px 34px rgba(16,36,68,.09);transform-style:preserve-3d;transition:transform .24s cubic-bezier(.2,.75,.25,1),box-shadow .24s,border-color .24s}
+html.ff-customer-compat :is(.btn,.primary,.product-actions .add,.checkout){box-shadow:0 2px 0 rgba(17,38,70,.10),0 8px 18px rgba(17,38,70,.12);transition:transform .18s ease,box-shadow .18s ease}
+@media(hover:hover) and (pointer:fine){html.ff-customer-compat :is(article.product,.ff-discovery-card,.trust-item,.benefit,.card,.panel,.account-card,.order-card,.address-card,.summary,.support-card):hover{transform:translateY(-4px) rotateX(.7deg);border-color:rgba(40,92,170,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.96),0 5px 10px rgba(16,36,68,.06),0 24px 48px rgba(16,36,68,.14)}html.ff-customer-compat :is(.btn,.primary,.product-actions .add,.checkout):hover:not(:disabled){transform:translateY(-2px);box-shadow:0 3px 0 rgba(17,38,70,.12),0 13px 24px rgba(17,38,70,.18)}}
+@media(hover:none),(pointer:coarse){html.ff-customer-compat :is(article.product,.ff-discovery-card,.trust-item,.benefit,.card,.panel,.account-card,.order-card,.address-card,.summary,.support-card):hover{transform:none!important}}
+@media(prefers-reduced-motion:reduce){html.ff-customer-compat :is(article.product,.ff-discovery-card,.trust-item,.benefit,.card,.panel,.account-card,.order-card,.address-card,.summary,.support-card,.btn,.primary,.product-actions .add,.checkout){transition:none!important;transform:none!important}}
+
+
+/* Clear keyboard focus on the tactile customer controls. */
+html.ff-customer-compat :is(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid rgba(51,112,214,.62);outline-offset:3px}
