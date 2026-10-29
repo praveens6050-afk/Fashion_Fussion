@@ -49,11 +49,16 @@ Deno.serve(async (req) => {
   if (authError || !userData?.user) return json({ error: "Session is invalid or expired" }, 401);
 
   const { data: message, error: messageError } = await userDb.from("crm_inbox_messages")
-    .select("provider_message_id,provider,metadata")
+    .select("provider_message_id,conversation_id,metadata")
     .eq("provider_message_id", providerMessageId)
-    .eq("provider", "whatsapp")
     .maybeSingle();
   if (messageError || !message) return json({ error: "Attachment not found or access denied" }, 404);
+  const { data: conversation, error: conversationError } = await userDb.from("crm_inbox_conversations")
+    .select("id,provider")
+    .eq("id", message.conversation_id)
+    .eq("provider", "whatsapp")
+    .maybeSingle();
+  if (conversationError || !conversation) return json({ error: "Attachment not found or access denied" }, 404);
 
   const metadata = message.metadata && typeof message.metadata === "object" ? message.metadata as Record<string, any> : {};
   const attachment = metadata.whatsapp_attachment && typeof metadata.whatsapp_attachment === "object"
