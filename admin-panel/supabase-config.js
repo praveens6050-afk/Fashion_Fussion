@@ -38,7 +38,7 @@ window.FF_API_ORIGIN='';
   const page=(location.pathname.split('/').pop()||'login.html').toLowerCase();
   const isAdminPage=page==='admin'||page==='admin.html';
   function loadAdminModules(){
-    add('admin-workspace.js?v=20261029-admin-workspace','data-admin-workspace');
+    add('admin-workspace.js?v=20261029-admin-left-sidebar','data-admin-workspace');
     add('admin-notifications.js?v=2','data-admin-notifications');
     add('support-chat.js?v=10','data-support-chat');
     add('admin-orders.js?v=2','data-admin-orders');
