@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
           ]);
           const mediaId = typeof media?.id === "string" ? media.id : "";
           const rawFilename = typeof media?.filename === "string" ? media.filename : "";
-          const safeFilename = rawFilename.replace(/[\\/\\0-\\x1f\\x7f]/g, "_").slice(0, 180);
+          const safeFilename = rawFilename.replace(/[\\/\0-\x1f\x7f]/g, "_").slice(0, 180);
           const metadata: Record<string, unknown> = {
             message_type: m.type || "unknown",
             business_phone_number_id: businessId,
