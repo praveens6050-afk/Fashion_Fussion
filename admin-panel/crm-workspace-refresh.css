@@ -124,3 +124,11 @@ body.crm-auth-page{min-height:100vh;background:#f4f3f1;color:var(--crm-ink);font
 @media(prefers-reduced-motion:reduce){.crm-page *, .crm-auth-page *{scroll-behavior:auto!important;transition:none!important}}
 
 .crm-page .crm-nav a[hidden]{display:none}
+
+
+/* Tactile depth for CRM work surfaces; content and layout remain unchanged. */
+.crm-page .crm-app-layout :is(.card,.crm-inbox-item,.crm-team-notice,.metric-card,.stat-card,.crm-welcome){border:1px solid rgba(69,43,59,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.96),0 3px 7px rgba(36,25,35,.045),0 14px 30px rgba(36,25,35,.09);transition:transform .22s cubic-bezier(.2,.75,.25,1),box-shadow .22s,border-color .22s}
+.crm-page .crm-app-layout :is(button,.btn){transition:transform .18s ease,box-shadow .18s}
+@media(hover:hover) and (pointer:fine){.crm-page .crm-app-layout :is(.card,.crm-inbox-item,.crm-team-notice,.metric-card,.stat-card):hover{transform:translateY(-3px);border-color:rgba(104,66,83,.23);box-shadow:inset 0 1px 0 #fff,0 6px 12px rgba(36,25,35,.06),0 22px 40px rgba(36,25,35,.13)}.crm-page .crm-app-layout :is(button,.btn):hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 18px rgba(69,43,59,.16)}}
+@media(hover:none),(pointer:coarse){.crm-page .crm-app-layout :is(.card,.crm-inbox-item,.crm-team-notice,.metric-card,.stat-card):hover{transform:none!important}}
+@media(prefers-reduced-motion:reduce){.crm-page .crm-app-layout :is(.card,.crm-inbox-item,.crm-team-notice,.metric-card,.stat-card,button,.btn){transition:none!important;transform:none!important}}
