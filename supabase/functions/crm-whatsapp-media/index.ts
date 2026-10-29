@@ -129,12 +129,14 @@ Deno.serve(async (req) => {
         extractedText = pages.join("\\n\\n");
         extraction = "pdf-text";
       } else if (mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-        const mammoth = await import("npm:mammoth@1.9.0");
+        const mammothModule = await import("npm:mammoth@1.9.0");
+        const mammoth = mammothModule.default || mammothModule;
         const parsed = await mammoth.extractRawText({ buffer: new Uint8Array(bytes) });
         extractedText = String(parsed.value || "");
         extraction = "docx-text";
       } else if (mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || mime === "application/vnd.ms-excel") {
-        const xlsx = await import("npm:xlsx@0.18.5");
+        const xlsxModule = await import("npm:xlsx@0.18.5");
+        const xlsx = xlsxModule.default || xlsxModule;
         const workbook = xlsx.read(bytes, { type: "array", cellDates: false });
         extractedText = workbook.SheetNames.map((sheetName: string) => {
           const sheet = workbook.Sheets[sheetName];
