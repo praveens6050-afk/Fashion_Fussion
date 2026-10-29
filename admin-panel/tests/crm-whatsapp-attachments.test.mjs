@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const webhook = readFileSync(new URL('../../supabase/functions/crm-inbound-webhook/index.ts', import.meta.url), 'utf8');
 const media = readFileSync(new URL('../../supabase/functions/crm-whatsapp-media/index.ts', import.meta.url), 'utf8');
 const inbox = readFileSync(new URL('../crm-unified-inbox.js', import.meta.url), 'utf8');
+const supportInbox = readFileSync(new URL('../admin-crm-whatsapp-inbox.js', import.meta.url), 'utf8');
 
 const allowedMimeTypes = [
   'image/jpeg',
@@ -56,4 +57,15 @@ test('CRM inbox requests attachment metadata and exposes authenticated read cont
   assert.ok(inbox.includes("action:'extract'"));
   assert.ok(inbox.includes("action:'download'"));
   assert.ok(inbox.includes('getSession()'));
+});
+
+
+test('active CRM WhatsApp Support Inbox loads scoped message history and renders attachment controls', () => {
+  assert.ok(supportInbox.includes("db.from('crm_inbox_messages')"), 'active WhatsApp inbox must load message history');
+  assert.ok(supportInbox.includes(".eq('conversation_id',id)"), 'message history must be scoped to the selected conversation');
+  assert.ok(supportInbox.includes('metadata.whatsapp_attachment') || supportInbox.includes('meta.whatsapp_attachment'), 'attachment metadata must be inspected');
+  assert.ok(supportInbox.includes('Open / read attachment'));
+  assert.ok(supportInbox.includes('Read image text / OTP'));
+  assert.ok(supportInbox.includes('Attachment reference missing'), 'missing media IDs must be explained rather than silently hiding controls');
+  assert.ok(supportInbox.includes('crm-whatsapp-media'), 'attachment fetch must use the authenticated media endpoint');
 });
