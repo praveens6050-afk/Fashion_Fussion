@@ -61,7 +61,7 @@ loadSellerStyle('seller-growth-program.css?v=20261001-growth');
 loadSellerModule('seller-storage-scope.js');
 loadSellerModule('catalog-enhancements.js');
 loadSellerModule('product-image-upload.js?v=20260922-readiness');
-loadSellerModule('seller-support.js?v=20260930-support-readiness');
+loadSellerModule('seller-support.js?v=20261029-supabase-startup');
 loadSellerModule('seller-kyc-status.js?v=20260930-kyc-copy');
 loadSellerModule('seller-finance-onboarding.js?v=20260930-live-finance');
 loadSellerModule('seller-live-operations.js?v=20260930-live-operations-search');
