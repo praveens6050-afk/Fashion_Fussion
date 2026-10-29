@@ -26,7 +26,7 @@ const files={
 };
 for(const marker of ['admin_crm_whatsapp_support_snapshot','admin_crm_queue_whatsapp_reply','Origin not allowed'])
   assert.ok(files.api.includes(marker),'API missing security/action marker: '+marker);
-for(const marker of ['ffWaSendReply','ffEmailSendReply','sendWhatsAppReply','sendEmailReply','ffWaClassifyIdentity','classifyWhatsApp','ffWaTeamFilter','customer_support','seller_support','sales_marketing','admin_operations','Queue reply for review','pending review','identity review'])
+for(const marker of ['ffWaSendReply','ffEmailSendReply','sendWhatsAppReply','sendEmailReply','ffWaTeamFilter','customer_support','seller_support','sales_marketing','admin_operations','crm-send-reply','last_inbound_at','24-hour WhatsApp service window'])
   assert.ok(files.ui.includes(marker),'CRM inbox missing workflow marker: '+marker);
 assert.ok(files.html.includes('admin-crm-whatsapp-inbox.js'),'CRM page does not load WhatsApp inbox');
 assert.ok(files.supportLogin.includes('support-login.js'),'Restricted support login page missing its login controller');
@@ -54,4 +54,5 @@ for(const marker of ['crm_team_members','auth.uid()','support_team=v_team','admi
   assert.ok(files.teamSql.includes(marker),'Team access migration missing security marker: '+marker);
 assert.ok(!files.api.includes('graph.facebook.com'),'CRM API must never call Meta directly');
 assert.ok(!files.ui.includes('graph.facebook.com'),'CRM UI must never call Meta directly');
-console.log('WhatsApp CRM inbox source contract passed: team-scoped database authorization, isolated support workspace, admin team assignment, reviewed queue only, no direct sending; Zoho email intake, admin review, and one-attempt gated dispatch contracts verified.');
+console.log('WhatsApp CRM inbox source contract passed: team-scoped authorization, authenticated provider sends, 24-hour service-window guard, no direct Meta calls; Zoho email intake and gated dispatch contracts verified.');
+
