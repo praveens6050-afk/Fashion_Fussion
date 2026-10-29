@@ -82,7 +82,20 @@
       }
       const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({provider_message_id:messageId,action:'download'}),cache:'no-store'});
       if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.error||'Attachment download failed (HTTP '+response.status+').')}
-      const blob=await response.blob(),url=URL.createObjectURL(blob);
+      const blob=await response.blob();
+      if(button.dataset.action==='ocr'){
+        if(!mime.startsWith('image/'))throw new Error('OCR is only available for image attachments.');
+        if(blob.size>8*1024*1024)throw new Error('Image OCR limit is 8 MB. Open or download the image instead.');
+        const panelHost=button.closest('.crm-wa-attachment');
+        panelHost.querySelector('.crm-wa-attachment-text')?.remove();
+        const panel=document.createElement('pre');panel.className='crm-wa-attachment-text';panel.textContent='Loading local OCR engine…';panel.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:55vh;overflow:auto;padding:12px;border:1px solid #d0d5dd;border-radius:8px;background:#fff';panelHost.appendChild(panel);
+        const {createWorker}=await import('https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/+esm');
+        const worker=await createWorker('eng');
+        try{const result=await worker.recognize(blob);const text=String(result?.data?.text||'').trim();panel.textContent=text||'No readable text detected. Try a clearer image.';notice(text?'Image text extracted in your browser. Verify any OTP manually; OCR can misread digits.':'No readable text detected.');}
+        finally{await worker.terminate();}
+        return;
+      }
+      const url=URL.createObjectURL(blob);
       if(mime.startsWith('image/')||mime==='application/pdf'){
         const opened=window.open(url,'_blank','noopener,noreferrer');
         if(!opened){const link=document.createElement('a');link.href=url;link.download=filename;link.rel='noopener';link.click();}
@@ -104,7 +117,7 @@
       // The server validates CRM role and the explicit test-send gate before contacting a provider.
       const canReply=true;
       const expired=c.provider==='whatsapp'&&Date.now()-Date.parse(c.last_inbound_at||c.received_at)>24*60*60*1000;
-      const attachmentMarkup=m=>{const a=m?.metadata?.whatsapp_attachment;if(!a?.media_id)return '';const supported=!!a.supported&&!!a.mime_type;return '<div class="crm-wa-attachment" style="margin:10px 0;padding:10px;border:1px solid #d0d5dd;border-radius:8px"><strong>Attachment: '+esc(a.filename||a.mime_type||'WhatsApp file')+'</strong><p>'+esc(a.mime_type||'Unknown type')+' · '+(supported?'Available securely':'Unsupported file type')+'</p>'+(supported?'<button type="button" class="crm-wa-attachment-open" data-message-id="'+esc(m.provider_message_id)+'" data-mime="'+esc(a.mime_type)+'" data-name="'+esc(a.filename||'whatsapp-attachment')+'">Open / read attachment</button>':'')+'</div>'};
+      const attachmentMarkup=m=>{const a=m?.metadata?.whatsapp_attachment;if(!a?.media_id)return '';const supported=!!a.supported&&!!a.mime_type;const attrs=' data-message-id="'+esc(m.provider_message_id)+'" data-mime="'+esc(a.mime_type)+'" data-name="'+esc(a.filename||'whatsapp-attachment')+'"';const image=supported&&String(a.mime_type).startsWith('image/');return '<div class="crm-wa-attachment" style="margin:10px 0;padding:10px;border:1px solid #d0d5dd;border-radius:8px"><strong>Attachment: '+esc(a.filename||a.mime_type||'WhatsApp file')+'</strong><p>'+esc(a.mime_type||'Unknown type')+' · '+(supported?'Available securely':'Unsupported file type')+'</p>'+(supported?'<button type="button" class="crm-wa-attachment-open"'+attrs+'>Open / read attachment</button>'+(image?'<button type="button" class="crm-wa-attachment-open" data-action="ocr"'+attrs+'>Read image text / OTP</button>':''):'')+'</div>'};
       const history=messages.map(m=>'<article class="crm-inbox-message '+esc(m.direction)+'"><small>'+esc(m.sender_label||m.direction)+' · '+esc(fmt(m.received_at))+' · '+esc(m.delivery_status||'received')+'</small><p>'+esc(m.body).replace(/\n/g,'<br>')+'</p>'+attachmentMarkup(m)+'</article>').join('');
       $('crmInboxThread').innerHTML='<div class="crm-inbox-thread-head"><div><h3>'+esc(c.contact_name||c.contact_email||c.contact_phone||'Unknown contact')+'</h3><p>'+esc(c.contact_email||'')+(c.contact_phone?' · '+esc(c.contact_phone):'')+'</p></div><span class="crm-inbox-channel">'+esc(providerName(c.provider))+'</span></div><p><strong>'+esc(c.subject||'Incoming email')+'</strong></p><div class="crm-inbox-history">'+(history||'<p>No message history is available yet.</p>')+'</div>'+(canReply?'<form id="crmInboxReplyForm" class="crm-inbox-reply"><label for="crmInboxReplyBody">Reply via '+esc(providerName(c.provider))+'</label><textarea id="crmInboxReplyBody" rows="4" maxlength="4000" required placeholder="Write a reply…"></textarea><div class="crm-inbox-reply-actions"><span class="crm-inbox-reply-hint">'+(expired?'24-hour WhatsApp window expired; templates are required.':'Reply availability is checked by the server-side send gate.')+'</span><button id="crmInboxSend" type="submit" '+(expired?'disabled':'')+'>Send '+esc(providerName(c.provider))+'</button></div></form>':'<p class="crm-inbox-readonly">Reply sending is disabled by the server-side test-send gate.</p>');
       const form=$('crmInboxReplyForm');if(form)form.addEventListener('submit',e=>{e.preventDefault();sendReply(id)});
