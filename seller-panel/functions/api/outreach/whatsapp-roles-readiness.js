@@ -31,6 +31,49 @@ async function exactCount(base,key,table,select,filter) {
   if(!match)throw Error('COUNT_HEADER_UNAVAILABLE');
   return Number(match[1]);
 }
+async function schemaReadiness(base,key) {
+  // This RPC is STABLE/read-only and returns only schema booleans, never rows
+  // or recipient information. Missing migration fails closed as "unverified".
+  const response=await fetch(base+'/rest/v1/rpc/whatsapp_notification_schema_readiness',{
+    method:'POST',cache:'no-store',
+    headers:{apikey:key,Authorization:'Bearer '+key,
+      'content-type':'application/json',Accept:'application/json'},
+    body:'{}'
+  });
+  if(!response.ok)return {schemaVerified:false,probeAvailable:false,
+    missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false,
+    sellerMappingSchemaVerified:false,sellerMappingMissingColumns:[],
+    sellerRecipientSchemaVerified:false,sellerRecipientMissingColumns:[],
+    sellerAlertStorageVerified:false,sellerAlertStorageMissingColumns:[],
+    adminIdentitySchemaVerified:false,adminIdentityMissingColumns:[],
+    adminAlertStorageVerified:false,adminAlertStorageMissingColumns:[],
+    sellerClaimFunctionPresent:false,sellerFinishFunctionPresent:false,
+    adminClaimFunctionPresent:false,adminFinishFunctionPresent:false,
+    inboundSupportSchemaVerified:false,inboundSupportMissingColumns:[]};
+  const result=await response.json().catch(()=>null);
+  if(!result||typeof result!=='object')return {schemaVerified:false,probeAvailable:false,
+    missingColumns:[],claimFunctionPresent:false,finishFunctionPresent:false};
+  return {schemaVerified:result.schemaVerified===true,probeAvailable:true,
+    missingColumns:Array.isArray(result.missingColumns)?result.missingColumns:[],
+    claimFunctionPresent:result.claimFunctionPresent===true,
+    finishFunctionPresent:result.finishFunctionPresent===true,
+    sellerMappingSchemaVerified:result.sellerMappingSchemaVerified===true,
+    sellerMappingMissingColumns:Array.isArray(result.sellerMappingMissingColumns)?result.sellerMappingMissingColumns:[],
+    sellerRecipientSchemaVerified:result.sellerRecipientSchemaVerified===true,
+    sellerRecipientMissingColumns:Array.isArray(result.sellerRecipientMissingColumns)?result.sellerRecipientMissingColumns:[],
+    sellerAlertStorageVerified:result.sellerAlertStorageVerified===true,
+    sellerAlertStorageMissingColumns:Array.isArray(result.sellerAlertStorageMissingColumns)?result.sellerAlertStorageMissingColumns:[],
+    adminIdentitySchemaVerified:result.adminIdentitySchemaVerified===true,
+    adminIdentityMissingColumns:Array.isArray(result.adminIdentityMissingColumns)?result.adminIdentityMissingColumns:[],
+    adminAlertStorageVerified:result.adminAlertStorageVerified===true,
+    adminAlertStorageMissingColumns:Array.isArray(result.adminAlertStorageMissingColumns)?result.adminAlertStorageMissingColumns:[],
+    sellerClaimFunctionPresent:result.sellerClaimFunctionPresent===true,
+    sellerFinishFunctionPresent:result.sellerFinishFunctionPresent===true,
+    adminClaimFunctionPresent:result.adminClaimFunctionPresent===true,
+    adminFinishFunctionPresent:result.adminFinishFunctionPresent===true,
+    inboundSupportSchemaVerified:result.inboundSupportSchemaVerified===true,
+    inboundSupportMissingColumns:Array.isArray(result.inboundSupportMissingColumns)?result.inboundSupportMissingColumns:[]};
+}
 function allowlisted(env,name) {
   return !!name && /^[a-z0-9_]{1,512}$/.test(name) &&
     String(env.WHATSAPP_ALLOWED_TEMPLATES||'').split(',')
@@ -43,7 +86,7 @@ export async function onRequestGet({request,env}) {
   if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(base) || !key)
     return json({error:'Private database configuration unavailable'},503);
   try {
-    const [transactional,marketing,orders,inboundReview,queue]=await Promise.all([
+    const [transactional,marketing,orders,inboundReview,customerQueue,sellerQueue,salesMarketingQueue,adminQueue,queue,schema]=await Promise.all([
       exactCount(base,key,'whatsapp_contact_consents','phone_e164',
         '&purpose=eq.transactional&status=eq.opted_in&revoked_at=is.null'),
       exactCount(base,key,'whatsapp_contact_consents','phone_e164',
@@ -52,7 +95,12 @@ export async function onRequestGet({request,env}) {
         '&revoked_at=is.null'),
       exactCount(base,key,'whatsapp_inbound_events','id',
         '&routing_status=eq.needs_review'),
-      exactCount(base,key,'whatsapp_order_notification_outbox','id','')
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.customer_support'),
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.seller_support'),
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.sales_marketing'),
+      exactCount(base,key,'whatsapp_inbound_events','id','&support_team=eq.admin_operations'),
+      exactCount(base,key,'whatsapp_order_notification_outbox','id',''),
+      schemaReadiness(base,key)
     ]);
     const sellerTemplate=String(env.WHATSAPP_SELLER_ONBOARDING_TEMPLATE||'').trim();
     const adminTemplate=String(env.WHATSAPP_ADMIN_ALERT_TEMPLATE||'').trim();
@@ -63,8 +111,12 @@ export async function onRequestGet({request,env}) {
           workflow:'order_confirmed',
           transactionalOptIns:transactional,
           activePerOrderConsents:orders,queueCount:queue,
-          atomicDispatchSchemaVerified:false,metaTemplateVerified:false,
-          status:'AWAITING_STAGING_AND_LIVE_META_PREFLIGHT'
+          ...schema,
+          atomicDispatchSchemaVerified:schema.schemaVerified,
+          metaTemplateVerified:false,
+          status:schema.schemaVerified
+            ?'SCHEMA_VERIFIED_META_PREFLIGHT_REQUIRED'
+            :'SCHEMA_NOT_VERIFIED'
         },
         seller:{
           workflow:'seller_onboarding',
@@ -72,21 +124,39 @@ export async function onRequestGet({request,env}) {
           requestedTemplateConfigured:Boolean(sellerTemplate),
           requestedTemplateAllowlisted:allowlisted(env,sellerTemplate),
           metaTemplateVerified:false,
+          sellerMappingSchemaVerified:schema.sellerMappingSchemaVerified,
+          sellerMappingMissingColumns:schema.sellerMappingMissingColumns,
+          sellerRecipientSchemaVerified:schema.sellerRecipientSchemaVerified,
+          sellerRecipientMissingColumns:schema.sellerRecipientMissingColumns,
+          alertStorageSchemaVerified:schema.sellerAlertStorageVerified,
+          alertStorageMissingColumns:schema.sellerAlertStorageMissingColumns,
           automaticSendingConfigured:false,
-          status:marketing===0?'MARKETING_OPT_IN_REQUIRED':
+          claimFunctionPresent:schema.sellerClaimFunctionPresent,
+          finishFunctionPresent:schema.sellerFinishFunctionPresent,
+          status:!schema.sellerClaimFunctionPresent||!schema.sellerFinishFunctionPresent?'SELLER_DISPATCH_RPC_NOT_VERIFIED':!schema.sellerMappingSchemaVerified||!schema.sellerRecipientSchemaVerified
+            ?'SELLER_SCHEMA_NOT_VERIFIED':!schema.sellerAlertStorageVerified?'SELLER_ALERT_STORAGE_NOT_VERIFIED':marketing===0?'MARKETING_OPT_IN_REQUIRED':
             'TEMPLATE_AND_CONTROLLED_OUTREACH_REVIEW_REQUIRED'
         },
         admin:{
           workflow:'operational_alerts',
           requestedTemplateConfigured:Boolean(adminTemplate),
           requestedTemplateAllowlisted:allowlisted(env,adminTemplate),
+          adminIdentitySchemaVerified:schema.adminIdentitySchemaVerified,
+          adminIdentityMissingColumns:schema.adminIdentityMissingColumns,
+          alertStorageSchemaVerified:schema.adminAlertStorageVerified,
+          alertStorageMissingColumns:schema.adminAlertStorageMissingColumns,
           verifiedAdminRecipients:false,
           metaTemplateVerified:false,
           dedicatedDispatcherVerified:false,
-          status:'ADMIN_ALERT_WORKFLOW_REQUIRED'
+          claimFunctionPresent:schema.adminClaimFunctionPresent,
+          finishFunctionPresent:schema.adminFinishFunctionPresent,
+          status:!schema.adminClaimFunctionPresent||!schema.adminFinishFunctionPresent?'ADMIN_DISPATCH_RPC_NOT_VERIFIED':!schema.adminIdentitySchemaVerified?'ADMIN_IDENTITY_SCHEMA_NOT_VERIFIED':!schema.adminAlertStorageVerified?'ADMIN_ALERT_STORAGE_NOT_VERIFIED':'ADMIN_ALERT_WORKFLOW_REQUIRED'
         }
       },
+      inboundSupportSchemaVerified:schema.inboundSupportSchemaVerified,
+      inboundSupportMissingColumns:schema.inboundSupportMissingColumns,
       inboundNeedsManualReview:inboundReview,
+      inboundSupportQueues:{customerSupport:customerQueue,sellerSupport:sellerQueue,salesMarketing:salesMarketingQueue,adminOperations:adminQueue},
       disclaimers:[
         'This is an operator-only privacy-safe inventory, not a sending authorization.',
         'Active marketing consent is purpose-specific; public business phone listings do not constitute opt-in.',

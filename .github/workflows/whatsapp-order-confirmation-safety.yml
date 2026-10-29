@@ -30,6 +30,8 @@ jobs:
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-readiness-page.test.mjs
       - name: Verify customer seller admin consent gating and no-send readiness inventory
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-roles-readiness.test.mjs
+      - name: Verify role-specific seller/admin alert dispatch is private, gated and no-retry
+        run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-role-alert-dispatch.test.mjs
       - name: Verify shipping and delivery dispatcher never bypasses Meta, consent or idempotency
         run: node --experimental-default-type=module --test seller-panel/tests/whatsapp-shipping-dispatch.test.mjs
       - name: Verify seller marketing Meta template readiness remains no-send and consent-gated
@@ -70,6 +72,18 @@ jobs:
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/tests/sql/whatsapp-signup-fixture.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f seller-panel/sql/whatsapp_order_confirmation_atomic_dispatch.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019150000_whatsapp_notification_schema_readiness.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019150000_whatsapp_notification_schema_readiness.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/whatsapp_notification_schema_readiness.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019160000_whatsapp_admin_alert_foundation.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019160000_whatsapp_admin_alert_foundation.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/whatsapp_admin_alert_foundation.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019170000_whatsapp_seller_order_alert_foundation.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019170000_whatsapp_seller_order_alert_foundation.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/whatsapp_seller_order_alert_foundation.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019180000_whatsapp_inbound_support_routing.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261019180000_whatsapp_inbound_support_routing.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/whatsapp_inbound_support_routing.sql
           cmp -s seller-panel/sql/whatsapp_signup_once_transactional_consent.sql supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
           psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261016140000_whatsapp_signup_once_transactional_consent.sql
