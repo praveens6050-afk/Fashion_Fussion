@@ -27,7 +27,7 @@ async function zohoToken(db:any, role:string): Promise<{accessToken:string;accou
   if(!res.ok||!data.access_token) throw new Error("ZOHO_TOKEN_REFRESH_FAILED");
   return {accessToken:String(data.access_token),accountId:String(mailbox.zoho_account_id)};
 }
-async function sendEmail(db:any, c:any, body:string, requestId:string, role:string) {
+async function sendEmail(db:any, c:any, body:string, requestId:string, role:string): Promise<{id:string;provider:string;fromAddress:string;toAddress:string}> {
   const sender=fromEnv(role);
   const recipient=clean(c.contact_email,254);
   const zohoMessageId=clean(c.metadata?.zoho_message_id,80);
@@ -43,7 +43,7 @@ async function sendEmail(db:any, c:any, body:string, requestId:string, role:stri
   const data=await res.json().catch(()=>({}));
   if(!res.ok || (data?.status && String(data.status.code||"")!=="200")) throw new Error("ZOHO_REPLY_FAILED");
   const msgId=String(data?.data?.messageId||data?.data?.message_id||"zoho-reply-"+requestId);
-  return {id:msgId,provider:"email"};
+  return {id:msgId,provider:"email",fromAddress:sender,toAddress:recipient};
 }
 async function sendWhatsApp(c:any, body:string, requestId:string) {
   const token=Deno.env.get("META_WHATSAPP_ACCESS_TOKEN");
@@ -114,7 +114,7 @@ Deno.serve(async(req)=>{
   try{
     const senderRole=sharedSalesMarketing ? role : c.department;
     const sent=c.provider==="email"?await sendEmail(db,c,body,requestId,senderRole):await sendWhatsApp(c,body,requestId);
-    const {error:messageError}=await db.from("crm_inbox_messages").insert({conversation_id:conversationId,provider_message_id:sent.id,direction:"outbound",sender_label:user.email||label[role],body,metadata:{provider:sent.provider,request_id:requestId,actor_user_id:user.id},send_request_id:requestId,delivery_status:"sent"});
+    const {error:messageError}=await db.from("crm_inbox_messages").insert({conversation_id:conversationId,provider_message_id:sent.id,direction:"outbound",sender_label:user.email||label[role],body,metadata:{provider:sent.provider,request_id:requestId,actor_user_id:user.id,...("fromAddress" in sent?{from_address:sent.fromAddress,to_address:sent.toAddress}:{})},send_request_id:requestId,delivery_status:"sent"});
     if(messageError) throw new Error("MESSAGE_AUDIT_WRITE_FAILED");
     await db.from("crm_inbox_conversations").update({latest_message:body,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conversationId);
     await db.from("crm_inbox_send_attempts").update({state:"sent",provider_message_id:sent.id,updated_at:new Date().toISOString()}).eq("request_id",requestId);
