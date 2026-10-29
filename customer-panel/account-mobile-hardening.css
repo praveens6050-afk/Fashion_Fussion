@@ -58,7 +58,8 @@
     display: none;
   }
 
-  .menu button {
+  .menu button,
+  .menu a {
     flex: 0 0 auto;
     white-space: nowrap;
   }
