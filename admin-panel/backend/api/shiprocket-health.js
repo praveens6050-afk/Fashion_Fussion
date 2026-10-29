@@ -17,7 +17,7 @@ module.exports=async function shiprocketHealth(req,res){
     const started=Date.now();
     const response=await fetch(LOGIN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:EMAIL,password:PASSWORD})});
     const data=await response.json().catch(()=>({}));
-    if(!response.ok||!data?.token){return json(req,res,502,{ok:false,provider:'shiprocket',authenticated:false,error:data?.message||'Shiprocket authentication failed'})}
+    if(!response.ok||!data?.token){return json(req,res,200,{ok:false,provider:'shiprocket',authenticated:false,provider_status:response.status,error:data?.message||'Shiprocket authentication failed'})}
     return json(req,res,200,{ok:true,provider:'shiprocket',authenticated:true,pickup_location_configured:Boolean(PICKUP_LOCATION),pickup_pincode_configured:/^\d{6}$/.test(PICKUP_PINCODE),serviceability_ready:Boolean(PICKUP_LOCATION&&/^\d{6}$/.test(PICKUP_PINCODE)),latency_ms:Date.now()-started,checked_at:new Date().toISOString()});
   }catch(error){console.error('shiprocket health error:',error);return json(req,res,error.status||400,{ok:false,provider:'shiprocket',authenticated:false,error:error.message||'Shiprocket connection test failed'})}
 };
