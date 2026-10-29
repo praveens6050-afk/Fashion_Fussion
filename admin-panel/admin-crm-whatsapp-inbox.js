@@ -99,7 +99,8 @@
   function updateWhatsAppSendButton(){
     const button=$('ffWaSendReply'),row=rows.find(r=>Number(r.id)===Number(button?.dataset.conversationId));
     const expired=row&&Date.now()-Date.parse(row.last_inbound_at||row.created_at)>24*60*60*1000;
-    if(button)button.disabled=!row||!$('ffWaReplyText').value.trim()||Boolean(expired);
+    const text=$('ffWaReplyText').value.trim(),samePendingBody=!pendingWhatsappRequest||pendingWhatsappBody===text;
+    if(button)button.disabled=!row||!text||Boolean(expired)||!samePendingBody;
   }
   let emailRows=[],selectedEmailId=null;
   async function loadEmail(){
@@ -178,25 +179,6 @@
     }catch(e){$('ffWaTeamStatus').textContent=e.message||'Could not save team access.';}
     finally{$('ffWaAssignTeam').disabled=false;}
   }
-  async function classifyWhatsApp(){
-    const id=Number($('ffWaQueueReply').dataset.eventId),senderRole=$('ffWaIdentityRole').value;
-    if(!isAdmin||!Number.isSafeInteger(id)||id<=0)return;
-    $('ffWaClassifyIdentity').disabled=true;$('ffWaInboxStatus').textContent='Saving sender identity review…';
-    try{
-      const result=await callApi({action:'classify_whatsapp',inboundEventId:id,senderRole});
-      $('ffWaInboxStatus').textContent=result.message||'Identity review saved; no message sent.';
-      $('ffWaIdentityReview').hidden=true;await load();
-      const row=rows.find(r=>Number(r.id)===id);if(row)select(id,null);
-    }catch(e){$('ffWaInboxStatus').textContent=e.message||'Identity review failed.';}
-    finally{$('ffWaClassifyIdentity').disabled=false;}
-  }
-  async function approveWhatsAppReply(){
-    const row=rows.find(r=>Number(r.id)===Number($('ffWaQueueReply').dataset.eventId));
-    if(!isAdmin||!row?.latest_reply_id)return;
-    $('ffWaApproveReply').disabled=true;$('ffWaInboxStatus').textContent='Approving reply for gated dispatch…';
-    try{const result=await callApi({action:'approve_reply',replyId:Number(row.latest_reply_id)});$('ffWaInboxStatus').textContent=result.message||'Reply approved; no message sent.';await load();}
-    catch(e){$('ffWaInboxStatus').textContent=e.message||'Reply approval failed.';$('ffWaApproveReply').disabled=false;}
-  }
   async function sendWhatsAppReply(){
     const button=$('ffWaSendReply'),row=rows.find(r=>Number(r.id)===Number(button.dataset.conversationId));
     const reply=$('ffWaReplyText').value.trim(),db=window.supabaseClient;
@@ -205,9 +187,10 @@
       $('ffWaInboxStatus').textContent='The 24-hour WhatsApp service window has expired; a template reply is required.';
       updateWhatsAppSendButton();return;
     }
-    if(!pendingWhatsappRequest||pendingWhatsappBody!==reply){
-      pendingWhatsappRequest=window.crypto.randomUUID();pendingWhatsappBody=reply;
+    if(pendingWhatsappRequest&&pendingWhatsappBody!==reply){
+      $('ffWaInboxStatus').textContent='The previous send was not confirmed. Refresh message history before changing or retrying this reply.';return;
     }
+    if(!pendingWhatsappRequest){pendingWhatsappRequest=window.crypto.randomUUID();pendingWhatsappBody=reply;}
     button.disabled=true;$('ffWaInboxStatus').textContent='Sending through the CRM provider workflow…';
     try{
       const {data,error}=await db.functions.invoke('crm-send-reply',{body:{
