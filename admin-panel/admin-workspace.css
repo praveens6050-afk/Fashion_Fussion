@@ -150,19 +150,19 @@ html.ff-admin-page body {
   top: 77px;
   z-index: 90;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 9px;
   margin: 0 0 19px;
   padding: 9px 11px;
-  overflow-x: auto;
+  overflow: visible;
   border: 1px solid rgba(222, 227, 236, .9);
   border-radius: 14px;
   background: rgba(255, 255, 255, .88);
   box-shadow: 0 8px 22px rgba(24, 35, 56, .075);
   backdrop-filter: blur(16px);
-  scrollbar-width: thin;
 }
-.ff-admin-nav-label { position: sticky; left: 0; flex: 0 0 auto; padding: 0 7px 0 3px; background: inherit; color: #8490a3; font-size: 9px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+.ff-admin-nav-label { position: static; flex: 0 0 auto; padding: 0 7px 0 3px; background: inherit; color: #8490a3; font-size: 9px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
 .ff-admin-nav a {
   display: inline-flex;
   min-height: 36px;
@@ -190,7 +190,8 @@ html.ff-admin-page body {
   .ff-admin-page .stats { gap: 10px !important; }
   .ff-admin-page .stat { padding: 15px !important; }
   .ff-admin-page .stat-value { font-size: 25px !important; }
-  .ff-admin-page .ff-admin-nav { top: 66px; gap: 5px; margin: 0 -2px 15px; padding: 7px; border-radius: 12px; }
+  .ff-admin-page .ff-admin-nav { top: 66px; flex-wrap: nowrap; gap: 5px; margin: 0 -2px 15px; padding: 7px; overflow-x: auto; border-radius: 12px; scrollbar-width: none; }
+  .ff-admin-page .ff-admin-nav::-webkit-scrollbar { display: none; }
   .ff-admin-page .ff-admin-nav a { min-height: 34px; padding: 5px 8px; font-size: 11px; }
   .ff-admin-page .ff-admin-nav-label { display: none; }
   .ff-admin-page .card-header,
