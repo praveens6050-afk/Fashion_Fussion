@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Buffer } from "node:buffer";
 
 const ALLOWED = new Set([
   "image/jpeg", "image/png", "application/pdf", "text/plain",
@@ -131,7 +132,7 @@ Deno.serve(async (req) => {
       } else if (mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
         const mammothModule = await import("npm:mammoth@1.9.0");
         const mammoth = mammothModule.default || mammothModule;
-        const parsed = await mammoth.extractRawText({ buffer: new Uint8Array(bytes) });
+        const parsed = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
         extractedText = String(parsed.value || "");
         extraction = "docx-text";
       } else if (mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || mime === "application/vnd.ms-excel") {
