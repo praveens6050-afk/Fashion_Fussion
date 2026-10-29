@@ -39,7 +39,7 @@
     if (document.querySelector('link[data-admin-workspace-style]')) return;
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = 'admin-workspace.css?v=20261029-admin-workspace';
+    style.href = 'admin-workspace.css?v=20261029-admin-left-sidebar';
     style.setAttribute('data-admin-workspace-style', 'true');
     document.head.appendChild(style);
   }
