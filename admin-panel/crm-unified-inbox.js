@@ -87,7 +87,7 @@
         const{data,error}=await db.functions.invoke('crm-zoho-delivery-sync',{body:{}});
         if(data?.error==='ZOHO_DELIVERY_SCOPE_REQUIRED')throw new Error('Reconnect Zoho Mail and approve the organization read-only permission to enable delivery tracking.');
         if(data?.error)throw new Error(data.error);
-        if(error)throw new Error(error.message||'Zoho delivery tracking unavailable');
+        if(error){let detail='';const response=error.context;if(response&&typeof response.clone==='function'){const body=await response.clone().json().catch(()=>null);if(body?.error){const meta=[body.provider_http_status?('Zoho HTTP '+body.provider_http_status):'',body.provider_code?('API '+String(body.provider_code).slice(0,48)):''].filter(Boolean).join(', ');detail=body.error+(meta?' ('+meta+')':'');}}throw new Error(detail||error.message||'Zoho delivery tracking unavailable')}
         await refresh(true);
         notice('Zoho delivery check complete: '+Number(data.updated||0)+' status update(s); '+Number(data.not_yet_reported||0)+' still awaiting Zoho.');
       }catch(e){console.error('[CRM Zoho delivery sync]',e);notice('Email delivery tracking could not refresh: '+String(e.message||e));}
