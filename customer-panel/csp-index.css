@@ -3,3 +3,5 @@
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 
 .hero .business p{color:var(--muted)}
+
+.notification-action{display:inline-grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:9px;font-size:18px;line-height:1}.notification-action:hover,.notification-action:focus-visible{background:#ffffff14;outline:2px solid var(--orange);outline-offset:2px}
