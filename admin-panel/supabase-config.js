@@ -7,7 +7,7 @@ window.FF_API_ORIGIN='';
   function createClient(){
     if(window.supabaseClient)return window.supabaseClient;
     if(!window.supabase||typeof window.supabase.createClient!=='function')return null;
-    window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{storage:window.sessionStorage,storageKey:'ff_admin_auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     return window.supabaseClient;
   }
   function loadFallback(){
