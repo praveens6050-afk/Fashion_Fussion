@@ -81,6 +81,7 @@
     if (dashboard.dataset.adminReady !== 'true') return;
     const container = dashboard.querySelector('.container');
     if (!container) return;
+    document.documentElement.classList.add('ff-admin-page');
     ensureStyle();
 
     let nav = document.getElementById('ffAdminWorkspaceNav');
