@@ -5,7 +5,7 @@
     if(!client?.auth)throw new Error('Admin authentication service is unavailable.');
     if(document.querySelector('script[data-admin-core-runtime]'))return;
     const script=document.createElement('script');
-    script.src='csp-admin.js?v=20261029-admin-session';
+    script.src='csp-admin.js?v=20261029-admin-console-fixes';
     script.async=false;
     script.setAttribute('data-admin-core-runtime','true');
     script.onerror=()=>{
