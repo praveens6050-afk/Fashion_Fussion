@@ -121,3 +121,11 @@
 [data-csp-style="csp-html-admin-3"]{text-align:center;padding:30px}
 [data-csp-style="csp-html-admin-4"]{display:flex;gap:10px;align-items:center}
 [data-csp-style="csp-html-admin-5"]{font-size:10px;color:#777}
+
+
+/* Premium depth for admin work surfaces. */
+body.ff-admin-page :is(.card,.stat,.message-card,.panel,.section-card,.dashboard-card,.metric-card){border:1px solid rgba(20,42,76,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.94),0 2px 5px rgba(16,36,68,.05),0 16px 34px rgba(16,36,68,.10);transform-style:preserve-3d;transition:transform .24s cubic-bezier(.2,.75,.25,1),box-shadow .24s,border-color .24s}
+body.ff-admin-page :is(button.primary,button.secondary,.btn){box-shadow:0 2px 0 rgba(17,38,70,.10),0 8px 18px rgba(17,38,70,.12);transition:transform .18s ease,box-shadow .18s ease}
+@media(hover:hover) and (pointer:fine){body.ff-admin-page :is(.card,.stat,.message-card,.panel,.section-card,.dashboard-card,.metric-card):hover{transform:translateY(-3px) rotateX(.5deg);border-color:rgba(40,92,170,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 5px 10px rgba(16,36,68,.06),0 24px 48px rgba(16,36,68,.14)}body.ff-admin-page :is(button.primary,button.secondary,.btn):hover:not(:disabled){transform:translateY(-2px);box-shadow:0 3px 0 rgba(17,38,70,.12),0 13px 24px rgba(17,38,70,.18)}}
+@media(hover:none),(pointer:coarse){body.ff-admin-page :is(.card,.stat,.message-card,.panel,.section-card,.dashboard-card,.metric-card):hover{transform:none!important}}
+@media(prefers-reduced-motion:reduce){body.ff-admin-page :is(.card,.stat,.message-card,.panel,.section-card,.dashboard-card,.metric-card,button.primary,button.secondary,.btn){transition:none!important;transform:none!important}}
