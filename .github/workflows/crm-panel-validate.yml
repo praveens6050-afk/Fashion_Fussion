@@ -48,6 +48,7 @@ jobs:
       - name: Check JavaScript and TypeScript syntax
         run: |
           node --check admin-panel/crm-auth.js
+          node --check admin-panel/admin-crm-whatsapp-inbox.js
           node --check admin-panel/crm-unified-inbox.js
           node --check admin-panel/crm-team-management.js
           node --check admin-panel/crm-support-workspace.js
