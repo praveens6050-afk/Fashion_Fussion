@@ -161,9 +161,8 @@ html.ff-admin-page body {
   background: rgba(255, 255, 255, .88);
   box-shadow: 0 8px 22px rgba(24, 35, 56, .075);
   backdrop-filter: blur(16px);
-
 }
- .ff-admin-nav-label { position: static; flex: 0 0 auto; padding: 0 7px 0 3px; background: inherit; color: #8490a3; font-size: 9px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+.ff-admin-nav-label { position: static; flex: 0 0 auto; padding: 0 7px 0 3px; background: inherit; color: #8490a3; font-size: 9px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
 .ff-admin-nav a {
   display: inline-flex;
   min-height: 36px;
