@@ -40,3 +40,7 @@ html.ff-customer-compat :is(.btn,.primary,.product-actions .add,.checkout){box-s
 @media(hover:hover) and (pointer:fine){html.ff-customer-compat :is(article.product,.ff-discovery-card,.trust-item,.benefit,.card,.panel,.account-card,.order-card,.address-card,.summary,.support-card):hover{transform:translateY(-4px) rotateX(.7deg);border-color:rgba(40,92,170,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.96),0 5px 10px rgba(16,36,68,.06),0 24px 48px rgba(16,36,68,.14)}html.ff-customer-compat :is(.btn,.primary,.product-actions .add,.checkout):hover:not(:disabled){transform:translateY(-2px);box-shadow:0 3px 0 rgba(17,38,70,.12),0 13px 24px rgba(17,38,70,.18)}}
 @media(hover:none),(pointer:coarse){html.ff-customer-compat :is(article.product,.ff-discovery-card,.trust-item,.benefit,.card,.panel,.account-card,.order-card,.address-card,.summary,.support-card):hover{transform:none!important}}
 @media(prefers-reduced-motion:reduce){html.ff-customer-compat :is(article.product,.ff-discovery-card,.trust-item,.benefit,.card,.panel,.account-card,.order-card,.address-card,.summary,.support-card,.btn,.primary,.product-actions .add,.checkout){transition:none!important;transform:none!important}}
+
+
+/* Clear keyboard focus on the tactile customer controls. */
+html.ff-customer-compat :is(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid rgba(51,112,214,.62);outline-offset:3px}
