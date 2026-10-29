@@ -121,7 +121,30 @@ Deno.serve(async (req) => {
           const contact: any = contacts.get(sender) || {};
           const body = getMessageBody(m).slice(0, 10000);
           if (!m.id || !sender || !body) continue;
-          const metadata: Record<string, unknown> = { message_type: m.type || "unknown", business_phone_number_id: businessId, display_phone_number: value.metadata?.display_phone_number || null };
+          const media = m?.image || m?.document || m?.video || m?.audio || m?.sticker || null;
+          const rawMime = String(media?.mime_type || "").split(";")[0].trim().toLowerCase();
+          const supportedMime = new Set([
+            "image/jpeg", "image/png", "application/pdf", "text/plain",
+            "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          ]);
+          const mediaId = typeof media?.id === "string" ? media.id : "";
+          const rawFilename = typeof media?.filename === "string" ? media.filename : "";
+          const safeFilename = rawFilename.replace(/[\\/\0-\x1f\x7f]/g, "_").slice(0, 180);
+          const metadata: Record<string, unknown> = {
+            message_type: m.type || "unknown",
+            business_phone_number_id: businessId,
+            display_phone_number: value.metadata?.display_phone_number || null
+          };
+          if (mediaId) metadata.whatsapp_attachment = {
+            media_id: mediaId,
+            mime_type: rawMime || null,
+            filename: safeFilename || null,
+            sha256: typeof media?.sha256 === "string" ? media.sha256 : null,
+            caption: typeof media?.caption === "string" ? media.caption.slice(0, 2000) : null,
+            supported: supportedMime.has(rawMime),
+            status: supportedMime.has(rawMime) ? "available" : "unsupported_type"
+          };
           if (route === "sales" || route === "marketing") metadata.route_department = route;
           const { error } = await db.rpc("crm_ingest_inbound_message", {
             p_provider: "whatsapp", p_provider_message_id: String(m.id), p_sender_phone: sender,

@@ -42,6 +42,8 @@ jobs:
           node-version: 22
       - name: Verify CRM contract
         run: node scripts/check_crm_panel_contract.js
+      - name: Test WhatsApp attachment pipeline contracts
+        run: node --test admin-panel/tests/crm-whatsapp-attachments.test.mjs
       - uses: denoland/setup-deno@v2
       - name: Check JavaScript and TypeScript syntax
         run: |
@@ -53,6 +55,7 @@ jobs:
           deno check --no-lock supabase/functions/crm-inbound-webhook/index.ts
           deno check --no-lock supabase/functions/crm-send-reply/index.ts
           deno check --no-lock supabase/functions/crm-zoho-delivery-sync/index.ts
+          deno check --no-lock supabase/functions/crm-whatsapp-media/index.ts
       - name: Validate CRM migrations on disposable PostgreSQL
         env:
           PGPASSWORD: postgres
