@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
     const accountResponse = await fetch(apiBase + "/accounts/" + encodeURIComponent(String(mailbox.zoho_account_id)), { headers: authHeaders, redirect: "error" });
     const accountPayload = await accountResponse.json().catch(() => ({}));
     if (!accountResponse.ok || String(accountPayload?.status?.code || "200") !== "200") return json({ error: "ZOHO_ACCOUNT_LOOKUP_FAILED", provider_http_status: accountResponse.status, provider_code: String(accountPayload?.status?.code || "").slice(0, 48) }, 502, origin);
-    const zoid = String(accountPayload?.data?.zoid || accountPayload?.data?.account?.zoid || "");
+    const zoid = String(accountPayload?.data?.zoid || accountPayload?.data?.account?.zoid || accountPayload?.data?.policyId?.zoid || "");
     if (!/^\d+$/.test(zoid)) return json({ error: "ZOHO_ORGANIZATION_ID_MISSING", provider_http_status: accountResponse.status, provider_code: "ORGANIZATION_ID_MISSING" }, 502, origin);
 
     const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
