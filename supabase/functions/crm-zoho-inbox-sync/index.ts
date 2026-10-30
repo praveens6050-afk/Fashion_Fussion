@@ -59,6 +59,27 @@ function receivedIso(value: unknown): string | null {
   const date = new Date(milliseconds);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
+function attachmentMime(name: unknown): string {
+  const ext = String(name || "").toLowerCase().split(".").pop() || "";
+  const types: Record<string,string> = { jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", gif:"image/gif", webp:"image/webp", pdf:"application/pdf" };
+  return types[ext] || "";
+}
+async function zohoAttachments(apiBase: string, accountId: string, folderId: string, messageId: string, token: string) {
+  const url = apiBase + "/accounts/" + accountId + "/folders/" + encodeURIComponent(folderId) +
+    "/messages/" + encodeURIComponent(messageId) + "/attachmentinfo?includeInline=true";
+  const data = await zohoRequest(url, token);
+  const files = [...(Array.isArray(data?.attachments) ? data.attachments : []),
+    ...(Array.isArray(data?.inline) ? data.inline : [])];
+  return files.slice(0,10).flatMap((file: any) => {
+    const filename = String(file?.attachmentName || "").slice(0,180);
+    const mime = attachmentMime(filename);
+    const id = String(file?.attachmentId || "");
+    const size = Number(file?.attachmentSize || 0);
+    if (!id || !mime || size > 15 * 1024 * 1024) return [];
+    return [{ attachment_id:id, filename, mime_type:mime, size, supported:true,
+      inline:!!file?.cid }];
+  });
+}
 async function zohoRequest(url: string, accessToken: string): Promise<any> {
   const response = await fetch(url, {
     method: "GET",
@@ -148,14 +169,21 @@ Deno.serve(async (req: Request) => {
     }).filter((item: any) => item.messageId && item.inboxAddress);
     const ids = candidates.map((item: any) => item.messageId);
     const { data: known, error: knownError } = ids.length
-      ? await db.from("crm_inbox_messages").select("provider_message_id").eq("direction", "inbound").in("provider_message_id", ids)
+      ? await db.from("crm_inbox_messages").select("provider_message_id,metadata").eq("direction", "inbound").in("provider_message_id", ids)
       : { data: [], error: null };
     if (knownError) throw new Error("CRM_INBOX_LOOKUP_FAILED");
-    const knownIds = new Set((known || []).map((item: any) => String(item.provider_message_id)));
+    const knownById = new Map((known || []).map((item: any) => [String(item.provider_message_id),item]));
+    const knownIds = new Set(knownById.keys());
     const unseen = candidates.filter((item: any) => !knownIds.has(item.messageId));
     const deferred = Math.max(0, unseen.length - 25);
     const pending = unseen.slice(0, 25).reverse();
+    const attachmentBackfill = candidates.filter((item: any) => {
+      const previous:any=knownById.get(item.messageId);
+      return previous && String(item.message?.hasAttachment || "0")==="1"
+        && !Array.isArray(previous.metadata?.zoho_attachments);
+    }).slice(0,25);
     let imported = 0;
+    let attachmentsUpdated = 0;
     let skipped = listedMessages.length - candidates.length;
     for (const item of pending) {
       const message = item.message;
@@ -168,6 +196,12 @@ Deno.serve(async (req: Request) => {
       const senderName = decodeHtml(message?.sender || senderEmail).slice(0, 200);
       const threadId = String(message?.threadId || item.messageId);
       const receivedAt = receivedIso(message?.receivedTime);
+      let zohoAttachmentList:any[]=[];
+      let attachmentPending=false;
+      if (String(message?.hasAttachment || "0")==="1") {
+        try { zohoAttachmentList=await zohoAttachments(apiBase,accountId,String(message?.folderId||folderId),item.messageId,String(tokenPayload.access_token)); }
+        catch(error) { attachmentPending=true;console.warn("[CRM Zoho attachments] Metadata lookup deferred:",error instanceof Error?error.message:"unknown"); }
+      }
       const { data: conversationId, error: ingestError } = await db.rpc("crm_ingest_inbound_message", {
         p_provider: "email",
         p_provider_message_id: item.messageId,
@@ -184,6 +218,7 @@ Deno.serve(async (req: Request) => {
           zoho_folder_id: folderId,
           received_at: receivedAt,
           received_time: message?.receivedTime ? String(message.receivedTime) : null,
+          ...(String(message?.hasAttachment || "0")==="1" ? { zoho_attachments:zohoAttachmentList, zoho_attachments_pending:attachmentPending } : {}),
         },
       });
       if (ingestError) throw new Error("CRM_EMAIL_INGEST_FAILED");
@@ -193,7 +228,21 @@ Deno.serve(async (req: Request) => {
       }
       imported++;
     }
-    return json({ ok: true, scanned: listedMessages.length, matched: candidates.length, imported, already_known: knownIds.size, deferred, skipped }, 200, origin);
+    for (const item of attachmentBackfill) {
+      const previous:any=knownById.get(item.messageId);
+      try {
+        const attachments=await zohoAttachments(apiBase,accountId,String(item.message?.folderId||folderId),item.messageId,String(tokenPayload.access_token));
+        const { error:updateError }=await db.from("crm_inbox_messages").update({metadata:{
+          ...(previous.metadata&&typeof previous.metadata==="object"?previous.metadata:{}),
+          zoho_attachments:attachments,zoho_attachments_pending:false
+        }}).eq("provider_message_id",item.messageId).eq("direction","inbound");
+        if(updateError)throw new Error("CRM_EMAIL_ATTACHMENT_METADATA_UPDATE_FAILED");
+        attachmentsUpdated++;
+      } catch(error) {
+        console.warn("[CRM Zoho attachments] Backfill deferred:",error instanceof Error?error.message:"unknown");
+      }
+    }
+    return json({ ok: true, scanned: listedMessages.length, matched: candidates.length, imported, attachments_updated:attachmentsUpdated, already_known: knownIds.size, deferred, skipped }, 200, origin);
   } catch (error) {
     const code = error instanceof Error ? error.message : "ZOHO_INBOX_SYNC_FAILED";
     console.error("[CRM Zoho inbox sync] Failed:", code);
