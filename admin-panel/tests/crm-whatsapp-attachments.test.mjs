@@ -31,7 +31,9 @@ test('attachment endpoint requires an authenticated user and an RLS-scoped messa
   assert.ok(media.includes('userDb.auth.getUser(token)'));
   assert.ok(media.includes('userDb.from("crm_inbox_messages")'));
   assert.ok(media.includes('userDb.from("crm_inbox_conversations")'));
-  assert.ok(media.includes('.eq("provider", "whatsapp")'));
+  assert.ok(media.includes('["whatsapp", "email"].includes(String(conversation.provider))'));
+  assert.ok(media.includes('metadata.zoho_attachments'));
+  assert.ok(media.includes('crm_get_zoho_mailbox_auth'));
 });
 
 test('attachment endpoint restricts MIME, download hosts and payload size', () => {
