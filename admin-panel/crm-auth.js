@@ -213,7 +213,7 @@
         await withTimeout(loadScript(src, label), 10000, 'Loading ' + label + ' timed out.');
       } catch (error) {
         console.error('[CRM] Workspace module failed:', error);
-        const notice = $('crmInboxNotice') || $('crmSupportNotice') || $('crmTeamNotice');
+        const notice = $('crmTeamNotice');
         if (notice) notice.textContent = error.message + ' Refresh the page or contact the CRM administrator.';
       }
     }
