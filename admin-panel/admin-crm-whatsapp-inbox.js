@@ -68,12 +68,24 @@
         ['Sales / marketing',q.sales_marketing],...(isAdmin?[['Admin operations',q.admin_operations]]:[]),
         ['Needs review',q.needs_review]
       ].map(([name,n])=>'<span><b>'+Number(n||0)+'</b>'+esc(name)+'</span>').join('');
-      renderRows();
+      renderRows();renderOverview();
       $('ffWaInboxStatus').textContent='Refreshed '+date(data.generated_at)+'. Select a conversation to reply.';
     }catch(e){
       $('ffWaInboxRows').textContent='Inbox unavailable.';
       $('ffWaInboxStatus').textContent=e.message||'Inbox unavailable.';
     }
+  }
+  function renderOverview(){
+    const host=$('crmOverviewCounts');if(!host)return;
+    const items=[...rows,...emailRows].filter(row=>isAdmin||row.support_team===actorTeam);
+    const customer=items.filter(row=>row.support_team==='customer_support').length;
+    const seller=items.filter(row=>row.support_team==='seller_support').length;
+    const status=row=>String(row.routing_status||'open').toLowerCase();
+    const resolved=items.filter(row=>['closed','resolved','complete','completed'].includes(status(row))).length;
+    const pending=items.filter(row=>['assigned','waiting','needs_review','pending'].includes(status(row))).length;
+    const open=items.filter(row=>status(row)==='open').length;
+    host.innerHTML=[['Customer support',customer],['Seller support',seller],['Open',open],['Resolved',resolved],['Pending',pending]]
+      .map(([label,count])=>'<span><b>'+Number(count||0)+'</b>'+esc(label)+'</span>').join('');
   }
   function renderRows(){
     const target=$('ffWaInboxRows');if(!target)return;
@@ -187,7 +199,7 @@
       const filter=$('ffEmailTeamFilter');
       [...filter.options].forEach(option=>{if(option.value==='all')option.textContent=data.is_admin?'All queues':'My team queue';});
       [...filter.options].forEach(option=>{if(option.value!=='all')option.hidden=!data.is_admin&&option.value!==data.actor_team;});
-      renderEmails();
+      renderEmails();renderOverview();
       $('ffEmailStatus').textContent='Email inbox refreshed '+date(data.generated_at)+'. Read-only mode; no email sent.';
     }catch(e){$('ffEmailRows').textContent='Email inbox unavailable.';$('ffEmailStatus').textContent=e.message||'Email inbox unavailable.';}
   }
