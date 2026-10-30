@@ -84,7 +84,7 @@
     target.querySelectorAll('[data-event]').forEach(btn=>btn.addEventListener('click',()=>select(Number(btn.dataset.event),btn)));
   }
   async function openWaAttachment(button){
-    const providerMessageId=button.dataset.messageId||'',mime=button.dataset.mime||'',filename=button.dataset.name||'whatsapp-attachment';
+    const providerMessageId=button.dataset.messageId||'',attachmentId=button.dataset.attachmentId||'',mime=button.dataset.mime||'',filename=button.dataset.name||'attachment',action=button.dataset.action||'preview';
     if(!providerMessageId)return;
     const original=button.textContent;button.disabled=true;button.textContent='Loading…';
     const status=$('ffWaInboxStatus');
@@ -94,10 +94,18 @@
       if(sessionError||!session?.access_token)throw new Error('CRM session expired. Sign in again.');
       const endpoint='https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/crm-whatsapp-media';
       const headers={Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA','Content-Type':'application/json'};
-      const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({provider_message_id:providerMessageId,action:'download'}),cache:'no-store'});
+      const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({provider_message_id:providerMessageId,attachment_id:attachmentId||undefined,action:action==='extract'?'extract':'preview'}),cache:'no-store'});
       if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.error||'Attachment unavailable (HTTP '+response.status+').');}
+      if(action==='extract'){
+        const parsed=await response.json();
+        const host=button.closest('.ff-wa-attachment')||button.parentElement;
+        host.querySelector('.ff-wa-attachment-text')?.remove();
+        const panel=document.createElement('pre');panel.className='ff-wa-attachment-text';panel.textContent=String(parsed.text||'').slice(0,200000);panel.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:55vh;overflow:auto;padding:12px;border:1px solid #d0d5dd;border-radius:8px;background:#fff';host.appendChild(panel);
+        status.textContent=parsed.text?'PDF text extracted.':'No selectable text found in this PDF.';
+        return;
+      }
       const blob=await response.blob();
-      if(button.dataset.action==='ocr'){
+      if(action==='ocr'){
         if(!mime.startsWith('image/'))throw new Error('OCR is available only for image attachments.');
         if(blob.size>8*1024*1024)throw new Error('Image OCR limit is 8 MB. Open or download the image instead.');
         const host=button.closest('.ff-wa-attachment');host.querySelector('.ff-wa-attachment-text')?.remove();
@@ -196,6 +204,7 @@
     $('ffEmailSelectedTitle').textContent=row.subject||'(No subject)';
     $('ffEmailSelectedMeta').textContent=(row.support_team||'unassigned')+' · '+(row.routing_status||'needs_review')+' · From '+(row.sender_email||'')+' · '+date(row.received_at);
     $('ffEmailSelectedMessage').textContent=row.message_text||'[No text body received]';
+    loadEmailAttachments(id);
     $('ffEmailReplyText').value='';
     $('ffEmailClassify').disabled=row.routing_status==='classified';
     $('ffEmailQueueReply').disabled=row.routing_status!=='classified';
@@ -206,6 +215,24 @@
     $('ffEmailSendReply').disabled=!isAdmin||row.latest_reply_status!=='ready';
     $('ffEmailStatus').textContent=row.routing_status==='classified'?'Email reviewed; replies can be staged for review.':'Review the sender/content, then confirm classification before drafting a reply.';
     renderEmails();
+  }
+  function emailAttachmentMarkup(message,a){
+    const mime=String(a?.mime_type||'').toLowerCase(),supported=a?.supported===true&&['application/pdf','image/jpeg','image/png','image/gif','image/webp'].includes(mime);
+    const attrs=' data-message-id="'+esc(message.provider_message_id||'')+'" data-attachment-id="'+esc(a?.attachment_id||'')+'" data-mime="'+esc(mime)+'" data-name="'+esc(a?.filename||'attachment')+'"';
+    return '<div class="ff-wa-attachment" style="margin:10px 0;padding:10px;border:1px solid #d0d5dd;border-radius:8px"><strong>'+esc(a?.filename||'Email attachment')+'</strong><p>'+esc(mime)+' · '+(supported?'Available securely':'Unsupported file type')+'</p>'+(supported?'<button type="button" class="ff-email-attachment-open" data-action="preview"'+attrs+'>Open / preview attachment</button>'+(mime==='application/pdf'?'<button type="button" class="ff-email-attachment-open" data-action="extract"'+attrs+'>Read PDF text</button>':'')+(mime.startsWith('image/')?'<button type="button" class="ff-email-attachment-open" data-action="ocr"'+attrs+'>Read image text</button>':''):'')+'</div>';
+  }
+  async function loadEmailAttachments(id){
+    const host=$('ffEmailSelectedMessage');let panel=$('ffEmailAttachmentList');
+    if(!panel){panel=document.createElement('div');panel.id='ffEmailAttachmentList';host.insertAdjacentElement('afterend',panel);}
+    panel.textContent='Checking email attachments…';
+    try{
+      const db=window.supabaseClient;
+      const {data,error}=await db.from('crm_inbox_messages').select('provider_message_id,metadata').eq('conversation_id',id).eq('direction','inbound').order('received_at',{ascending:false}).limit(10);
+      if(error)throw error;
+      const messages=data||[],attachments=messages.flatMap(m=>(Array.isArray(m.metadata?.zoho_attachments)?m.metadata.zoho_attachments:[]).map(a=>({message:m,attachment:a})));
+      panel.innerHTML=attachments.length?'<strong>Email attachment(s)</strong>'+attachments.map(x=>emailAttachmentMarkup(x.message,x.attachment)).join(''):'<p>No image or PDF attachment is available on this email.</p>';
+      panel.querySelectorAll('.ff-email-attachment-open').forEach(button=>button.addEventListener('click',()=>openWaAttachment(button)));
+    }catch(error){panel.textContent='Email attachments could not load: '+String(error?.message||error);}
   }
   async function classifyEmail(){
     if(!selectedEmailId)return;
