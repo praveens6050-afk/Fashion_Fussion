@@ -11,6 +11,12 @@
   <link rel="stylesheet" href="crm-panel.css?v=20261020-crm-integration">
   <link rel="stylesheet" href="crm-professional.css?v=20261023-v2">
   <link rel="stylesheet" href="crm-workspace-refresh.css?v=20261023-v1">
+  <style>
+    #crmOverviewCounts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+    #crmOverviewCounts span{display:block;min-width:105px;padding:9px 12px;border:1px solid #e4e7ec;border-radius:8px;background:#f8f9fb;color:#667085;font-size:12px}
+    #crmOverviewCounts b{display:block;margin-bottom:2px;color:#101828;font-size:18px}
+  </style>
+
 </head>
 <body class="crm-page">
   <header class="header"><div class="header-inner"><div><div class="logo">Fashion Fussion</div><div class="admin-badge">CRM WORKSPACE</div></div><div class="header-actions"><a href="https://fashionfussion.in" target="_blank" rel="noopener noreferrer">Open Store</a><span id="crmEmail">Verifying access…</span><button id="crmLogout" type="button">Sign Out</button></div></div></header>
@@ -24,8 +30,8 @@
     <section id="crmOverview" class="crm-welcome card"><div class="card-body"><h2>Support overview</h2><p>Current message totals from the queues available to your account.</p><div id="crmOverviewCounts" class="ff-wa-queue-counts"><span>Loading support totals…</span></div></div></section><section id="crmDepartmentModules" class="crm-welcome card"></section>
     <section id="crmTeamManagement" class="crm-welcome card" hidden><div class="card-body"><h2>Team Management</h2><p>Create the teammate’s work login first, then assign their department here. This screen only grants CRM access; it does not create accounts or send invitations.</p><div class="crm-inbox-card"><h3>Connect Zoho Mail</h3><p>Connect the primary admin mailbox once. Customer Care, Seller Support, Sales, Marketing and Orders aliases use the same mailbox connection. This step does not send an email.</p><p><strong>Primary mailbox:</strong> admin@fashionfussion.in</p><button type="button" class="primary" id="crmZohoConnect">Connect admin mailbox</button><p id="crmZohoNotice" class="crm-team-notice" role="status" aria-live="polite"></p></div><form id="crmTeamForm" class="crm-team-form"><label for="crmMemberEmail">Work email</label><input id="crmMemberEmail" type="email" autocomplete="off" required placeholder="employee@company.com"><label for="crmMemberId">Login account ID</label><input id="crmMemberId" type="text" required pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}" placeholder="Paste the invited user’s account ID"><label for="crmMemberRole">Department</label><select id="crmMemberRole" required><option value="customer_support">Customer Support</option><option value="seller_support">Seller Support</option><option value="sales">Sales</option><option value="marketing">Marketing</option><option value="orders">Orders</option></select><button class="primary" id="crmMemberSave" type="submit">Add / Update Team Member</button></form><p id="crmTeamNotice" class="crm-team-notice" role="status" aria-live="polite"></p><div class="crm-team-table-wrap"><table class="crm-team-table"><thead><tr><th>Team member</th><th>Department</th><th>Status</th><th>Action</th></tr></thead><tbody id="crmTeamRows"><tr><td colspan="4">Loading team roster…</td></tr></tbody></table></div></div></section>
   </div></main>
-  <script src="crm-auth.js?v=20261029-zoho-delivery-tracking-1"></script>
-  <script src="admin-crm-whatsapp-inbox.js?v=20261030-overview-1"></script>
+  <script src="crm-auth.js?v=20261030-five-panel-1"></script>
+  <script src="admin-crm-whatsapp-inbox.js?v=20261030-email-source-1"></script>
   <script src="crm-navigation.js?v=20261027-observer-loop-1"></script>
   </body>
 </html>

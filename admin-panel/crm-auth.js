@@ -199,12 +199,9 @@
     }
     document.dispatchEvent(new Event('ff-crm-ready'));
 
-    const modules = [
-      ['crm-unified-inbox.js?v=20261029-zoho-delivery-tracking-1', 'unified inbox']
-    ];
+    const modules = [];
+    if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261030-five-panel-seller-pipeline-1', 'seller pipeline']);
     if (role === 'administrator') modules.push(['crm-team-management.js?v=20261029-zoho-primary-mailbox-1', 'team management']);
-    if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261023-live-ready-1', 'sales workspace']);
-    if (['customer_support', 'seller_support'].includes(role)) modules.push(['crm-support-workspace.js?v=20261023-live-ready-1', 'support workspace']);
 
     // The authorization gate is complete; optional workspace failures should be visible but
     // must not leave the entire dashboard on its loading screen.
