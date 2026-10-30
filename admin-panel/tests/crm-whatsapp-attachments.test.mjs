@@ -57,7 +57,7 @@ test('CRM inbox requests attachment metadata and exposes authenticated read cont
   assert.ok(inbox.includes('provider_message_id,metadata'));
   assert.ok(inbox.includes('crm-wa-attachment-open'));
   assert.ok(inbox.includes("action:'extract'"));
-  assert.ok(inbox.includes("action:'download'"));
+  assert.ok(inbox.includes("'preview':'download'"));
   assert.ok(inbox.includes('getSession()'));
 });
 
