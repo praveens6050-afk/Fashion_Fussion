@@ -3,6 +3,12 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const date=v=>v?new Date(v).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
+  const isSystemNotification=row=>{
+    const sender=String(row?.sender_email||'').trim().toLowerCase();
+    const subject=String(row?.subject||'').toLowerCase();
+    return /@zohoaccounts\.in$/.test(sender)
+      || (subject.includes('zoho account')&&(subject.includes('sign-in')||subject.includes('multi-factor authentication')));
+  };
   let rows=[];let actorTeam='';let isAdmin=false;let pendingWhatsappRequest=null;let pendingWhatsappBody='';
   function mount(){
     const container=$('dashboard')?.querySelector('.container');
@@ -77,7 +83,7 @@
   }
   function renderOverview(){
     const host=$('crmOverviewCounts');if(!host)return;
-    const items=[...rows,...emailRows].filter(row=>isAdmin||row.support_team===actorTeam);
+    const items=[...rows,...emailRows.filter(row=>!isSystemNotification(row))].filter(row=>isAdmin||row.support_team===actorTeam);
     const customer=items.filter(row=>row.support_team==='customer_support').length;
     const seller=items.filter(row=>row.support_team==='seller_support').length;
     const status=row=>String(row.routing_status||'open').toLowerCase();
@@ -208,7 +214,7 @@
     const filter=$('ffEmailTeamFilter').value;
     const filtered=emailRows.filter(r=>(isAdmin||r.support_team===actorTeam)&&(filter==='all'||r.support_team===filter));
     if(!filtered.length){target.innerHTML='<p>No incoming email in this queue.</p>';return;}
-    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-email-event="'+Number(r.id)+'" aria-pressed="'+(Number(r.id)===selectedEmailId)+'"><strong>'+esc(r.subject||'(No subject)')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'needs_review')+'</span><div class="ff-wa-muted">From: '+esc(r.sender_email||'')+'</div><div class="ff-wa-muted">To: '+esc(r.recipient_email||'')+' · '+date(r.received_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div></button>').join('');
+    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-email-event="'+Number(r.id)+'" aria-pressed="'+(Number(r.id)===selectedEmailId)+'"><strong>'+esc(r.subject||'(No subject)')+'</strong><span class="ff-wa-pill">'+esc(isSystemNotification(r)?'System notification':(r.support_team||'unassigned'))+'</span> <span class="ff-wa-pill">'+esc(isSystemNotification(r)?'Informational':(r.routing_status||'needs_review'))+'</span><div class="ff-wa-muted">From: '+esc(r.sender_email||'')+'</div><div class="ff-wa-muted">To: '+esc(r.recipient_email||'')+' · '+date(r.received_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div></button>').join('');
     target.querySelectorAll('[data-email-event]').forEach(btn=>btn.addEventListener('click',()=>selectEmail(Number(btn.dataset.emailEvent))));
   }
   function selectEmail(id){
@@ -218,14 +224,15 @@
     $('ffEmailSelectedMessage').textContent=row.message_text||'[No text body received]';
     loadEmailAttachments(id);
     $('ffEmailReplyText').value='';
-    $('ffEmailClassify').disabled=row.routing_status==='classified';
-    $('ffEmailQueueReply').disabled=row.routing_status!=='classified';
+    const systemNotice=isSystemNotification(row);
+    $('ffEmailClassify').disabled=systemNotice||row.routing_status==='classified';
+    $('ffEmailQueueReply').disabled=systemNotice||row.routing_status!=='classified';
     $('ffEmailApproveReply').hidden=true;
     $('ffEmailApproveReply').disabled=!isAdmin||!row.latest_reply_id||row.latest_reply_status!=='pending_review';
     $('ffEmailApproveReply').textContent=row.latest_reply_status==='ready'?'Email reply approved':'Approve latest email reply';
     $('ffEmailSendReply').hidden=true;
     $('ffEmailSendReply').disabled=!isAdmin||row.latest_reply_status!=='ready';
-    $('ffEmailStatus').textContent=row.routing_status==='classified'?'Email reviewed; replies can be staged for review.':'Review the sender/content, then confirm classification before drafting a reply.';
+    $('ffEmailStatus').textContent=systemNotice?'System security notification. It is kept in Email inbox and excluded from support-ticket totals; replies are disabled.':(row.routing_status==='classified'?'Email reviewed; replies can be staged for review.':'Review the sender/content, then confirm classification before drafting a reply.');
     renderEmails();
   }
   function emailAttachmentMarkup(message,a){
