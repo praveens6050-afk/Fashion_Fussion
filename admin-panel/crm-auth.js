@@ -200,7 +200,7 @@
     document.dispatchEvent(new Event('ff-crm-ready'));
 
     const modules = [];
-    if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261030-five-panel-seller-pipeline-1', 'seller pipeline']);
+    if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261030-scroll-1', 'seller pipeline']);
     if (role === 'administrator') modules.push(['crm-team-management.js?v=20261029-zoho-primary-mailbox-1', 'team management']);
 
     // The authorization gate is complete; optional workspace failures should be visible but
