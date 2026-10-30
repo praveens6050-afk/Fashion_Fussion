@@ -3,6 +3,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const date=v=>v?new Date(v).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
+  const readableMailText=v=>String(v??'').replace(/\\r\\n?/g,'\\n').replace(/[ \\t]*\\n[ \\t]*/g,'\\n').replace(/\\n{2,}/g,'\\n\\n').trim();
   let rows=[];let actorTeam='';let isAdmin=false;let pendingWhatsappRequest=null;let pendingWhatsappBody='';
   function mount(){
     const container=$('dashboard')?.querySelector('.container');
@@ -80,7 +81,7 @@
     const filter=$('ffWaTeamFilter').value;
     const filtered=rows.filter(r=>(isAdmin||r.support_team===actorTeam)&&(filter==='all'||(filter==='needs_review'?r.routing_status==='needs_review':r.support_team===filter)));
     if(!filtered.length){target.innerHTML='<p>No messages in this queue.</p>';return;}
-    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-event="'+Number(r.id)+'" aria-pressed="false"><strong>'+esc(r.sender_role||'unknown')+' · '+esc(r.sender_phone||'')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'unknown')+'</span><div class="ff-wa-muted">'+esc(r.message_type||'message')+' · '+date(r.created_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div><div class="ff-wa-muted">Latest reply: '+esc(r.latest_reply_status||'none')+'</div></button>').join('');
+    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-event="'+Number(r.id)+'" aria-pressed="false"><strong>'+esc(r.sender_role||'unknown')+' · '+esc(r.sender_phone||'')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'unknown')+'</span><div class="ff-wa-muted">'+esc(r.message_type||'message')+' · '+date(r.created_at)+'</div><div class="ff-wa-muted">'+esc(readableMailText(r.message_text||'[No text body]').slice(0,180))+'</div><div class="ff-wa-muted">Latest reply: '+esc(r.latest_reply_status||'none')+'</div></button>').join('');
     target.querySelectorAll('[data-event]').forEach(btn=>btn.addEventListener('click',()=>select(Number(btn.dataset.event),btn)));
   }
   async function openWaAttachment(button){
@@ -203,7 +204,7 @@
     const row=emailRows.find(r=>Number(r.id)===id);if(!row)return;selectedEmailId=id;
     $('ffEmailSelectedTitle').textContent=row.subject||'(No subject)';
     $('ffEmailSelectedMeta').textContent=(row.support_team||'unassigned')+' · '+(row.routing_status||'needs_review')+' · From '+(row.sender_email||'')+' · '+date(row.received_at);
-    $('ffEmailSelectedMessage').textContent=row.message_text||'[No text body received]';
+    $('ffEmailSelectedMessage').textContent=readableMailText(row.message_text)||'[No text body received]';
     loadEmailAttachments(id);
     $('ffEmailReplyText').value='';
     $('ffEmailClassify').disabled=row.routing_status==='classified';
