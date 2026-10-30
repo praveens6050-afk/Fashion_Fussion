@@ -31,14 +31,16 @@ test('attachment endpoint requires an authenticated user and an RLS-scoped messa
   assert.ok(media.includes('userDb.auth.getUser(token)'));
   assert.ok(media.includes('userDb.from("crm_inbox_messages")'));
   assert.ok(media.includes('userDb.from("crm_inbox_conversations")'));
-  assert.ok(media.includes('.eq("provider", "whatsapp")'));
+  assert.ok(media.includes('["whatsapp", "email"].includes(String(conversation.provider))'));
+  assert.ok(media.includes('metadata.zoho_attachments'));
+  assert.ok(media.includes('crm_get_zoho_mailbox_auth'));
 });
 
 test('attachment endpoint restricts MIME, download hosts and payload size', () => {
   for (const mime of allowedMimeTypes) assert.ok(media.includes(mime), 'missing allowlisted MIME ' + mime);
   assert.ok(media.includes('MAX_BYTES = 15 * 1024 * 1024'));
-  assert.ok(media.includes('parsedUrl.protocol === "https:"'));
-  assert.ok(media.includes('parsedUrl.hostname.endsWith(".fbcdn.net")'));
+  assert.ok(media.includes('mediaUrl.protocol !== "https:"'));
+  assert.ok(media.includes('mediaUrl.hostname.endsWith(".fbcdn.net")'));
   assert.ok(media.includes('"X-Content-Type-Options": "nosniff"'));
 });
 
@@ -55,7 +57,7 @@ test('CRM inbox requests attachment metadata and exposes authenticated read cont
   assert.ok(inbox.includes('provider_message_id,metadata'));
   assert.ok(inbox.includes('crm-wa-attachment-open'));
   assert.ok(inbox.includes("action:'extract'"));
-  assert.ok(inbox.includes("action:'download'"));
+  assert.ok(inbox.includes("'preview':'download'"));
   assert.ok(inbox.includes('getSession()'));
 });
 

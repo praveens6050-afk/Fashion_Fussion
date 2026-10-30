@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const waToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || Deno.env.get("META_WHATSAPP_ACCESS_TOKEN") || Deno.env.get("WHATSAPP_CLOUD_API_TOKEN");
-  if (!url || !anonKey || !serviceKey || !waToken) return json({ error: "Attachment service is not configured" }, 503);
+  if (!url || !anonKey || !serviceKey) return json({ error: "Attachment service is not configured" }, 503);
 
   let input: any;
   try { input = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
@@ -55,53 +55,52 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (messageError || !message) return json({ error: "Attachment not found or access denied" }, 404);
   const { data: conversation, error: conversationError } = await userDb.from("crm_inbox_conversations")
-    .select("id,provider")
+    .select("id,provider,department")
     .eq("id", message.conversation_id)
-    .eq("provider", "whatsapp")
     .maybeSingle();
-  if (conversationError || !conversation) return json({ error: "Attachment not found or access denied" }, 404);
+  if (conversationError || !conversation || !["whatsapp", "email"].includes(String(conversation.provider))) return json({ error: "Attachment not found or access denied" }, 404);
 
   const metadata = message.metadata && typeof message.metadata === "object" ? message.metadata as Record<string, any> : {};
-  const attachment = metadata.whatsapp_attachment && typeof metadata.whatsapp_attachment === "object"
-    ? metadata.whatsapp_attachment as Record<string, any> : null;
-  if (!attachment?.media_id) return json({ error: "This message has no stored media reference. Ask the customer to resend the attachment." }, 404);
+  const attachmentId = String(input?.attachment_id || "");
+  let attachment: Record<string, any> | null = null;
+  if (conversation.provider === "whatsapp") {
+    if (!waToken) return json({ error: "WhatsApp media is not configured" }, 503);
+    attachment = metadata.whatsapp_attachment && typeof metadata.whatsapp_attachment === "object" ? metadata.whatsapp_attachment : null;
+    if (!attachment?.media_id) return json({ error: "No stored media reference" }, 404);
+  } else {
+    const list = Array.isArray(metadata.zoho_attachments) ? metadata.zoho_attachments : [];
+    attachment = list.find((file: any) => String(file?.attachment_id || "") === attachmentId) || null;
+    if (!attachment || !attachmentId) return json({ error: "Attachment not found or access denied" }, 404);
+  }
   const mime = String(attachment.mime_type || "").toLowerCase().split(";")[0];
   if (!attachment.supported || !ALLOWED.has(mime)) return json({ error: "This attachment type is not supported", mime_type: mime || null }, 415);
 
-  const graphVersion = (Deno.env.get("META_GRAPH_API_VERSION") || "v22.0").replace(/[^v0-9.]/g, "");
-  let mediaInfo: any;
-  try {
-    const infoResponse = await fetch("https://graph.facebook.com/" + graphVersion + "/" + encodeURIComponent(String(attachment.media_id)), {
-      headers: { Authorization: "Bearer " + waToken },
-      signal: AbortSignal.timeout(15000)
-    });
-    if (!infoResponse.ok) return json({ error: "Meta media lookup failed", provider_status: infoResponse.status }, 502);
-    mediaInfo = await infoResponse.json();
-  } catch {
-    return json({ error: "Meta media lookup timed out or failed" }, 502);
-  }
-  const mediaUrl = typeof mediaInfo?.url === "string" ? mediaInfo.url : "";
-  let parsedUrl: URL;
-  try { parsedUrl = new URL(mediaUrl); } catch { return json({ error: "Meta returned an invalid media URL" }, 502); }
-  const hostAllowed = parsedUrl.protocol === "https:" && (
-    parsedUrl.hostname === "graph.facebook.com" ||
-    parsedUrl.hostname.endsWith(".fbcdn.net") ||
-    parsedUrl.hostname === "fbcdn.net" ||
-    parsedUrl.hostname.endsWith(".fbsbx.com") ||
-    parsedUrl.hostname === "fbsbx.com"
-  );
-  if (!hostAllowed) return json({ error: "Meta returned an unexpected media host" }, 502);
-
   let fileResponse: Response;
-  try {
-    fileResponse = await fetch(parsedUrl, {
-      headers: { Authorization: "Bearer " + waToken },
-      signal: AbortSignal.timeout(25000)
-    });
-  } catch {
-    return json({ error: "Meta media download failed" }, 502);
+  if (conversation.provider === "whatsapp") {
+    const graphVersion = (Deno.env.get("META_GRAPH_API_VERSION") || "v22.0").replace(/[^v0-9.]/g, "");
+    let mediaInfo: any;
+    try { const info = await fetch("https://graph.facebook.com/" + graphVersion + "/" + encodeURIComponent(String(attachment.media_id)), { headers: { Authorization: "Bearer " + waToken }, signal: AbortSignal.timeout(15000) }); if (!info.ok) return json({ error: "Meta media lookup failed", provider_status: info.status }, 502); mediaInfo = await info.json(); } catch { return json({ error: "Meta media lookup failed" }, 502); }
+    let mediaUrl: URL; try { mediaUrl = new URL(String(mediaInfo?.url || "")); } catch { return json({ error: "Invalid Meta media URL" }, 502); }
+    if (mediaUrl.protocol !== "https:" || !(mediaUrl.hostname === "graph.facebook.com" || mediaUrl.hostname.endsWith(".fbcdn.net") || mediaUrl.hostname.endsWith(".fbsbx.com"))) return json({ error: "Unexpected Meta media host" }, 502);
+    try { fileResponse = await fetch(mediaUrl, { headers: { Authorization: "Bearer " + waToken }, signal: AbortSignal.timeout(25000) }); } catch { return json({ error: "Meta media download failed" }, 502); }
+    if (!fileResponse.ok) return json({ error: "Meta media download failed", provider_status: fileResponse.status }, 502);
+  } else {
+    const clientId = Deno.env.get("ZOHO_CLIENT_ID") || "", clientSecret = Deno.env.get("ZOHO_CLIENT_SECRET") || "";
+    if (!clientId || !clientSecret || !conversation.department) return json({ error: "Zoho service not configured" }, 503);
+    const serviceDb = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: mailbox, error } = await serviceDb.rpc("crm_get_zoho_mailbox_auth", { p_department: conversation.department });
+    if (error || !mailbox?.refresh_token || String(mailbox.zoho_account_id) !== String(attachment.account_id) || String(metadata.zoho_folder_id || "") !== String(attachment.folder_id || "") || String(metadata.zoho_message_id || message.provider_message_id) !== String(attachment.message_id || "")) return json({ error: "Attachment not found or access denied" }, 404);
+    const authDomain = (Deno.env.get("ZOHO_ACCOUNTS_DOMAIN") || "https://accounts.zoho.in").replace(/\/+$/, ""), authHost = new URL(authDomain);
+    if (authHost.protocol !== "https:" || !/^accounts\.zoho\.(in|com|eu|com\.au|jp|ca|sa|uk)$/.test(authHost.hostname)) return json({ error: "Invalid Zoho auth host" }, 503);
+    const form = new URLSearchParams({ grant_type: "refresh_token", client_id: clientId, client_secret: clientSecret, refresh_token: String(mailbox.refresh_token) });
+    const tokenResp = await fetch(authDomain + "/oauth/v2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form, redirect: "error", signal: AbortSignal.timeout(15000) });
+    const tokenData = await tokenResp.json().catch(() => ({})); if (!tokenResp.ok || !tokenData.access_token) return json({ error: "Zoho token refresh failed" }, 502);
+    const apiBase = (Deno.env.get("ZOHO_MAIL_API_BASE") || "https://mail.zoho.in/api").replace(/\/+$/, ""), apiHost = new URL(apiBase);
+    if (apiHost.protocol !== "https:" || !/^mail\.zoho\.(in|com|eu|com\.au|jp|ca|sa|uk)$/.test(apiHost.hostname)) return json({ error: "Invalid Zoho API host" }, 503);
+    const download = apiBase + "/accounts/" + encodeURIComponent(String(attachment.account_id)) + "/folders/" + encodeURIComponent(String(attachment.folder_id)) + "/messages/" + encodeURIComponent(String(attachment.message_id)) + "/attachments/" + encodeURIComponent(attachmentId);
+    try { fileResponse = await fetch(download, { headers: { Authorization: "Zoho-oauthtoken " + tokenData.access_token }, redirect: "error", signal: AbortSignal.timeout(25000) }); } catch { return json({ error: "Zoho attachment download failed" }, 502); }
+    if (!fileResponse.ok) return json({ error: "Zoho attachment download failed", provider_status: fileResponse.status }, 502);
   }
-  if (!fileResponse.ok) return json({ error: "Meta media download failed", provider_status: fileResponse.status }, 502);
   const actualMime = String(fileResponse.headers.get("content-type") || mime).split(";")[0].trim().toLowerCase();
   if (!ALLOWED.has(actualMime) || (actualMime !== mime && !(mime === "image/jpeg" && actualMime === "application/octet-stream"))) {
     return json({ error: "Downloaded media MIME type did not match the approved attachment type" }, 415);
@@ -160,7 +159,7 @@ Deno.serve(async (req) => {
       ...cors,
       "Content-Type": mime,
       "Content-Length": String(bytes.byteLength),
-      "Content-Disposition": "attachment; filename*=UTF-8''" + encodeURIComponent(filename),
+      "Content-Disposition": (input?.action === "preview" && (mime.startsWith("image/") || mime === "application/pdf") ? "inline" : "attachment") + "; filename*=UTF-8''" + encodeURIComponent(filename),
       "X-Content-Type-Options": "nosniff"
     }
   });
