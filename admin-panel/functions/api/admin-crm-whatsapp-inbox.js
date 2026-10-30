@@ -59,13 +59,14 @@ export async function onRequestPost({request,env}) {
   }else if(action==='send_approved_email_reply'&&Object.keys(input).sort().join(',')==='action,replyId'
     &&Number.isSafeInteger(input.replyId)&&input.replyId>0){
     rpc='__dispatch_email';body={replyId:input.replyId};
-  }else if(action==='queue_email_reply'&&Object.keys(input).sort().join(',')==='action,inboundEventId,replyText,requestKey'
+  }else if(action==='queue_email_reply'&&Object.keys(input).sort().join(',')==='action,fromEmail,inboundEventId,replyText,requestKey'
     &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0
     &&typeof input.replyText==='string'&&input.replyText.trim().length>=1
     &&input.replyText.trim().length<=10000
-    &&typeof input.requestKey==='string'&&/^[A-Za-z0-9._:-]{8,160}$/.test(input.requestKey)){
+    &&typeof input.requestKey==='string'&&/^[A-Za-z0-9._:-]{8,160}$/.test(input.requestKey)
+    &&typeof input.fromEmail==='string'&&['customer.care@fashionfussion.in','seller.support@fashionfussion.in','sales.team@fashionfussion.in','orders@fashionfussion.in'].includes(input.fromEmail.toLowerCase())){
     rpc='admin_crm_queue_email_reply';
-    body={p_inbound_event_id:input.inboundEventId,p_reply_text:input.replyText.trim(),p_request_key:input.requestKey};
+    body={p_inbound_event_id:input.inboundEventId,p_reply_text:input.replyText.trim(),p_request_key:input.requestKey,p_from_email:input.fromEmail.toLowerCase()};
   }else if(action==='queue_reply'&&Object.keys(input).sort().join(',')==='action,inboundEventId,replyText,requestKey'
     &&Number.isSafeInteger(input.inboundEventId)&&input.inboundEventId>0
     &&typeof input.replyText==='string'&&input.replyText.trim().length>=1
