@@ -3,7 +3,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const date=v=>v?new Date(v).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
-  const readableMailText=v=>String(v??'').replace(/\\r\\n?/g,'\\n').replace(/[ \\t]*\\n[ \\t]*/g,'\\n').replace(/\\n{2,}/g,'\\n\\n').trim();
+  const readableMailText=v=>String(v??'').replace(/\r\n?/g,'\n').replace(/[ \t]*\n[ \t]*/g,'\n').replace(/\n{2,}/g,'\n\n').trim();
   let rows=[];let actorTeam='';let isAdmin=false;let pendingWhatsappRequest=null;let pendingWhatsappBody='';
   function mount(){
     const container=$('dashboard')?.querySelector('.container');
