@@ -121,3 +121,18 @@
 [data-csp-style="csp-html-admin-3"]{text-align:center;padding:30px}
 [data-csp-style="csp-html-admin-4"]{display:flex;gap:10px;align-items:center}
 [data-csp-style="csp-html-admin-5"]{font-size:10px;color:#777}
+/* Subtle 3D depth for customer-facing cards and panels */
+.card, .panel, .summary, .stat, .stat-card, .metric-card, .product-card, .order-card, .address-card {
+  transform-style: preserve-3d;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover, .panel:hover, .summary:hover, .stat:hover, .stat-card:hover,
+  .metric-card:hover, .product-card:hover, .order-card:hover, .address-card:hover,
+  .card:focus-within, .panel:focus-within, .summary:focus-within, .stat:focus-within,
+  .stat-card:focus-within, .metric-card:focus-within, .product-card:focus-within,
+  .order-card:focus-within, .address-card:focus-within {
+    transform: perspective(1100px) rotateX(0.7deg) rotateY(-0.7deg) translateY(-2px);
+    box-shadow: 0 16px 32px rgba(16,24,40,.12);
+  }
+}
