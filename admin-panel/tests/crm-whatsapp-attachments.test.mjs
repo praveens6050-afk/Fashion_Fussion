@@ -39,7 +39,7 @@ test('attachment endpoint requires an authenticated user and an RLS-scoped messa
 test('attachment endpoint restricts MIME, download hosts and payload size', () => {
   for (const mime of allowedMimeTypes) assert.ok(media.includes(mime), 'missing allowlisted MIME ' + mime);
   assert.ok(media.includes('MAX_BYTES = 15 * 1024 * 1024'));
-  assert.ok(media.includes('parsedUrl.protocol === "https:"'));
+  assert.ok(media.includes('mediaUrl.protocol !== "https:"'));
   assert.ok(media.includes('parsedUrl.hostname.endsWith(".fbcdn.net")'));
   assert.ok(media.includes('"X-Content-Type-Options": "nosniff"'));
 });
