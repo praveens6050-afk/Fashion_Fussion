@@ -7,11 +7,12 @@
   const role=$('dashboard')?.dataset.crmRole||'';
   function notice(t){const n=$('crmInboxNotice');if(n)n.textContent=t}
   function fmt(v){return v?new Date(v).toLocaleString():'—'}
+  const readableEmailBody=v=>String(v??'').replace(/\\r\\n?/g,'\\n').replace(/[ \\t]*\\n[ \\t]*/g,'\\n').replace(/\\n{2,}/g,'\\n\\n').trim();
   function providerName(v){return v==='whatsapp'?'WhatsApp':'Email'}
   function renderList(){
     const term=($('crmInboxSearch')?.value||'').toLowerCase().trim(),channel=$('crmInboxChannel')?.value||'all',status=$('crmInboxStatus')?.value||'all';
     const rows=conversations.filter(c=>(channel==='all'||c.provider===channel)&&(status==='all'||c.status===status)&&(!term||[c.contact_name,c.contact_email,c.contact_phone,c.subject,c.latest_message,c.inbox_address].some(v=>String(v||'').toLowerCase().includes(term))));
-    $('crmInboxRows').innerHTML=rows.length?rows.map(c=>'<button type="button" class="crm-inbox-item '+(selected===c.id?'selected':'')+'" data-thread="'+c.id+'"><span class="crm-inbox-top"><strong>'+esc(c.contact_name||c.contact_email||c.contact_phone||'Unknown contact')+'</strong><span class="crm-inbox-channel">'+esc(providerName(c.provider))+'</span></span><span class="crm-inbox-subject">'+esc(c.subject||'Incoming message')+'</span><span class="crm-inbox-preview">'+esc(c.latest_message)+'</span><span class="crm-inbox-meta">'+esc(label[c.department]||c.department)+' · '+esc(c.status)+' · '+esc(fmt(c.received_at))+'</span></button>').join(''):'<p class="crm-inbox-empty">No incoming messages match these filters.</p>';
+    $('crmInboxRows').innerHTML=rows.length?rows.map(c=>'<button type="button" class="crm-inbox-item '+(selected===c.id?'selected':'')+'" data-thread="'+c.id+'"><span class="crm-inbox-top"><strong>'+esc(c.contact_name||c.contact_email||c.contact_phone||'Unknown contact')+'</strong><span class="crm-inbox-channel">'+esc(providerName(c.provider))+'</span></span><span class="crm-inbox-subject">'+esc(c.subject||'Incoming message')+'</span><span class="crm-inbox-preview">'+esc(readableEmailBody(c.latest_message))+'</span><span class="crm-inbox-meta">'+esc(label[c.department]||c.department)+' · '+esc(c.status)+' · '+esc(fmt(c.received_at))+'</span></button>').join(''):'<p class="crm-inbox-empty">No incoming messages match these filters.</p>';
     $('crmInboxRows').querySelectorAll('[data-thread]').forEach(b=>b.addEventListener('click',()=>openThread(Number(b.dataset.thread))));
     $('crmInboxCount').textContent=rows.length+' message thread(s)';
   }
