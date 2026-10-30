@@ -3,6 +3,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const date=v=>v?new Date(v).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
+  const normalizeEmailBody=value=>String(value??'').replace(/\r\n?/g,'\n').replace(/[ \t]*\n[ \t]*(?:\n[ \t]*)+/g,'\n\n').trim();
   const isSystemNotification=row=>{
     const sender=String(row?.sender_email||'').trim().toLowerCase();
     const subject=String(row?.subject||'').toLowerCase();
@@ -98,7 +99,7 @@
     const filter=$('ffWaTeamFilter').value;
     const filtered=rows.filter(r=>(isAdmin||r.support_team===actorTeam)&&(filter==='all'||(filter==='needs_review'?r.routing_status==='needs_review':r.support_team===filter)));
     if(!filtered.length){target.innerHTML='<p>No messages in this queue.</p>';return;}
-    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-event="'+Number(r.id)+'" aria-pressed="false"><strong>'+esc(r.sender_role||'unknown')+' · '+esc(r.sender_phone||'')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'unknown')+'</span><div class="ff-wa-muted">'+esc(r.message_type||'message')+' · '+date(r.created_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div><div class="ff-wa-muted">Latest reply: '+esc(r.latest_reply_status||'none')+'</div></button>').join('');
+    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-event="'+Number(r.id)+'" aria-pressed="false"><strong>'+esc(r.sender_role||'unknown')+' · '+esc(r.sender_phone||'')+'</strong><span class="ff-wa-pill">'+esc(r.support_team||'unassigned')+'</span> <span class="ff-wa-pill">'+esc(r.routing_status||'unknown')+'</span><div class="ff-wa-muted">'+esc(r.message_type||'message')+' · '+date(r.created_at)+'</div><div class="ff-wa-muted">'+esc(normalizeEmailBody(r.message_text||'[No text body]').slice(0,180))+'</div><div class="ff-wa-muted">Latest reply: '+esc(r.latest_reply_status||'none')+'</div></button>').join('');
     target.querySelectorAll('[data-event]').forEach(btn=>btn.addEventListener('click',()=>select(Number(btn.dataset.event),btn)));
   }
   async function openWaAttachment(button){
@@ -152,7 +153,11 @@
     const attachment=meta.whatsapp_attachment&&typeof meta.whatsapp_attachment==='object'?meta.whatsapp_attachment:null;
     const type=String(meta.message_type||'').toLowerCase();
     if(!attachment?.media_id){
-      if(['image','document','video','audio','sticker'].includes(type)||String(message?.body||'').includes('[Incoming image message')){
+      const body=String(message?.body||'');
+      if(type==='unsupported'||body.includes('[Incoming unsupported message')){
+        return '<div class="ff-wa-attachment"><strong>WhatsApp attachment unavailable</strong><p>This message was saved as unsupported and has no image or document reference in CRM. The original attachment cannot be retrieved or read here. Ask the sender to resend it as a standard image or document in WhatsApp.</p></div>';
+      }
+      if(['image','document','video','audio','sticker'].includes(type)||body.includes('[Incoming image message')){
         return '<div class="ff-wa-attachment"><strong>Attachment reference missing</strong><p>This older message has no saved WhatsApp media reference, so CRM cannot retrieve its image. Ask the sender to resend the image in WhatsApp; the new message will include a secure attachment link.</p></div>';
       }
       return '';
@@ -214,14 +219,14 @@
     const filter=$('ffEmailTeamFilter').value;
     const filtered=emailRows.filter(r=>(isAdmin||r.support_team===actorTeam)&&(filter==='all'||r.support_team===filter));
     if(!filtered.length){target.innerHTML='<p>No incoming email in this queue.</p>';return;}
-    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-email-event="'+Number(r.id)+'" aria-pressed="'+(Number(r.id)===selectedEmailId)+'"><strong>'+esc(r.subject||'(No subject)')+'</strong><span class="ff-wa-pill">'+esc(isSystemNotification(r)?'System notification':(r.support_team||'unassigned'))+'</span> <span class="ff-wa-pill">'+esc(isSystemNotification(r)?'Informational':(r.routing_status||'needs_review'))+'</span><div class="ff-wa-muted">From: '+esc(r.sender_email||'')+'</div><div class="ff-wa-muted">To: '+esc(r.recipient_email||'')+' · '+date(r.received_at)+'</div><div class="ff-wa-muted">'+esc(String(r.message_text||'[No text body]').slice(0,180))+'</div></button>').join('');
+    target.innerHTML=filtered.map(r=>'<button type="button" class="ff-wa-row" data-email-event="'+Number(r.id)+'" aria-pressed="'+(Number(r.id)===selectedEmailId)+'"><strong>'+esc(r.subject||'(No subject)')+'</strong><span class="ff-wa-pill">'+esc(isSystemNotification(r)?'System notification':(r.support_team||'unassigned'))+'</span> <span class="ff-wa-pill">'+esc(isSystemNotification(r)?'Informational':(r.routing_status||'needs_review'))+'</span><div class="ff-wa-muted">From: '+esc(r.sender_email||'')+'</div><div class="ff-wa-muted">To: '+esc(r.recipient_email||'')+' · '+date(r.received_at)+'</div><div class="ff-wa-muted">'+esc(normalizeEmailBody(r.message_text||'[No text body]').slice(0,180))+'</div></button>').join('');
     target.querySelectorAll('[data-email-event]').forEach(btn=>btn.addEventListener('click',()=>selectEmail(Number(btn.dataset.emailEvent))));
   }
   function selectEmail(id){
     const row=emailRows.find(r=>Number(r.id)===id);if(!row)return;selectedEmailId=id;
     $('ffEmailSelectedTitle').textContent=row.subject||'(No subject)';
     $('ffEmailSelectedMeta').textContent=(row.support_team||'unassigned')+' · '+(row.routing_status||'needs_review')+' · From '+(row.sender_email||'')+' · '+date(row.received_at);
-    $('ffEmailSelectedMessage').textContent=row.message_text||'[No text body received]';
+    $('ffEmailSelectedMessage').textContent=normalizeEmailBody(row.message_text)||'[No text body received]';
     loadEmailAttachments(id);
     $('ffEmailReplyText').value='';
     const systemNotice=isSystemNotification(row);
