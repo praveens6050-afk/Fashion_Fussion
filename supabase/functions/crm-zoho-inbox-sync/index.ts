@@ -77,7 +77,7 @@ async function zohoAttachments(apiBase: string, accountId: string, folderId: str
     const size = Number(file?.attachmentSize || 0);
     if (!id || !mime || size > 15 * 1024 * 1024) return [];
     return [{ attachment_id:id, filename, mime_type:mime, size, supported:true,
-      inline:!!file?.cid }];
+      account_id:accountId, folder_id:folderId, message_id:messageId, inline:!!file?.cid }];
   });
 }
 async function zohoRequest(url: string, accessToken: string): Promise<any> {
