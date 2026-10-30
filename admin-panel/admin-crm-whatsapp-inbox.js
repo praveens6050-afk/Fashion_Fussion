@@ -153,7 +153,7 @@
     const type=String(meta.message_type||'').toLowerCase();
     if(!attachment?.media_id){
       if(['image','document','video','audio','sticker'].includes(type)||String(message?.body||'').includes('[Incoming image message')){
-        return '<div class="ff-wa-attachment"><strong>Attachment reference missing</strong><p>This message has no usable media ID saved in CRM. The attachment cannot be fetched securely; ask the sender to resend it after the inbox webhook is fixed.</p></div>';
+        return '<div class="ff-wa-attachment"><strong>Attachment reference missing</strong><p>This older message has no saved WhatsApp media reference, so CRM cannot retrieve its image. Ask the sender to resend the image in WhatsApp; the new message will include a secure attachment link.</p></div>';
       }
       return '';
     }
