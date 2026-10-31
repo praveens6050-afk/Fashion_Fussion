@@ -48,10 +48,7 @@ Deno.serve(async (req: Request) => {
   const requestBody = await req.json().catch(() => ({}));
   const mailboxAddress = String(requestBody?.mailbox_address || "").trim().toLowerCase();
   const mailboxDepartments: Record<string, string> = {
-    "customer.care@fashionfussion.in": "customer_support",
-    "seller.support@fashionfussion.in": "seller_support",
-    "sales@fashionfussion.in": "sales",
-    "orders@fashionfussion.in": "orders",
+    "admin@fashionfussion.in": "administrator",
   };
   const department = mailboxDepartments[mailboxAddress];
   if (!department) return json({ error: "CRM_MAILBOX_NOT_ALLOWED" }, 400, origin);

@@ -14,11 +14,11 @@ test('both reply dispatchers reject unauthenticated requests before network call
  assert.equal(calls,0);
 });
 test('dry run never claims or sends replies and launch gates remain closed by default',async t=>{
- const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;throw Error('dry run must not call network')};t.after(()=>{globalThis.fetch=original});
+ const original=globalThis.fetch;let calls=0;globalThis.fetch=async(url)=>{calls++;assert.match(String(url),/rpc\/crm_get_zoho_mailbox_auth$/);return new Response(JSON.stringify({mailbox_address:'admin@fashionfussion.in',refresh_token:'synthetic-refresh-token-123456789',zoho_account_id:'123456'}),{status:200})};t.after(()=>{globalThis.fetch=original});
  const e=await emailPost({request:req({replyId:7,dryRun:true},emailEnv.CRM_EMAIL_REPLY_INTERNAL_TOKEN),env:emailEnv});
  const w=await waPost({request:req({replyId:9,dryRun:true},waEnv.CRM_WHATSAPP_REPLY_INTERNAL_TOKEN),env:waEnv});
  assert.equal(e.status,200);assert.equal(w.status,200);
- assert.equal((await e.json()).messagesSent,0);assert.equal((await w.json()).messagesSent,0);assert.equal(calls,0);
+ const emailDryRun=await e.json();assert.equal(emailDryRun.messagesSent,0);assert.equal(emailDryRun.oauthConfigurationPresence['customer.care@fashionfussion.in'],true);assert.equal((await w.json()).messagesSent,0);assert.equal(calls,1);
 });
 test('dispatch cannot run while launch gates are closed',async t=>{
  const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;throw Error('closed gate must prevent calls')};t.after(()=>{globalThis.fetch=original});
@@ -26,3 +26,4 @@ test('dispatch cannot run while launch gates are closed',async t=>{
  const w=await waPost({request:req({replyId:9,dryRun:false},waEnv.CRM_WHATSAPP_REPLY_INTERNAL_TOKEN),env:waEnv});
  assert.equal(e.status,423);assert.equal(w.status,423);assert.equal(calls,0);
 });
+

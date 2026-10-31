@@ -199,9 +199,12 @@
     }
     document.dispatchEvent(new Event('ff-crm-ready'));
 
-    const modules = [];
-    if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261030-scroll-1', 'seller pipeline']);
-    if (role === 'administrator') modules.push(['crm-team-management.js?v=20261029-zoho-primary-mailbox-1', 'team management']);
+    const modules = [
+      ['crm-unified-inbox.js?v=20261023-live-ready-1', 'unified inbox']
+    ];
+    if (role === 'administrator') modules.push(['crm-team-management.js?v=20261031-shared-mailbox-1', 'team management']);
+    if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261023-live-ready-1', 'sales workspace']);
+    if (['customer_support', 'seller_support'].includes(role)) modules.push(['crm-support-workspace.js?v=20261023-live-ready-1', 'support workspace']);
 
     // The authorization gate is complete; optional workspace failures should be visible but
     // must not leave the entire dashboard on its loading screen.
@@ -210,7 +213,7 @@
         await withTimeout(loadScript(src, label), 10000, 'Loading ' + label + ' timed out.');
       } catch (error) {
         console.error('[CRM] Workspace module failed:', error);
-        const notice = $('crmTeamNotice');
+        const notice = $('crmInboxNotice') || $('crmSupportNotice') || $('crmTeamNotice');
         if (notice) notice.textContent = error.message + ' Refresh the page or contact the CRM administrator.';
       }
     }
@@ -249,4 +252,3 @@
     showDenied(error && error.message || 'Unable to verify CRM access. Please sign in again.');
   }).finally(() => clearTimeout(watchdog));
 })();
-

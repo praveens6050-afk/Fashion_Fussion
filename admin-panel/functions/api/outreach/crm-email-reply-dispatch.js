@@ -32,7 +32,19 @@ export async function onRequestPost({request,env}){
  let input;try{input=await request.json()}catch{return json({ok:false,error:'Invalid JSON'},400)}
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>k!=='replyId'&&k!=='dryRun')||!Number.isSafeInteger(input.replyId)||input.replyId<=0||typeof input.dryRun!=='boolean')return json({ok:false,error:'Invalid dispatch request'},400);
  const gates={sendingEnabled:env.CRM_EMAIL_REPLY_SENDING_ENABLED==='true',launchApproved:env.CRM_EMAIL_REPLY_GLOBAL_LAUNCH_APPROVED==='true',acknowledged:env.CRM_EMAIL_REPLY_GLOBAL_LAUNCH_ACK==='reviewed_support_reply_v1'};
- if(input.dryRun)return json({ok:true,dryRun:true,readyToAttempt:false,gates,oauthConfigurationPresence:Object.fromEntries(Object.values(ROUTES).map(r=>[r.from,Boolean(env[r.prefix+'_CLIENT_ID']&&env[r.prefix+'_CLIENT_SECRET']&&env[r.prefix+'_REFRESH_TOKEN']&&env[r.prefix+'_MAIL_ACCOUNT_ID'])])),messagesSent:0});
+ if(input.dryRun){
+  let primaryMailboxConfigured=false;
+  try{
+   const primary=await rpc(base,key,'crm_get_zoho_mailbox_auth',{p_department:'administrator'});
+   primaryMailboxConfigured=String(primary?.mailbox_address||'').toLowerCase()==='admin@fashionfussion.in'&&Boolean(primary?.refresh_token)&&/^\d{5,30}$/.test(String(primary?.zoho_account_id||''));
+  }catch{}
+  const oauthConfigurationPresence=Object.fromEntries(Object.values(ROUTES).map(r=>{
+   const clientId=env[r.prefix+'_CLIENT_ID']||env.ZOHO_CLIENT_ID,clientSecret=env[r.prefix+'_CLIENT_SECRET']||env.ZOHO_CLIENT_SECRET;
+   const mailboxConfigured=primaryMailboxConfigured||Boolean(env[r.prefix+'_REFRESH_TOKEN']&&env[r.prefix+'_MAIL_ACCOUNT_ID']);
+   return[r.from,Boolean(clientId&&clientSecret&&mailboxConfigured)];
+  }));
+  return json({ok:true,dryRun:true,readyToAttempt:false,gates,oauthConfigurationPresence,messagesSent:0});
+ }
  if(!gates.sendingEnabled||!gates.launchApproved||!gates.acknowledged)return json({ok:false,error:'CRM email reply launch gates are closed'},423);
  let claimed;
  try{
@@ -46,10 +58,11 @@ export async function onRequestPost({request,env}){
   if(!original.ok||!/^\d{1,80}$/.test(zohoMessageId))return json({ok:false,error:'Original Zoho message ID is missing; reply was not sent'},409);
   // OAuth setup stores mailbox refresh tokens and account IDs in Supabase Vault.
   // Retain env credentials as a fallback while older deployments migrate.
-  const mailbox=await rpc(base,key,'crm_get_zoho_mailbox_auth',{p_department:route.department});
-  const vaultMatchesMailbox=String(mailbox?.mailbox_address||'').toLowerCase()===route.from;
-  const refreshToken=vaultMatchesMailbox?String(mailbox.refresh_token||''):String(env[route.prefix+'_REFRESH_TOKEN']||'');
-  const accountId=String(vaultMatchesMailbox?mailbox.zoho_account_id:env[route.prefix+'_MAIL_ACCOUNT_ID']||'');
+  let mailbox=await rpc(base,key,'crm_get_zoho_mailbox_auth',{p_department:route.department});
+  if(!mailbox?.refresh_token||!mailbox?.zoho_account_id)mailbox=await rpc(base,key,'crm_get_zoho_mailbox_auth',{p_department:'administrator'});
+  const hasVaultMailbox=Boolean(mailbox?.refresh_token&&mailbox?.zoho_account_id);
+  const refreshToken=hasVaultMailbox?String(mailbox.refresh_token):String(env[route.prefix+'_REFRESH_TOKEN']||'');
+  const accountId=String(hasVaultMailbox?mailbox.zoho_account_id:env[route.prefix+'_MAIL_ACCOUNT_ID']||'');
   if(!/^\d{5,30}$/.test(accountId))return json({ok:false,error:'Mailbox account configuration is invalid'},503);
   const accessToken=await tokenFor(env,route,refreshToken);
   claimed=await rpc(base,key,'claim_crm_email_reply',{p_reply_id:input.replyId});
