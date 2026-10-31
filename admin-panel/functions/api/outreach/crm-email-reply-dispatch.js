@@ -2,21 +2,24 @@ function json(body,status=200){return new Response(JSON.stringify(body),{status,
 async function digest(v){return new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v||'')))}
 async function equal(a,b){const[x,y]=await Promise.all([digest(a),digest(b)]);let d=0;for(let i=0;i<x.length;i++)d|=x[i]^y[i];return d===0}
 const ROUTES={
- 'customer.care@fashionfussion.in':{prefix:'ZOHO_CRM_CUSTOMER_CARE',from:'customer.care@fashionfussion.in'},
- 'seller.support@fashionfussion.in':{prefix:'ZOHO_CRM_SELLER_SUPPORT',from:'seller.support@fashionfussion.in'},
- 'sales.team@fashionfussion.in':{prefix:'ZOHO_CRM_SALES_TEAM',from:'sales.team@fashionfussion.in'},
- 'orders@fashionfussion.in':{prefix:'ZOHO_CRM_ORDERS',from:'orders@fashionfussion.in'}
+ 'customer.care@fashionfussion.in':{prefix:'ZOHO_CRM_CUSTOMER_CARE',from:'customer.care@fashionfussion.in',department:'customer_support'},
+ 'seller.support@fashionfussion.in':{prefix:'ZOHO_CRM_SELLER_SUPPORT',from:'seller.support@fashionfussion.in',department:'seller_support'},
+ 'sales.team@fashionfussion.in':{prefix:'ZOHO_CRM_SALES_TEAM',from:'sales.team@fashionfussion.in',department:'sales'},
+ 'orders@fashionfussion.in':{prefix:'ZOHO_CRM_ORDERS',from:'orders@fashionfussion.in',department:'orders'}
 };
 async function rpc(base,key,name,body){
  const r=await fetch(base+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(body)});
  if(!r.ok)throw new Error('Database dispatch state update failed');
  return r.json();
 }
-async function tokenFor(env,prefix){
- const clientId=String(env[prefix+'_CLIENT_ID']||''),clientSecret=String(env[prefix+'_CLIENT_SECRET']||''),refresh=String(env[prefix+'_REFRESH_TOKEN']||'');
+async function tokenFor(env,route,refresh){
+ const prefix=route.prefix;
+ const clientId=String(env[prefix+'_CLIENT_ID']||env.ZOHO_CLIENT_ID||''),clientSecret=String(env[prefix+'_CLIENT_SECRET']||env.ZOHO_CLIENT_SECRET||'');
  if(!clientId||!clientSecret||!refresh)throw new Error('Mailbox OAuth is not configured');
- const url=new URL('https://accounts.zoho.in/oauth/v2/token');url.searchParams.set('refresh_token',refresh);url.searchParams.set('client_id',clientId);url.searchParams.set('client_secret',clientSecret);url.searchParams.set('grant_type','refresh_token');
- const r=await fetch(url,{method:'POST',headers:{Accept:'application/json'}});
+ const accountsUrl=new URL(String(env.ZOHO_ACCOUNTS_DOMAIN||'https://accounts.zoho.in'));
+ if(accountsUrl.protocol!=='https:'||!/^accounts\.zoho\.(in|com|eu|com\.au|jp|ca|sa|uk)$/.test(accountsUrl.hostname))throw new Error('Zoho OAuth region configuration is invalid');
+ const body=new URLSearchParams({refresh_token:refresh,client_id:clientId,client_secret:clientSecret,grant_type:'refresh_token'});
+ const r=await fetch(accountsUrl.origin+'/oauth/v2/token',{method:'POST',headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded'},body,redirect:'error'});
  const data=await r.json().catch(()=>null);
  if(!r.ok||!data?.access_token)throw new Error('Mailbox OAuth refresh failed');
  return data.access_token;
@@ -34,17 +37,29 @@ export async function onRequestPost({request,env}){
  let claimed;
  try{
   // Resolve sender from private outbox before claim; orders@ is only routed from its dedicated orders mailbox queue.
-  const pre=await fetch(base+'/rest/v1/crm_email_reply_outbox?id=eq.'+input.replyId+'&select=id,from_email,status,attempt_count&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'}});
+  const pre=await fetch(base+'/rest/v1/crm_email_reply_outbox?id=eq.'+input.replyId+'&select=id,from_email,status,attempt_count,inbound_event_id&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'}});
   const rows=await pre.json().catch(()=>[]);
   const row=Array.isArray(rows)?rows[0]:null;const route=row&&ROUTES[String(row.from_email||'').toLowerCase()];
   if(!pre.ok||!row||!route||row.status!=='ready'||row.attempt_count!==0)return json({ok:false,error:'Reply is not ready or its sender mailbox is not allowlisted'},409);
-  const accountId=String(env[route.prefix+'_MAIL_ACCOUNT_ID']||'');
+  const original=await fetch(base+'/rest/v1/crm_email_inbound_events?id=eq.'+encodeURIComponent(row.inbound_event_id)+'&select=zoho_message_id&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'}});
+  const originalRows=await original.json().catch(()=>[]);const zohoMessageId=Array.isArray(originalRows)?String(originalRows[0]?.zoho_message_id||''):'';
+  if(!original.ok||!/^\d{1,80}$/.test(zohoMessageId))return json({ok:false,error:'Original Zoho message ID is missing; reply was not sent'},409);
+  // OAuth setup stores mailbox refresh tokens and account IDs in Supabase Vault.
+  // Retain env credentials as a fallback while older deployments migrate.
+  const mailbox=await rpc(base,key,'crm_get_zoho_mailbox_auth',{p_department:route.department});
+  const vaultMatchesMailbox=String(mailbox?.mailbox_address||'').toLowerCase()===route.from;
+  const refreshToken=vaultMatchesMailbox?String(mailbox.refresh_token||''):String(env[route.prefix+'_REFRESH_TOKEN']||'');
+  const accountId=String(vaultMatchesMailbox?mailbox.zoho_account_id:env[route.prefix+'_MAIL_ACCOUNT_ID']||'');
   if(!/^\d{5,30}$/.test(accountId))return json({ok:false,error:'Mailbox account configuration is invalid'},503);
-  const accessToken=await tokenFor(env,route.prefix);
+  const accessToken=await tokenFor(env,route,refreshToken);
   claimed=await rpc(base,key,'claim_crm_email_reply',{p_reply_id:input.replyId});
   if(!claimed?.claimed)return json({ok:false,error:'Reply could not be claimed; no message sent'},409);
   if(claimed.fromEmail!==route.from||claimed.toEmail===route.from||!/^\S+@\S+\.\S+$/.test(claimed.toEmail))throw new Error('Claimed recipient/sender validation failed');
-  const response=await fetch('https://mail.zoho.in/api/accounts/'+accountId+'/messages',{method:'POST',headers:{Authorization:'Zoho-oauthtoken '+accessToken,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({fromAddress:route.from,toAddress:claimed.toEmail,subject:claimed.subject,content:claimed.text,mailFormat:'plaintext',askReceipt:'no'})});
+  const mailApiBase=String(env.ZOHO_MAIL_API_BASE||'https://mail.zoho.in/api').replace(/\/+$/,'');
+  const mailApiUrl=new URL(mailApiBase);
+  if(mailApiUrl.protocol!=='https:'||!/^mail\.zoho\.(in|com|eu|com\.au|jp|ca|sa|uk)$/.test(mailApiUrl.hostname)||mailApiUrl.pathname!=='/api')throw new Error('Zoho Mail API region configuration is invalid');
+  const content='<p>'+String(claimed.text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')+'</p>';
+  const response=await fetch(mailApiBase+'/accounts/'+accountId+'/messages/'+encodeURIComponent(zohoMessageId),{method:'POST',headers:{Authorization:'Zoho-oauthtoken '+accessToken,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({fromAddress:route.from,toAddress:claimed.toEmail,content,action:'reply',mailFormat:'html',encoding:'UTF-8'}),redirect:'error'});
   const provider=await response.json().catch(()=>null);
   const providerMessageId=provider?.data?.messageId||provider?.data?.message_id||provider?.messageId||null;
   if(!response.ok||!providerMessageId){
@@ -60,3 +75,4 @@ export async function onRequestPost({request,env}){
 }
 export async function onRequestOptions(){return new Response(null,{status:204,headers:{'Allow':'POST, OPTIONS'}})}
 export async function onRequest({request}){return json({ok:false,error:'Method not allowed'},405)}
+
