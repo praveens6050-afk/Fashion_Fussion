@@ -66,6 +66,8 @@ body.crm-page{min-height:100vh;background:var(--crm-paper);color:var(--crm-ink);
 .crm-page .crm-inbox-heading h2{font:700 21px/1.28 Georgia,"Times New Roman",serif}
 .crm-page .crm-inbox-heading button,.crm-page .crm-inbox-reply-actions button{border-radius:8px}
 .crm-page .crm-inbox-layout{grid-template-columns:minmax(260px,.82fr) minmax(0,1.4fr);gap:14px}
+.crm-page #crmUnifiedInbox .crm-inbox-layout,.crm-page #ffWhatsAppSupportInbox .ff-wa-inbox-layout,.crm-page #ffCrmEmailInbox .ff-wa-inbox-layout{grid-template-columns:minmax(220px,.72fr) minmax(0,1.8fr);gap:12px;align-items:start}
+@media(max-width:900px){.crm-page #crmUnifiedInbox .crm-inbox-layout,.crm-page #ffWhatsAppSupportInbox .ff-wa-inbox-layout,.crm-page #ffCrmEmailInbox .ff-wa-inbox-layout{grid-template-columns:minmax(0,1fr)}.crm-page #crmUnifiedInbox .crm-inbox-list{max-height:360px}}
 .crm-page .crm-inbox-list{gap:8px}
 .crm-page .crm-inbox-item{padding:13px;border-color:#eae7ec;border-radius:10px;background:#fff;transition:border-color .15s,box-shadow .15s}
 .crm-page .crm-inbox-item:hover{border-color:#c6b4bf;box-shadow:0 4px 12px rgba(46,34,39,.07)}
