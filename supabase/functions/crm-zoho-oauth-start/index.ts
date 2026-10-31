@@ -5,7 +5,7 @@ const allowedOrigins = new Set([
   "https://crm.fashionfussion.in",
 ]);
 const callbackUrl = "https://gmdevprqtvoshbbytsxf.supabase.co/functions/v1/crm-zoho-oauth-callback";
-const scopes = "ZohoMail.accounts.READ,ZohoMail.folders.READ,ZohoMail.messages.READ,ZohoMail.messages.CREATE,ZohoMail.partner.organization.READ";
+const scopes = "ZohoMail.accounts.READ,ZohoMail.messages.READ,ZohoMail.messages.CREATE";
 const baseHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -48,7 +48,10 @@ Deno.serve(async (req: Request) => {
   const requestBody = await req.json().catch(() => ({}));
   const mailboxAddress = String(requestBody?.mailbox_address || "").trim().toLowerCase();
   const mailboxDepartments: Record<string, string> = {
-    "admin@fashionfussion.in": "administrator",
+    "customer.care@fashionfussion.in": "customer_support",
+    "seller.support@fashionfussion.in": "seller_support",
+    "sales@fashionfussion.in": "sales",
+    "orders@fashionfussion.in": "orders",
   };
   const department = mailboxDepartments[mailboxAddress];
   if (!department) return json({ error: "CRM_MAILBOX_NOT_ALLOWED" }, 400, origin);

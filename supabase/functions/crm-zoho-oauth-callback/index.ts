@@ -117,12 +117,10 @@ Deno.serve(async (req: Request) => {
     : [];
   if (returnedScopes.length && (
     !returnedScopes.some((scope: string) => scope === "zohomail.accounts.read" || scope === "zohomail.accounts.all") ||
-    !returnedScopes.some((scope: string) => scope === "zohomail.folders.read" || scope === "zohomail.folders.all") ||
     !returnedScopes.some((scope: string) => scope === "zohomail.messages.read" || scope === "zohomail.messages.all") ||
-    !returnedScopes.some((scope: string) => scope === "zohomail.messages.create" || scope === "zohomail.messages.all") ||
-    !returnedScopes.some((scope: string) => scope === "zohomail.partner.organization.read" || scope === "zohomail.partner.organization.all")
+    !returnedScopes.some((scope: string) => scope === "zohomail.messages.create" || scope === "zohomail.messages.all")
   )) {
-    return page(false, "Zoho authorization needs account-read, message-read, message-create and organization-read access for delivery tracking. Reconnect and approve the requested scopes.", mailboxAddress);
+    return page(false, "Zoho authorization needs account-read, message-read and message-create access. Reconnect and approve the requested scopes.", mailboxAddress);
   }
 
   const mailApiBase = (Deno.env.get("ZOHO_MAIL_API_BASE") || "https://mail.zoho.in/api").replace(/\/+$/g, "");
@@ -139,12 +137,16 @@ Deno.serve(async (req: Request) => {
   const accountsPayload = await accountsResponse.json().catch(() => ({}));
   const accounts = Array.isArray(accountsPayload?.data) ? accountsPayload.data : [];
   const matchedAccount = accounts.find((account: any) => {
-    const primaryAddresses = [account?.primaryEmailAddress, account?.mailboxAddress];
-    return primaryAddresses.some((value: unknown) => String(value || "").trim().toLowerCase() === mailboxAddress);
+    const candidates = [
+      account?.primaryEmailAddress,
+      account?.mailboxAddress,
+      ...(Array.isArray(account?.emailAddress) ? account.emailAddress.map((entry: any) => entry?.mailId) : []),
+    ];
+    return candidates.some((value: unknown) => String(value || "").trim().toLowerCase() === mailboxAddress);
   });
   const zohoAccountId = String(matchedAccount?.accountId || matchedAccount?.account_id || "");
-  if (!accountsResponse.ok || !zohoAccountId || mailboxAddress !== "admin@fashionfussion.in" || department !== "administrator") {
-    return page(false, "Sign in to the primary Zoho mailbox admin@fashionfussion.in and start the connection again.", mailboxAddress);
+  if (!accountsResponse.ok || !zohoAccountId) {
+    return page(false, "The signed-in Zoho user does not expose " + mailboxAddress + " as an accessible mailbox. Sign in to that mailbox and connect it again.", mailboxAddress);
   }
 
   const { error: storeError } = await db.rpc("crm_store_zoho_mailbox_token", {
