@@ -69,6 +69,10 @@ body.crm-page{min-height:100vh;background:var(--crm-paper);color:var(--crm-ink);
 .crm-page #crmUnifiedInbox .crm-inbox-layout,.crm-page #ffWhatsAppSupportInbox .ff-wa-inbox-layout,.crm-page #ffCrmEmailInbox .ff-wa-inbox-layout{grid-template-columns:minmax(220px,.72fr) minmax(0,1.8fr);gap:12px;align-items:start}
 @media(max-width:900px){.crm-page #crmUnifiedInbox .crm-inbox-layout,.crm-page #ffWhatsAppSupportInbox .ff-wa-inbox-layout,.crm-page #ffCrmEmailInbox .ff-wa-inbox-layout{grid-template-columns:minmax(0,1fr)}.crm-page #crmUnifiedInbox .crm-inbox-list{max-height:360px}}
 .crm-page .crm-inbox-list{gap:8px}
+.crm-page .crm-inbox-layout>*,.crm-page .ff-wa-inbox-layout>*{min-width:0}
+.crm-page .crm-inbox-list{width:100%;min-width:0;overflow-x:hidden;align-content:start}
+.crm-page .crm-inbox-top,.crm-page .crm-inbox-top>strong{min-width:0}
+.crm-page .crm-inbox-top>strong{overflow-wrap:anywhere}
 .crm-page .crm-inbox-item{padding:13px;border-color:#eae7ec;border-radius:10px;background:#fff;transition:border-color .15s,box-shadow .15s}
 .crm-page .crm-inbox-item:hover{border-color:#c6b4bf;box-shadow:0 4px 12px rgba(46,34,39,.07)}
 .crm-page .crm-inbox-item.selected{border-color:#8d6479;box-shadow:0 0 0 2px rgba(141,100,121,.12)}
