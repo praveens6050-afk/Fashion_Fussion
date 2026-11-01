@@ -200,7 +200,7 @@
     document.dispatchEvent(new Event('ff-crm-ready'));
 
     const modules = [
-      ['crm-unified-inbox.js?v=20261023-live-ready-1', 'unified inbox']
+      ['crm-unified-inbox.js?v=20261101-send-status-copy', 'unified inbox']
     ];
     if (role === 'administrator') modules.push(['crm-team-management.js?v=20261031-shared-mailbox-1', 'team management']);
     if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261023-live-ready-1', 'sales workspace']);
