@@ -210,7 +210,7 @@ jobs:
           set -euo pipefail
           grep -q 'data-supabase-sdk="local"' dist/index.html
           ! grep -Eq 'cdn\.jsdelivr\.net/.+supabase|unpkg\.com/.+supabase' dist/index.html
-          grep -Fq 'csp-index.css?v=20260925-homefix' dist/index.html
+          grep -Fq 'csp-index.css?v=20261030-notification-bell' dist/index.html
           grep -Fq 'csp-dynamic.css?v=1' dist/index.html
           grep -Fq 'homepage-footer.css?v=1' dist/index.html
           test "$(grep -o '<link rel="stylesheet"' dist/index.html | wc -l)" -eq 3
