@@ -35,7 +35,7 @@
       if(selected&&!conversations.some(c=>c.id===selected)){selected=null;$('crmInboxThread').innerHTML='<p>Select a conversation to view messages.</p>'}
       if(!quiet){
         const syncNote=syncResult?(' Zoho: '+syncResult.imported+' new email(s) imported.') : '';
-        notice('Inbox refreshed at '+new Date().toLocaleTimeString()+'.'+syncNote+' Reply sending requires configured provider credentials.');
+        notice('Inbox refreshed at '+new Date().toLocaleTimeString()+'.'+syncNote+' Reply availability is checked for each message.');
       }
       if(selected)await openThread(selected,true);
     }catch(e){notice('Inbox could not load. Verify migration, team role and provider webhook setup.');console.error('[CRM inbox]',e)}
@@ -114,7 +114,7 @@
       const{data,error}=await db.from('crm_inbox_messages').select('id,direction,sender_label,body,received_at,delivery_status,provider_message_id,metadata').eq('conversation_id',id).order('received_at',{ascending:true}).limit(100);
       if(error)throw error;
       const messages=data||[];
-      // The server validates CRM role and the explicit test-send gate before contacting a provider.
+      // The server validates CRM role, department access, provider setup, and the WhatsApp service window before contacting a provider.
       const canReply=true;
       const expired=c.provider==='whatsapp'&&Date.now()-Date.parse(c.last_inbound_at||c.received_at)>24*60*60*1000;
       const renderAttachment=(m,a)=>{
@@ -126,7 +126,7 @@
       };
       const attachmentMarkup=m=>{const wa=m?.metadata?.whatsapp_attachment;if(wa?.media_id)return renderAttachment(m,{...wa,attachment_id:''});const email=Array.isArray(m?.metadata?.zoho_attachments)?m.metadata.zoho_attachments:[];return email.length?'<div class="crm-email-attachments"><strong>Email attachment(s)</strong>'+email.slice(0,10).map(a=>renderAttachment(m,a)).join('')+'</div>':'';};
       const history=messages.map(m=>'<article class="crm-inbox-message '+esc(m.direction)+'"><small>'+esc(m.sender_label||m.direction)+' · '+esc(fmt(m.received_at))+' · '+esc(m.delivery_status||'received')+'</small><p>'+esc(m.body).replace(/\n/g,'<br>')+'</p>'+attachmentMarkup(m)+'</article>').join('');
-      $('crmInboxThread').innerHTML='<div class="crm-inbox-thread-head"><div><h3>'+esc(c.contact_name||c.contact_email||c.contact_phone||'Unknown contact')+'</h3><p>'+esc(c.contact_email||'')+(c.contact_phone?' · '+esc(c.contact_phone):'')+'</p></div><span class="crm-inbox-channel">'+esc(providerName(c.provider))+'</span></div><p><strong>'+esc(c.subject||'Incoming email')+'</strong></p><div class="crm-inbox-history">'+(history||'<p>No message history is available yet.</p>')+'</div>'+(canReply?'<form id="crmInboxReplyForm" class="crm-inbox-reply"><label for="crmInboxReplyBody">Reply via '+esc(providerName(c.provider))+'</label><textarea id="crmInboxReplyBody" rows="4" maxlength="4000" required placeholder="Write a reply…"></textarea><div class="crm-inbox-reply-actions"><span class="crm-inbox-reply-hint">'+(expired?'24-hour WhatsApp window expired; templates are required.':'Reply availability is checked by the server-side send gate.')+'</span><button id="crmInboxSend" type="submit" '+(expired?'disabled':'')+'>Send '+esc(providerName(c.provider))+'</button></div></form>':'<p class="crm-inbox-readonly">Reply sending is disabled by the server-side test-send gate.</p>');
+      $('crmInboxThread').innerHTML='<div class="crm-inbox-thread-head"><div><h3>'+esc(c.contact_name||c.contact_email||c.contact_phone||'Unknown contact')+'</h3><p>'+esc(c.contact_email||'')+(c.contact_phone?' · '+esc(c.contact_phone):'')+'</p></div><span class="crm-inbox-channel">'+esc(providerName(c.provider))+'</span></div><p><strong>'+esc(c.subject||'Incoming email')+'</strong></p><div class="crm-inbox-history">'+(history||'<p>No message history is available yet.</p>')+'</div>'+(canReply?'<form id="crmInboxReplyForm" class="crm-inbox-reply"><label for="crmInboxReplyBody">Reply via '+esc(providerName(c.provider))+'</label><textarea id="crmInboxReplyBody" rows="4" maxlength="4000" required placeholder="Write a reply…"></textarea><div class="crm-inbox-reply-actions"><span class="crm-inbox-reply-hint">'+(expired?'24-hour WhatsApp window expired; templates are required.':'Reply availability is checked by the server.')+'</span><button id="crmInboxSend" type="submit" '+(expired?'disabled':'')+'>Send '+esc(providerName(c.provider))+'</button></div></form>':'<p class="crm-inbox-readonly">Reply sending is disabled by the server-side test-send gate.</p>');
       const form=$('crmInboxReplyForm');if(form)form.addEventListener('submit',e=>{e.preventDefault();sendReply(id)});
       $('crmInboxThread').querySelectorAll('.crm-wa-attachment-open').forEach(button=>button.addEventListener('click',()=>openAttachment(button)));
     }catch(e){$('crmInboxThread').innerHTML='<p>Could not load this conversation. Check database permissions.</p>';if(!quiet)notice(e.message||'Message history unavailable')}
