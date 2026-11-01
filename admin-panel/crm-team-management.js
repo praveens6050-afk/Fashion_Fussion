@@ -11,7 +11,7 @@
   function showZohoNotice(message,ok=false){if(zohoNotice){zohoNotice.textContent=message;zohoNotice.style.color=ok?'#067647':'#b42318'}}
   const zohoParams=new URLSearchParams(window.location.search);
   const returnedMailbox=zohoParams.get('zoho_mailbox')||'';
-  if(zohoParams.get('zoho_oauth')==='connected')showZohoNotice('Connected '+returnedMailbox+'. Department aliases use this shared mailbox. No email was sent.',true);
+  if(zohoParams.get('zoho_oauth')==='connected')showZohoNotice('Connected '+returnedMailbox+'. Department aliases will use this mailbox. No email was sent.',true);
   else if(zohoParams.get('zoho_oauth')==='denied')showZohoNotice('Connection was not completed for '+returnedMailbox+'.');
   $('crmZohoConnect')?.addEventListener('click',async()=>{
     const button=$('crmZohoConnect');button.disabled=true;button.textContent='Opening Zoho…';
