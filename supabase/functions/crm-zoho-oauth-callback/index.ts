@@ -68,6 +68,9 @@ Deno.serve(async (req: Request) => {
   }
   const actorId = String(stateData.actor_user_id);
   const mailboxAddress = String(stateData.mailbox_address).trim().toLowerCase();
+  if (mailboxAddress !== "admin@fashionfussion.in") {
+    return page(false, "Only the primary Zoho mailbox can be connected through CRM.", mailboxAddress);
+  }
   const department = String(stateData.department).trim().toLowerCase();
 
   const { data: profile, error: profileError } = await db
@@ -136,16 +139,12 @@ Deno.serve(async (req: Request) => {
   }
   const accountsPayload = await accountsResponse.json().catch(() => ({}));
   const accounts = Array.isArray(accountsPayload?.data) ? accountsPayload.data : [];
-  const matchedAccount = accounts.find((account: any) => {
-    const candidates = [
-      account?.primaryEmailAddress,
-      account?.mailboxAddress,
-      ...(Array.isArray(account?.emailAddress) ? account.emailAddress.map((entry: any) => entry?.mailId) : []),
-    ];
-    return candidates.some((value: unknown) => String(value || "").trim().toLowerCase() === mailboxAddress);
-  });
+  const matchedAccount = accounts.find((account: any) =>
+    String(account?.primaryEmailAddress || "").trim().toLowerCase() === mailboxAddress
+  );
+  const primaryEmailAddress = String(matchedAccount?.primaryEmailAddress || "").trim().toLowerCase();
   const zohoAccountId = String(matchedAccount?.accountId || matchedAccount?.account_id || "");
-  if (!accountsResponse.ok || !zohoAccountId) {
+  if (!accountsResponse.ok || primaryEmailAddress !== "admin@fashionfussion.in" || !zohoAccountId) {
     return page(false, "The signed-in Zoho user does not expose " + mailboxAddress + " as an accessible mailbox. Sign in to that mailbox and connect it again.", mailboxAddress);
   }
 
