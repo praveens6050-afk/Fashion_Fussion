@@ -159,8 +159,8 @@ assert(sendMigration.includes('received_at,last_inbound_at,metadata')&&sendMigra
 assert(sendMigration.includes('on conflict(provider_message_id,direction) do nothing returning id into v_message_id')&&sendMigration.includes('if v_message_id is null then return v_id; end if;'),'Duplicate inbound webhook replays must not refresh the WhatsApp 24-hour reply window');
 assert(sendFunction.includes('crm_inbox_send_attempts')&&sendFunction.includes('crm_inbox_messages')&&sendFunction.includes('delivery_status:"sent"'),'Provider sends must be recorded in the CRM audit/message history');
 assert(inboxUi.includes("functions.invoke('crm-send-reply'")&&inboxUi.includes('crypto.randomUUID()')&&inboxUi.includes('crmInboxReplyForm'),'CRM inbox must include an idempotency-keyed reply composer');
-assert(sendFunction.includes('CRM_CRM_REPLY_LIVE_TEST_APPROVED')&&sendFunction.includes('CRM_CRM_REPLY_LIVE_TEST_ACK')&&sendFunction.includes('CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL'),'CRM reply API must fail closed until separate test approval');
-assert(inboxUi.includes('const canReply=true')&&inboxUi.includes('server-side send gate'),'CRM inbox must expose replies while the server enforces its explicit test-send approval gate');
+assert(!sendFunction.includes('CRM_CRM_REPLY_LIVE_TEST_APPROVED')&&!sendFunction.includes('CRM_CRM_REPLY_LIVE_TEST_ACK')&&!sendFunction.includes('CRM_REPLY_SENDING_DISABLED_UNTIL_EXPLICIT_TEST_APPROVAL'),'Owner-approved permanent CRM reply sending must not retain the temporary test gate');
+assert(inboxUi.includes('const canReply=true')&&inboxUi.includes('Reply availability is checked by the server.'),'CRM inbox must expose replies while the server performs authorization and provider checks');
 assert(!/SUPABASE_SERVICE_ROLE_KEY|META_WHATSAPP_ACCESS_TOKEN|ZOHO_REFRESH_TOKEN/.test(read('admin-panel/crm-unified-inbox.js')),'Provider credentials must never be placed in browser code');
 
 assert(read('supabase/config.toml').includes('[functions.crm-send-reply]')&&read('supabase/config.toml').includes('verify_jwt = true'),'CRM reply sender must require JWT verification at the Supabase gateway');
