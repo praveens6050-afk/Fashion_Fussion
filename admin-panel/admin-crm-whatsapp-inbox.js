@@ -66,10 +66,27 @@
       if(error)throw error;
       const canRead=c=>isAdmin||c.department===actorTeam
         ||(actorTeam==='sales_marketing'&&['sales','marketing'].includes(c.department));
-      rows=(conversations||[]).filter(canRead).map(c=>({
+      const visibleConversations=(conversations||[]).filter(canRead);
+      const conversationIds=visibleConversations.map(c=>c.id);
+      const latestReplyByConversation=new Map();
+      if(conversationIds.length){
+        const {data:replies,error:replyError}=await db.from('crm_inbox_messages')
+          .select('conversation_id,delivery_status,received_at')
+          .in('conversation_id',conversationIds).eq('direction','outbound')
+          .order('received_at',{ascending:false});
+        if(replyError)throw replyError;
+        (replies||[]).forEach(reply=>{
+          const id=String(reply.conversation_id);
+          if(!latestReplyByConversation.has(id)){
+            latestReplyByConversation.set(id,String(reply.delivery_status||'sent'));
+          }
+        });
+      }
+      rows=visibleConversations.map(c=>({
         id:Number(c.id),support_team:['sales','marketing'].includes(c.department)?'sales_marketing':c.department,
         routing_status:c.status||'open',sender_role:c.contact_type||'unknown',sender_phone:c.contact_phone||'',
-        message_text:c.latest_message||'',created_at:c.received_at,last_inbound_at:c.last_inbound_at||c.received_at
+        message_text:c.latest_message||'',created_at:c.received_at,last_inbound_at:c.last_inbound_at||c.received_at,
+        latest_reply_status:latestReplyByConversation.get(String(c.id))||'none'
       }));
       $('ffWaTeamAdmin').hidden=true;
       const filter=$('ffWaTeamFilter');
