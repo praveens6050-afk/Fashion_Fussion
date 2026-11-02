@@ -3,6 +3,7 @@
 const BACKEND_URL=window.FF_API_ORIGIN||'';
 const ACTIVE=new Set(['creating','created','pending','payment_pending']);
 const RESTART=new Set(['payment_failed','failed','expired']);
+const money=value=>'₹'+Number(value||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
 const safe=(e,fallback='We could not complete this action. Please try again.')=>window.ffCustomerMessage?window.ffCustomerMessage(e,fallback):fallback;
 let order=null,session=null,busy=false,autoRetryStarted=false;
 
@@ -49,13 +50,14 @@ function target(){return document.querySelector('#root .layout');}
 function render(){
   if(!order||document.getElementById('ffPaymentRetry'))return;
   const status=String(order.status||'').toLowerCase();
-  if(String(order.payment_method||'').toLowerCase()!=='prepaid'||order.payment_verified_at||status==='paid')return;
+  const method=String(order.payment_method||'').toLowerCase(),isCod=method==='cod';
+  if(!['prepaid','cod'].includes(method)||(isCod&&!(Number(order.cod_advance_amount)>0))||order.payment_verified_at||status==='paid'||status==='cod_pending')return;
   if(!ACTIVE.has(status)&&!RESTART.has(status))return;
   const t=target();if(!t)return;
   ensureStyles();
   const box=document.createElement('section');box.id='ffPaymentRetry';box.className='ff-payment-retry';
   const active=ACTIVE.has(status);
-  box.innerHTML='<div class="ff-payment-retry-head"><h2>'+(active?'Complete online payment':'Payment needs a new checkout')+'</h2><strong>'+(active?'Payment pending':'Payment not completed')+'</strong></div><div class="ff-payment-retry-body"><p>'+(active?'Your order is waiting for payment. You can safely continue payment from this same order. The order is confirmed only after payment verification.':'This payment session is no longer active. Return to your cart to start a fresh checkout.')+'</p><div class="ff-payment-retry-actions">'+(active?'<button id="ffResumePayment" class="ff-payment-retry-btn" type="button">Complete payment</button>':'<a class="ff-payment-retry-btn" href="cart.html">Return to cart</a>')+'<a class="ff-payment-retry-btn secondary" href="account.html#orders">My Orders</a></div><div id="ffPaymentRetryStatus" class="ff-payment-retry-status" aria-live="polite"></div></div>';
+  box.innerHTML='<div class="ff-payment-retry-head"><h2>'+(active?(isCod?'Pay COD advance':'Complete online payment'):'Payment needs a new checkout')+'</h2><strong>'+(active?'Payment pending':'Payment not completed')+'</strong></div><div class="ff-payment-retry-body"><p>'+(active?(isCod?'Pay '+money(order.cod_advance_amount)+' now to confirm this COD order. The balance is due when it arrives.':'Your order is waiting for payment. You can safely continue payment from this same order. The order is confirmed only after payment verification.'):'This payment session is no longer active. Return to your cart to start a fresh checkout.')+'</p><div class="ff-payment-retry-actions">'+(active?'<button id="ffResumePayment" class="ff-payment-retry-btn" type="button">'+(isCod?'Pay '+money(order.cod_advance_amount)+' now':'Complete payment')+'</button>':'<a class="ff-payment-retry-btn" href="cart.html">Return to cart</a>')+'<a class="ff-payment-retry-btn secondary" href="account.html#orders">My Orders</a></div><div id="ffPaymentRetryStatus" class="ff-payment-retry-status" aria-live="polite"></div></div>';
   t.parentNode.insertBefore(box,t);
   if(active)document.getElementById('ffResumePayment').addEventListener('click',resume);
   if(paymentFocusRequested())setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'center'}),100);
@@ -78,7 +80,7 @@ function loadRazorpay(){
 async function reconcile(){
   try{
     const d=await api('/api/reconcile-payment',{store_order_id:order.id});
-    if(d?.reconciled&&d.status==='paid'){location.href='order-confirmation.html?id='+encodeURIComponent(d.store_order_id||order.id);return true;}
+    if(d?.reconciled&&['paid','cod_pending'].includes(d.status)){location.href='order-confirmation.html?id='+encodeURIComponent(d.store_order_id||order.id);return true;}
     if(d?.captured){message(d.message||'Payment has been received and is being confirmed. Please do not pay again.','good');return true;}
   }catch(e){
     if(e.data?.captured){message(e.data.message||'Payment has been received and needs confirmation. Please do not pay again.','good');return true;}
@@ -116,12 +118,12 @@ async function resume(){
   try{
     if(await reconcile())return;
     const d=await api('/api/resume-payment',{store_order_id:order.id});
-    if(d.completed&&d.status==='paid'){location.href='order-confirmation.html?id='+encodeURIComponent(d.store_order_id||order.id);return;}
+    if(d.completed&&['paid','cod_pending'].includes(d.status)){location.href='order-confirmation.html?id='+encodeURIComponent(d.store_order_id||order.id);return;}
     if(d.captured){message(d.message||'Payment has been received and is being confirmed. Please do not pay again.','good');await reconcile();return;}
     if(!d.order?.id||!d.key_id)throw new Error('Online payment could not be prepared. Please try again.');
     await loadRazorpay();
     if(btn)btn.textContent='Complete payment';
-    const rz=new Razorpay({key:d.key_id,amount:d.order.amount,currency:d.order.currency||'INR',name:'Fashion Fussion',description:'Complete order payment',order_id:d.order.id,prefill:{name:d.customer?.name||order.customer_name||'',email:d.customer?.email||session.user.email||'',contact:d.customer?.phone||order.customer_phone||''},handler:payment=>confirmPayment(payment,d),modal:{ondismiss:()=>message('Payment window closed. You can continue this payment later from the same order.')}});
+    const rz=new Razorpay({key:d.key_id,amount:d.order.amount,currency:d.order.currency||'INR',name:'Fashion Fussion',description:order.payment_method==='cod'?'COD order advance':'Complete order payment',order_id:d.order.id,prefill:{name:d.customer?.name||order.customer_name||'',email:d.customer?.email||session.user.email||'',contact:d.customer?.phone||order.customer_phone||''},handler:payment=>confirmPayment(payment,d),modal:{ondismiss:()=>message('Payment window closed. You can continue this payment later from the same order.')}});
     rz.on('payment.failed',()=>message('Payment was not completed. You can safely try again from this same order.','bad'));
     rz.open();
   }catch(e){
@@ -135,9 +137,10 @@ async function resume(){
 async function init(){
   const id=orderId();if(!id||!window.supabaseClient)return;
   session=await authSession();if(!session?.user)return;
-  const {data,error}=await supabaseClient.from('orders').select('id,display_order_id,status,payment_method,payment_verified_at,total_amount,currency,razorpay_order_id,customer_name,customer_email,customer_phone').eq('id',id).eq('user_id',session.user.id).maybeSingle();
+  const {data,error}=await supabaseClient.from('orders').select('id,display_order_id,status,payment_method,payment_verified_at,total_amount,cod_advance_amount,razorpay_payment_id,currency,razorpay_order_id,customer_name,customer_email,customer_phone').eq('id',id).eq('user_id',session.user.id).maybeSingle();
   if(error||!data)return;order=data;
   let tries=0;const timer=setInterval(()=>{tries++;if(target()){clearInterval(timer);render();}else if(tries>80)clearInterval(timer);},100);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+
