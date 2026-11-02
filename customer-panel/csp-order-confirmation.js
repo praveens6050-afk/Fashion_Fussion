@@ -109,7 +109,7 @@ function hero(order) {
 }
 
 function paymentMethodLabel(order) {
-  if (order.payment_method === 'cod') return 'Cash on Delivery';
+  if (order.payment_method === 'cod') return Number(order.cod_advance_amount || 0) > 0 ? 'Cash on Delivery · advance paid' : 'Cash on Delivery';
   const state = prepaidPaymentState(order);
   if (state === 'pending') return 'Online payment · Payment pending';
   if (state === 'failed') return 'Online payment · Payment failed';
@@ -139,7 +139,7 @@ function render(order) {
     '<div class="row"><span>Delivery</span><span>' + (delivery ? money(delivery) : '<span class="saving">FREE</span>') + '</span></div>' +
     (coupon > 0 ? '<div class="row saving"><span>Coupon discount</span><span>− ' + money(coupon) + '</span></div>' : '') +
     (gift > 0 ? '<div class="row saving"><span>Gift card</span><span>− ' + money(gift) + '</span></div>' : '') +
-    '<div class="row total"><span>Total</span><span>' + money(order.total_amount) + '</span></div>';
+    '<div class="row total"><span>Total</span><span>' + money(order.total_amount) + '</span></div>' + (order.payment_method === 'cod' && Number(order.cod_advance_amount || 0) > 0 ? '<div class="row"><span>COD advance paid</span><span>' + money(order.cod_advance_amount) + '</span></div><div class="row"><span>Cash due on delivery</span><span>' + money(Math.max(0, Number(order.total_amount) - Number(order.cod_advance_amount))) + '</span></div>' : '');
   document.getElementById('detailsLink').href = 'order-details.html?id=' + encodeURIComponent(order.id);
   document.getElementById('loading').hidden = true;
   document.getElementById('content').hidden = false;
@@ -168,7 +168,7 @@ async function init() {
   }
   const { data, error } = await supabaseClient
     .from('orders')
-    .select('id,display_order_id,user_id,total_amount,status,payment_method,payment_verified_at,fulfillment_status,customer_name,items,shipping_address,created_at,coupon_discount,gift_card_discount')
+    .select('id,display_order_id,user_id,total_amount,cod_advance_amount,status,payment_method,payment_verified_at,fulfillment_status,customer_name,items,shipping_address,created_at,coupon_discount,gift_card_discount')
     .eq('id', Number(id))
     .eq('user_id', user.id)
     .maybeSingle();
@@ -181,3 +181,4 @@ init().catch(error => {
   console.error(error);
   document.getElementById('loading').textContent = error.message || 'Confirmation could not be loaded.';
 });
+
