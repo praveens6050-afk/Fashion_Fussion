@@ -92,7 +92,7 @@ async function findExistingQuoteOrder(userId, quoteId) {
   const rows = await rest(
     'orders?user_id=eq.' + encodeURIComponent(userId) +
     '&bulk_quote_id=eq.' + encodeURIComponent(quoteId) +
-    '&select=id,display_order_id,razorpay_order_id,total_amount,currency,status,payment_method&limit=1'
+    '&select=id,display_order_id,razorpay_order_id,total_amount,cod_advance_amount,currency,status,payment_method&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -101,7 +101,7 @@ async function loadOrder(userId, orderId) {
   const rows = await rest(
     'orders?id=eq.' + encodeURIComponent(orderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,display_order_id,razorpay_order_id,total_amount,currency,status,payment_method&limit=1'
+    '&select=id,display_order_id,razorpay_order_id,total_amount,cod_advance_amount,currency,status,payment_method&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -132,20 +132,21 @@ async function finalizeQuoteCod(orderId, userId, source) {
   });
 }
 
-async function createRazorpayOrder(storeOrder, userId, quoteId) {
+async function createRazorpayOrder(storeOrder, userId, quoteId, amount = Number(storeOrder.total_amount)) {
   if (!KEY_ID || !KEY_SECRET) throw new Error('Razorpay server keys are not configured');
   const response = await fetch('https://api.razorpay.com/v1/orders', {
     method: 'POST',
     headers: { Authorization: basicAuth(), 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      amount: Math.round(Number(storeOrder.total_amount) * 100),
+      amount: Math.round(Number(amount) * 100),
       currency: storeOrder.currency || 'INR',
-      receipt: 'FFQ_' + storeOrder.id,
+      receipt: (Number(storeOrder.cod_advance_amount) > 0 ? 'FFQ_ADV_' : 'FFQ_') + storeOrder.id,
       notes: {
         store: 'Fashion_Fussion',
         user_id: userId,
         store_order_id: String(storeOrder.id),
-        bulk_quote_id: String(quoteId)
+        bulk_quote_id: String(quoteId),
+        payment_part: Number(storeOrder.cod_advance_amount) > 0 ? 'cod_advance' : 'prepaid'
       },
       partial_payment: false
     })
@@ -212,6 +213,7 @@ function normalizeQuoteItems(rows) {
 }
 
 function existingResponse(order) {
+  const advance = Number(order.cod_advance_amount || 0);
   return {
     idempotent: true,
     store_order_id: order.id,
@@ -219,10 +221,12 @@ function existingResponse(order) {
     payment_method: order.payment_method,
     status: order.status,
     total: Number(order.total_amount),
+    cod_advance_amount: advance,
+    amount_due_on_delivery: Math.max(0, Number(order.total_amount) - advance),
     completed: ['paid', 'cod_pending', 'cod_collected'].includes(order.status),
     order: order.razorpay_order_id ? {
       id: order.razorpay_order_id,
-      amount: Math.round(Number(order.total_amount) * 100),
+      amount: Math.round((order.payment_method === 'cod' ? advance : Number(order.total_amount)) * 100),
       currency: order.currency || 'INR'
     } : null,
     key_id: order.razorpay_order_id ? KEY_ID : null
@@ -246,6 +250,13 @@ async function resumeExisting(order, userId, quoteId) {
   if (order.status === 'created' && order.razorpay_order_id) return existingResponse(order);
 
   if (order.payment_method === 'cod') {
+    if (Number(order.cod_advance_amount) > 0) {
+      let razorpayOrder;
+      try { razorpayOrder = await createRazorpayOrder(order, userId, quoteId, Number(order.cod_advance_amount)); }
+      catch (error) { await failQuoteCheckout(order.id); error.status = error.status || 502; throw error; }
+      const attached = await attachRazorpayOrder(order, userId, razorpayOrder);
+      return { ...existingResponse(attached), key_id: KEY_ID, order: { id: attached.razorpay_order_id, amount: razorpayOrder.amount, currency: attached.currency || 'INR' } };
+    }
     await finalizeQuoteCod(order.id, userId, 'quote_cod_resume');
     return { ...existingResponse({ ...order, status: 'cod_pending' }), completed: true };
   }
@@ -331,6 +342,7 @@ module.exports = async function createQuoteOrder(req, res) {
       bulk_quote_id: quoteId,
       razorpay_order_id: null,
       total_amount: payment.total,
+      cod_advance_amount: payment.cod_advance_amount,
       currency: 'INR',
       status: 'creating',
       payment_method: paymentMethod,
@@ -376,6 +388,27 @@ module.exports = async function createQuoteOrder(req, res) {
     }
 
     if (paymentMethod === 'cod') {
+      if (payment.cod_advance_amount > 0) {
+        let razorpayOrder;
+        try { razorpayOrder = await createRazorpayOrder(saved, user.id, quoteId, payment.cod_advance_amount); }
+        catch (error) { await failQuoteCheckout(saved.id); return json(req, res, 502, { error: error.message || 'COD advance payment could not be prepared' }); }
+        const attached = await attachRazorpayOrder(saved, user.id, razorpayOrder);
+        return json(req, res, 200, {
+          key_id: KEY_ID,
+          store_order_id: attached.id,
+          display_order_id: attached.display_order_id,
+          payment_method: 'cod',
+          status: 'created',
+          completed: false,
+          cod_advance_amount: payment.cod_advance_amount,
+          amount_due_on_delivery: payment.amount_due_on_delivery,
+          bulk_quote_id: quoteId,
+          order: { id: attached.razorpay_order_id, amount: razorpayOrder.amount, currency: attached.currency || 'INR' },
+          items: normalized.items,
+          pricing: { subtotal: quotedSubtotal, gst: quotedGst, delivery: quotedDelivery, total: payment.total, amount_due_now: payment.amount_due_now, amount_due_on_delivery: payment.amount_due_on_delivery },
+          total: payment.total
+        });
+      }
       await finalizeQuoteCod(saved.id, user.id, 'quote_cod');
       return json(req, res, 200, {
         store_order_id: saved.id,
@@ -420,3 +453,4 @@ module.exports = async function createQuoteOrder(req, res) {
     return json(req, res, error.status || 400, { error: error.message || 'Unable to create quote order' });
   }
 };
+
