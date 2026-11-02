@@ -8,6 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 const DELIVERY_THRESHOLD = 299;
 const DELIVERY_BELOW_THRESHOLD = 49;
+const COD_ADVANCE_AMOUNT = 49;
 // Legacy fields are kept at zero so existing order/database integrations remain compatible
 // while customers are no longer charged a separate payment-handling/COD fee.
 const PAYMENT_HANDLING_FEE = 0;
@@ -107,12 +108,16 @@ function normalizePaymentMethod(value) {
 function paymentPricing(basePayable, paymentMethod) {
   const method = normalizePaymentMethod(paymentMethod);
   const total = roundMoney(Math.max(0, Number(basePayable || 0)));
+  const codAdvanceAmount = method === 'cod' ? roundMoney(Math.min(COD_ADVANCE_AMOUNT, total)) : 0;
   return {
     payment_method: method,
     payment_handling_fee: 0,
     prepaid_discount: 0,
     cod_fee: 0,
     cod_fee_non_refundable: false,
+    cod_advance_amount: codAdvanceAmount,
+    amount_due_now: method === 'cod' ? codAdvanceAmount : total,
+    amount_due_on_delivery: method === 'cod' ? roundMoney(total - codAdvanceAmount) : 0,
     total
   };
 }
@@ -356,3 +361,4 @@ module.exports = {
   paymentPricing, normalizeCartRequest, getSupabaseUser, requireAdminUser, getProductsByIds,
   getVariantsByIds, getInventoryByVariantIds, getBulkTiersByProductIds, calculate
 };
+
