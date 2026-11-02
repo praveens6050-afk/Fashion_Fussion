@@ -402,6 +402,23 @@
     finally{$('ffWaAssignTeam').disabled=false;}
   }
 
+  async function whatsappErrorDetails(error){
+    const context=error?.context;
+    if(context&&typeof context.clone==='function'){
+      const payload=await context.clone().json().catch(()=>null);
+      if(payload&&typeof payload==='object')return payload;
+    }
+    return {};
+  }
+  function whatsappErrorMessage(code,fallback){
+    if(code==='WHATSAPP_MARKETING_OPT_IN_REQUIRED')
+      return 'Not sent: this number has no active, recorded marketing opt-in. Ask the owner to opt in again before sending.';
+    if(code==='WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE'||String(code||'').startsWith('WHATSAPP_TEMPLATE_'))
+      return 'WhatsApp could not load or use the approved marketing template. Check the Meta connection and template approval, then refresh.';
+    if(code==='CRM_ACCESS_DENIED'||code==='WHATSAPP_NEW_CHAT_ROLE_REQUIRED')
+      return 'Your CRM account is not permitted to start WhatsApp chats. Ask an administrator to review your access.';
+    return fallback||'WhatsApp request failed.';
+  }
   let waTemplates=[],pendingStartRequest=null,pendingStartBody='';
   async function loadApprovedTemplates(){
     const select=$('ffWaNewTemplate');select.innerHTML='<option value="">Loading approved templates…</option>';
@@ -415,7 +432,7 @@
       select.innerHTML='<option value="">Choose a template</option>'+waTemplates.map((t,i)=>'<option value="'+i+'">'+esc(t.name)+' · '+esc(t.language)+'</option>').join('');
       if(!waTemplates.length)select.innerHTML='<option value="">No approved marketing templates available</option>';
       $('ffWaNewChatStatus').textContent=waTemplates.length?'Template list loaded. Marketing opt-in is checked when sending.':'No approved, supported marketing templates are available.';
-    }catch(e){waTemplates=[];select.innerHTML='<option value="">Template list unavailable</option>';if(!isAdmin&&actorTeam!=='sales_marketing')$('ffWaNewChat').hidden=true;$('ffWaNewChatStatus').textContent=e.message||'Template list unavailable.';}
+    }catch(e){const details=await whatsappErrorDetails(e);waTemplates=[];select.innerHTML='<option value="">Template list unavailable</option>';if(!isAdmin&&actorTeam!=='sales_marketing')$('ffWaNewChat').hidden=true;$('ffWaNewChatStatus').textContent=whatsappErrorMessage(details.error,e.message||'Template list unavailable.');}
     renderTemplateParameters();updateNewChatButton();
   }
   let actorRole='';
@@ -454,7 +471,7 @@
       $('ffWaNewChatStatus').textContent='Template accepted by WhatsApp. Message ID: '+(data.provider_message_id||'recorded');
       $('ffWaNewPhone').value='';$('ffWaNewName').value='';
       await load();
-    }catch(e){const status=Number(e?.context?.status||e?.status||0);if([400,403,422].includes(status)){pendingStartRequest=null;pendingStartBody='';} $('ffWaNewChatStatus').textContent=String(e.message||e)+' Check the inbox before retrying.';}
+    }catch(e){const status=Number(e?.context?.status||e?.status||0),details=await whatsappErrorDetails(e),code=String(details.error||'');if([400,403,422].includes(status)){pendingStartRequest=null;pendingStartBody='';}if(code==='WHATSAPP_MARKETING_OPT_IN_REQUIRED'){$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code)+' No WhatsApp message was sent.';}else{$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code,e.message||String(e))+' Check the inbox before retrying.';}}
     finally{updateNewChatButton();}
   }
 
