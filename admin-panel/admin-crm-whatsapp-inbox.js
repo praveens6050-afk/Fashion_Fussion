@@ -428,7 +428,7 @@
   function updateNewChatButton(){
     const phone=$('ffWaNewPhone')?.value.trim()||'',template=waTemplates[Number($('ffWaNewTemplate')?.value)];
     const params=[...document.querySelectorAll('[data-wa-template-param]')];
-    const validPhone=/^\\+?[1-9][0-9]{7,14}$/.test(phone.replace(/[\\s().-]/g,''));
+    const validPhone=/^\+?[1-9][0-9]{7,14}$/.test(phone.replace(/[\s().-]/g,''));
     const validParams=template&&params.length===Number(template.parameter_count||0)&&params.every(x=>x.value.trim().length>0);
     $('ffWaStartChat').disabled=!validPhone||!template||!validParams||Boolean(pendingStartRequest);
   }
