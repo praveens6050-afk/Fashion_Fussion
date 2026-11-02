@@ -53,7 +53,7 @@ async function recordPaymentException(order, type, paymentId, details = {}) {
 async function loadOrderByRazorpayOrder(id) {
   const rows = await rest(
     'orders?razorpay_order_id=eq.' + encodeURIComponent(id) +
-    '&select=id,user_id,display_order_id,total_amount,currency,status,payment_method,razorpay_payment_id,customer_name,customer_email,items,created_at&limit=1'
+    '&select=id,user_id,display_order_id,total_amount,cod_advance_amount,currency,status,payment_method,razorpay_payment_id,customer_name,customer_email,items,created_at&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -85,6 +85,7 @@ async function loadReturnRequestByRefund(refund) {
 }
 
 function expectedRefundAmount(order) {
+  if (order.payment_method === 'cod') return roundMoney(order.refund_amount || order.cod_advance_amount || 0);
   const items = Array.isArray(order.items) ? order.items : [];
   const subtotal = roundMoney(items.reduce((s, i) => s + Number(i?.taxable_amount ?? (Number(i?.unit_price || 0) * Number(i?.qty || 1))), 0));
   const gst = roundMoney(items.reduce((s, i) => s + Number(i?.gst_amount || 0), 0));
@@ -383,12 +384,29 @@ async function handlePaymentCaptured(event,req) {
   const payment = event?.payload?.payment?.entity;
   if (!payment?.id || !payment?.order_id || payment.status !== 'captured') return { received: true, ignored: true };
   const order = await loadOrderByRazorpayOrder(payment.order_id);
-  if (!order || order.payment_method !== 'prepaid') return { received: true, ignored: true };
-  if (Math.round(Number(order.total_amount) * 100) !== Number(payment.amount)) {
-    const e = new Error('Payment amount mismatch');
-    e.status = 409;
-    throw e;
+  if (!order) return { received: true, ignored: true };
+  const expectedAmount = order.payment_method === 'cod' ? Number(order.cod_advance_amount || 0) : Number(order.total_amount);
+  if (!(expectedAmount > 0) || Math.round(expectedAmount * 100) !== Number(payment.amount)) {
+    const e = new Error('Payment amount mismatch'); e.status = 409; throw e;
   }
+  if (order.payment_method === 'cod') {
+    if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(payment.id)) {
+      await recordPaymentException(order, 'different_payment_reference', payment.id, { existing_payment_id: String(order.razorpay_payment_id), razorpay_order_id: String(payment.order_id) });
+      return { received: true, captured: true, manual_review: true, review_queued: true, reason: 'different_payment_reference', store_order_id: order.id, status: order.status };
+    }
+    if (order.status === 'cod_pending' && String(order.razorpay_payment_id) === String(payment.id)) {
+      await scheduleConfirmedOrder(req, order.id, 'razorpay_webhook_cod_advance_already_processed');
+      return { received: true, already_processed: true, inventory_reconciled: true, status: 'cod_pending' };
+    }
+    if (!ACTIVE_CHECKOUT_STATUSES.has(String(order.status || '').toLowerCase())) {
+      await recordPaymentException(order, 'inactive_order_capture', payment.id, { razorpay_order_id: String(payment.order_id) });
+      return { received: true, captured: true, manual_review: true, review_queued: true, reason: 'inactive_order', store_order_id: order.id, status: order.status };
+    }
+    await rpc('finalize_cod_advance_order_inventory', { p_order_id: order.id, p_user_id: order.user_id, p_payment_id: String(payment.id), p_payment_signature: null, p_source: 'razorpay_webhook' });
+    await scheduleConfirmedOrder(req, order.id, 'razorpay_webhook_cod_advance');
+    return { received: true, finalized: true, inventory_committed: true, store_order_id: order.id, status: 'cod_pending' };
+  }
+  if (order.payment_method !== 'prepaid') return { received: true, ignored: true };
   if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(payment.id)) {
     console.error('Webhook captured payment conflicts with existing payment link', { store_order_id: order.id });
     await recordPaymentException(order, 'different_payment_reference', payment.id, {
@@ -459,7 +477,7 @@ async function handleRefundEvent(event) {
   }
 
   const order = await loadOrderByPayment(refund.payment_id);
-  if (!order || order.payment_method !== 'prepaid') return { received: true, ignored: true };
+  if (!order || !['prepaid', 'cod'].includes(order.payment_method) || (order.payment_method === 'cod' && !(Number(order.cod_advance_amount) > 0))) return { received: true, ignored: true };
   if (order.refund_id && String(order.refund_id) !== String(refund.id)) {
     return { received: true, ignored: true, reason: 'different_refund_reference' };
   }
@@ -528,3 +546,4 @@ module.exports = async function razorpayWebhook(req, res) {
     return json(req, res, error.status || 500, { error: error.message || 'Webhook processing failed' });
   }
 };
+
