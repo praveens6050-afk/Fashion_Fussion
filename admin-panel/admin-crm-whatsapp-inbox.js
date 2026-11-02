@@ -408,6 +408,7 @@
       const payload=await context.clone().json().catch(()=>null);
       if(payload&&typeof payload==='object')return payload;
     }
+    if(/^WHATSAPP_[A-Z0-9_]+$/.test(String(error?.message||'')))return {error:error.message};
     return {};
   }
   function whatsappErrorMessage(code,fallback){
