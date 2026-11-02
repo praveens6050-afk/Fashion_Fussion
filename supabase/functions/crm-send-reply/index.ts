@@ -65,7 +65,7 @@ async function whatsappConfig(db:any): Promise<{token:string;phoneId:string;grap
     .not("metadata->>business_phone_number_id","is",null).order("received_at",{ascending:false}).limit(1).maybeSingle();
   const phoneId=clean(data?.metadata?.business_phone_number_id,100);
   const graph=Deno.env.get("META_GRAPH_API_VERSION")||"v23.0";
-  if(error||!token||!/^\\d{8,25}$/.test(phoneId)) throw new Error("WHATSAPP_SENDER_NOT_CONFIGURED");
+  if(error||!token||!/^\d{8,25}$/.test(phoneId)) throw new Error("WHATSAPP_SENDER_NOT_CONFIGURED");
   return {token,phoneId,graph};
 }
 async function approvedMarketingTemplates(db:any) {
@@ -74,7 +74,7 @@ async function approvedMarketingTemplates(db:any) {
   const phoneRes=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"?fields=whatsapp_business_account",{headers});
   const phoneData=await phoneRes.json().catch(()=>({}));
   const wabaId=String(phoneData?.whatsapp_business_account?.id||"");
-  if(!phoneRes.ok||!/^\\d{8,25}$/.test(wabaId)) throw new Error("WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE");
+  if(!phoneRes.ok||!/^\d{8,25}$/.test(wabaId)) throw new Error("WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE");
   const templateRes=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(wabaId)+"/message_templates?fields=name,status,category,language,components&limit=100",{headers});
   const templateData=await templateRes.json().catch(()=>({}));
   if(!templateRes.ok||!Array.isArray(templateData?.data)) throw new Error("WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE");
@@ -90,12 +90,12 @@ async function approvedMarketingTemplates(db:any) {
 }
 async function startWhatsAppChat(db:any,user:any,role:string,payload:any,requestId:string,origin:string|null) {
   if(!["administrator","sales","marketing"].includes(role)) return response({error:"WHATSAPP_NEW_CHAT_ROLE_REQUIRED"},403,origin);
-  const rawPhone=clean(payload?.phone,32).replace(/[\\s().-]/g,"");
-  const recipient=rawPhone.replace(/^\\+/,"");
+  const rawPhone=clean(payload?.phone,32).replace(/[\s().-]/g,"");
+  const recipient=rawPhone.replace(/^\+/,"");
   const templateName=clean(payload?.template_name,100),language=clean(payload?.language,20);
   const parameters=Array.isArray(payload?.parameters)?payload.parameters:[];
   const department=role==="administrator"?clean(payload?.department,20):role;
-  if(!/^\\+?[1-9][0-9]{7,14}$/.test(rawPhone)||!templateName||!language||!["sales","marketing"].includes(department))
+  if(!/^\+?[1-9][0-9]{7,14}$/.test(rawPhone)||!templateName||!language||!["sales","marketing"].includes(department))
     return response({error:"INVALID_INPUT"},400,origin);
   if(role!=="administrator"&&department!==role) return response({error:"DEPARTMENT_ACCESS_DENIED"},403,origin);
   if(parameters.length>20||parameters.some((v:any)=>typeof v!=="string"||v.trim().length>200))
@@ -116,6 +116,15 @@ async function startWhatsAppChat(db:any,user:any,role:string,payload:any,request
   if(existingError) return response({error:"CONVERSATION_LOOKUP_FAILED"},503,origin);
   conv=existing||null;
   if(conv?.assigned_to&&conv.assigned_to!==user.id&&role!=="administrator") return response({error:"CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT"},409,origin);
+  if(conv&&!conv.assigned_to&&["sales","marketing"].includes(role)){
+    const {data:claimed,error:claimError}=await db.from("crm_inbox_conversations").update({assigned_to:user.id,updated_at:new Date().toISOString()})
+      .eq("id",conv.id).is("assigned_to",null).select("id").maybeSingle();
+    if(claimError)return response({error:"CONVERSATION_ASSIGNMENT_FAILED"},503,origin);
+    if(!claimed){
+      const {data:latest}=await db.from("crm_inbox_conversations").select("assigned_to").eq("id",conv.id).maybeSingle();
+      if(latest?.assigned_to&&latest.assigned_to!==user.id)return response({error:"CONVERSATION_ASSIGNED_TO_ANOTHER_AGENT"},409,origin);
+    }
+  }
   if(!conv){
     const {data:created,error:createError}=await db.from("crm_inbox_conversations").insert({
       provider:"whatsapp",provider_message_id:"crm-start-"+requestId,provider_thread_id:null,department,
