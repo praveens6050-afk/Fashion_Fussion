@@ -26,7 +26,7 @@ async function recordPaymentException(order, type, paymentId, details = {}) {
   });
 }
 async function loadStoreOrder(razorpayOrderId) {
-  const response = await fetch(SUPABASE_URL + '/rest/v1/orders?razorpay_order_id=eq.' + encodeURIComponent(razorpayOrderId) + '&select=id,user_id,total_amount,status,payment_method,razorpay_payment_id,display_order_id&limit=1', { headers: serverHeaders });
+  const response = await fetch(SUPABASE_URL + '/rest/v1/orders?razorpay_order_id=eq.' + encodeURIComponent(razorpayOrderId) + '&select=id,user_id,total_amount,cod_advance_amount,status,payment_method,razorpay_payment_id,display_order_id&limit=1', { headers: serverHeaders });
   const rows = await response.json().catch(() => []);
   if (!response.ok) throw new Error('Could not load store order');
   return rows?.[0] || null;
@@ -68,6 +68,30 @@ module.exports = async function verifyPayment(req, res) {
     const order = await loadStoreOrder(order_id);
     if (!order) return json(req, res, 404, { verified: false, error: 'Store order was not found' });
     if (order.user_id !== user.id) return json(req, res, 403, { verified: false, error: 'This order does not belong to the current user' });
+    if (order.payment_method === 'cod') {
+      const advance = Number(order.cod_advance_amount || 0);
+      if (!(advance > 0) || Math.round(advance * 100) !== Number(payment.amount)) return json(req, res, 400, { verified: false, error: 'Payment amount does not match the COD advance' });
+      if (order.razorpay_payment_id && String(order.razorpay_payment_id) !== String(razorpay_payment_id)) {
+        if (await queueReviewOrRespond(req, res, order, 'different_payment_reference', razorpay_payment_id, { existing_payment_id: String(order.razorpay_payment_id), razorpay_order_id: String(order_id) })) return;
+        return json(req, res, 409, { verified: false, captured: true, manual_review: true, review_queued: true, error: 'This order is already linked to a different captured payment. Please do not pay again.', store_order_id: order.id, display_order_id: order.display_order_id, status: order.status });
+      }
+      if (order.status === 'cod_pending' && String(order.razorpay_payment_id) === String(razorpay_payment_id)) {
+        await scheduleConfirmedOrder(req, order.id, 'verify_cod_advance_already_processed');
+        return json(req, res, 200, { verified: true, already_processed: true, store_order_id: order.id, display_order_id: order.display_order_id, status: 'cod_pending', cod_advance_amount: advance, amount_due_on_delivery: Math.max(0, Number(order.total_amount) - advance) });
+      }
+      if (isInactiveCheckoutStatus(order.status)) {
+        if (await queueReviewOrRespond(req, res, order, 'inactive_order_capture', razorpay_payment_id, { razorpay_order_id: String(order_id) })) return;
+        return json(req, res, 409, { verified: false, captured: true, manual_review: true, review_queued: true, error: 'Payment was captured but this COD order is no longer active. Support review is required; do not pay again.', store_order_id: order.id, display_order_id: order.display_order_id, status: order.status });
+      }
+      try {
+        await rpc('finalize_cod_advance_order_inventory', { p_order_id: order.id, p_user_id: user.id, p_payment_id: String(razorpay_payment_id), p_payment_signature: String(razorpay_signature), p_source: 'browser_verify' });
+      } catch (error) {
+        console.error('COD advance finalization failed:', error);
+        return json(req, res, 409, { verified: false, captured: true, recoverable: true, error: 'Payment is captured. COD order finalization is pending; please do not pay again.', store_order_id: order.id, display_order_id: order.display_order_id });
+      }
+      await scheduleConfirmedOrder(req, order.id, 'verify_cod_advance');
+      return json(req, res, 200, { verified: true, store_order_id: order.id, display_order_id: order.display_order_id, status: 'cod_pending', cod_advance_amount: advance, amount_due_on_delivery: Math.max(0, Number(order.total_amount) - advance) });
+    }
     if (order.payment_method !== 'prepaid') return json(req, res, 400, { verified: false, error: 'This is not a prepaid order' });
     if (Math.round(Number(order.total_amount) * 100) !== Number(payment.amount)) return json(req, res, 400, { verified: false, error: 'Payment amount does not match order amount' });
 
@@ -100,3 +124,4 @@ module.exports = async function verifyPayment(req, res) {
     return json(req, res, 400, { verified: false, error: error.message || 'Payment verification failed' });
   }
 };
+
