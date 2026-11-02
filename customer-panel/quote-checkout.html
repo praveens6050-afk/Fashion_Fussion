@@ -21,7 +21,7 @@
 <div class="card"><div class="head"><h2>Business details</h2><span id="quoteState" class="note"></span></div><div class="body"><div id="businessBox" class="business">Loading…</div><div class="field"><label for="poNo">Purchase order number (optional)</label><input id="poNo" maxlength="100" placeholder="Your PO/reference number"></div></div></div>
 <div class="card"><div class="head"><h2>Delivery address</h2><a href="account.html#addresses" class="note">Manage addresses</a></div><div class="body"><div id="addressBox" class="note">Loading addresses…</div></div></div>
 <div class="card"><div class="head"><h2>Quoted items</h2></div><div class="body"><div id="itemsBox" class="items"></div></div></div>
-<div class="card"><div class="head"><h2>Payment method</h2></div><div class="body"><div class="pay"><label><input type="radio" name="payment" value="prepaid" checked><div><strong>Pay online securely</strong><div class="note">UPI, cards and supported methods via Razorpay.</div></div></label><label><input type="radio" name="payment" value="cod"><div><strong>Cash on Delivery</strong><div class="note">Pay on delivery. No separate COD handling fee.</div></div></label></div></div></div>
+<div class="card"><div class="head"><h2>Payment method</h2></div><div class="body"><div class="pay"><label><input type="radio" name="payment" value="prepaid" checked><div><strong>Pay online securely</strong><div class="note">UPI, cards and supported methods via Razorpay.</div></div></label><label><input type="radio" name="payment" value="cod"><div><strong>Cash on Delivery</strong><div class="note">Pay ₹49 now to confirm your order, then pay the balance when it arrives. No extra COD handling fee.</div></div></label></div></div></div>
 </section>
 <aside class="side"><div class="card"><div class="head"><h2>Accepted quote</h2></div><div class="body"><div id="priceBox"></div><div class="note quote-snapshot-note">This checkout uses your accepted negotiated quote. Coupons and gift cards are not applied to negotiated quotes.</div><button id="payBtn" class="btn" disabled>PAY SECURELY</button><div id="status" class="status" aria-live="polite"></div><div class="trust">Your quote can create only one order. The final payment amount is confirmed before the order is completed.</div></div></div></aside>
 </div>
@@ -31,3 +31,4 @@
 <script src="quote-payment-safety.js?v=3"></script>
 </body>
 </html>
+
