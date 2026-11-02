@@ -4,9 +4,11 @@ const path=require('path');
 const vm=require('vm');
 const {paymentPricing,normalizePaymentMethod,roundMoney,normalizeCartRequest,cors}=require('./lib');
 
-assert.deepStrictEqual(paymentPricing(100,'prepaid'),{payment_method:'prepaid',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
-assert.deepStrictEqual(paymentPricing(100,'cod'),{payment_method:'cod',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,total:100});
+assert.deepStrictEqual(paymentPricing(100,'prepaid'),{payment_method:'prepaid',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,cod_advance_amount:0,amount_due_now:100,amount_due_on_delivery:0,total:100});
+assert.deepStrictEqual(paymentPricing(100,'cod'),{payment_method:'cod',payment_handling_fee:0,prepaid_discount:0,cod_fee:0,cod_fee_non_refundable:false,cod_advance_amount:49,amount_due_now:49,amount_due_on_delivery:51,total:100});
 assert.strictEqual(paymentPricing(0,'prepaid').total,0);
+assert.deepStrictEqual([paymentPricing(30,'cod').amount_due_now,paymentPricing(30,'cod').amount_due_on_delivery],[30,0]);
+assert.deepStrictEqual([paymentPricing(100,'cod').amount_due_now,paymentPricing(100,'cod').amount_due_on_delivery],[49,51]);
 assert.strictEqual(normalizePaymentMethod(undefined),'prepaid');
 assert.throws(()=>normalizePaymentMethod('upi'),/Invalid payment method/);
 assert.strictEqual(roundMoney(10.005),10.01);
@@ -52,6 +54,17 @@ const quoteReserveCall=quoteOrder.indexOf('await reserveQuoteInventory(saved.id)
 const quoteCodFinalizeCall=quoteOrder.indexOf("await finalizeQuoteCod(saved.id, user.id, 'quote_cod')");
 const quoteRazorpayCall=quoteOrder.lastIndexOf('razorpayOrder = await createRazorpayOrder(saved, user.id, quoteId)');
 assert.ok(quoteReserveCall>=0&&quoteCodFinalizeCall>quoteReserveCall&&quoteRazorpayCall>quoteReserveCall,'Accepted quote checkout must reserve inventory before COD finalization or Razorpay order creation');
+
+const codCreateOrder=read('create-order.js');
+assert.ok(codCreateOrder.includes('cod_advance_amount:payment.cod_advance_amount')&&codCreateOrder.includes('createRazorpayOrder(saved,user.id,payment.cod_advance_amount)'),'COD checkout must persist and charge the server-calculated advance');
+const codVerifyPayment=read('verify-payment.js');
+assert.ok(codVerifyPayment.includes("finalize_cod_advance_order_inventory")&&codVerifyPayment.includes("order.payment_method === 'cod'"),'Captured COD advances must be verified and finalized as COD');
+const codReconcilePayment=read('reconcile-payment.js');
+assert.ok(codReconcilePayment.includes("finalize_cod_advance_order_inventory")&&codReconcilePayment.includes("order.cod_advance_amount"),'COD advance payment recovery must use the stored advance amount');
+const codCancelOrder=read('cancel-order.js');
+assert.ok(codCancelOrder.includes("createRazorpayRefund(order,advance)")&&codCancelOrder.includes("'refund_initiated'"),'Cancelling an eligible COD order must refund its online advance');
+const migration=fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261102134916_cod_advance_payment_49.sql'),'utf8');
+assert.ok(migration.includes('cod_advance_amount')&&migration.includes('finalize_cod_advance_order_inventory')&&migration.includes('to service_role'),'COD advance migration must persist the amount and restrict finalization to the service role');
 
 const shippingStatus=read('customer-shipping-status.js');
 for(const required of ['getSupabaseUser','user_id','order_shipments','direction=eq.forward'])assert.ok(shippingStatus.includes(required),`Customer shipment status must enforce ${required}`);
@@ -158,3 +171,4 @@ const supportCoreSource=clientSource('support-chat-core.js');
 for(const required of ['create_support_ticket','support_tickets','p_order_id'])assert.ok(supportCoreSource.includes(required),`Order support must continue using the existing ticket security model via ${required}`);
 
 console.log('Fashion_Fussion customer backend pricing/payment/refund/quote/shipping/cart/auth/post-purchase resilience audit tests passed');
+
