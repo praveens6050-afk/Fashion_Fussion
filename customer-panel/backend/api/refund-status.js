@@ -48,7 +48,7 @@ async function loadOrder(userId, orderId) {
   const rows = await rest(
     'orders?id=eq.' + encodeURIComponent(orderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,display_order_id,user_id,status,payment_method,fulfillment_status,total_amount,items,coupon_discount,gift_card_discount,razorpay_payment_id,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1'
+    '&select=id,display_order_id,user_id,status,payment_method,fulfillment_status,total_amount,cod_advance_amount,items,coupon_discount,gift_card_discount,razorpay_payment_id,refund_id,refund_status,refund_reference,refund_amount,refund_updated_at&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -139,11 +139,11 @@ module.exports = async function refundStatus(req, res) {
 
     const order = await loadOrder(user.id, orderId);
     if (!order) return json(req, res, 404, { error: 'Order not found' });
-    if (order.payment_method !== 'prepaid') {
+    if (!['prepaid', 'cod'].includes(order.payment_method) || (order.payment_method === 'cod' && !(Number(order.cod_advance_amount) > 0))) {
       return json(req, res, 200, {
         reconciled: false,
         status: order.status,
-        message: 'This order does not use a prepaid payment method.'
+        message: 'This order has no online payment to refund.'
       });
     }
     if (!order.razorpay_payment_id) {
@@ -155,7 +155,7 @@ module.exports = async function refundStatus(req, res) {
     }
 
     const breakdown = pricing(order);
-    const expectedPaise = Math.round(breakdown.refundable * 100);
+    const expectedPaise = Math.round(Number(order.payment_method === 'cod' ? order.refund_amount || order.cod_advance_amount : breakdown.refundable) * 100);
     const refunds = await fetchRefunds(order.razorpay_payment_id);
     const refund = findStoreRefund(refunds, order, expectedPaise);
 
@@ -199,3 +199,4 @@ module.exports = async function refundStatus(req, res) {
     return json(req, res, error.status || 400, { error: error.message || 'Unable to reconcile refund' });
   }
 };
+

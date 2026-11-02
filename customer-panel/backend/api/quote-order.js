@@ -138,6 +138,9 @@ module.exports = async function quoteOrder(req, res) {
         prepaid_discount: payment.prepaid_discount,
         cod_fee: payment.cod_fee,
         cod_fee_non_refundable: payment.cod_fee_non_refundable,
+        cod_advance_amount: payment.cod_advance_amount,
+        amount_due_now: payment.amount_due_now,
+        amount_due_on_delivery: payment.amount_due_on_delivery,
         payment_method: payment.payment_method,
         total: payment.total
       },
@@ -150,3 +153,4 @@ module.exports = async function quoteOrder(req, res) {
 };
 
 module.exports.getDiscounts = discounts;
+

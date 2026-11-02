@@ -35,7 +35,7 @@ async function loadOrder(userId, orderId) {
   const rows = await rest(
     'orders?id=eq.' + encodeURIComponent(orderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,display_order_id,total_amount,currency,status,payment_method,payment_verified_at,razorpay_order_id,customer_name,customer_email,customer_phone,created_at&limit=1'
+    '&select=id,display_order_id,total_amount,cod_advance_amount,currency,status,payment_method,payment_verified_at,razorpay_order_id,razorpay_payment_id,customer_name,customer_email,customer_phone,created_at&limit=1'
   );
   return rows?.[0] || null;
 }
@@ -85,11 +85,15 @@ module.exports = async function resumePayment(req, res) {
     const order = await loadOrder(user.id, storeOrderId);
     if (!order) return json(req, res, 404, { error: 'Order not found.' });
     order.user_id = user.id;
-    if (String(order.payment_method || '').toLowerCase() !== 'prepaid') {
+    const paymentMethod = String(order.payment_method || '').toLowerCase();
+    if (!['prepaid', 'cod'].includes(paymentMethod)) {
       return json(req, res, 400, { error: 'This order does not need an online payment.' });
     }
 
     const status = String(order.status || '').toLowerCase();
+    if (paymentMethod === 'cod' && status === 'cod_pending' && order.razorpay_payment_id) {
+      return json(req, res, 200, { completed: true, status: 'cod_pending', store_order_id: order.id, display_order_id: order.display_order_id });
+    }
     if (order.payment_verified_at || status === 'paid') {
       return json(req, res, 200, {
         completed: true,
@@ -122,7 +126,7 @@ module.exports = async function resumePayment(req, res) {
     }
 
     const gatewayOrder = await loadRazorpayOrder(order.razorpay_order_id);
-    const expectedAmount = Math.round(Number(order.total_amount) * 100);
+    const expectedAmount = Math.round(Number(paymentMethod === 'cod' ? order.cod_advance_amount : order.total_amount) * 100);
     if (String(gatewayOrder.id) !== String(order.razorpay_order_id) || Number(gatewayOrder.amount) !== expectedAmount) {
       return json(req, res, 409, { error: 'Payment details could not be confirmed. Please contact Customer Care.' });
     }
@@ -162,10 +166,14 @@ module.exports = async function resumePayment(req, res) {
         name: order.customer_name || '',
         email: order.customer_email || user.email || '',
         phone: order.customer_phone || ''
-      }
+      },
+      payment_method: paymentMethod,
+      cod_advance_amount: Number(order.cod_advance_amount || 0),
+      amount_due_on_delivery: paymentMethod === 'cod' ? Math.max(0, Number(order.total_amount) - Number(order.cod_advance_amount || 0)) : 0
     });
   } catch (error) {
     console.error('resume-payment error:', error);
     return json(req, res, 400, { error: error.message || 'Unable to resume payment.' });
   }
 };
+
