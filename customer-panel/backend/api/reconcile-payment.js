@@ -42,7 +42,7 @@ async function loadOrder(userId, storeOrderId) {
   const response = await fetch(
     SUPABASE_URL + '/rest/v1/orders?id=eq.' + encodeURIComponent(storeOrderId) +
     '&user_id=eq.' + encodeURIComponent(userId) +
-    '&select=id,user_id,display_order_id,total_amount,status,payment_method,razorpay_order_id,razorpay_payment_id&limit=1',
+    '&select=id,user_id,display_order_id,total_amount,cod_advance_amount,status,payment_method,razorpay_order_id,razorpay_payment_id&limit=1',
     { headers: serverHeaders }
   );
   const rows = await response.json().catch(() => []);
@@ -68,7 +68,10 @@ module.exports = async function reconcilePayment(req, res) {
 
     const order = await loadOrder(user.id, storeOrderId);
     if (!order) return json(req, res, 404, { reconciled: false, error: 'Order not found' });
-    if (order.payment_method !== 'prepaid') {
+    if (order.payment_method === 'cod' && order.status === 'cod_pending' && order.razorpay_payment_id) {
+      return json(req, res, 200, { reconciled: true, already_processed: true, status: 'cod_pending', store_order_id: order.id });
+    }
+    if (!['prepaid', 'cod'].includes(order.payment_method)) {
       return json(req, res, 200, { reconciled: false, status: order.status, store_order_id: order.id });
     }
     if (order.status === 'paid') {
@@ -114,7 +117,7 @@ module.exports = async function reconcilePayment(req, res) {
     const captured = (paymentsData.items || []).find(payment =>
       payment.status === 'captured' &&
       String(payment.order_id) === String(order.razorpay_order_id) &&
-      Number(payment.amount) === Math.round(Number(order.total_amount) * 100)
+      Number(payment.amount) === Math.round(Number(order.payment_method === 'cod' ? order.cod_advance_amount : order.total_amount) * 100)
     );
 
     if (!captured) {
@@ -186,17 +189,26 @@ module.exports = async function reconcilePayment(req, res) {
       });
     }
 
-    await rpc('finalize_checkout_order', {
-      p_order_id: order.id,
-      p_user_id: user.id,
-      p_payment_id: String(captured.id),
-      p_payment_signature: null,
-      p_target_status: 'paid',
-      p_source: 'authenticated_reconcile'
-    });
-
     try {
-      await commitInventory(order.id);
+      if (order.payment_method === 'cod') {
+        await rpc('finalize_cod_advance_order_inventory', {
+          p_order_id: order.id,
+          p_user_id: user.id,
+          p_payment_id: String(captured.id),
+          p_payment_signature: null,
+          p_source: 'authenticated_reconcile'
+        });
+      } else {
+        await rpc('finalize_checkout_order', {
+          p_order_id: order.id,
+          p_user_id: user.id,
+          p_payment_id: String(captured.id),
+          p_payment_signature: null,
+          p_target_status: 'paid',
+          p_source: 'authenticated_reconcile'
+        });
+        await commitInventory(order.id);
+      }
     } catch (inventoryError) {
       console.error('reconcile-payment inventory commit error:', inventoryError);
       return json(req, res, 202, {
@@ -204,19 +216,19 @@ module.exports = async function reconcilePayment(req, res) {
         captured: true,
         recoverable: true,
         inventory_pending: true,
-        status: 'paid',
+        status: order.payment_method === 'cod' ? 'cod_pending' : 'paid',
         store_order_id: order.id,
         display_order_id: order.display_order_id,
         message: 'Payment is confirmed. Inventory finalization is being reconciled. Do not pay again.'
       });
     }
 
-    await scheduleConfirmedOrder(req,order.id, 'reconcile_paid');
+    await scheduleConfirmedOrder(req,order.id, order.payment_method === 'cod' ? 'reconcile_cod_advance' : 'reconcile_paid');
     return json(req, res, 200, {
       reconciled: true,
       captured: true,
       inventory_reconciled: true,
-      status: 'paid',
+      status: order.payment_method === 'cod' ? 'cod_pending' : 'paid',
       store_order_id: order.id,
       display_order_id: order.display_order_id
     });
@@ -225,3 +237,4 @@ module.exports = async function reconcilePayment(req, res) {
     return json(req, res, 400, { reconciled: false, error: error.message || 'Payment reconciliation failed' });
   }
 };
+
