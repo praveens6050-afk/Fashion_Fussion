@@ -62,7 +62,7 @@
     try{
       const data=await callApi({action:'snapshot'});
       actorTeam=String(data.actor_team||'');isAdmin=data.is_admin===true;
-      $('ffWaNewChat').hidden=false;
+      $('ffWaNewChat').hidden=!isAdmin&&actorTeam!=='sales_marketing';
       $('ffWaNewDepartment').hidden=!isAdmin;
       await loadApprovedTemplates();
       const db=window.supabaseClient;
@@ -410,11 +410,12 @@
       if(error||data?.error)throw new Error(data?.error||error.message||'Template access unavailable');
       waTemplates=Array.isArray(data.templates)?data.templates:[];
       actorRole=String(data.sender_role||'');
+      $('ffWaNewChat').hidden=!isAdmin&&!['sales','marketing'].includes(actorRole);
       if(!isAdmin&&['sales','marketing'].includes(actorRole))$('ffWaNewDepartment').value=actorRole;
       select.innerHTML='<option value="">Choose a template</option>'+waTemplates.map((t,i)=>'<option value="'+i+'">'+esc(t.name)+' · '+esc(t.language)+'</option>').join('');
       if(!waTemplates.length)select.innerHTML='<option value="">No approved marketing templates available</option>';
       $('ffWaNewChatStatus').textContent=waTemplates.length?'Template list loaded. Marketing opt-in is checked when sending.':'No approved, supported marketing templates are available.';
-    }catch(e){waTemplates=[];select.innerHTML='<option value="">Template list unavailable</option>';$('ffWaNewChatStatus').textContent=e.message||'Template list unavailable.';}
+    }catch(e){waTemplates=[];select.innerHTML='<option value="">Template list unavailable</option>';if(!isAdmin&&actorTeam!=='sales_marketing')$('ffWaNewChat').hidden=true;$('ffWaNewChatStatus').textContent=e.message||'Template list unavailable.';}
     renderTemplateParameters();updateNewChatButton();
   }
   let actorRole='';
@@ -453,7 +454,7 @@
       $('ffWaNewChatStatus').textContent='Template accepted by WhatsApp. Message ID: '+(data.provider_message_id||'recorded');
       $('ffWaNewPhone').value='';$('ffWaNewName').value='';
       await load();
-    }catch(e){$('ffWaNewChatStatus').textContent=String(e.message||e)+' Check the inbox before retrying.';}
+    }catch(e){const status=Number(e?.context?.status||e?.status||0);if([400,403,422].includes(status)){pendingStartRequest=null;pendingStartBody='';} $('ffWaNewChatStatus').textContent=String(e.message||e)+' Check the inbox before retrying.';}
     finally{updateNewChatButton();}
   }
 
