@@ -146,7 +146,7 @@ async function startWhatsAppChat(db:any,user:any,role:string,payload:any,request
     const res=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"/messages",{
       method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json"},
       body:JSON.stringify({messaging_product:"whatsapp",recipient_type:"individual",to:recipient,type:"template",
-        template:{name:template.name,language:{code:template.language},...(parameters.length?{components:[{type:"body",parameters:parameters.map((value:string)=>({type:"text",text:value.trim()}))]}]:{})},
+        template:{name:template.name,language:{code:template.language},...(parameters.length?{components:[{type:"body",parameters:parameters.map((value:string)=>({type:"text",text:value.trim()}))}]}:{})},
         biz_opaque_callback_data:requestId})
     });
     const data=await res.json().catch(()=>({})),providerId=data?.messages?.[0]?.id;
