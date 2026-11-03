@@ -83,37 +83,36 @@ Deno.serve(async (req) => {
         for (const receipt of value.statuses || []) {
           const providerMessageId = String(receipt.id || "");
           const deliveryStatus = String(receipt.status || "").toLowerCase();
-          if (!providerMessageId || !["sent", "delivered", "read", "failed"].includes(deliveryStatus)) continue;
-          const { data: prior, error: lookupError } = await db.from("crm_inbox_messages")
-            .select("id,metadata,send_request_id")
-            .eq("provider_message_id", providerMessageId)
-            .eq("direction", "outbound")
-            .maybeSingle();
-          if (lookupError) throw lookupError;
-          if (!prior) continue;
+          const timestampSeconds = Number(receipt.timestamp);
+          const eventTimeMs = timestampSeconds * 1000;
+          if (!providerMessageId || !["sent", "delivered", "read", "failed"].includes(deliveryStatus)
+            || !Number.isFinite(eventTimeMs) || !Number.isFinite(new Date(eventTimeMs).getTime())) continue;
           const receiptErrors = Array.isArray(receipt.errors)
             ? receipt.errors.map((e: any) => ({ code: e.code ?? null, title: e.title ?? null })).slice(0, 3)
             : [];
-          const { error: updateError } = await db.from("crm_inbox_messages")
-            .update({
-              delivery_status: deliveryStatus,
-              metadata: {
-                ...(prior.metadata && typeof prior.metadata === "object" ? prior.metadata : {}),
-                meta_delivery_status: deliveryStatus,
-                meta_status_timestamp: receipt.timestamp ? String(receipt.timestamp) : null,
-                meta_status_errors: receiptErrors
-              }
-            })
-            .eq("id", prior.id);
-          if (updateError) throw updateError;
-          if (deliveryStatus === "failed" && prior.send_request_id) {
-            const code = receiptErrors[0]?.code;
-            const { error: attemptError } = await db.from("crm_inbox_send_attempts")
-              .update({ state: "failed", error_code: code ? "META_" + String(code) : "META_DELIVERY_FAILED", updated_at: new Date().toISOString() })
-              .eq("request_id", prior.send_request_id);
-            if (attemptError) throw attemptError;
+          const errorCode = receiptErrors[0]?.code == null ? null : String(receiptErrors[0].code).slice(0, 64);
+          const { data: statusResult, error: statusError } = await db.rpc("record_whatsapp_delivery_status", {
+            p_provider_message_id: providerMessageId,
+            p_meta_status: deliveryStatus,
+            p_event_at: new Date(eventTimeMs).toISOString(),
+            p_error_code: errorCode
+          });
+          if (statusError) throw statusError;
+          if (deliveryStatus === "failed" && statusResult?.crm_delivery_status === "failed") {
+            const { data: prior, error: lookupError } = await db.from("crm_inbox_messages")
+              .select("send_request_id")
+              .eq("provider_message_id", providerMessageId)
+              .eq("direction", "outbound")
+              .maybeSingle();
+            if (lookupError) throw lookupError;
+            if (prior?.send_request_id) {
+              const { error: attemptError } = await db.from("crm_inbox_send_attempts")
+                .update({ state: "failed", error_code: errorCode ? "META_" + errorCode : "META_DELIVERY_FAILED", updated_at: new Date().toISOString() })
+                .eq("request_id", prior.send_request_id);
+              if (attemptError) throw attemptError;
+            }
           }
-          stored++;
+          if (statusResult?.matched_crm_message) stored++;
         }
         const contacts = new Map((value.contacts || []).map((c: any) => [String(c.wa_id || ""), c]));
         for (const m of value.messages || []) {
