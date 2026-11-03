@@ -414,6 +414,18 @@
   function whatsappErrorMessage(code,fallback){
     if(code==='WHATSAPP_MARKETING_OPT_IN_REQUIRED')
       return 'Not sent: this number has no active, recorded marketing opt-in. Ask the owner to opt in again before sending.';
+    if(code==='WHATSAPP_CONSENT_CHECK_UNAVAILABLE')
+      return 'Not sent: CRM could not verify marketing opt-in. Wait and retry after CRM confirms the consent check is available.';
+    if(code==='WHATSAPP_SEND_OUTCOME_UNCERTAIN')
+      return 'WhatsApp send outcome is uncertain. Do not retry; check the inbox and ask an administrator to reconcile the attempt.';
+    if(code==='WHATSAPP_SENT_INBOX_LOG_FAILED')
+      return 'WhatsApp may have accepted the message, but CRM could not record it. Do not retry; check the inbox and ask an administrator to reconcile the attempt.';
+    if(code==='SEND_ALREADY_ATTEMPTED')
+      return 'This conversation already has a send attempt that needs review. Check the inbox before sending again.';
+    if(code==='SEND_ATTEMPT_CLAIM_FAILED'||code==='SEND_ATTEMPT_LOOKUP_FAILED')
+      return 'CRM could not confirm the send lock. No WhatsApp message was sent; wait briefly and retry.';
+    if(code==='WHATSAPP_SEND_FAILED')
+      return 'WhatsApp rejected the send request. No message was accepted; correct the issue and retry.';
     if(code==='WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE'||String(code||'').startsWith('WHATSAPP_TEMPLATE_'))
       return 'WhatsApp could not load or use the approved marketing template. Check the Meta connection and template approval, then refresh.';
     if(code==='CRM_ACCESS_DENIED'||code==='WHATSAPP_NEW_CHAT_ROLE_REQUIRED')
@@ -425,7 +437,8 @@
     const select=$('ffWaNewTemplate');select.innerHTML='<option value="">Loading approved templates…</option>';
     try{
       const {data,error}=await window.supabaseClient.functions.invoke('crm-send-reply',{body:{action:'list_whatsapp_templates',request_id:window.crypto.randomUUID()}});
-      if(error||data?.error)throw new Error(data?.error||error.message||'Template access unavailable');
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
       waTemplates=Array.isArray(data.templates)?data.templates:[];
       actorRole=String(data.sender_role||'');
       $('ffWaNewChat').hidden=!isAdmin&&!['sales','marketing'].includes(actorRole);
@@ -466,13 +479,14 @@
     $('ffWaStartChat').disabled=true;$('ffWaNewChatStatus').textContent='Checking marketing opt-in and sending approved template…';
     try{
       const {data,error}=await window.supabaseClient.functions.invoke('crm-send-reply',{body:requestPayload});
-      if(error||data?.error)throw new Error(data?.error||error.message||'WhatsApp send was not confirmed');
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
       if(!data?.ok||data.provider!=='whatsapp')throw new Error('WhatsApp provider did not confirm acceptance');
       pendingStartRequest=null;pendingStartBody='';
       $('ffWaNewChatStatus').textContent='Template accepted by WhatsApp. Message ID: '+(data.provider_message_id||'recorded');
       $('ffWaNewPhone').value='';$('ffWaNewName').value='';
       await load();
-    }catch(e){const status=Number(e?.context?.status||e?.status||0),details=await whatsappErrorDetails(e),code=String(details.error||'');if([400,403,422].includes(status)){pendingStartRequest=null;pendingStartBody='';}if(code==='WHATSAPP_MARKETING_OPT_IN_REQUIRED'){$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code)+' No WhatsApp message was sent.';}else{$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code,e.message||String(e))+' Check the inbox before retrying.';}}
+    }catch(e){const status=Number(e?.context?.status||e?.status||0),details=await whatsappErrorDetails(e),code=String(details.error||'');if([400,403,422].includes(status)||['WHATSAPP_CONSENT_CHECK_UNAVAILABLE','WHATSAPP_SEND_FAILED','SEND_ATTEMPT_CLAIM_FAILED','SEND_ATTEMPT_LOOKUP_FAILED'].includes(code)){pendingStartRequest=null;pendingStartBody='';}if(['WHATSAPP_MARKETING_OPT_IN_REQUIRED','WHATSAPP_CONSENT_CHECK_UNAVAILABLE','WHATSAPP_SEND_FAILED','SEND_ATTEMPT_CLAIM_FAILED','SEND_ATTEMPT_LOOKUP_FAILED'].includes(code)){$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code)+' No WhatsApp message was sent.';}else if(['WHATSAPP_SEND_OUTCOME_UNCERTAIN','WHATSAPP_SENT_INBOX_LOG_FAILED','SEND_ALREADY_ATTEMPTED'].includes(code)){$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code);}else{$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code,e.message||String(e))+' Check the inbox before retrying.';}}
     finally{updateNewChatButton();}
   }
 
@@ -494,7 +508,7 @@
       const {data,error}=await db.functions.invoke('crm-send-reply',{body:{
         conversation_id:row.id,request_id:pendingWhatsappRequest,body:reply,mode:'reply'
       }});
-      if(error)throw new Error(data?.error||error.message||'WhatsApp reply was not confirmed');
+      if(error)throw error;
       if(data?.error)throw new Error(data.error);
       if(!data?.ok||data.provider!=='whatsapp')throw new Error('WhatsApp provider did not confirm this reply');
       $('ffWaReplyText').value='';$('ffWaReplyCount').textContent='0 / 1000';
@@ -502,7 +516,10 @@
       $('ffWaInboxStatus').textContent='WhatsApp accepted by provider. Message ID: '+(data.provider_message_id||'recorded');
       await load();
     }catch(e){
-      $('ffWaInboxStatus').textContent='Reply was not confirmed: '+String(e.message||e)+'. Check message history before retrying.';
+      const status=Number(e?.context?.status||e?.status||0),details=await whatsappErrorDetails(e),code=String(details.error||(/^[A-Z0-9_]+$/.test(String(e?.message||''))?e.message:''));
+      if([400,403,404,422].includes(status)||['WHATSAPP_SEND_FAILED','WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H','SEND_ATTEMPT_CLAIM_FAILED','SEND_ATTEMPT_LOOKUP_FAILED'].includes(code)){pendingWhatsappRequest=null;pendingWhatsappBody='';}
+      if(['WHATSAPP_SEND_OUTCOME_UNCERTAIN','WHATSAPP_SENT_INBOX_LOG_FAILED','SEND_ALREADY_ATTEMPTED'].includes(code))pendingWhatsappBody='\u0000';
+      $('ffWaInboxStatus').textContent=whatsappErrorMessage(code,e.message||'WhatsApp reply was not confirmed.')+(code==='WHATSAPP_SEND_OUTCOME_UNCERTAIN'||code==='WHATSAPP_SENT_INBOX_LOG_FAILED'||code==='SEND_ALREADY_ATTEMPTED'?'':' Check message history before retrying.');
     }finally{
       button.disabled=false;updateWhatsAppSendButton();
     }
