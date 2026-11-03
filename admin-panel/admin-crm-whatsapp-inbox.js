@@ -23,7 +23,7 @@
     style.textContent+='#ffWhatsAppSupportInbox #ffWaInboxRows,#ffCrmEmailInbox #ffEmailRows{max-height:min(68vh,720px);overflow-y:auto;overscroll-behavior:contain;padding-right:4px;scrollbar-gutter:stable}#ffWhatsAppSupportInbox .ff-wa-conversation,#ffCrmEmailInbox .ff-wa-conversation{max-height:min(68vh,720px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.ff-email-back,.ff-wa-back{display:none;margin:0 0 10px}@media(max-width:900px){#ffCrmEmailInbox.ff-email-mobile-open .ff-wa-inbox-layout>div:first-child,#ffWhatsAppSupportInbox.ff-wa-mobile-open .ff-wa-inbox-layout>div:first-child{display:none}#ffCrmEmailInbox.ff-email-mobile-open .ff-wa-inbox-layout>.ff-wa-conversation,#ffWhatsAppSupportInbox.ff-wa-mobile-open .ff-wa-inbox-layout>.ff-wa-conversation{display:block}#ffCrmEmailInbox.ff-email-mobile-open .ff-email-back,#ffWhatsAppSupportInbox.ff-wa-mobile-open .ff-wa-back{display:inline-flex}}';
     document.head.appendChild(style);container.appendChild(section);
     const emailSection=document.createElement('section');emailSection.id='ffCrmEmailInbox';emailSection.className='card';emailSection.style.marginTop='18px';
-    emailSection.innerHTML='<div class="card-header"><div><h2>Zoho Mail Support Inbox</h2><p>Incoming mail staged from approved support mailboxes. Review identity before drafting a reply; no email is sent from this screen.</p></div><button type="button" class="secondary" id="ffEmailRefresh">Refresh email</button></div><div class="card-body"><div class="ff-wa-inbox-layout"><div><label for="ffEmailTeamFilter">Team queue</label><select id="ffEmailTeamFilter"><option value="all">All queues</option><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales_marketing">Sales / marketing</option><option value="admin_operations">Orders / admin operations</option></select><div id="ffEmailRows" aria-live="polite">Loading…</div></div><div class="ff-wa-conversation"><button type="button" class="secondary ff-email-back" id="ffEmailBackToList">Back to emails</button><label for="ffEmailMessageSelect">Select email to view</label><select id="ffEmailMessageSelect" aria-label="Select email to view"><option value="">Choose an email…</option></select><h3 id="ffEmailSelectedTitle">Email details</h3><p id="ffEmailSelectedMeta">Team-scoped email content.</p><div class="ff-wa-message" id="ffEmailSelectedMessage">No email selected.</div><button type="button" class="secondary" id="ffEmailClassify" disabled>Confirm identity / classify</button><button type="button" class="secondary" id="ffEmailApproveReply" hidden disabled>Approve latest email reply</button><button type="button" class="primary" id="ffEmailSendReply" hidden disabled>Send approved email</button><label for="ffEmailReplyText">Reply draft (max 10000 characters)</label><textarea id="ffEmailReplyText" maxlength="10000" rows="5" placeholder="Write a reply…"></textarea><button type="button" class="primary" id="ffEmailQueueReply" disabled>Queue email reply for review</button><p id="ffEmailStatus" role="status" aria-live="polite"></p><p class="ff-wa-note">Email replies remain pending review. Zoho OAuth sending and delivery tracking are not enabled by this inbox.</p></div></div></div>';
+    emailSection.innerHTML='<div class="card-header"><div><h2>Department Email Inbox</h2><p>Customer Support, Seller Support, Sales and Marketing mail each have their own queue. Replies use the address that received the email.</p></div><button type="button" class="secondary" id="ffEmailRefresh">Refresh email</button></div><div class="card-body"><div class="ff-wa-inbox-layout"><div><label for="ffEmailTeamFilter">Team queue</label><select id="ffEmailTeamFilter"><option value="all">All queues</option><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales">Sales</option><option value="marketing">Marketing</option><option value="orders">Orders</option><option value="admin_operations">Admin operations</option></select><div id="ffEmailRows" aria-live="polite">Loading…</div></div><div class="ff-wa-conversation"><button type="button" class="secondary ff-email-back" id="ffEmailBackToList">Back to emails</button><label for="ffEmailMessageSelect">Select email to view</label><select id="ffEmailMessageSelect" aria-label="Select email to view"><option value="">Choose an email…</option></select><h3 id="ffEmailSelectedTitle">Email details</h3><p id="ffEmailSelectedMeta">Team-scoped email content.</p><div class="ff-wa-message" id="ffEmailSelectedMessage">No email selected.</div><button type="button" class="secondary" id="ffEmailClassify" disabled>Confirm identity / classify</button><button type="button" class="primary" id="ffEmailConversationSend" hidden disabled>Send email reply</button><button type="button" class="secondary" id="ffEmailApproveReply" hidden disabled>Approve latest email reply</button><button type="button" class="primary" id="ffEmailSendReply" hidden disabled>Send approved email</button><label for="ffEmailReplyText">Reply draft (max 10000 characters)</label><textarea id="ffEmailReplyText" maxlength="10000" rows="5" placeholder="Write a reply…"></textarea><button type="button" class="primary" id="ffEmailQueueReply" disabled>Queue email reply for review</button><p id="ffEmailStatus" role="status" aria-live="polite"></p><p class="ff-wa-note">Department replies use the authenticated CRM sender. The server verifies team access, sender address, provider connection and request idempotency before sending.</p></div></div></div>';
     container.appendChild(emailSection);
     $('ffWaInboxRefresh').addEventListener('click',load);
     $('ffWaTeamFilter').addEventListener('change',renderRows);
@@ -38,7 +38,7 @@
     $('ffEmailClassify').addEventListener('click',classifyEmail);
     $('ffEmailApproveReply').addEventListener('click',approveEmailReply);
     $('ffEmailSendReply').addEventListener('click',sendEmailReply);
-    $('ffEmailQueueReply').addEventListener('click',queueEmailReply);
+    $('ffEmailQueueReply').addEventListener('click',queueEmailReply);$('ffEmailConversationSend').addEventListener('click',sendConversationEmailReply);
     load();loadEmail();
   }
   async function callApi(payload){
@@ -225,12 +225,13 @@
     const text=$('ffWaReplyText').value.trim(),samePendingBody=!pendingWhatsappRequest||pendingWhatsappBody===text;
     if(button)button.disabled=!row||!text||Boolean(expired)||!samePendingBody;
   }
-  let emailRows=[],selectedEmailId=null;
+  let emailRows=[],selectedEmailId=null,pendingEmailRequest=null,pendingEmailBody='';
   async function loadEmail(){
     $('ffEmailStatus').textContent='Loading email inbox…';
     let loadedDedicated=false;
     try{
       const data=await callApi({action:'snapshot_email'});
+      actorTeam=String(data.actor_team||actorTeam);isAdmin=data.is_admin===true||isAdmin;
       const recent=Array.isArray(data.recent)?data.recent:[];
       if(recent.length){emailRows=recent.map(row=>({...row,email_source:'dedicated'}));loadedDedicated=true;}
     }catch(error){console.warn('[CRM email inbox] Dedicated queue unavailable; checking unified inbox.',error?.message||error);}
@@ -243,13 +244,13 @@
         if(error)throw error;
         emailRows=(data||[]).map(row=>({
           id:Number(row.id),email_source:'conversation',
-          support_team:['sales','marketing'].includes(row.department)?'sales_marketing':String(row.department||'unassigned'),
+          support_team:String(row.department||'unassigned'),zoho_message_id:String(row.metadata?.zoho_message_id||''),
           routing_status:row.status||'open',sender_email:row.contact_email||'',
           recipient_email:row.inbox_address||'',subject:row.subject||'(No subject)',
           message_text:row.latest_message||'',received_at:row.received_at,
           contact_name:row.contact_name||'',contact_phone:row.contact_phone||''
         }));
-        $('ffEmailStatus').textContent='Email inbox loaded from unified message history. Replies are disabled for this view.';
+        $('ffEmailStatus').textContent='Email inbox loaded from unified message history. Matched emails can be answered from the receiving department address.';
       }catch(error){
         emailRows=[];
         $('ffEmailStatus').textContent='Email inbox unavailable: '+String(error?.message||'Could not read messages.');
@@ -266,7 +267,7 @@
   function renderEmails(){
     const target=$('ffEmailRows');if(!target)return;
     const filter=$('ffEmailTeamFilter').value;
-    const filtered=emailRows.filter(r=>(isAdmin||r.support_team===actorTeam)&&(filter==='all'||r.support_team===filter));
+    const filtered=emailRows.filter(r=>(isAdmin||r.support_team===actorTeam||(actorTeam==='sales_marketing'&&['sales','marketing'].includes(r.support_team)))&&(filter==='all'||r.support_team===filter));
     if(selectedEmailId&&!filtered.some(row=>Number(row.id)===Number(selectedEmailId)))resetEmailSelection();
     if(!selectedEmailId&&filtered.length&&window.matchMedia('(min-width: 901px)').matches){
       const first=filtered.find(row=>!isSystemNotification(row))||filtered[0];
@@ -296,6 +297,7 @@
     $('ffEmailReplyText').hidden=false;
     $('ffEmailApproveReply').hidden=true;
     $('ffEmailSendReply').hidden=true;
+    $('ffEmailConversationSend').hidden=true;$('ffEmailConversationSend').disabled=true;
     $('ffEmailStatus').textContent='Choose an email to view its message.';
   }
   function selectEmail(id){
@@ -311,6 +313,8 @@
     const conversationOnly=row.email_source==='conversation';
     $('ffEmailClassify').hidden=conversationOnly;
     $('ffEmailQueueReply').hidden=conversationOnly;
+    $('ffEmailConversationSend').hidden=!conversationOnly;
+    $('ffEmailConversationSend').disabled=systemNotice||!row.contact_email||!row.zoho_message_id;
     $('ffEmailReplyText').hidden=conversationOnly;
     $('ffEmailClassify').disabled=systemNotice||row.routing_status==='classified';
     $('ffEmailQueueReply').disabled=systemNotice||row.routing_status!=='classified';
@@ -319,7 +323,7 @@
     $('ffEmailApproveReply').textContent=row.latest_reply_status==='ready'?'Email reply approved':'Approve latest email reply';
     $('ffEmailSendReply').hidden=true;
     $('ffEmailSendReply').disabled=!isAdmin||row.latest_reply_status!=='ready';
-    $('ffEmailStatus').textContent=conversationOnly?'Imported email history is read-only here.':(systemNotice?'System security notification. It is kept in Email inbox and excluded from support-ticket totals; replies are disabled.':(row.routing_status==='classified'?'Email reviewed; replies can be staged for review.':'Review the sender/content, then confirm classification before drafting a reply.'));
+    $('ffEmailStatus').textContent=conversationOnly?(row.zoho_message_id?'Reply will be sent from '+(row.recipient_email||'the department mailbox')+'.':'This email has no Zoho reply reference, so a reply cannot be sent safely.') :(systemNotice?'System security notification. It is kept in Email inbox and excluded from support-ticket totals; replies are disabled.':(row.routing_status==='classified'?'Email reviewed; replies can be staged for review.':'Review the sender/content, then confirm classification before drafting a reply.'));
     renderEmails();
   }
   function emailAttachmentMarkup(message,a){
@@ -453,6 +457,35 @@
       $('ffWaInboxStatus').textContent=whatsappErrorMessage(code,e.message||'WhatsApp reply was not confirmed.')+(code==='WHATSAPP_SEND_OUTCOME_UNCERTAIN'||code==='WHATSAPP_SENT_INBOX_LOG_FAILED'||code==='SEND_ALREADY_ATTEMPTED'?'':' Check message history before retrying.');
     }finally{
       button.disabled=false;updateWhatsAppSendButton();
+    }
+  }
+  async function sendConversationEmailReply(){
+    const row=emailRows.find(r=>Number(r.id)===Number(selectedEmailId));
+    const reply=$('ffEmailReplyText').value.trim(),db=window.supabaseClient;
+    const button=$('ffEmailConversationSend');
+    if(!row||row.email_source!=='conversation'||!row.zoho_message_id||!reply||!db?.functions||!window.crypto?.randomUUID)return;
+    if(pendingEmailRequest&&pendingEmailBody!==reply){
+      $('ffEmailStatus').textContent='The previous send outcome is not confirmed. Refresh message history before changing or retrying this reply.';return;
+    }
+    if(!confirm('Send this reply from '+(row.recipient_email||'the department address')+' to '+(row.sender_email||'the customer')+' now?'))return;
+    if(!pendingEmailRequest){pendingEmailRequest=window.crypto.randomUUID();pendingEmailBody=reply;}
+    button.disabled=true;$('ffEmailStatus').textContent='Sending from the department mailbox…';
+    try{
+      const {data,error}=await db.functions.invoke('crm-send-reply',{body:{
+        conversation_id:row.id,request_id:pendingEmailRequest,body:reply,mode:'reply'
+      }});
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
+      if(!data?.ok||data.provider!=='email')throw new Error('Email provider did not confirm this reply');
+      $('ffEmailReplyText').value='';
+      pendingEmailRequest=null;pendingEmailBody='';
+      $('ffEmailStatus').textContent='Email accepted by Zoho. Message ID: '+(data.provider_message_id||'recorded');
+      await loadEmail();
+      $('ffEmailStatus').textContent='Email accepted by Zoho. Message ID: '+(data.provider_message_id||'recorded');
+    }catch(e){
+      $('ffEmailStatus').textContent=e.message||'Email reply was not confirmed. Refresh history before retrying.';
+    }finally{
+      button.disabled=false;
     }
   }
   async function approveEmailReply(){
