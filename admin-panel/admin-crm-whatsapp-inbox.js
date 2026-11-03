@@ -231,6 +231,7 @@
     let loadedDedicated=false;
     try{
       const data=await callApi({action:'snapshot_email'});
+      actorTeam=String(data.actor_team||actorTeam);isAdmin=data.is_admin===true||isAdmin;
       const recent=Array.isArray(data.recent)?data.recent:[];
       if(recent.length){emailRows=recent.map(row=>({...row,email_source:'dedicated'}));loadedDedicated=true;}
     }catch(error){console.warn('[CRM email inbox] Dedicated queue unavailable; checking unified inbox.',error?.message||error);}
@@ -249,7 +250,7 @@
           message_text:row.latest_message||'',received_at:row.received_at,
           contact_name:row.contact_name||'',contact_phone:row.contact_phone||''
         }));
-        $('ffEmailStatus').textContent='Email inbox loaded from unified message history. Replies are disabled for this view.';
+        $('ffEmailStatus').textContent='Email inbox loaded from unified message history. Matched emails can be answered from the receiving department address.';
       }catch(error){
         emailRows=[];
         $('ffEmailStatus').textContent='Email inbox unavailable: '+String(error?.message||'Could not read messages.');
@@ -480,6 +481,7 @@
       pendingEmailRequest=null;pendingEmailBody='';
       $('ffEmailStatus').textContent='Email accepted by Zoho. Message ID: '+(data.provider_message_id||'recorded');
       await loadEmail();
+      $('ffEmailStatus').textContent='Email accepted by Zoho. Message ID: '+(data.provider_message_id||'recorded');
     }catch(e){
       $('ffEmailStatus').textContent=e.message||'Email reply was not confirmed. Refresh history before retrying.';
     }finally{
