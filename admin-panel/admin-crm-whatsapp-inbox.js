@@ -16,7 +16,7 @@
     if(!container||$('ffWhatsAppSupportInbox'))return;
     const section=document.createElement('section');
     section.id='ffWhatsAppSupportInbox';section.className='card';
-    section.innerHTML='<div class="card-header"><div><h2>WhatsApp Support Inbox</h2><p>Customer, seller, sales/marketing and admin conversations. Replies use the authenticated CRM sender and its server-side safety checks.</p></div><button type="button" class="secondary" id="ffWaInboxRefresh">Refresh inbox</button></div><div class="card-body"><section id="ffWaNewChat" hidden style="margin:0 0 18px;padding:14px;border:1px solid #d0d5dd;border-radius:10px"><h3>Start a new WhatsApp chat</h3><p>Use an approved marketing template. The recipient must have recorded marketing opt-in; a phone number alone is not consent.</p><label for="ffWaNewPhone">WhatsApp number (with country code)</label><input id="ffWaNewPhone" type="tel" autocomplete="tel" placeholder="+91 9876543210"><label for="ffWaNewName">Contact name (optional)</label><input id="ffWaNewName" maxlength="120"><label for="ffWaNewDepartment">Team queue</label><select id="ffWaNewDepartment"><option value="sales">Sales</option><option value="marketing">Marketing</option></select><label for="ffWaNewTemplate">Approved marketing template</label><select id="ffWaNewTemplate"><option value="">Loading approved templates…</option></select><div id="ffWaTemplateParameters"></div><button type="button" class="primary" id="ffWaStartChat" disabled>Send template and start chat</button><p id="ffWaNewChatStatus" role="status" aria-live="polite"></p></section><div class="ff-wa-queue-counts" id="ffWaQueueCounts"></div><div class="ff-wa-inbox-layout"><div><label for="ffWaTeamFilter">Team queue</label><select id="ffWaTeamFilter"><option value="all">All queues</option><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales_marketing">Sales / marketing</option><option value="admin_operations">Admin operations</option><option value="needs_review">Needs identity review</option></select><div id="ffWaInboxRows" aria-live="polite">Loading…</div></div><div class="ff-wa-conversation"><button type="button" class="secondary ff-wa-back" id="ffWaBackToList">Back to conversations</button><h3 id="ffWaSelectedTitle">Select a conversation</h3><p class="ff-wa-meta" id="ffWaSelectedMeta">Your assigned team or administrator permissions control message access.</p><div class="ff-wa-message" id="ffWaSelectedMessage">No conversation selected.</div><label for="ffWaReplyText">Reply draft (max 1000 characters)</label><textarea id="ffWaReplyText" maxlength="1000" rows="5" placeholder="Write a reply…"></textarea><div class="ff-wa-reply-actions"><span id="ffWaReplyCount">0 / 1000</span><button type="button" class="primary" id="ffWaSendReply" disabled>Send WhatsApp</button></div><p id="ffWaInboxStatus" role="status" aria-live="polite"></p><p class="ff-wa-note">Replies go through the authenticated CRM sender. The server checks team access, provider setup, and the WhatsApp 24-hour window before sending replies.</p></div></div><section id="ffWaTeamAdmin" hidden style="margin-top:18px;border-top:1px solid #eaecf0;padding-top:16px"><h3>Team access administration</h3><p>Assign an existing Supabase Auth user by UUID. Team members receive access only to their assigned support queue, not the full CRM.</p><label for="ffWaMemberId">User UUID</label><input id="ffWaMemberId" autocomplete="off" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"><label for="ffWaMemberTeam">Team</label><select id="ffWaMemberTeam"><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales_marketing">Sales / marketing</option></select><label><input id="ffWaMemberActive" type="checkbox" checked style="display:inline;width:auto;margin-right:8px">Active team access</label><button type="button" class="secondary" id="ffWaAssignTeam">Save team access</button><p id="ffWaTeamStatus" role="status"></p></section></div>';
+    section.innerHTML='<div class="card-header"><div><h2>WhatsApp Support Inbox</h2><p>Customer, seller, sales/marketing and admin conversations. Replies use the authenticated CRM sender and its server-side safety checks.</p></div><button type="button" class="secondary" id="ffWaInboxRefresh">Refresh inbox</button></div><div class="card-body"><div class="ff-wa-queue-counts" id="ffWaQueueCounts"></div><div class="ff-wa-inbox-layout"><div><label for="ffWaTeamFilter">Team queue</label><select id="ffWaTeamFilter"><option value="all">All queues</option><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales_marketing">Sales / marketing</option><option value="admin_operations">Admin operations</option><option value="needs_review">Needs identity review</option></select><div id="ffWaInboxRows" aria-live="polite">Loading…</div></div><div class="ff-wa-conversation"><button type="button" class="secondary ff-wa-back" id="ffWaBackToList">Back to conversations</button><h3 id="ffWaSelectedTitle">Select a conversation</h3><p class="ff-wa-meta" id="ffWaSelectedMeta">Your assigned team or administrator permissions control message access.</p><div class="ff-wa-message" id="ffWaSelectedMessage">No conversation selected.</div><label for="ffWaReplyText">Reply draft (max 1000 characters)</label><textarea id="ffWaReplyText" maxlength="1000" rows="5" placeholder="Write a reply…"></textarea><div class="ff-wa-reply-actions"><span id="ffWaReplyCount">0 / 1000</span><button type="button" class="primary" id="ffWaSendReply" disabled>Send WhatsApp</button></div><p id="ffWaInboxStatus" role="status" aria-live="polite"></p><p class="ff-wa-note">Replies go through the authenticated CRM sender. The server checks team access, provider setup, and the WhatsApp 24-hour window before sending replies.</p></div></div><section id="ffWaTeamAdmin" hidden style="margin-top:18px;border-top:1px solid #eaecf0;padding-top:16px"><h3>Team access administration</h3><p>Assign an existing Supabase Auth user by UUID. Team members receive access only to their assigned support queue, not the full CRM.</p><label for="ffWaMemberId">User UUID</label><input id="ffWaMemberId" autocomplete="off" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"><label for="ffWaMemberTeam">Team</label><select id="ffWaMemberTeam"><option value="customer_support">Customer support</option><option value="seller_support">Seller support</option><option value="sales_marketing">Sales / marketing</option></select><label><input id="ffWaMemberActive" type="checkbox" checked style="display:inline;width:auto;margin-right:8px">Active team access</label><button type="button" class="secondary" id="ffWaAssignTeam">Save team access</button><p id="ffWaTeamStatus" role="status"></p></section></div>';
     const style=document.createElement('style');
     style.textContent='#crmOverviewCounts{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}#crmOverviewCounts span{display:block;min-width:105px;padding:9px 12px;border:1px solid #e4e7ec;border-radius:8px;background:#f8f9fb;color:#667085;font-size:12px}#crmOverviewCounts b{display:block;margin-bottom:2px;color:#101828;font-size:18px}#ffCrmEmailInbox .ff-wa-row{display:block;width:100%;box-sizing:border-box;text-align:left;border:1px solid #eaecf0;border-radius:8px;background:#fff;padding:12px;margin-top:8px;cursor:pointer;color:inherit}#ffCrmEmailInbox .ff-wa-row[aria-pressed=true]{border-color:#667085;background:#f8fafc}#ffCrmEmailInbox .ff-wa-row strong{display:block;margin:0 0 6px;text-align:left}#ffCrmEmailInbox .ff-wa-pill{display:inline-flex;align-items:center;margin:0 6px 5px 0;padding:3px 8px;border-radius:999px;background:#f2f4f7;font-size:11px;line-height:1.4}#ffCrmEmailInbox .ff-wa-muted{display:block;margin-top:4px;color:#667085;font-size:12px;line-height:1.45;overflow-wrap:anywhere}#ffCrmEmailInbox #ffEmailMessageSelect{display:block;width:100%;box-sizing:border-box;margin:7px 0 16px;padding:10px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;font:inherit;color:inherit}#ffCrmEmailInbox .ff-wa-inbox-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}#ffCrmEmailInbox .ff-wa-inbox-layout>div{min-width:0}#ffCrmEmailInbox .ff-wa-conversation{border:1px solid #eaecf0;border-radius:10px;padding:14px;min-width:0}#ffCrmEmailInbox .ff-wa-message{white-space:pre-wrap;overflow-wrap:anywhere;min-height:90px;background:#f8fafc;padding:12px;border-radius:8px;margin:12px 0 18px}#ffCrmEmailInbox textarea{display:block;width:100%;box-sizing:border-box;margin:7px 0 12px;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font:inherit}#ffCrmEmailInbox button{max-width:100%}#ffWhatsAppSupportInbox{margin-top:20px}#ffWhatsAppSupportInbox .ff-wa-queue-counts{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}#ffWhatsAppSupportInbox .ff-wa-queue-counts span{padding:9px 12px;border-radius:8px;background:#f2f4f7;font-size:12px}#ffWhatsAppSupportInbox .ff-wa-queue-counts b{display:block;font-size:18px}#ffWhatsAppSupportInbox .ff-wa-inbox-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}#ffWhatsAppSupportInbox select,#ffWhatsAppSupportInbox textarea{display:block;width:100%;box-sizing:border-box;margin:7px 0 12px;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font:inherit}#ffWhatsAppSupportInbox .ff-wa-row{display:block;width:100%;text-align:left;border:1px solid #eaecf0;border-radius:8px;background:#fff;padding:12px;margin-top:8px;cursor:pointer;color:inherit}#ffWhatsAppSupportInbox .ff-wa-row[aria-pressed=true]{border-color:#667085;background:#f8fafc}#ffWhatsAppSupportInbox .ff-wa-row strong{display:block;margin-bottom:4px}#ffWhatsAppSupportInbox .ff-wa-muted{font-size:12px;color:#667085;margin-top:4px;overflow-wrap:anywhere}#ffWhatsAppSupportInbox .ff-wa-conversation{border:1px solid #eaecf0;border-radius:10px;padding:14px;min-width:0}#ffWhatsAppSupportInbox .ff-wa-message{white-space:pre-wrap;overflow-wrap:anywhere;min-height:90px;background:#f8fafc;padding:12px;border-radius:8px;margin:12px 0 18px}#ffWhatsAppSupportInbox .ff-wa-reply-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#ffWhatsAppSupportInbox .ff-wa-note{font-size:12px;color:#667085}#ffWhatsAppSupportInbox .ff-wa-pill{display:inline-block;padding:3px 7px;border-radius:999px;background:#f2f4f7;font-size:11px}@media(max-width:900px){#ffWhatsAppSupportInbox .ff-wa-inbox-layout,#ffCrmEmailInbox .ff-wa-inbox-layout{grid-template-columns:1fr}}';
     style.textContent+='#ffCrmEmailInbox .ff-wa-conversation{background:#fff;box-shadow:0 1px 3px rgba(16,24,40,.06)}#ffCrmEmailInbox label[for=ffEmailMessageSelect]{display:block;margin:0 0 6px;color:#475467;font-size:12px;font-weight:700}#ffCrmEmailInbox #ffEmailMessageSelect{margin:0 0 16px}#ffCrmEmailInbox #ffEmailSelectedTitle{margin:6px 0 8px;font-size:20px;line-height:1.3;overflow-wrap:anywhere}#ffCrmEmailInbox #ffEmailSelectedMeta{margin:0 0 14px;color:#667085;font-size:12px;line-height:1.5}#ffCrmEmailInbox #ffEmailSelectedMessage{max-height:38vh;overflow:auto;min-height:120px;margin:0 0 14px;border:1px solid #eaecf0;background:#fafbfc;line-height:1.65}#ffCrmEmailInbox #ffEmailClassify{display:block;width:max-content;margin:14px 0 16px}#ffCrmEmailInbox label[for=ffEmailReplyText]{display:block;margin:16px 0 6px;color:#344054;font-weight:600}#ffCrmEmailInbox #ffEmailReplyText{margin-top:0}#ffCrmEmailInbox #ffEmailQueueReply{margin-top:2px}';
@@ -28,12 +28,8 @@
     $('ffWaInboxRefresh').addEventListener('click',load);
     $('ffWaTeamFilter').addEventListener('change',renderRows);
     $('ffWaBackToList').addEventListener('click',()=>{$('ffWhatsAppSupportInbox').classList.remove('ff-wa-mobile-open');$('ffWaInboxRows').scrollIntoView({behavior:'smooth',block:'start'});});
-    $('ffWaBackToList').addEventListener('click',()=>{$('ffWhatsAppSupportInbox').classList.remove('ff-wa-mobile-open');$('ffWaInboxRows').scrollIntoView({behavior:'smooth',block:'start'});});
     $('ffWaReplyText').addEventListener('input',()=>{$('ffWaReplyCount').textContent=$('ffWaReplyText').value.length+' / 1000';updateWhatsAppSendButton();});
     $('ffWaSendReply').addEventListener('click',sendWhatsAppReply);
-    $('ffWaNewTemplate').addEventListener('change',renderTemplateParameters);
-    $('ffWaNewPhone').addEventListener('input',updateNewChatButton);
-    $('ffWaStartChat').addEventListener('click',startNewWhatsAppChat);
     $('ffWaAssignTeam').addEventListener('click',assignTeam);
     $('ffEmailRefresh').addEventListener('click',loadEmail);
     $('ffEmailTeamFilter').addEventListener('change',renderEmails);
@@ -62,9 +58,6 @@
     try{
       const data=await callApi({action:'snapshot'});
       actorTeam=String(data.actor_team||'');isAdmin=data.is_admin===true;
-      $('ffWaNewChat').hidden=!isAdmin&&actorTeam!=='sales_marketing';
-      $('ffWaNewDepartment').hidden=!isAdmin;
-      await loadApprovedTemplates();
       const db=window.supabaseClient;
       const {data:conversations,error}=await db.from('crm_inbox_conversations')
         .select('id,provider,department,contact_type,contact_phone,latest_message,received_at,last_inbound_at,status')
@@ -412,10 +405,6 @@
     return {};
   }
   function whatsappErrorMessage(code,fallback){
-    if(code==='WHATSAPP_MARKETING_OPT_IN_REQUIRED')
-      return 'Not sent: this number has no active, recorded marketing opt-in. Ask the owner to opt in again before sending.';
-    if(code==='WHATSAPP_CONSENT_CHECK_UNAVAILABLE')
-      return 'Not sent: CRM could not verify marketing opt-in. Wait and retry after CRM confirms the consent check is available.';
     if(code==='WHATSAPP_SEND_OUTCOME_UNCERTAIN')
       return 'WhatsApp send outcome is uncertain. Do not retry; check the inbox and ask an administrator to reconcile the attempt.';
     if(code==='WHATSAPP_SENT_INBOX_LOG_FAILED')
@@ -426,70 +415,12 @@
       return 'CRM could not confirm the send lock. No WhatsApp message was sent; wait briefly and retry.';
     if(code==='WHATSAPP_SEND_FAILED')
       return 'WhatsApp rejected the send request. No message was accepted; correct the issue and retry.';
-    if(code==='WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE'||String(code||'').startsWith('WHATSAPP_TEMPLATE_'))
-      return 'WhatsApp could not load or use the approved marketing template. Check the Meta connection and template approval, then refresh.';
-    if(code==='CRM_ACCESS_DENIED'||code==='WHATSAPP_NEW_CHAT_ROLE_REQUIRED')
-      return 'Your CRM account is not permitted to start WhatsApp chats. Ask an administrator to review your access.';
+    if(code==='WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H')
+      return 'This conversation is outside the 24-hour WhatsApp service window. The CRM reply screen cannot send a template here.';
+    if(code==='CRM_ACCESS_DENIED')
+      return 'Your CRM account is not permitted to send WhatsApp replies. Ask an administrator to review your access.';
     return fallback||'WhatsApp request failed.';
   }
-  let waTemplates=[],pendingStartRequest=null,pendingStartBody='';
-  async function loadApprovedTemplates(){
-    const select=$('ffWaNewTemplate');select.innerHTML='<option value="">Loading approved templates…</option>';
-    try{
-      const {data,error}=await window.supabaseClient.functions.invoke('crm-send-reply',{body:{action:'list_whatsapp_templates',request_id:window.crypto.randomUUID()}});
-      if(error)throw error;
-      if(data?.error)throw new Error(data.error);
-      waTemplates=Array.isArray(data.templates)?data.templates:[];
-      actorRole=String(data.sender_role||'');
-      $('ffWaNewChat').hidden=!isAdmin&&!['sales','marketing'].includes(actorRole);
-      if(!isAdmin&&['sales','marketing'].includes(actorRole))$('ffWaNewDepartment').value=actorRole;
-      select.innerHTML='<option value="">Choose a template</option>'+waTemplates.map((t,i)=>'<option value="'+i+'">'+esc(t.name)+' · '+esc(t.language)+'</option>').join('');
-      if(!waTemplates.length)select.innerHTML='<option value="">No approved marketing templates available</option>';
-      $('ffWaNewChatStatus').textContent=waTemplates.length?'Template list loaded. Marketing opt-in is checked when sending.':'No approved, supported marketing templates are available.';
-    }catch(e){const details=await whatsappErrorDetails(e);waTemplates=[];select.innerHTML='<option value="">Template list unavailable</option>';if(!isAdmin&&actorTeam!=='sales_marketing')$('ffWaNewChat').hidden=true;$('ffWaNewChatStatus').textContent=whatsappErrorMessage(details.error,e.message||'Template list unavailable.');}
-    renderTemplateParameters();updateNewChatButton();
-  }
-  let actorRole='';
-  function renderTemplateParameters(){
-    const template=waTemplates[Number($('ffWaNewTemplate').value)];
-    $('ffWaTemplateParameters').innerHTML=template?Array.from({length:Number(template.parameter_count||0)},(_,i)=>'<label for="ffWaTemplateParam'+i+'">Template value '+(i+1)+'</label><input id="ffWaTemplateParam'+i+'" maxlength="200" data-wa-template-param="'+i+'">').join(''):'';
-    document.querySelectorAll('[data-wa-template-param]').forEach(input=>input.addEventListener('input',updateNewChatButton));
-    updateNewChatButton();
-  }
-  function updateNewChatButton(){
-    const phone=$('ffWaNewPhone')?.value.trim()||'',template=waTemplates[Number($('ffWaNewTemplate')?.value)];
-    const params=[...document.querySelectorAll('[data-wa-template-param]')];
-    const validPhone=/^\+?[1-9][0-9]{7,14}$/.test(phone.replace(/[\s().-]/g,''));
-    const validParams=template&&params.length===Number(template.parameter_count||0)&&params.every(x=>x.value.trim().length>0);
-    $('ffWaStartChat').disabled=!validPhone||!template||!validParams||Boolean(pendingStartRequest);
-  }
-  async function startNewWhatsAppChat(){
-    const template=waTemplates[Number($('ffWaNewTemplate').value)],phone=$('ffWaNewPhone').value.trim();
-    if(!template||!phone)return;
-    const parameters=[...document.querySelectorAll('[data-wa-template-param]')].map(x=>x.value.trim());
-    const requestPayload={action:'start_whatsapp_chat',request_id:pendingStartRequest||window.crypto.randomUUID(),
-      phone,contact_name:$('ffWaNewName').value.trim(),department:$('ffWaNewDepartment').value,
-      template_name:template.name,language:template.language,parameters};
-    const fingerprint=JSON.stringify(requestPayload);
-    if(pendingStartRequest&&pendingStartBody!==fingerprint){
-      $('ffWaNewChatStatus').textContent='Previous send outcome is uncertain. Refresh the inbox before changing details or retrying.';
-      return;
-    }
-    pendingStartRequest=requestPayload.request_id;pendingStartBody=fingerprint;
-    $('ffWaStartChat').disabled=true;$('ffWaNewChatStatus').textContent='Checking marketing opt-in and sending approved template…';
-    try{
-      const {data,error}=await window.supabaseClient.functions.invoke('crm-send-reply',{body:requestPayload});
-      if(error)throw error;
-      if(data?.error)throw new Error(data.error);
-      if(!data?.ok||data.provider!=='whatsapp')throw new Error('WhatsApp provider did not confirm acceptance');
-      pendingStartRequest=null;pendingStartBody='';
-      $('ffWaNewChatStatus').textContent='Template accepted by WhatsApp. Message ID: '+(data.provider_message_id||'recorded');
-      $('ffWaNewPhone').value='';$('ffWaNewName').value='';
-      await load();
-    }catch(e){const status=Number(e?.context?.status||e?.status||0),details=await whatsappErrorDetails(e),code=String(details.error||'');if([400,403,422].includes(status)||['WHATSAPP_CONSENT_CHECK_UNAVAILABLE','WHATSAPP_SEND_FAILED','SEND_ATTEMPT_CLAIM_FAILED','SEND_ATTEMPT_LOOKUP_FAILED'].includes(code)){pendingStartRequest=null;pendingStartBody='';}if(['WHATSAPP_MARKETING_OPT_IN_REQUIRED','WHATSAPP_CONSENT_CHECK_UNAVAILABLE','WHATSAPP_SEND_FAILED','SEND_ATTEMPT_CLAIM_FAILED','SEND_ATTEMPT_LOOKUP_FAILED'].includes(code)){$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code)+' No WhatsApp message was sent.';}else if(['WHATSAPP_SEND_OUTCOME_UNCERTAIN','WHATSAPP_SENT_INBOX_LOG_FAILED','SEND_ALREADY_ATTEMPTED'].includes(code)){$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code);}else{$('ffWaNewChatStatus').textContent=whatsappErrorMessage(code,e.message||String(e))+' Check the inbox before retrying.';}}
-    finally{updateNewChatButton();}
-  }
-
   async function sendWhatsAppReply(){
     const button=$('ffWaSendReply'),row=rows.find(r=>Number(r.id)===Number(button.dataset.conversationId));
     const reply=$('ffWaReplyText').value.trim(),db=window.supabaseClient;
