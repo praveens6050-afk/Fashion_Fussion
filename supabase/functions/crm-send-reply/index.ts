@@ -45,6 +45,17 @@ async function sendEmail(db:any, c:any, body:string, requestId:string, role:stri
   const msgId=String(data?.data?.messageId||data?.data?.message_id||"zoho-reply-"+requestId);
   return {id:msgId,provider:"email",fromAddress:sender,toAddress:recipient};
 }
+async function sendAttemptConflict(db:any,requestId:string,conversationId:number,provider:string,origin:string|null) {
+  const {data:prior,error:priorError}=await db.from("crm_inbox_send_attempts").select("conversation_id,state,error_code,provider_message_id").eq("request_id",requestId).maybeSingle();
+  if(priorError) return response({error:"SEND_ATTEMPT_LOOKUP_FAILED"},503,origin);
+  if(prior&&Number(prior.conversation_id)!==Number(conversationId)) return response({error:"SEND_ALREADY_ATTEMPTED"},409,origin);
+  if(prior?.state==="sent") return response({ok:true,duplicate:true,provider_message_id:prior.provider_message_id},200,origin);
+  if(prior?.state==="sending") return response({error:prior.error_code||(provider==="whatsapp"?"WHATSAPP_SEND_OUTCOME_UNCERTAIN":"SEND_ALREADY_ATTEMPTED")},409,origin);
+  const {data:active,error:activeError}=await db.from("crm_inbox_send_attempts").select("error_code").eq("conversation_id",conversationId).eq("state","sending").maybeSingle();
+  if(activeError) return response({error:"SEND_ATTEMPT_LOOKUP_FAILED"},503,origin);
+  if(active) return response({error:active.error_code||(provider==="whatsapp"?"WHATSAPP_SEND_OUTCOME_UNCERTAIN":"SEND_ALREADY_ATTEMPTED")},409,origin);
+  return response({error:"SEND_ALREADY_ATTEMPTED",state:prior?.state||"unknown"},409,origin);
+}
 async function sendWhatsApp(c:any, body:string, requestId:string): Promise<{id:string;provider:"whatsapp"}> {
   const token=Deno.env.get("META_WHATSAPP_ACCESS_TOKEN");
   const phoneId=clean(c.metadata?.business_phone_number_id,100);
@@ -53,36 +64,47 @@ async function sendWhatsApp(c:any, body:string, requestId:string): Promise<{id:s
   const lastInbound=Date.parse(String(c.last_inbound_at||c.received_at||""));
   if(!Number.isFinite(lastInbound)||Date.now()-lastInbound>24*60*60*1000) throw new Error("WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H");
   const graph=(Deno.env.get("META_GRAPH_API_VERSION")||"v23.0");
-  const res=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"/messages",{method:"POST",headers:{"authorization":"Bearer "+token,"content-type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",recipient_type:"individual",to:recipient,type:"text",text:{preview_url:false,body},biz_opaque_callback_data:requestId})});
+  let res:Response;
+  try{
+    res=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"/messages",{method:"POST",headers:{"authorization":"Bearer "+token,"content-type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",recipient_type:"individual",to:recipient,type:"text",text:{preview_url:false,body},biz_opaque_callback_data:requestId})});
+  }catch{throw new Error("WHATSAPP_SEND_OUTCOME_UNCERTAIN");}
   const data=await res.json().catch(()=>({}));
-  if(!res.ok||!data?.messages?.[0]?.id) throw new Error("WHATSAPP_SEND_FAILED");
+  if(!res.ok) throw new Error(res.status>=500?"WHATSAPP_SEND_OUTCOME_UNCERTAIN":"WHATSAPP_SEND_FAILED");
+  if(typeof data?.messages?.[0]?.id!=="string") throw new Error("WHATSAPP_SEND_OUTCOME_UNCERTAIN");
   return {id:String(data.messages[0].id),provider:"whatsapp"};
 }
 
-async function whatsappConfig(db:any): Promise<{token:string;phoneId:string;graph:string}> {
+async function whatsappConfig(db:any): Promise<{token:string;phoneId:string;graph:string;wabaId:string}> {
   const token=Deno.env.get("META_WHATSAPP_ACCESS_TOKEN")||"";
+  const wabaId=Deno.env.get("META_WHATSAPP_BUSINESS_ACCOUNT_ID")||"";
   const {data,error}=await db.from("crm_inbox_conversations").select("metadata").eq("provider","whatsapp")
     .not("metadata->>business_phone_number_id","is",null).order("received_at",{ascending:false}).limit(1).maybeSingle();
   const phoneId=clean(data?.metadata?.business_phone_number_id,100);
   const graph=Deno.env.get("META_GRAPH_API_VERSION")||"v23.0";
-  if(error||!token||!/^\d{8,25}$/.test(phoneId)) throw new Error("WHATSAPP_SENDER_NOT_CONFIGURED");
-  return {token,phoneId,graph};
+  if(error||!token||!/^\d{8,25}$/.test(phoneId)||!/^\d{8,25}$/.test(wabaId)) throw new Error("WHATSAPP_SENDER_NOT_CONFIGURED");
+  return {token,phoneId,graph,wabaId};
 }
 async function approvedMarketingTemplates(db:any) {
-  const {token,phoneId,graph}=await whatsappConfig(db);
+  const {token,graph,wabaId}=await whatsappConfig(db);
   const headers={authorization:"Bearer "+token,accept:"application/json"};
-  const phoneRes=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"?fields=whatsapp_business_account",{headers});
-  const phoneData=await phoneRes.json().catch(()=>({}));
-  const wabaId=String(phoneData?.whatsapp_business_account?.id||"");
-  if(!phoneRes.ok||!/^\d{8,25}$/.test(wabaId)) throw new Error("WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE");
   const templateRes=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(wabaId)+"/message_templates?fields=name,status,category,language,components&limit=100",{headers});
   const templateData=await templateRes.json().catch(()=>({}));
-  if(!templateRes.ok||!Array.isArray(templateData?.data)) throw new Error("WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE");
-  return templateData.data.filter((t:any)=>String(t.status).toUpperCase()==="APPROVED"&&String(t.category).toUpperCase()==="MARKETING")
+  if(!templateRes.ok||!Array.isArray(templateData?.data)) {
+    console.error("whatsapp_template_list_failed",{status:templateRes.status,metaErrorCode:clean(templateData?.error?.code,40),metaErrorSubcode:clean(templateData?.error?.error_subcode,40),metaErrorType:clean(templateData?.error?.type,80),metaErrorMessage:clean(templateData?.error?.message,240)});
+    throw new Error("WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE");
+  }
+  const approvedMarketing=templateData.data.filter((t:any)=>String(t.status).toUpperCase()==="APPROVED"&&String(t.category).toUpperCase()==="MARKETING");
+  return approvedMarketing
     .map((t:any)=>{
       const components=Array.isArray(t.components)?t.components:[];
       const body=components.find((c:any)=>String(c.type).toUpperCase()==="BODY");
-      if(!body||typeof body.text!=="string"||components.some((c:any)=>!["BODY","FOOTER"].includes(String(c.type).toUpperCase()))) return null;
+      if(!body||typeof body.text!=="string"||components.some((c:any)=>{
+        const type=String(c.type).toUpperCase();
+        if(type==="BODY"||type==="FOOTER") return false;
+        if(type==="HEADER") return String(c.format).toUpperCase()!=="TEXT"||typeof c.text!=="string"||String(c.text).includes("{{");
+        if(type==="BUTTONS") return !Array.isArray(c.buttons)||c.buttons.some((b:any)=>String(b.text||"").includes("{{")||String(b.url||"").includes("{{"));
+        return true;
+      })) return null;
       const indexes=[...body.text.matchAll(/\{\{(\d+)\}\}/g)].map((m:any)=>Number(m[1]));
       if(indexes.some((n:number,i:number)=>n!==i+1)) return null;
       return {name:String(t.name),language:String(t.language),body:String(body.text),parameter_count:indexes.length};
@@ -102,7 +124,11 @@ async function startWhatsAppChat(db:any,user:any,role:string,payload:any,request
     return response({error:"INVALID_TEMPLATE_PARAMETERS"},400,origin);
   const {data:consent,error:consentError}=await db.from("whatsapp_contact_consents").select("id,status,revoked_at,consented_at,proof_reference")
     .eq("phone_e164","+"+recipient).eq("purpose","marketing").maybeSingle();
-  if(consentError||consent?.status!=="opted_in"||consent?.revoked_at||!consent?.consented_at||!String(consent?.proof_reference||"").trim())
+  if(consentError){
+    console.error("whatsapp_consent_check_failed",{code:clean(consentError.code,40)});
+    return response({error:"WHATSAPP_CONSENT_CHECK_UNAVAILABLE"},503,origin);
+  }
+  if(consent?.status!=="opted_in"||consent?.revoked_at||!consent?.consented_at||!String(consent?.proof_reference||"").trim())
     return response({error:"WHATSAPP_MARKETING_OPT_IN_REQUIRED"},403,origin);
   let templates:any[];
   try{templates=await approvedMarketingTemplates(db)}catch(e){return response({error:e instanceof Error?e.message:"WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE"},503,origin);}
@@ -138,32 +164,43 @@ async function startWhatsAppChat(db:any,user:any,role:string,payload:any,request
   }
   const {error:claimError}=await db.from("crm_inbox_send_attempts").insert({request_id:requestId,conversation_id:conv.id,actor_user_id:user.id,provider:"whatsapp",state:"sending"});
   if(claimError){
-    const {data:prior}=await db.from("crm_inbox_send_attempts").select("state,provider_message_id").eq("request_id",requestId).maybeSingle();
-    if(prior?.state==="sent") return response({ok:true,duplicate:true,provider_message_id:prior.provider_message_id,conversation_id:conv.id},200,origin);
-    return response({error:"SEND_ALREADY_ATTEMPTED",state:prior?.state||"unknown"},409,origin);
+    if(claimError.code!=="23505") return response({error:"SEND_ATTEMPT_CLAIM_FAILED"},503,origin);
+    return await sendAttemptConflict(db,requestId,conv.id,"whatsapp",origin);
   }
+  let providerId:string|null=null,providerRequestStarted=false;
   try{
+    providerRequestStarted=true;
     const res=await fetch("https://graph.facebook.com/"+graph+"/"+encodeURIComponent(phoneId)+"/messages",{
       method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json"},
       body:JSON.stringify({messaging_product:"whatsapp",recipient_type:"individual",to:recipient,type:"template",
         template:{name:template.name,language:{code:template.language},...(parameters.length?{components:[{type:"body",parameters:parameters.map((value:string)=>({type:"text",text:value.trim()}))}]}:{})},
         biz_opaque_callback_data:requestId})
     });
-    const data=await res.json().catch(()=>({})),providerId=data?.messages?.[0]?.id;
-    if(!res.ok||typeof providerId!=="string") throw new Error("WHATSAPP_SEND_FAILED");
+    const data=await res.json().catch(()=>({}));
+    providerId=typeof data?.messages?.[0]?.id==="string"?data.messages[0].id:null;
+    if(!res.ok) throw new Error(res.status>=500?"WHATSAPP_SEND_OUTCOME_UNCERTAIN":"WHATSAPP_SEND_FAILED");
+    if(!providerId) throw new Error("WHATSAPP_SEND_OUTCOME_UNCERTAIN");
     const {error:messageError}=await db.from("crm_inbox_messages").insert({
       conversation_id:conv.id,provider_message_id:providerId,direction:"outbound",sender_label:user.email||label[role],
       body:preview,metadata:{provider:"whatsapp",request_id:requestId,actor_user_id:user.id,template_name:template.name,template_language:template.language},
       send_request_id:requestId,delivery_status:"sent"
     });
-    if(messageError) throw new Error("MESSAGE_AUDIT_WRITE_FAILED");
-    await db.from("crm_inbox_conversations").update({latest_message:preview,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conv.id);
-    await db.from("crm_inbox_send_attempts").update({state:"sent",provider_message_id:providerId,updated_at:new Date().toISOString()}).eq("request_id",requestId);
+    if(messageError) throw new Error("WHATSAPP_SENT_INBOX_LOG_FAILED");
+    const {error:conversationUpdateError}=await db.from("crm_inbox_conversations").update({latest_message:preview,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conv.id);
+    if(conversationUpdateError) console.error("whatsapp_conversation_update_after_send_failed",{conversationId:conv.id,requestId});
+    const {error:attemptUpdateError}=await db.from("crm_inbox_send_attempts").update({state:"sent",provider_message_id:providerId,updated_at:new Date().toISOString()}).eq("request_id",requestId);
+    if(attemptUpdateError) console.error("whatsapp_send_attempt_finalize_failed",{conversationId:conv.id,requestId});
     return response({ok:true,provider_message_id:providerId,provider:"whatsapp",conversation_id:conv.id},200,origin);
   }catch(e){
-    const code=e instanceof Error?e.message:"PROVIDER_SEND_FAILED";
-    await db.from("crm_inbox_send_attempts").update({state:"failed",error_code:code,updated_at:new Date().toISOString()}).eq("request_id",requestId);
-    return response({error:code},502,origin);
+    const rawCode=e instanceof Error?e.message:"PROVIDER_SEND_FAILED";
+    if(providerId||rawCode==="WHATSAPP_SEND_OUTCOME_UNCERTAIN"||(providerRequestStarted&&rawCode!=="WHATSAPP_SEND_FAILED")){
+      const code=providerId?"WHATSAPP_SENT_INBOX_LOG_FAILED":"WHATSAPP_SEND_OUTCOME_UNCERTAIN";
+      const {error:markError}=await db.from("crm_inbox_send_attempts").update({error_code:code,...(providerId?{provider_message_id:providerId}:{}),updated_at:new Date().toISOString()}).eq("request_id",requestId);
+      if(markError) console.error("whatsapp_uncertain_attempt_marker_failed",{requestId});
+      return response({error:code},502,origin);
+    }
+    await db.from("crm_inbox_send_attempts").update({state:"failed",error_code:rawCode,updated_at:new Date().toISOString()}).eq("request_id",requestId);
+    return response({error:rawCode},502,origin);
   }
 }
 
@@ -201,7 +238,7 @@ Deno.serve(async(req)=>{
   if(!role) return response({error:"CRM_ACCESS_DENIED"},403,origin);
   if(action==="list_whatsapp_templates"){
     if(!["administrator","sales","marketing"].includes(role)) return response({error:"WHATSAPP_NEW_CHAT_ROLE_REQUIRED"},403,origin);
-    try{return response({ok:true,templates:await approvedMarketingTemplates(db),sender_role:role},200,origin)}catch(e){return response({error:e instanceof Error?e.message:"WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE"},503,origin)}
+    try{return response({ok:true,templates:await approvedMarketingTemplates(db),sender_role:role},200,origin)}catch(e){console.error("whatsapp_template_catalog_lookup_failed",{error:e instanceof Error?clean(e.message,240):"unknown"});return response({error:e instanceof Error?e.message:"WHATSAPP_TEMPLATE_ACCESS_UNAVAILABLE"},503,origin)}
   }
   if(action==="start_whatsapp_chat") return await startWhatsAppChat(db,user,role,payload,requestId,origin);
   const {data:c,error:cError}=await db.from("crm_inbox_conversations").select("*").eq("id",conversationId).maybeSingle();
@@ -221,24 +258,34 @@ Deno.serve(async(req)=>{
   if(c.provider==="email"&&!c.contact_email) return response({error:"CONTACT_EMAIL_MISSING"},422,origin);
   if(c.provider==="whatsapp"&&!c.contact_phone) return response({error:"CONTACT_PHONE_MISSING"},422,origin);
   const {error:claimError}=await db.from("crm_inbox_send_attempts").insert({request_id:requestId,conversation_id:conversationId,actor_user_id:user.id,provider:c.provider,state:"sending"});
-  if(claimError) {
-    const {data:prior}=await db.from("crm_inbox_send_attempts").select("state,provider_message_id").eq("request_id",requestId).maybeSingle();
-    if(prior?.state==="sent") return response({ok:true,duplicate:true,provider_message_id:prior.provider_message_id},200,origin);
-    return response({error:"SEND_ALREADY_ATTEMPTED",state:prior?.state||"unknown"},409,origin);
+  if(claimError){
+    if(claimError.code!=="23505") return response({error:"SEND_ATTEMPT_CLAIM_FAILED"},503,origin);
+    return await sendAttemptConflict(db,requestId,conversationId,c.provider,origin);
   }
+  let sentProviderId:string|null=null;
   try{
     const senderRole=sharedSalesMarketing ? role : c.department;
     const sent=c.provider==="email"?await sendEmail(db,c,body,requestId,senderRole):await sendWhatsApp(c,body,requestId);
+    sentProviderId=sent.id;
     const {error:messageError}=await db.from("crm_inbox_messages").insert({conversation_id:conversationId,provider_message_id:sent.id,direction:"outbound",sender_label:user.email||label[role],body,metadata:{provider:sent.provider,request_id:requestId,actor_user_id:user.id,...(sent.provider==="email"?{from_address:sent.fromAddress,to_address:sent.toAddress}:{})},send_request_id:requestId,delivery_status:"sent"});
-    if(messageError) throw new Error("MESSAGE_AUDIT_WRITE_FAILED");
-    await db.from("crm_inbox_conversations").update({latest_message:body,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conversationId);
-    await db.from("crm_inbox_send_attempts").update({state:"sent",provider_message_id:sent.id,updated_at:new Date().toISOString()}).eq("request_id",requestId);
+    if(messageError) throw new Error(c.provider==="whatsapp"?"WHATSAPP_SENT_INBOX_LOG_FAILED":"MESSAGE_AUDIT_WRITE_FAILED");
+    const {error:conversationUpdateError}=await db.from("crm_inbox_conversations").update({latest_message:body,received_at:new Date().toISOString(),status:"waiting",updated_at:new Date().toISOString()}).eq("id",conversationId);
+    if(conversationUpdateError) console.error("crm_conversation_update_after_send_failed",{conversationId,requestId});
+    const {error:attemptUpdateError}=await db.from("crm_inbox_send_attempts").update({state:"sent",provider_message_id:sent.id,updated_at:new Date().toISOString()}).eq("request_id",requestId);
+    if(attemptUpdateError) console.error("crm_send_attempt_finalize_failed",{conversationId,requestId});
     return response({ok:true,provider_message_id:sent.id,provider:sent.provider},200,origin);
   }catch(e){
-    const code=e instanceof Error?e.message:"PROVIDER_SEND_FAILED";
-    await db.from("crm_inbox_send_attempts").update({state:"failed",error_code:code,updated_at:new Date().toISOString()}).eq("request_id",requestId);
-    const status=code==="WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H"?422:502;
-    return response({error:code},status,origin);
+    const rawCode=e instanceof Error?e.message:"PROVIDER_SEND_FAILED";
+    const uncertain=Boolean(sentProviderId&&c.provider==="whatsapp")||rawCode==="WHATSAPP_SEND_OUTCOME_UNCERTAIN";
+    if(uncertain){
+      const code=sentProviderId?"WHATSAPP_SENT_INBOX_LOG_FAILED":"WHATSAPP_SEND_OUTCOME_UNCERTAIN";
+      const {error:markError}=await db.from("crm_inbox_send_attempts").update({error_code:code,...(sentProviderId?{provider_message_id:sentProviderId}:{}),updated_at:new Date().toISOString()}).eq("request_id",requestId);
+      if(markError) console.error("crm_uncertain_attempt_marker_failed",{conversationId,requestId});
+      return response({error:code},502,origin);
+    }
+    await db.from("crm_inbox_send_attempts").update({state:"failed",error_code:rawCode,updated_at:new Date().toISOString()}).eq("request_id",requestId);
+    const status=rawCode==="WHATSAPP_TEMPLATE_REQUIRED_OUTSIDE_24H"?422:502;
+    return response({error:rawCode},status,origin);
   }
 });
 
