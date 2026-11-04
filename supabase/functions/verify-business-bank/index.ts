@@ -42,6 +42,7 @@ Deno.serve(async (req: Request) => {
   try { body = await req.json(); } catch { return json(req, { error: "Invalid request body." }, 400); }
 
   const holder = String(body.account_holder_name ?? "").trim();
+  const submittedBankName = String(body.bank_name ?? "").trim().slice(0, 120) || null;
   const bankAccount = digits(body.bank_account);
   const ifsc = String(body.ifsc ?? "").trim().toUpperCase();
   const accountType = body.account_type === "savings" ? "savings" : "current";
@@ -72,7 +73,7 @@ Deno.serve(async (req: Request) => {
     const accountStatusCode = String(provider.account_status_code ?? "").toUpperCase();
     const verified = response.ok && (accountStatus === "VALID" || accountStatusCode === "ACCOUNT_IS_VALID");
     const reference = provider.reference_id == null ? null : String(provider.reference_id);
-    const bankName = String(provider.bank_name ?? "").trim() || null;
+    const bankName = String(provider.bank_name ?? "").trim().slice(0, 120) || submittedBankName;
     const failure = verified ? null : String(provider.message ?? provider.account_status_code ?? provider.account_status ?? "Bank account could not be verified.").slice(0, 500);
 
     const row = {
@@ -103,3 +104,4 @@ Deno.serve(async (req: Request) => {
     return json(req, { error: "Bank verification service is temporarily unavailable." }, 502);
   }
 });
+
