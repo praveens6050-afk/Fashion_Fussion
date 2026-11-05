@@ -235,7 +235,19 @@ async function testLiveCatalogLifecycle(page) {
   await page.locator('#stock').fill('3');
   await page.locator('#brand').fill('Fashion Fussion QA');
   await page.locator('#countryOrigin').fill('India');
+  const formNameBeforeSubmit = await page.locator('#name').inputValue();
+  const originBeforeSubmit = await page.locator('#countryOrigin').inputValue();
+  console.log(`CATALOG_NAME_DIAGNOSTIC expected=${JSON.stringify(TEST_NAME)} input=${JSON.stringify(formNameBeforeSubmit)} countryOrigin=${JSON.stringify(originBeforeSubmit)}`);
+  if (formNameBeforeSubmit !== TEST_NAME) throw new Error(`Product name input changed before submit: expected ${JSON.stringify(TEST_NAME)}, got ${JSON.stringify(formNameBeforeSubmit)}.`);
+  const captureSubmitRpc = request => {
+    if (!request.url().includes('/rest/v1/rpc/submit_seller_product') || request.method() !== 'POST') return;
+    let body = {};
+    try { body = request.postDataJSON(); } catch {}
+    console.log(`CATALOG_RPC_DIAGNOSTIC p_name=${JSON.stringify(body.p_name)} p_country_origin=${JSON.stringify(body.p_country_origin)} p_sku=${JSON.stringify(body.p_sku)}`);
+  };
+  page.on('request', captureSubmitRpc);
   await page.locator('#submitProduct').click();
+  page.off('request', captureSubmitRpc);
   await waitForToast(page, /Product submitted for admin review\./);
 
   await openProductsAndSearch(page, TEST_SKU);
