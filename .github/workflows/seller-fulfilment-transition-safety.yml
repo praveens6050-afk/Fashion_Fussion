@@ -1,0 +1,39 @@
+name: Seller Fulfilment Transition Safety
+on:
+  pull_request:
+    branches: [cloudflare-seller]
+  push:
+    branches: [seller-order-status-e2e-fix]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  seller-fulfilment-sql-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: seller_fulfilment_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d seller_fulfilment_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run migration twice and test authenticated seller transitions
+        env:
+          PGPASSWORD: isolated-test-only
+        run: |
+          set -euo pipefail
+          DB='postgresql://postgres@127.0.0.1:5432/seller_fulfilment_ci'
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/seller-fulfillment-fixture.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261020110000_seller_order_fulfillment_transitions.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261020110000_seller_order_fulfillment_transitions.sql
+          psql "$DB" -X -v ON_ERROR_STOP=1 -f supabase/tests/seller-fulfillment-transitions.sql
