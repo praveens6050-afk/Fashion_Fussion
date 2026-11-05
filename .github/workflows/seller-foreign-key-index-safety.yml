@@ -1,0 +1,44 @@
+name: Seller Foreign Key Index Safety
+on:
+  push:
+    branches: [fix/seller-foreign-key-indexes]
+  pull_request:
+    branches: [cloudflare-seller]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seller-fk-indexes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ff_ci
+          POSTGRES_PASSWORD: ci_only_not_production
+          POSTGRES_DB: ff_index_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ff_ci -d ff_index_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: ff_ci
+      PGPASSWORD: ci_only_not_production
+      PGDATABASE: ff_index_ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create isolated schema fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/seller_foreign_key_indexes_fixture.sql
+      - name: Apply index migration twice
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017100000_add_seller_foreign_key_indexes.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017100000_add_seller_foreign_key_indexes.sql
+      - name: Assert expected indexes exist
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/seller_foreign_key_indexes.sql
