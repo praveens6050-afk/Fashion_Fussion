@@ -12,7 +12,7 @@ function safeEqual(a, b) {
 }
 
 export async function verifyMetaWebhookSignature(rawBody, signatureHeader, appSecret) {
-  if (!appSecret) return true;
+  if (!String(appSecret || '').trim()) return false;
   if (!signatureHeader?.startsWith('sha256=')) return false;
 
   const key = await crypto.subtle.importKey(

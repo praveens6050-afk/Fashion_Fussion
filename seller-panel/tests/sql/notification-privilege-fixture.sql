@@ -1,5 +1,5 @@
 -- Synthetic CI fixture only. Never run against production.
-CREATE TABLE public.whatsapp_inbound_events (
+CREATE TABLE IF NOT EXISTS public.whatsapp_inbound_events (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   external_message_id text NOT NULL,
   sender_user_id uuid

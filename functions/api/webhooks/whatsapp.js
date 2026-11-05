@@ -25,8 +25,12 @@ export async function onRequestGet(context) {
 export async function onRequestPost(context) {
   const { request, env } = context;
   const rawBody = await request.text();
+  if (rawBody.length > 1024 * 1024) return new Response('Payload too large', { status: 413 });
+  if (!String(env.WHATSAPP_APP_SECRET || '').trim()) {
+    return new Response('Webhook signature verification is not configured', { status: 503 });
+  }
 
-  if (env.WHATSAPP_APP_SECRET) {
+  {
     const valid = await verifyMetaWebhookSignature(
       rawBody,
       request.headers.get('x-hub-signature-256'),
