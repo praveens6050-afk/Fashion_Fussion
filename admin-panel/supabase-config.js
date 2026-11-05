@@ -1,5 +1,5 @@
-const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
+const SUPABASE_URL='https://dzpyxeryikadpuebmrit.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_KJMNWV_5cJrUzGhAZ8U9sg_3Sk4Q4O8';
 window.FF_API_ORIGIN='';
 (function(){'use strict';
   const SDK_FALLBACK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
