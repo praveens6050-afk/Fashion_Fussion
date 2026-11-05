@@ -1,0 +1,36 @@
+// admin-panel/crm-dashboard.js
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('crmDashboardRoot');
+  if (!root) return;
+
+  const activity = [
+    { customer: 'Northwind Retail', value: '₹82,000', stage: 'Negotiation', status: 'In progress' },
+    { customer: 'Urban Loom', value: '₹61,500', stage: 'Proposal', status: 'Awaiting review' },
+    { customer: 'Metroline Studio', value: '₹1,40,000', stage: 'Closed', status: 'Won' }
+  ];
+
+  const rows = activity.map(item => `
+    <tr>
+      <td>${item.customer}</td>
+      <td>${item.stage}</td>
+      <td>${item.value}</td>
+      <td>${item.status}</td>
+    </tr>
+  `).join('');
+
+  root.insertAdjacentHTML('beforeend', `
+    <section class="card">
+      <div class="card-header">
+        <h2>Sales pipeline</h2>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead>
+            <tr><th>Customer</th><th>Stage</th><th>Value</th><th>Status</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </section>
+  `);
+});
