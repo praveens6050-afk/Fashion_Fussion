@@ -15,6 +15,15 @@ test("redacts sensitive fields recursively before model invocation", () => {
   assert.equal(safe.payment.status, "paid");
 });
 
+test("redacts personal data embedded in free-text fields", () => {
+  const safe = redactSensitive({
+    message: "Please call +91 9876543210 or email private@example.com. ID 123456789012."
+  });
+  assert.match(safe.message, /REDACTED_PHONE/);
+  assert.match(safe.message, /REDACTED_EMAIL/);
+  assert.match(safe.message, /REDACTED_ID/);
+});
+
 test("runs an allowed agent task through Workers AI in draft-only mode", async () => {
   let calledModel;
   let calledPayload;
