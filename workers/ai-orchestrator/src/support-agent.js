@@ -85,7 +85,7 @@ export async function handleSupportAssist(request, env, json) {
   }
   if (!user?.id) return json({ error: "user_authentication_failed" }, 401);
 
-  const ticketCode = decodeURIComponent(new URL(request.url).pathname.split("/").pop() || "").trim();
+  const ticketCode = decodeURIComponent(new URL(request.url).pathname.split("/").at(-2) || "").trim();
   if (!/^[A-Za-z0-9_-]{4,40}$/.test(ticketCode)) return json({ error: "invalid_ticket_code" }, 400);
 
   const ticketQuery = new URLSearchParams({
