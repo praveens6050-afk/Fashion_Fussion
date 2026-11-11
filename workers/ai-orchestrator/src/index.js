@@ -1,3 +1,4 @@
+import { handleSupportAssist } from "./support-agent.js";
 const AGENTS = [
   { id: "customer_support", name: "Customer Support", scope: "Customer questions, order lookups, support triage and agent handoff", defaultMode: "assist" },
   { id: "seller_management", name: "Seller Management", scope: "Seller onboarding, listing guidance, compliance task tracking and seller support", defaultMode: "assist" },
@@ -139,6 +140,11 @@ async function handle(request, env) {
       agents: AGENTS.map(agent => ({ ...agent, status: "registered_not_enabled" })),
       count: AGENTS.length
     }, 200, cors);
+  }
+
+  const supportMatch = url.pathname.match(/^\\/v1\\/support\\/tickets\\/([^/]+)\\/assist$/);
+  if (request.method === "GET" && supportMatch) {
+    return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
 
   if (request.method === "POST" && url.pathname === "/v1/runs") {
