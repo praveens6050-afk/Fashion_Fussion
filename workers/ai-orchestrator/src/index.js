@@ -1,3 +1,4 @@
+import { handleSellerAssist } from "./seller-agent.js";
 import { handleSupportAssist } from "./support-agent.js";
 const AGENTS = [
   { id: "customer_support", name: "Customer Support", scope: "Customer questions, order lookups, support triage and agent handoff", defaultMode: "assist" },
@@ -131,6 +132,10 @@ async function handle(request, env) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (request.method === "GET" && url.pathname === "/health") {
     return json({ ok: true, service: "fashion-fussion-ai-orchestrator", runtimeReady: env.AGENT_RUNTIME_READY === "true" }, 200, cors);
+  }
+
+  if (request.method === "GET" && url.pathname === "/v1/seller/onboarding/assist") {
+    return handleSellerAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
 
   const supportMatch = url.pathname.match(/^\/v1\/support\/tickets\/([^/]+)\/assist$/);
