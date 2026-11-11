@@ -47,6 +47,23 @@ export async function processAgentMessage(message, env) {
     return { ignored: true };
   }
 
+  const agentQuery = new URLSearchParams({
+    select: "agent_id,enabled",
+    agent_id: `eq.${run.agent_id}`,
+    limit: "1"
+  });
+  const agentRows = await databaseRequest(env, `/rest/v1/ai_agent_registry?${agentQuery.toString()}`);
+  if (!Array.isArray(agentRows) || !agentRows[0]?.enabled) {
+    await databaseRequest(env, `/rest/v1/ai_agent_runs?id=eq.${run.id}&status=eq.queued`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "cancelled", error_code: "agent_disabled", finished_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    });
+    await writeEvent(env, run.id, "run_cancelled_agent_disabled", { agent_id: run.agent_id });
+    message.ack();
+    return { ignored: true, reason: "agent_disabled" };
+  }
+
   const claim = await databaseRequest(env, `/rest/v1/ai_agent_runs?id=eq.${run.id}&status=eq.queued`, {
     method: "PATCH",
     headers: { Prefer: "return=representation" },
@@ -75,14 +92,25 @@ export async function processAgentMessage(message, env) {
     return { succeeded: true };
   } catch (error) {
     const errorCode = String(error?.message || "agent_execution_failed").replace(/[^A-Za-z0-9_:-]/g, "_").slice(0, 80);
+    const attempts = Number(message.attempts || 1);
+    const exhausted = attempts >= 3;
     await databaseRequest(env, `/rest/v1/ai_agent_runs?id=eq.${run.id}&status=eq.running`, {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ status: "failed", error_code: errorCode, finished_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      body: JSON.stringify({
+        status: exhausted ? "failed" : "queued",
+        error_code: errorCode,
+        ...(exhausted ? { finished_at: new Date().toISOString() } : {}),
+        updated_at: new Date().toISOString()
+      })
     }).catch(() => {});
-    await writeEvent(env, run.id, "run_failed", { error_code: errorCode }).catch(() => {});
-    message.ack();
-    return { failed: true, error_code: errorCode };
+    await writeEvent(env, run.id, exhausted ? "run_failed" : "run_retry_scheduled", { error_code: errorCode, attempt: attempts }).catch(() => {});
+    if (exhausted) {
+      message.ack();
+      return { failed: true, error_code: errorCode };
+    }
+    message.retry({ delaySeconds: Math.min(300, attempts * 30) });
+    return { retrying: true, error_code: errorCode };
   }
 }
 
