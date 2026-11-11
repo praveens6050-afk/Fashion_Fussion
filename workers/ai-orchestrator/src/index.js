@@ -133,6 +133,10 @@ async function handle(request, env) {
     return json({ ok: true, service: "fashion-fussion-ai-orchestrator", runtimeReady: env.AGENT_RUNTIME_READY === "true" }, 200, cors);
   }
 
+  const supportMatch = url.pathname.match(/^\/v1\/support\/tickets\/([^/]+)\/assist$/);
+  if (request.method === "GET" && supportMatch) {
+    return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
+  }
   if (!authorized(request, env)) return json({ error: "unauthorized" }, 401, cors);
 
   if (request.method === "GET" && url.pathname === "/v1/agents") {
@@ -142,10 +146,6 @@ async function handle(request, env) {
     }, 200, cors);
   }
 
-  const supportMatch = url.pathname.match(/^\\/v1\\/support\\/tickets\\/([^/]+)\\/assist$/);
-  if (request.method === "GET" && supportMatch) {
-    return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
-  }
 
   if (request.method === "POST" && url.pathname === "/v1/runs") {
     if (env.AGENT_RUNTIME_READY !== "true" || !env.AGENT_JOBS) {
