@@ -96,7 +96,7 @@ export async function handleOrderAssist(request, env, json) {
     return json({ error: "user_authentication_failed" }, 401);
   }
   if (!user?.id) return json({ error: "user_authentication_failed" }, 401);
-  const orderNumber = decodeURIComponent(new URL(request.url).pathname.split("/").pop() || "").trim();
+  const orderNumber = decodeURIComponent(new URL(request.url).pathname.split("/").at(-2) || "").trim();
   if (!/^[A-Za-z0-9_-]{4,48}$/.test(orderNumber)) return json({ error: "invalid_order_number" }, 400);
   const params = new URLSearchParams({
     select: "display_order_id,status,total_amount,currency,created_at,fulfillment_status,fulfillment_updated_at,payment_method,refund_status,refund_amount,refund_updated_at",
