@@ -72,7 +72,7 @@ async function supabaseFetch(env, path, token) {
 
 export async function handleSupportAssist(request, env, json) {
   const authorization = request.headers.get("Authorization") || "";
-  const match = authorization.match(/^Bearer\\s+(.+)$/i);
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return json({ error: "user_authentication_required" }, 401);
   const token = match[1].trim();
   if (!token || token.length > 8192) return json({ error: "invalid_user_token" }, 401);
