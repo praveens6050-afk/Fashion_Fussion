@@ -71,7 +71,7 @@ function corsHeaders(request, env) {
 
 function authorized(request, env) {
   const expected = env.AGENT_API_TOKEN;
-  const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+  const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!expected || !supplied || supplied.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ supplied.charCodeAt(i);
