@@ -16,6 +16,8 @@ const AGENT_PROFILES = {
 export { redactSensitive } from "./privacy.js";
 import { redactSensitive } from "./privacy.js";
 
+const MAX_INPUT_BYTES = 24000;
+
 export async function runAgentDraft(env, { agentId, action, input = {} }) {
   const profile = AGENT_PROFILES[agentId];
   if (!profile) throw new Error("unknown_agent");
