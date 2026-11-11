@@ -16,7 +16,7 @@ test("support assist uses the caller JWT and Supabase RLS, without service-role 
   const seen = [];
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(input);
-    seen.push({ path: url.pathname, authorization: init.headers.authorization, apikey: init.headers.apikey });
+    seen.push({ path: url.pathname, query: url.search, authorization: init.headers.authorization, apikey: init.headers.apikey });
     if (url.pathname === "/auth/v1/user") return Response.json({ id: "customer-user-id" });
     if (url.pathname === "/rest/v1/support_tickets") return Response.json([{
       id: 7, ticket_code: "FF-1001", channel: "customer_support", issue_type: "delivery",
@@ -37,6 +37,7 @@ test("support assist uses the caller JWT and Supabase RLS, without service-role 
     assert.equal(body.assist.triage.category, "delivery");
     assert.equal(body.assist.mode, "draft_only");
     assert.equal(seen.length, 3);
+    assert.match(seen.find((item) => item.path === "/rest/v1/support_tickets").query, /ticket_code=eq.FF-1001/);
     assert.ok(seen.every((item) => item.authorization === "Bearer customer-jwt"));
     assert.ok(seen.every((item) => item.apikey === "anon-test"));
   } finally {
