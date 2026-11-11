@@ -19,13 +19,27 @@ const SAFE_ACTIONS = new Set([
 ]);
 
 // These actions always create an approval record. An LLM must never be the
-// authority for financial, identity, compliance, or irreversible account changes.
+// authority for financial, identity, compliance, outbound-delivery or irreversible actions.
 const APPROVAL_ACTIONS = new Set([
   "issue_refund", "cancel_paid_order", "release_payout", "change_bank_account",
   "approve_seller", "reject_seller", "mark_kyc_verified", "suspend_account",
   "block_customer", "block_seller", "increase_ad_budget", "launch_paid_campaign",
-  "send_bulk_message", "send_outbound_call", "finalize_hiring"
+  "send_bulk_message", "send_whatsapp_message", "send_customer_email",
+  "send_outbound_call", "publish_social_post", "finalize_hiring", "create_payment_request"
 ]);
+
+const AGENT_ACTIONS = {
+  customer_support: new Set(["analyze", "classify", "draft", "summarize", "triage", "lookup_order", "lookup_product", "prepare_follow_up", "send_whatsapp_message", "send_customer_email"]),
+  seller_management: new Set(["analyze", "classify", "draft", "summarize", "triage", "prepare_proposal", "approve_seller", "reject_seller", "mark_kyc_verified", "change_bank_account"]),
+  sales_conversion: new Set(["analyze", "draft", "recommend", "report", "lookup_order", "lookup_product", "prepare_quote", "create_payment_request"]),
+  order_backend: new Set(["analyze", "summarize", "report", "lookup_order", "issue_refund", "cancel_paid_order", "release_payout"]),
+  marketing: new Set(["analyze", "report", "plan_campaign", "generate_content", "increase_ad_budget", "launch_paid_campaign", "send_bulk_message"]),
+  content_creation: new Set(["analyze", "draft", "summarize", "generate_content", "plan_campaign", "publish_social_post"]),
+  lead_generation_followup: new Set(["analyze", "classify", "draft", "score_lead", "prepare_follow_up", "send_bulk_message", "send_whatsapp_message", "send_customer_email"]),
+  trust_fraud: new Set(["analyze", "classify", "report", "score_lead", "suspend_account", "block_customer", "block_seller", "mark_kyc_verified"]),
+  business_intelligence: new Set(["analyze", "report", "summarize"]),
+  voice_recruitment: new Set(["classify", "draft", "summarize", "screen_candidate", "prepare_follow_up", "send_outbound_call", "send_customer_email", "finalize_hiring"])
+};
 
 const DEFAULT_ORIGINS = new Set([
   "https://fashionfussion.in",
@@ -57,7 +71,7 @@ function corsHeaders(request, env) {
 
 function authorized(request, env) {
   const expected = env.AGENT_API_TOKEN;
-  const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
   if (!expected || !supplied || supplied.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ supplied.charCodeAt(i);
@@ -82,7 +96,7 @@ async function supabaseRequest(env, path, init = {}) {
     }
   });
   const body = await response.text();
-  if (!response.ok) throw new Error(`supabase_http_${response.status}:${body.slice(0, 300)}`);
+  if (!response.ok) throw new Error(`supabase_http_${response.status}`);
   return body ? JSON.parse(body) : null;
 }
 
@@ -139,7 +153,9 @@ async function handle(request, env) {
     const action = typeof body.action === "string" ? body.action : "";
     const idempotencyKey = request.headers.get("Idempotency-Key") || body.idempotency_key;
     if (!agent) return json({ error: "unknown_agent" }, 400, cors);
-    if (!SAFE_ACTIONS.has(action) && !APPROVAL_ACTIONS.has(action)) return json({ error: "action_not_allowed" }, 400, cors);
+    if (!AGENT_ACTIONS[agent.id]?.has(action) || (!SAFE_ACTIONS.has(action) && !APPROVAL_ACTIONS.has(action))) {
+      return json({ error: "action_not_allowed_for_agent" }, 400, cors);
+    }
     if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9._:-]{8,160}$/.test(idempotencyKey)) {
       return json({ error: "valid_idempotency_key_required" }, 400, cors);
     }
@@ -156,12 +172,12 @@ async function handle(request, env) {
         action,
         status,
         idempotency_key: idempotencyKey,
-        requested_by: body.requested_by || null,
+        requested_by: null,
         source: typeof body.source === "string" ? body.source.slice(0, 80) : "api",
         input
       });
-    } catch (error) {
-      return json({ error: "run_persistence_failed", detail: String(error.message || error).slice(0, 180) }, 502, cors);
+    } catch {
+      return json({ error: "run_persistence_failed" }, 502, cors);
     }
 
     if (created.duplicate) return json({ run: created.run, duplicate: true }, 200, cors);
@@ -175,10 +191,10 @@ async function handle(request, env) {
             run_id: created.run.id,
             action_key: action,
             status: "pending",
-            requested_by: body.requested_by || null
+            requested_by: null
           })
         });
-      } catch (error) {
+      } catch {
         await supabaseRequest(env, `/rest/v1/ai_agent_runs?id=eq.${created.run.id}`, {
           method: "PATCH",
           body: JSON.stringify({ status: "failed", error_code: "approval_record_failed", updated_at: new Date().toISOString() })
@@ -205,4 +221,4 @@ async function handle(request, env) {
 }
 
 export default { fetch: handle };
-export { AGENTS, APPROVAL_ACTIONS, SAFE_ACTIONS };
+export { AGENTS, AGENT_ACTIONS, APPROVAL_ACTIONS, SAFE_ACTIONS };
