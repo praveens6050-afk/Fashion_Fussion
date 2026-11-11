@@ -85,7 +85,7 @@ export async function handleProductRecommendations(request, env, json) {
 
 export async function handleOrderAssist(request, env, json) {
   const auth = request.headers.get("Authorization") || "";
-  const tokenMatch = auth.match(/^Bearer\\s+(.+)$/i);
+  const tokenMatch = auth.match(/^Bearer\s+(.+)$/i);
   if (!tokenMatch) return json({ error: "user_authentication_required" }, 401);
   const token = tokenMatch[1].trim();
   if (!token || token.length > 8192) return json({ error: "invalid_user_token" }, 401);
