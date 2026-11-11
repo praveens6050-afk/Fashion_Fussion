@@ -138,7 +138,7 @@ async function handle(request, env) {
   if (request.method === "GET" && url.pathname === "/v1/products/recommendations") {
     return handleProductRecommendations(request, env, (data, status = 200) => json(data, status, cors));
   }
-  const orderMatch = url.pathname.match(/^\\/v1\\/orders\\/([^/]+)\\/assist$/);
+  const orderMatch = url.pathname.match(/^\/v1\/orders\/([^/]+)\/assist$/);
   if (request.method === "GET" && orderMatch) {
     return handleOrderAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
