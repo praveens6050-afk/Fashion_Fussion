@@ -181,7 +181,7 @@ async function handle(request, env) {
     if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9._:-]{8,160}$/.test(idempotencyKey)) {
       return json({ error: "valid_idempotency_key_required" }, 400, cors);
     }
-    const input = body.input ?? {};
+    const input = redactSensitive(body.input ?? {});
     const encodedInput = JSON.stringify(input);
     if (encodedInput.length > 24000) return json({ error: "input_too_large" }, 413, cors);
 
