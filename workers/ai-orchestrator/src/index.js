@@ -1,3 +1,4 @@
+import { handleAgentQueue } from "./queue-consumer.js";
 import { handleOrderAssist, handleProductRecommendations } from "./commerce-agent.js";
 import { handleSellerAssist } from "./seller-agent.js";
 import { handleSupportAssist } from "./support-agent.js";
@@ -240,5 +241,5 @@ async function handle(request, env) {
   return json({ error: "not_found" }, 404, cors);
 }
 
-export default { fetch: handle };
+export default { fetch: handle, queue: handleAgentQueue };
 export { AGENTS, AGENT_ACTIONS, APPROVAL_ACTIONS, SAFE_ACTIONS };
