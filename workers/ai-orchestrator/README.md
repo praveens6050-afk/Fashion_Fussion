@@ -57,3 +57,14 @@ It returns deterministic issue triage, escalation guidance and a response draft.
 The preview-only endpoint `GET /v1/seller/onboarding/assist` verifies the Supabase Auth user token and reads the caller's seller profile, compliance status and product submissions through the same JWT and Supabase anon key. Existing RLS policies enforce seller ownership. It deliberately excludes payout/bank records and PAN/GST identifiers, and cannot approve sellers, change bank details, or activate accounts. Output is a read-only onboarding checklist.
 
 Both support and seller endpoints require `SUPABASE_URL` and `SUPABASE_ANON_KEY`. They do not use the service-role key. Keep them in preview until role-based integration tests pass against real customer, seller and staff test accounts.
+
+
+## Sales & Conversion Agent — first vertical slice
+
+`GET /v1/products/recommendations?q=...` reads active public catalog rows through the Supabase anon policy and returns a small product shortlist. It does not expose cost or internal margin fields.
+
+## Order & Backend Operations Agent — first vertical slice
+
+`GET /v1/orders/{displayOrderId}/assist` verifies the customer Supabase Auth token and uses that same JWT for the order lookup. The existing `orders` SELECT policy limits customers to their own orders and admins to their permitted view. The response excludes payment-provider identifiers, customer contact details and shipping address. It is read-only and cannot cancel, refund or modify fulfilment.
+
+These endpoints are guidance surfaces only. Do not use them as a substitute for checkout, payment-provider verification, carrier tracking or the existing order-management workflow.
