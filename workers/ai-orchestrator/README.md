@@ -50,3 +50,10 @@ Do not point this Worker at production customer data or enable external actions 
 The preview-only endpoint `GET /v1/support/tickets/{ticketCode}/assist` verifies the caller's Supabase Auth access token, then reads `support_tickets` and `support_ticket_messages` using that same user JWT and the Supabase anon key. Supabase RLS remains the authorization boundary; the endpoint does not use the service-role key.
 
 It returns deterministic issue triage, escalation guidance and a response draft. This first slice is draft-only: it does not write ticket data, send messages, or change order/refund state. Test with customer, seller and customer-care roles before wiring the UI.
+
+
+## Seller Management Agent — first vertical slice
+
+The preview-only endpoint `GET /v1/seller/onboarding/assist` verifies the Supabase Auth user token and reads the caller's seller profile, compliance status and product submissions through the same JWT and Supabase anon key. Existing RLS policies enforce seller ownership. It deliberately excludes payout/bank records and PAN/GST identifiers, and cannot approve sellers, change bank details, or activate accounts. Output is a read-only onboarding checklist.
+
+Both support and seller endpoints require `SUPABASE_URL` and `SUPABASE_ANON_KEY`. They do not use the service-role key. Keep them in preview until role-based integration tests pass against real customer, seller and staff test accounts.
