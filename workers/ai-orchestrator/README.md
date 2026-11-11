@@ -8,7 +8,9 @@ An isolated Cloudflare Worker control plane for the ten Fashion Fussion agents. 
 - `GET /health` is public and reports whether execution has been enabled.
 - `GET /v1/agents` requires `AGENT_API_TOKEN`.
 - `src/agent-runner.js` adds a Workers AI inference adapter for all ten agent roles.
-- Model output is draft-only. Sensitive input keys are redacted before inference.
+- `src/privacy.js` redacts sensitive fields and common PII patterns in free-text inputs before persistence and inference.
+- The queue consumer checks per-agent enablement, claims runs idempotently, records audit events, and retries transient failures with a bounded attempt count.
+- Model output is draft-only.
 - Financial, identity, compliance, outbound-delivery and irreversible actions are approval-gated.
 - No agent is enabled by default. The inference adapter is not yet connected to a queue consumer.
 - `POST /v1/runs` remains deliberately disabled until the queue consumer, Supabase schema, secrets and agent integrations are ready.
@@ -36,8 +38,8 @@ npm run check
 ## Deployment sequence
 
 1. Review and approve the Supabase control-plane migration in `supabase/migrations`; it has not been applied by this implementation.
-2. Create the Cloudflare Queue and its dead-letter queue.
-3. Implement and test the queue consumer and durable agent runtime.
+2. The Cloudflare Queues `fashion-fussion-agent-jobs` and `fashion-fussion-agent-jobs-dlq` have been provisioned in the connected account; the Worker is not yet deployed or attached as a consumer.
+3. Complete preview deployment and verify queue consumer attachment, dead-letter routing, and retry behavior.
 4. Add secrets through Wrangler or the Cloudflare dashboard.
 5. Deploy this Worker to a preview environment only.
 6. Run auth, idempotency, RLS, queue retry, privacy and approval tests.
