@@ -1,3 +1,4 @@
+import { handleOrderAssist, handleProductRecommendations } from "./commerce-agent.js";
 import { handleSellerAssist } from "./seller-agent.js";
 import { handleSupportAssist } from "./support-agent.js";
 const AGENTS = [
@@ -132,6 +133,14 @@ async function handle(request, env) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (request.method === "GET" && url.pathname === "/health") {
     return json({ ok: true, service: "fashion-fussion-ai-orchestrator", runtimeReady: env.AGENT_RUNTIME_READY === "true" }, 200, cors);
+  }
+
+  if (request.method === "GET" && url.pathname === "/v1/products/recommendations") {
+    return handleProductRecommendations(request, env, (data, status = 200) => json(data, status, cors));
+  }
+  const orderMatch = url.pathname.match(/^\\/v1\\/orders\\/([^/]+)\\/assist$/);
+  if (request.method === "GET" && orderMatch) {
+    return handleOrderAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
 
   if (request.method === "GET" && url.pathname === "/v1/seller/onboarding/assist") {
