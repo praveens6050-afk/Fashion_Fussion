@@ -1,0 +1,10 @@
+name = "fashion-fussion-ai-orchestrator"
+main = "src/index.js"
+compatibility_date = "2026-11-11"
+workers_dev = true
+
+# Keep execution disabled until the queue consumer, Supabase secrets,
+# agent-specific connectors, and safety tests are deployed.
+[vars]
+APP_ENV = "development"
+AGENT_RUNTIME_READY = "false"
