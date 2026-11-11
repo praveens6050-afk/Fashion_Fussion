@@ -1,4 +1,5 @@
 import { handleAgentQueue } from "./queue-consumer.js";
+import { redactSensitive } from "./agent-runner.js";
 import { handleOrderAssist, handleProductRecommendations } from "./commerce-agent.js";
 import { handleSellerAssist } from "./seller-agent.js";
 import { handleSupportAssist } from "./support-agent.js";
