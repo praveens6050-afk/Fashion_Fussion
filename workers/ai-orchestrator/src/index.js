@@ -1,5 +1,5 @@
 import { handleAgentQueue } from "./queue-consumer.js";
-import { redactSensitive } from "./agent-runner.js";
+import { redactSensitive } from "./privacy.js";
 import { handleOrderAssist, handleProductRecommendations } from "./commerce-agent.js";
 import { handleSellerAssist } from "./seller-agent.js";
 import { handleSupportAssist } from "./support-agent.js";
@@ -181,6 +181,21 @@ async function handle(request, env) {
     if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9._:-]{8,160}$/.test(idempotencyKey)) {
       return json({ error: "valid_idempotency_key_required" }, 400, cors);
     }
+    let enabledAgents;
+    try {
+      const agentQuery = new URLSearchParams({
+        select: "agent_id,enabled",
+        agent_id: `eq.${agent.id}`,
+        limit: "1"
+      });
+      enabledAgents = await supabaseRequest(env, `/rest/v1/ai_agent_registry?${agentQuery.toString()}`);
+    } catch {
+      return json({ error: "agent_registry_unavailable" }, 502, cors);
+    }
+    if (!Array.isArray(enabledAgents) || !enabledAgents[0]?.enabled) {
+      return json({ error: "agent_disabled" }, 403, cors);
+    }
+
     const input = redactSensitive(body.input ?? {});
     const encodedInput = JSON.stringify(input);
     if (encodedInput.length > 24000) return json({ error: "input_too_large" }, 413, cors);
