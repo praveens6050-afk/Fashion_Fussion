@@ -38,3 +38,10 @@ npm run check
 7. Enable agents individually; do not turn on the global runtime switch until all required checks pass.
 
 Do not point this Worker at production customer data until the migration and integration tests are approved.
+
+
+## Customer Support Agent — first vertical slice
+
+The preview-only endpoint `GET /v1/support/tickets/{ticketCode}/assist` verifies the caller's Supabase Auth access token, then reads `support_tickets` and `support_ticket_messages` using that same user JWT and the Supabase anon key. Supabase RLS remains the authorization boundary; the endpoint does not use the service-role key.
+
+It returns deterministic issue triage, escalation guidance and a response draft. This first slice is **draft-only**: it does not write ticket data, send messages, or change order/refund state. Configure `SUPABASE_ANON_KEY` as a Worker variable/secret alongside `SUPABASE_URL` for the preview. Test with customer, seller and customer-care roles before wiring the UI.
