@@ -5,7 +5,8 @@ import {
   getLeadConsentOverview,
   getTrustReviewOverview,
   getBusinessOverview,
-  checkContentDuplicates
+  checkContentDuplicates,
+  getLeadFollowUpContext
 } from "../src/analytics-agent.js";
 
 function withRows(rowsByTable, run) {
@@ -96,4 +97,52 @@ test("content duplicate check matches caption and image hashes without returning
 
 test("content duplicate check rejects an empty query", async () => {
   await assert.rejects(checkContentDuplicates(env, {}), /valid_caption_or_image_hash_required/);
+});
+
+
+test("lead follow-up context requires the matching consent and excludes contact fields", async () => {
+  await withRows({
+    marketing_leads: [{
+      whatsapp_enquiry_consent: true,
+      whatsapp_promo_consent: false,
+      opt_out_at: null,
+      interest: "women's festive wear",
+      lead_source: "website",
+      status: "new",
+      created_at: "2026-11-01T10:00:00Z"
+    }]
+  }, async () => {
+    const result = await getLeadFollowUpContext(env, "123e4567-e89b-12d3-a456-426614174000", "enquiry");
+    assert.equal(result.consentVerified, true);
+    assert.equal(result.interest, "women's festive wear");
+    assert.equal(Object.hasOwn(result, "phone"), false);
+    assert.equal(Object.hasOwn(result, "email"), false);
+  });
+});
+
+test("lead follow-up context blocks missing promotional consent and opted-out leads", async () => {
+  await withRows({
+    marketing_leads: [{
+      whatsapp_enquiry_consent: true,
+      whatsapp_promo_consent: false,
+      opt_out_at: null
+    }]
+  }, async () => {
+    await assert.rejects(
+      getLeadFollowUpContext(env, "123e4567-e89b-12d3-a456-426614174000", "promotion"),
+      /lead_consent_required/
+    );
+  });
+  await withRows({
+    marketing_leads: [{
+      whatsapp_enquiry_consent: true,
+      whatsapp_promo_consent: true,
+      opt_out_at: "2026-11-01T10:00:00Z"
+    }]
+  }, async () => {
+    await assert.rejects(
+      getLeadFollowUpContext(env, "123e4567-e89b-12d3-a456-426614174000", "promotion"),
+      /lead_opted_out/
+    );
+  });
 });
