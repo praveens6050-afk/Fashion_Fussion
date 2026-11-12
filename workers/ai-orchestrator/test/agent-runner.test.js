@@ -77,3 +77,12 @@ test("fails closed when Workers AI is not configured", async () => {
     /workers_ai_not_configured/
   );
 });
+
+test("all ten specialist profiles are available without importing the Worker entrypoint", async () => {
+  const { AGENT_ACTIONS } = await import("../src/agents.js");
+  assert.equal(Object.keys(AGENT_ACTIONS).length, 10);
+  for (const [agentId, actions] of Object.entries(AGENT_ACTIONS)) {
+    assert.ok(actions instanceof Set, agentId + " action allowlist must be a Set");
+    assert.ok(actions.has("analyze") || actions.has("draft") || actions.has("classify"), agentId);
+  }
+});
