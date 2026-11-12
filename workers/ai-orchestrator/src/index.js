@@ -67,6 +67,23 @@ async function supabaseRequest(env, path, init = {}) {
   return body ? JSON.parse(body) : null;
 }
 
+async function requireAgentEnabled(env, agentId, cors) {
+  try {
+    const query = new URLSearchParams({
+      select: "agent_id,enabled",
+      agent_id: `eq.${agentId}`,
+      limit: "1"
+    });
+    const rows = await supabaseRequest(env, `/rest/v1/ai_agent_registry?${query.toString()}`);
+    if (!Array.isArray(rows) || !rows[0]?.enabled) {
+      return json({ error: "agent_disabled" }, 403, cors);
+    }
+    return null;
+  } catch {
+    return json({ error: "agent_registry_unavailable" }, 503, cors);
+  }
+}
+
 async function createRun(env, record) {
   const inserted = await supabaseRequest(
     env,
@@ -100,33 +117,47 @@ async function handle(request, env) {
   }
 
   if (request.method === "GET" && url.pathname === "/v1/products/recommendations") {
+    const blocked = await requireAgentEnabled(env, "sales_conversion", cors);
+    if (blocked) return blocked;
     return handleProductRecommendations(request, env, (data, status = 200) => json(data, status, cors));
   }
   const orderMatch = url.pathname.match(/^\/v1\/orders\/([^/]+)\/assist$/);
   if (request.method === "GET" && orderMatch) {
+    const blocked = await requireAgentEnabled(env, "order_backend", cors);
+    if (blocked) return blocked;
     return handleOrderAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
 
   if (request.method === "GET" && url.pathname === "/v1/seller/onboarding/assist") {
+    const blocked = await requireAgentEnabled(env, "seller_management", cors);
+    if (blocked) return blocked;
     return handleSellerAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
 
   const supportMatch = url.pathname.match(/^\/v1\/support\/tickets\/([^/]+)\/assist$/);
   if (request.method === "GET" && supportMatch) {
+    const blocked = await requireAgentEnabled(env, "customer_support", cors);
+    if (blocked) return blocked;
     return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
   if (!authorized(request, env)) return json({ error: "unauthorized" }, 401, cors);
 
   if (request.method === "GET" && url.pathname === "/v1/marketing/overview") {
+    const blocked = await requireAgentEnabled(env, "marketing", cors);
+    if (blocked) return blocked;
     try { return json({ overview: await getMarketingOverview(env) }, 200, cors); }
     catch { return json({ error: "marketing_overview_unavailable" }, 502, cors); }
   }
   if (request.method === "GET" && url.pathname === "/v1/leads/consent-overview") {
+    const blocked = await requireAgentEnabled(env, "lead_generation_followup", cors);
+    if (blocked) return blocked;
     try { return json({ overview: await getLeadConsentOverview(env) }, 200, cors); }
     catch { return json({ error: "lead_consent_overview_unavailable" }, 502, cors); }
   }
   const leadFollowUpMatch = url.pathname.match(/^\/v1\/leads\/([0-9a-f-]{36})\/follow-up-draft$/i);
   if (request.method === "POST" && leadFollowUpMatch) {
+    const blocked = await requireAgentEnabled(env, "lead_generation_followup", cors);
+    if (blocked) return blocked;
     let body;
     try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
     try {
@@ -145,14 +176,20 @@ async function handle(request, env) {
   }
 
   if (request.method === "GET" && url.pathname === "/v1/trust/review-overview") {
+    const blocked = await requireAgentEnabled(env, "trust_fraud", cors);
+    if (blocked) return blocked;
     try { return json({ overview: await getTrustReviewOverview(env) }, 200, cors); }
     catch { return json({ error: "trust_review_overview_unavailable" }, 502, cors); }
   }
   if (request.method === "GET" && url.pathname === "/v1/business/overview") {
+    const blocked = await requireAgentEnabled(env, "business_intelligence", cors);
+    if (blocked) return blocked;
     try { return json({ overview: await getBusinessOverview(env) }, 200, cors); }
     catch { return json({ error: "business_overview_unavailable" }, 502, cors); }
   }
   if (request.method === "POST" && url.pathname === "/v1/content/draft") {
+    const blocked = await requireAgentEnabled(env, "content_creation", cors);
+    if (blocked) return blocked;
     let body;
     try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
     if (!body.input || typeof body.input !== "object" || Array.isArray(body.input)) return json({ error: "content_input_required" }, 400, cors);
@@ -162,6 +199,8 @@ async function handle(request, env) {
     } catch { return json({ error: "content_draft_unavailable" }, 502, cors); }
   }
   if (request.method === "POST" && url.pathname === "/v1/content/duplicate-check") {
+    const blocked = await requireAgentEnabled(env, "content_creation", cors);
+    if (blocked) return blocked;
     let body;
     try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
     try { return json({ duplicateCheck: await checkContentDuplicates(env, body) }, 200, cors); }
@@ -171,6 +210,8 @@ async function handle(request, env) {
     }
   }
   if (request.method === "POST" && url.pathname === "/v1/voice/draft") {
+    const blocked = await requireAgentEnabled(env, "voice_recruitment", cors);
+    if (blocked) return blocked;
     let body;
     try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
     try {
