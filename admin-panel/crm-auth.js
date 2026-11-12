@@ -203,6 +203,7 @@
       ['crm-unified-inbox.js?v=20261101-send-status-copy', 'unified inbox']
     ];
     if (role === 'administrator') modules.push(['crm-team-management.js?v=20261031-shared-mailbox-1', 'team management']);
+    if (role === 'administrator') modules.push(['crm-ai-agent-approvals.js?v=20261112-preview-1', 'AI agent approvals']);
     if (['sales', 'marketing', 'administrator'].includes(role)) modules.push(['crm-sales-workspace.js?v=20261023-live-ready-1', 'sales workspace']);
     if (['customer_support', 'seller_support'].includes(role)) modules.push(['crm-support-workspace.js?v=20261023-live-ready-1', 'support workspace']);
 
