@@ -3,6 +3,11 @@
   const form=document.getElementById('form'),email=document.getElementById('email'),password=document.getElementById('password'),submit=document.getElementById('submit'),banner=document.getElementById('banner');
   const ready=window.ffAdminSupabaseReady||Promise.resolve(window.supabaseClient);
   function show(message,type='error'){banner.textContent=message;banner.className='banner show '+type}
+  if(window.FF_CRM_PREVIEW_BLOCKED){
+    show('Preview sign-in is disabled until a separate preview database is configured.');
+    form.querySelectorAll('input,button').forEach(control=>{control.disabled=true});
+    return;
+  }
   async function client(){const db=await ready;if(!db?.auth)throw new Error('CRM authentication service is unavailable.');return db}
   async function roleFor(db,user){
     if(!user?.id)return null;
