@@ -103,16 +103,25 @@ export async function checkContentDuplicates(env, input = {}) {
   if ((!captionHash && !imageHash) || captionHash.length > 256 || imageHash.length > 256) {
     throw new Error("valid_caption_or_image_hash_required");
   }
-  const rows = await readRows(env, "social_content_queue", "content_id,caption_hash,image_hash,scheduled_at", 1000);
+  const [rows, history] = await Promise.all([
+    readRows(env, "social_content_queue", "content_id,caption_hash,image_hash,scheduled_at", 1000, "scheduled_at.desc"),
+    readRows(env, "social_publish_history", "content_id,platform,state,published_at", 1000, "published_at.desc")
+  ]);
   const captionMatch = captionHash ? rows.find(row => row.caption_hash === captionHash) : null;
   const imageMatch = imageHash ? rows.find(row => row.image_hash === imageHash) : null;
+  const matchingContentIds = [...new Set([captionMatch?.content_id, imageMatch?.content_id].filter(Boolean))];
+  const historyMatches = history
+    .filter(item => matchingContentIds.includes(item.content_id))
+    .map(item => ({ contentId: item.content_id, platform: item.platform, state: item.state, publishedAt: item.published_at }));
   return {
     duplicateCaption: Boolean(captionMatch),
     duplicateImage: Boolean(imageMatch),
-    matchingContentIds: [...new Set([captionMatch?.content_id, imageMatch?.content_id].filter(Boolean))],
-    recordsReviewed: rows.length,
+    matchingContentIds,
+    publishHistory: historyMatches,
+    alreadyPublished: historyMatches.some(item => item.state === "published"),
+    recordsReviewed: { queuedCreatives: rows.length, publishHistory: history.length },
     mode: "duplicate_check_only",
-    note: "A clear result is limited to the first 1000 queued content records. This check does not publish or schedule anything."
+    note: "A clear result is limited to the latest 1000 queued creatives and 1000 history rows. The publisher retains queue rows and records platform history. This check does not publish or schedule anything."
   };
 }
 
