@@ -85,7 +85,7 @@ async function requireAgentEnabled(env, agentId, cors) {
 }
 
 async function authenticateAdmin(request, env) {
-  const match = (request.headers.get("Authorization") || "").match(/^Bearer\\s+(.+)$/i);
+  const match = (request.headers.get("Authorization") || "").match(/^Bearer\s+(.+)$/i);
   const token = match?.[1]?.trim();
   if (!token || token.length > 8192 || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     return { error: "admin_authentication_required", status: 401 };
@@ -326,7 +326,7 @@ async function handle(request, env) {
     if (blocked) return blocked;
     return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
-  const approvalReviewMatch = url.pathname.match(/^\\/v1\\/admin\\/approvals\\/([0-9a-f-]{36})\\/review$/i);
+  const approvalReviewMatch = url.pathname.match(/^\/v1\/admin\/approvals\/([0-9a-f-]{36})\/review$/i);
   if ((request.method === "GET" && url.pathname === "/v1/admin/approvals") ||
       (request.method === "POST" && approvalReviewMatch)) {
     const admin = await authenticateAdmin(request, env);
