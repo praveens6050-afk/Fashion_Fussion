@@ -118,3 +118,65 @@ test("content draft endpoint returns a draft without publishing", async () => {
   assert.equal(body.sideEffectsPerformed, false);
   assert.equal(body.draft, "A fresh fashion caption draft.");
 });
+
+
+test("every direct agent endpoint is blocked while its registry entry is disabled", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.match(String(url), /\/rest\/v1\/ai_agent_registry\?/);
+    return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const env = {
+    AGENT_API_TOKEN: token,
+    SUPABASE_URL: "https://database.test",
+    SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
+  };
+  const cases = [
+    ["GET", "/v1/products/recommendations"],
+    ["GET", "/v1/orders/FF-1234/assist"],
+    ["GET", "/v1/seller/onboarding/assist"],
+    ["GET", "/v1/support/tickets/TKT-1234/assist"],
+    ["GET", "/v1/marketing/overview"],
+    ["GET", "/v1/leads/consent-overview"],
+    ["POST", "/v1/leads/123e4567-e89b-12d3-a456-426614174000/follow-up-draft"],
+    ["GET", "/v1/trust/review-overview"],
+    ["GET", "/v1/business/overview"],
+    ["POST", "/v1/content/draft"],
+    ["POST", "/v1/content/duplicate-check"],
+    ["POST", "/v1/voice/draft"]
+  ];
+  try {
+    for (const [method, path] of cases) {
+      const response = await worker.fetch(new Request(`https://agent.test${path}`, {
+        method,
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json"
+        },
+        body: method === "POST" ? "{}" : undefined
+      }), env);
+      assert.equal(response.status, 403, path);
+      assert.equal((await response.json()).error, "agent_disabled", path);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("direct agent endpoints fail closed if the registry cannot be read", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("database unavailable", { status: 503 });
+  try {
+    const response = await worker.fetch(new Request("https://agent.test/v1/business/overview", {
+      headers: { authorization: `Bearer ${token}` }
+    }), {
+      AGENT_API_TOKEN: token,
+      SUPABASE_URL: "https://database.test",
+      SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error, "agent_registry_unavailable");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
