@@ -83,7 +83,7 @@ export async function handleProductRecommendations(request, env, json) {
   }
 }
 
-export async function handleOrderAssist(request, env, json) {
+export async function handleOrderAssist(request, env, json, gate) {
   const auth = request.headers.get("Authorization") || "";
   const tokenMatch = auth.match(/^Bearer\s+(.+)$/i);
   if (!tokenMatch) return json({ error: "user_authentication_required" }, 401);
@@ -96,6 +96,8 @@ export async function handleOrderAssist(request, env, json) {
     return json({ error: "user_authentication_failed" }, 401);
   }
   if (!user?.id) return json({ error: "user_authentication_failed" }, 401);
+  const blocked = await gate?.();
+  if (blocked) return blocked;
   const orderNumber = decodeURIComponent(new URL(request.url).pathname.split("/").at(-2) || "").trim();
   if (!/^[A-Za-z0-9_-]{4,48}$/.test(orderNumber)) return json({ error: "invalid_order_number" }, 400);
   const params = new URLSearchParams({

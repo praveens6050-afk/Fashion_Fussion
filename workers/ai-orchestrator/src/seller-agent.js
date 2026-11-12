@@ -40,7 +40,7 @@ export function buildSellerAssistResponse(profile, compliance, submissions = [])
   };
 }
 
-export async function handleSellerAssist(request, env, json) {
+export async function handleSellerAssist(request, env, json, gate) {
   const auth = request.headers.get("Authorization") || "";
   const tokenMatch = auth.match(/^Bearer\s+(.+)$/i);
   if (!tokenMatch) return json({ error: "user_authentication_required" }, 401);
@@ -54,6 +54,8 @@ export async function handleSellerAssist(request, env, json) {
     return json({ error: "user_authentication_failed" }, 401);
   }
   if (!user?.id) return json({ error: "user_authentication_failed" }, 401);
+  const blocked = await gate?.();
+  if (blocked) return blocked;
 
   const profileQuery = new URLSearchParams({
     select: "store_name,seller_code,status,seller_type",

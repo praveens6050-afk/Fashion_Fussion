@@ -4,6 +4,18 @@ import worker, { AGENTS, AGENT_ACTIONS, APPROVAL_ACTIONS } from "../src/index.js
 
 const token = "test-agent-token";
 
+async function withEnabledRegistry(run) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    if (new URL(input).pathname === "/rest/v1/ai_agent_registry") {
+      return Response.json([{ agent_id: "test", enabled: true }]);
+    }
+    throw new Error("Unexpected database request: " + new URL(input).pathname);
+  };
+  try { return await run(); }
+  finally { globalThis.fetch = originalFetch; }
+}
+
 test("health endpoint is public and reports runtime disabled by default", async () => {
   const response = await worker.fetch(new Request("https://agent.test/health"), { AGENT_RUNTIME_READY: "false" });
   assert.equal(response.status, 200);
@@ -80,7 +92,7 @@ test("aggregate, consent, trust and duplicate-check routes require the agent tok
   }
 });
 
-test("voice draft route is authenticated and never performs an outbound call", async () => {
+test("voice draft route is authenticated and never performs an outbound call", async () => withEnabledRegistry(async () => {
   const response = await worker.fetch(new Request("https://agent.test/v1/voice/draft", {
     method: "POST",
     headers: {
@@ -90,6 +102,8 @@ test("voice draft route is authenticated and never performs an outbound call", a
     body: JSON.stringify({ input: { scenario: "customer asks about delivery" } })
   }), {
     AGENT_API_TOKEN: token,
+    SUPABASE_URL: "https://database.test",
+    SUPABASE_SERVICE_ROLE_KEY: "service-test",
     AI: { run: async () => ({ response: "A short callback script draft." }) }
   });
   const body = await response.json();
@@ -97,10 +111,10 @@ test("voice draft route is authenticated and never performs an outbound call", a
   assert.equal(body.mode, "draft_only");
   assert.equal(body.sideEffectsPerformed, false);
   assert.equal(body.draft, "A short callback script draft.");
-});
+}));
 
 
-test("content draft endpoint returns a draft without publishing", async () => {
+test("content draft endpoint returns a draft without publishing", async () => withEnabledRegistry(async () => {
   const response = await worker.fetch(new Request("https://agent.test/v1/content/draft", {
     method: "POST",
     headers: {
@@ -110,6 +124,8 @@ test("content draft endpoint returns a draft without publishing", async () => {
     body: JSON.stringify({ input: { theme: "festive collection", format: "Instagram caption" } })
   }), {
     AGENT_API_TOKEN: token,
+    SUPABASE_URL: "https://database.test",
+    SUPABASE_SERVICE_ROLE_KEY: "service-test",
     AI: { run: async () => ({ response: "A fresh fashion caption draft." }) }
   });
   const body = await response.json();
@@ -117,18 +133,21 @@ test("content draft endpoint returns a draft without publishing", async () => {
   assert.equal(body.mode, "draft_only");
   assert.equal(body.sideEffectsPerformed, false);
   assert.equal(body.draft, "A fresh fashion caption draft.");
-});
+}));
 
 
 test("every direct agent endpoint is blocked while its registry entry is disabled", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
+    const path = new URL(url).pathname;
+    if (path === "/auth/v1/user") return Response.json({ id: "user-id" });
     assert.match(String(url), /\/rest\/v1\/ai_agent_registry\?/);
     return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
   };
   const env = {
     AGENT_API_TOKEN: token,
     SUPABASE_URL: "https://database.test",
+    SUPABASE_ANON_KEY: "test-anon-key",
     SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
   };
   const cases = [
@@ -182,6 +201,17 @@ test("direct agent endpoints fail closed if the registry cannot be read", async 
 });
 
 
+test("CRM branch preview origin is allowed for admin approval API preflight", async () => {
+  const origin = "https://codex-agent-approval-dashboa.fashion-fussion-crm.pages.dev";
+  const response = await worker.fetch(new Request("https://agent.test/v1/admin/approvals", {
+    method: "OPTIONS",
+    headers: { origin, "access-control-request-method": "GET", "access-control-request-headers": "authorization,content-type" }
+  }), {});
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.match(response.headers.get("access-control-allow-headers") || "", /authorization/i);
+});
+
 const adminUserId = "123e4567-e89b-12d3-a456-426614174000";
 const approvalId = "223e4567-e89b-12d3-a456-426614174000";
 const approvalRunId = "323e4567-e89b-12d3-a456-426614174000";
@@ -191,9 +221,37 @@ function adminEnv(extra = {}) {
     SUPABASE_URL: "https://database.test",
     SUPABASE_SERVICE_ROLE_KEY: "server-only-test-key",
     AGENT_API_TOKEN: token,
+    AGENT_APPROVALS_READY: "true",
     ...extra
   };
 }
+
+test("admin approval APIs stay blocked without isolated preview database readiness", async () => {
+  const originalFetch = globalThis.fetch;
+  let databaseCalls = 0;
+  globalThis.fetch = async () => {
+    databaseCalls += 1;
+    throw new Error("database must not be contacted");
+  };
+  try {
+    const getResponse = await worker.fetch(new Request("https://agent.test/v1/admin/approvals", {
+      headers: { authorization: "Bearer user-access-token" }
+    }), adminEnv({ AGENT_APPROVALS_READY: "false" }));
+    assert.equal(getResponse.status, 503);
+    assert.equal((await getResponse.json()).error, "approval_api_not_ready");
+
+    const postResponse = await worker.fetch(new Request(`https://agent.test/v1/admin/approvals/${approvalId}/review`, {
+      method: "POST",
+      headers: { authorization: "Bearer user-access-token", "content-type": "application/json" },
+      body: JSON.stringify({ decision: "approved" })
+    }), adminEnv({ AGENT_APPROVALS_READY: "false" }));
+    assert.equal(postResponse.status, 503);
+    assert.equal((await postResponse.json()).error, "approval_api_not_ready");
+    assert.equal(databaseCalls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("admin approval queue requires an authenticated admin profile", async () => {
   const originalFetch = globalThis.fetch;
