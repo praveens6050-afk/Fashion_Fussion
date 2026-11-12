@@ -74,8 +74,8 @@ export async function processAgentMessage(message, env) {
     return { ignored: true };
   }
 
-  await writeEvent(env, run.id, "run_started", { agent_id: run.agent_id, action: run.action });
   try {
+    await writeEvent(env, run.id, "run_started", { agent_id: run.agent_id, action: run.action });
     const result = await runAgentDraft(env, { agentId: run.agent_id, action: run.action, input: run.input || {} });
     await databaseRequest(env, `/rest/v1/ai_agent_runs?id=eq.${run.id}&status=eq.running`, {
       method: "PATCH",
