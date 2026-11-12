@@ -7,9 +7,9 @@ An isolated Cloudflare Worker control plane for the ten Fashion Fussion agents. 
 - The ten agent definitions and per-agent action allowlists are registered in code.
 - `GET /health` is public and reports whether execution has been enabled.
 - `GET /v1/agents` requires `AGENT_API_TOKEN`.
-- `src/agent-runner.js` adds a Workers AI inference adapter for all ten agent roles.
+- `src/agent-runner.js` adds a Workers AI inference adapter for all ten agent roles; the queue consumer invokes it for enabled, queued runs.
 - `src/privacy.js` redacts sensitive fields and common PII patterns in free-text inputs before persistence and inference.
-- The queue consumer checks per-agent enablement, claims runs idempotently, records audit events, and retries transient failures with a bounded attempt count.
+- The queue consumer checks per-agent enablement, atomically claims runs, records audit events, and retries transient inference or audit failures with a bounded attempt count.
 - Model output is draft-only.
 - Financial, identity, compliance, outbound-delivery and irreversible actions are approval-gated.
 - No agent is enabled by default. The inference adapter is not yet connected to a queue consumer.
