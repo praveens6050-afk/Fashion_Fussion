@@ -6,9 +6,9 @@ function groupCount(rows, key) {
   }, {});
 }
 
-async function readRows(env, table, select, limit = 1000) {
+async function readRows(env, table, select, limit = 1000, order) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("supabase_not_configured");
-  const query = new URLSearchParams({ select, limit: String(limit) });
+  const query = new URLSearchParams({ select, limit: String(limit), ...(order ? { order } : {}) });
   const response = await fetch(new URL(`/rest/v1/${table}?${query.toString()}`, env.SUPABASE_URL), {
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
@@ -24,8 +24,8 @@ async function readRows(env, table, select, limit = 1000) {
 
 export async function getMarketingOverview(env) {
   const [history, queue] = await Promise.all([
-    readRows(env, "social_publish_history", "platform,state,published_at"),
-    readRows(env, "social_content_queue", "campaign,scheduled_at,caption_hash,image_hash")
+    readRows(env, "social_publish_history", "platform,state,published_at", 1000, "published_at.desc"),
+    readRows(env, "social_content_queue", "campaign,scheduled_at,caption_hash,image_hash", 1000, "scheduled_at.desc")
   ]);
   return {
     publishedOrAttemptedByPlatform: groupCount(history, "platform"),
@@ -39,7 +39,7 @@ export async function getMarketingOverview(env) {
 }
 
 export async function getLeadConsentOverview(env) {
-  const rows = await readRows(env, "marketing_leads", "whatsapp_enquiry_consent,whatsapp_promo_consent,opt_out_at,status,created_at");
+  const rows = await readRows(env, "marketing_leads", "whatsapp_enquiry_consent,whatsapp_promo_consent,opt_out_at,status,created_at", 1000, "created_at.desc");
   const optedOut = rows.filter(row => row.opt_out_at != null).length;
   const enquiryConsent = rows.filter(row => row.whatsapp_enquiry_consent === true && row.opt_out_at == null).length;
   const promoConsent = rows.filter(row => row.whatsapp_promo_consent === true && row.opt_out_at == null).length;
@@ -56,13 +56,13 @@ export async function getLeadConsentOverview(env) {
 
 export async function getTrustReviewOverview(env) {
   const [orders, sellers] = await Promise.all([
-    readRows(env, "orders", "status,refund_status,payment_verified_at,created_at"),
-    readRows(env, "seller_profiles", "status")
+    readRows(env, "orders", "status,refund_status,payment_method,payment_verified_at,created_at", 1000, "created_at.desc"),
+    readRows(env, "seller_profiles", "status", 1000, "created_at.desc")
   ]);
   return {
     orderStatuses: groupCount(orders, "status"),
     refundStatuses: groupCount(orders, "refund_status"),
-    ordersMissingPaymentVerificationTimestamp: orders.filter(row => row.payment_verified_at == null).length,
+    nonCodOrdersMissingPaymentVerificationTimestamp: orders.filter(row => !String(row.payment_method || "").toLowerCase().includes("cod") && row.payment_verified_at == null).length,
     sellerStatuses: groupCount(sellers, "status"),
     ordersReviewed: orders.length,
     sellersReviewed: sellers.length,
@@ -73,11 +73,11 @@ export async function getTrustReviewOverview(env) {
 
 export async function getBusinessOverview(env) {
   const [orders, products, sellers] = await Promise.all([
-    readRows(env, "orders", "total_amount,currency,status,created_at,fulfillment_status"),
-    readRows(env, "products", "is_active,category,price,rating"),
+    readRows(env, "orders", "total_amount,currency,status,created_at,fulfillment_status", 1000, "created_at.desc"),
+    readRows(env, "products", "is_active,category,price,rating", 1000, "updated_at.desc"),
     readRows(env, "seller_profiles", "status")
   ]);
-  const revenueByCurrency = {};
+  const grossPaidOrderValueByCurrency = {};
   for (const order of orders) {
     if (order.status !== "paid" && order.status !== "completed" && order.status !== "delivered") continue;
     const currency = String(order.currency || "unknown");
