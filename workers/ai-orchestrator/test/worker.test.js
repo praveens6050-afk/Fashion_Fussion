@@ -4,6 +4,18 @@ import worker, { AGENTS, AGENT_ACTIONS, APPROVAL_ACTIONS } from "../src/index.js
 
 const token = "test-agent-token";
 
+async function withEnabledRegistry(run) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    if (new URL(input).pathname === "/rest/v1/ai_agent_registry") {
+      return Response.json([{ agent_id: "test", enabled: true }]);
+    }
+    throw new Error("Unexpected database request: " + new URL(input).pathname);
+  };
+  try { return await run(); }
+  finally { globalThis.fetch = originalFetch; }
+}
+
 test("health endpoint is public and reports runtime disabled by default", async () => {
   const response = await worker.fetch(new Request("https://agent.test/health"), { AGENT_RUNTIME_READY: "false" });
   assert.equal(response.status, 200);
@@ -80,7 +92,7 @@ test("aggregate, consent, trust and duplicate-check routes require the agent tok
   }
 });
 
-test("voice draft route is authenticated and never performs an outbound call", async () => {
+test("voice draft route is authenticated and never performs an outbound call", async () => withEnabledRegistry(async () => {
   const response = await worker.fetch(new Request("https://agent.test/v1/voice/draft", {
     method: "POST",
     headers: {
@@ -90,6 +102,8 @@ test("voice draft route is authenticated and never performs an outbound call", a
     body: JSON.stringify({ input: { scenario: "customer asks about delivery" } })
   }), {
     AGENT_API_TOKEN: token,
+    SUPABASE_URL: "https://database.test",
+    SUPABASE_SERVICE_ROLE_KEY: "service-test",
     AI: { run: async () => ({ response: "A short callback script draft." }) }
   });
   const body = await response.json();
@@ -97,10 +111,10 @@ test("voice draft route is authenticated and never performs an outbound call", a
   assert.equal(body.mode, "draft_only");
   assert.equal(body.sideEffectsPerformed, false);
   assert.equal(body.draft, "A short callback script draft.");
-});
+}));
 
 
-test("content draft endpoint returns a draft without publishing", async () => {
+test("content draft endpoint returns a draft without publishing", async () => withEnabledRegistry(async () => {
   const response = await worker.fetch(new Request("https://agent.test/v1/content/draft", {
     method: "POST",
     headers: {
@@ -110,6 +124,8 @@ test("content draft endpoint returns a draft without publishing", async () => {
     body: JSON.stringify({ input: { theme: "festive collection", format: "Instagram caption" } })
   }), {
     AGENT_API_TOKEN: token,
+    SUPABASE_URL: "https://database.test",
+    SUPABASE_SERVICE_ROLE_KEY: "service-test",
     AI: { run: async () => ({ response: "A fresh fashion caption draft." }) }
   });
   const body = await response.json();
@@ -117,7 +133,7 @@ test("content draft endpoint returns a draft without publishing", async () => {
   assert.equal(body.mode, "draft_only");
   assert.equal(body.sideEffectsPerformed, false);
   assert.equal(body.draft, "A fresh fashion caption draft.");
-});
+}));
 
 
 test("every direct agent endpoint is blocked while its registry entry is disabled", async () => {
