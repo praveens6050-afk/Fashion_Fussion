@@ -2,7 +2,7 @@
 (function () {
   const db = window.supabaseClient;
   if (!db) return;
-  const API_BASE = String(window.FF_AI_ORCHESTRATOR_URL || 'https://fashion-fussion-ai-orchestrator-preview.praveen-s6050.workers.dev').replace(/\\/$/, '');
+  const API_BASE = String(window.FF_AI_ORCHESTRATOR_URL || 'https://fashion-fussion-ai-orchestrator-preview.praveen-s6050.workers.dev').replace(/\/$/, '');
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   let busy = false;
