@@ -13,7 +13,7 @@ test("public product recommendations use the anon catalog policy", async () => {
   };
   try {
     const response = await worker.fetch(new Request("https://agent.test/v1/products/recommendations?q=cotton"), {
-      SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test", SUPABASE_SERVICE_ROLE_KEY: "service-test", SUPABASE_SERVICE_ROLE_KEY: "service-test"
+      SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test", SUPABASE_SERVICE_ROLE_KEY: "service-test"
     });
     const body = await response.json();
     assert.equal(response.status, 200);
@@ -45,7 +45,7 @@ test("order assist requires a customer session and uses the caller JWT", async (
     assert.equal(missing.status, 401);
     const response = await worker.fetch(new Request("https://agent.test/v1/orders/FF-1001/assist", {
       headers: { authorization: "Bearer customer-jwt" }
-    }), { SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test" });
+    }), { SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test", SUPABASE_SERVICE_ROLE_KEY: "service-test" });
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.equal(body.assist.order.orderNumber, "FF-1001");
