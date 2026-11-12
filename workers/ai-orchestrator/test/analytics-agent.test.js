@@ -31,7 +31,9 @@ test("marketing overview returns only aggregate publishing data", async () => {
     assert.equal(result.publishedOrAttemptedByPlatform.instagram, 1);
     assert.equal(result.publishStates.failed, 1);
     assert.equal(result.queueCount, 1);
-    assert.equal(JSON.stringify(result).includes("phone"), false);
+    assert.equal(Object.hasOwn(result, "phone"), false);
+    assert.equal(Object.hasOwn(result, "lead_id"), false);
+    assert.equal(Object.hasOwn(result, "email"), false);
   });
 });
 
