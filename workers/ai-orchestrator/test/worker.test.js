@@ -139,12 +139,15 @@ test("content draft endpoint returns a draft without publishing", async () => wi
 test("every direct agent endpoint is blocked while its registry entry is disabled", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
+    const path = new URL(url).pathname;
+    if (path === "/auth/v1/user") return Response.json({ id: "user-id" });
     assert.match(String(url), /\/rest\/v1\/ai_agent_registry\?/);
     return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
   };
   const env = {
     AGENT_API_TOKEN: token,
     SUPABASE_URL: "https://database.test",
+    SUPABASE_ANON_KEY: "test-anon-key",
     SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
   };
   const cases = [
