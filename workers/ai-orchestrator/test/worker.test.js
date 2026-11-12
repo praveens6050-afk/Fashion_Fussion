@@ -67,7 +67,9 @@ test("aggregate, consent, trust and duplicate-check routes require the agent tok
     "/v1/leads/consent-overview",
     "/v1/trust/review-overview",
     "/v1/business/overview",
-    "/v1/content/duplicate-check"
+    "/v1/content/duplicate-check",
+    "/v1/content/draft",
+    "/v1/leads/123e4567-e89b-12d3-a456-426614174000/follow-up-draft"
   ]) {
     const response = await worker.fetch(new Request(`https://agent.test${path}`, {
       method: path.endsWith("duplicate-check") ? "POST" : "GET",
@@ -95,4 +97,24 @@ test("voice draft route is authenticated and never performs an outbound call", a
   assert.equal(body.mode, "draft_only");
   assert.equal(body.sideEffectsPerformed, false);
   assert.equal(body.draft, "A short callback script draft.");
+});
+
+
+test("content draft endpoint returns a draft without publishing", async () => {
+  const response = await worker.fetch(new Request("https://agent.test/v1/content/draft", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ input: { theme: "festive collection", format: "Instagram caption" } })
+  }), {
+    AGENT_API_TOKEN: token,
+    AI: { run: async () => ({ response: "A fresh fashion caption draft." }) }
+  });
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.mode, "draft_only");
+  assert.equal(body.sideEffectsPerformed, false);
+  assert.equal(body.draft, "A fresh fashion caption draft.");
 });
