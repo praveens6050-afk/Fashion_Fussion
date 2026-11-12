@@ -70,7 +70,7 @@ async function supabaseFetch(env, path, token) {
   return response.status === 204 ? null : response.json();
 }
 
-export async function handleSupportAssist(request, env, json) {
+export async function handleSupportAssist(request, env, json, gate) {
   const authorization = request.headers.get("Authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return json({ error: "user_authentication_required" }, 401);
@@ -84,6 +84,8 @@ export async function handleSupportAssist(request, env, json) {
     return json({ error: "user_authentication_failed" }, 401);
   }
   if (!user?.id) return json({ error: "user_authentication_failed" }, 401);
+  const blocked = await gate?.();
+  if (blocked) return blocked;
 
   const ticketCode = decodeURIComponent(new URL(request.url).pathname.split("/").at(-2) || "").trim();
   if (!/^[A-Za-z0-9_-]{4,40}$/.test(ticketCode)) return json({ error: "invalid_ticket_code" }, 400);
