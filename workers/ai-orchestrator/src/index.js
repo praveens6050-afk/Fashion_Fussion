@@ -84,6 +84,179 @@ async function requireAgentEnabled(env, agentId, cors) {
   }
 }
 
+async function authenticateAdmin(request, env) {
+  const match = (request.headers.get("Authorization") || "").match(/^Bearer\\s+(.+)$/i);
+  const token = match?.[1]?.trim();
+  if (!token || token.length > 8192 || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { error: "admin_authentication_required", status: 401 };
+  }
+
+  let user;
+  try {
+    const response = await fetch(new URL("/auth/v1/user", env.SUPABASE_URL), {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        authorization: `Bearer ${token}`
+      }
+    });
+    if (!response.ok) return { error: "admin_authentication_failed", status: 401 };
+    user = await response.json();
+  } catch {
+    return { error: "admin_authentication_unavailable", status: 503 };
+  }
+  if (!user?.id || !/^[0-9a-f-]{36}$/i.test(user.id)) {
+    return { error: "admin_authentication_failed", status: 401 };
+  }
+
+  try {
+    const query = new URLSearchParams({
+      select: "id",
+      id: `eq.${user.id}`,
+      is_admin: "eq.true",
+      limit: "1"
+    });
+    const rows = await supabaseRequest(env, `/rest/v1/profiles?${query.toString()}`);
+    if (!Array.isArray(rows) || !rows.length) return { error: "admin_access_required", status: 403 };
+    return { userId: user.id };
+  } catch {
+    return { error: "admin_authorization_unavailable", status: 503 };
+  }
+}
+
+async function listAdminApprovals(env, cors) {
+  try {
+    const query = new URLSearchParams({
+      select: "id,run_id,action_key,status,requested_by,reviewed_by,review_note,expires_at,created_at",
+      status: "eq.pending",
+      order: "created_at.asc",
+      limit: "100"
+    });
+    const approvals = await supabaseRequest(env, `/rest/v1/ai_agent_approvals?${query.toString()}`);
+    const rows = Array.isArray(approvals) ? approvals : [];
+    if (!rows.length) return json({ approvals: [], count: 0 }, 200, cors);
+    const runIds = [...new Set(rows.map((item) => item.run_id).filter((id) => /^[0-9a-f-]{36}$/i.test(id || "")))];
+    const runQuery = new URLSearchParams({
+      select: "id,agent_id,action,status,created_at",
+      id: `in.(${runIds.join(",")})`
+    });
+    const runs = await supabaseRequest(env, `/rest/v1/ai_agent_runs?${runQuery.toString()}`);
+    const byId = new Map((Array.isArray(runs) ? runs : []).map((run) => [run.id, run]));
+    return json({
+      approvals: rows.map((approval) => ({
+        ...approval,
+        run: byId.get(approval.run_id) || null
+      })),
+      count: rows.length
+    }, 200, cors);
+  } catch {
+    return json({ error: "approval_queue_unavailable" }, 502, cors);
+  }
+}
+
+async function reviewAdminApproval(request, env, approvalId, actorId, cors) {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
+  const decision = body.decision;
+  const note = typeof body.note === "string" ? body.note.trim() : "";
+  if (!["approved", "rejected"].includes(decision)) return json({ error: "invalid_approval_decision" }, 400, cors);
+  if (note.length > 2000) return json({ error: "review_note_too_long" }, 400, cors);
+  if (decision === "rejected" && !note) return json({ error: "rejection_note_required" }, 400, cors);
+
+  let approval;
+  try {
+    const query = new URLSearchParams({
+      select: "id,run_id,action_key,status,expires_at",
+      id: `eq.${approvalId}`,
+      limit: "1"
+    });
+    const rows = await supabaseRequest(env, `/rest/v1/ai_agent_approvals?${query.toString()}`);
+    approval = Array.isArray(rows) ? rows[0] : null;
+  } catch {
+    return json({ error: "approval_lookup_failed" }, 502, cors);
+  }
+  if (!approval) return json({ error: "approval_not_found" }, 404, cors);
+
+  if (approval.status === "approved" && decision === "approved") {
+    // Repeated approval requests may safely retry queue delivery; the consumer
+    // claims runs with a compare-and-set status transition, so duplicate messages are harmless.
+  } else if (approval.status !== "pending") {
+    return json({ error: "approval_already_reviewed" }, 409, cors);
+  } else if (Date.parse(approval.expires_at) <= Date.now()) {
+    await supabaseRequest(env, `/rest/v1/ai_agent_approvals?id=eq.${approvalId}&status=eq.pending`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "expired" })
+    }).catch(() => {});
+    return json({ error: "approval_expired" }, 409, cors);
+  } else {
+    let changed;
+    try {
+      changed = await supabaseRequest(env, `/rest/v1/ai_agent_approvals?id=eq.${approvalId}&status=eq.pending&expires_at=gt.${new Date().toISOString()}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          status: decision,
+          reviewed_by: actorId,
+          review_note: note || null,
+          reviewed_at: new Date().toISOString()
+        })
+      });
+    } catch {
+      return json({ error: "approval_review_failed" }, 502, cors);
+    }
+    if (!Array.isArray(changed) || !changed.length) return json({ error: "approval_already_reviewed_or_expired" }, 409, cors);
+
+    const nextRunStatus = decision === "approved" ? "queued" : "cancelled";
+    try {
+      const run = await supabaseRequest(env, `/rest/v1/ai_agent_runs?id=eq.${approval.run_id}&status=eq.awaiting_approval`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          status: nextRunStatus,
+          ...(decision === "rejected" ? { finished_at: new Date().toISOString() } : {}),
+          updated_at: new Date().toISOString()
+        })
+      });
+      if (!Array.isArray(run) || !run.length) return json({ error: "approval_run_state_conflict" }, 409, cors);
+    } catch {
+      return json({ error: "approval_run_update_failed" }, 502, cors);
+    }
+
+    await supabaseRequest(env, "/rest/v1/ai_agent_events", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        run_id: approval.run_id,
+        event_type: decision === "approved" ? "approval_granted" : "approval_rejected",
+        detail: { approval_id: approvalId, reviewed_by: actorId }
+      })
+    }).catch(() => {});
+  }
+
+  if (decision === "approved") {
+    let runRows;
+    try {
+      const query = new URLSearchParams({ select: "id,status", id: `eq.${approval.run_id}`, limit: "1" });
+      runRows = await supabaseRequest(env, `/rest/v1/ai_agent_runs?${query.toString()}`);
+    } catch {
+      return json({ error: "approved_run_lookup_failed" }, 502, cors);
+    }
+    const run = Array.isArray(runRows) ? runRows[0] : null;
+    if (!run || run.status !== "queued") return json({ approval: "approved", dispatch: "not_queued" }, 200, cors);
+    if (env.AGENT_RUNTIME_READY !== "true" || !env.AGENT_JOBS) {
+      return json({ approval: "approved", dispatch: "held_runtime_disabled" }, 200, cors);
+    }
+    try {
+      await env.AGENT_JOBS.send({ run_id: run.id, approval_id: approvalId });
+      return json({ approval: "approved", dispatch: "queued" }, 202, cors);
+    } catch {
+      return json({ approval: "approved", dispatch: "pending_retry", error: "queue_send_failed" }, 503, cors);
+    }
+  }
+
+  return json({ approval: "rejected", dispatch: "not_started" }, 200, cors);
+}
+
 async function createRun(env, record) {
   const inserted = await supabaseRequest(
     env,
@@ -140,6 +313,15 @@ async function handle(request, env) {
     if (blocked) return blocked;
     return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
+  const approvalReviewMatch = url.pathname.match(/^\\/v1\\/admin\\/approvals\\/([0-9a-f-]{36})\\/review$/i);
+  if ((request.method === "GET" && url.pathname === "/v1/admin/approvals") ||
+      (request.method === "POST" && approvalReviewMatch)) {
+    const admin = await authenticateAdmin(request, env);
+    if (admin.error) return json({ error: admin.error }, admin.status, cors);
+    if (request.method === "GET") return listAdminApprovals(env, cors);
+    return reviewAdminApproval(request, env, approvalReviewMatch[1], admin.userId, cors);
+  }
+
   if (!authorized(request, env)) return json({ error: "unauthorized" }, 401, cors);
 
   if (request.method === "GET" && url.pathname === "/v1/marketing/overview") {
