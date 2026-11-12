@@ -48,7 +48,9 @@ test("lead overview counts consent and opt-outs without returning lead identifie
     assert.equal(result.enquiryConsentActive, 1);
     assert.equal(result.promotionalConsentActive, 1);
     assert.equal(result.optedOut, 1);
-    assert.equal(JSON.stringify(result).includes("phone"), false);
+    assert.equal(Object.hasOwn(result, "phone"), false);
+    assert.equal(Object.hasOwn(result, "lead_id"), false);
+    assert.equal(Object.hasOwn(result, "email"), false);
   });
 });
 
