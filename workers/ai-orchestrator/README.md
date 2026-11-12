@@ -9,7 +9,7 @@ An isolated Cloudflare Worker control plane for the ten Fashion Fussion agents. 
 - `GET /v1/agents` requires `AGENT_API_TOKEN`.
 - `src/agent-runner.js` adds a Workers AI inference adapter for all ten agent roles; the queue consumer invokes it for enabled, queued runs.
 - `src/privacy.js` redacts sensitive fields and common PII patterns in free-text inputs before persistence and inference.
-- The queue consumer checks per-agent enablement, atomically claims runs, records audit events, and retries transient inference or audit failures with a bounded attempt count.
+- The queue consumer implementation checks per-agent enablement, atomically claims runs, records audit events, and retries transient inference or audit failures with a bounded attempt count. Queue bindings are not attached to the preview deployment yet.
 - Model output is draft-only.
 - Financial, identity, compliance, outbound-delivery and irreversible actions are approval-gated.
 - No agent is enabled by default. The inference adapter is not yet connected to a queue consumer.
@@ -38,10 +38,10 @@ npm run check
 ## Deployment sequence
 
 1. Review and approve the Supabase control-plane migration in `supabase/migrations`; it has not been applied by this implementation.
-2. The Cloudflare Queues `fashion-fussion-agent-jobs` and `fashion-fussion-agent-jobs-dlq` have been provisioned in the connected account; the Worker is not yet deployed or attached as a consumer.
+2. The Cloudflare Queues `fashion-fussion-agent-jobs` and `fashion-fussion-agent-jobs-dlq` have been provisioned in the connected account; attach the preview Worker as producer/consumer only after secret configuration and preview checks.
 3. Complete preview deployment and verify queue consumer attachment, dead-letter routing, and retry behavior.
 4. Add secrets through Wrangler or the Cloudflare dashboard.
-5. Deploy this Worker to a preview environment only.
+5. An isolated Worker script `fashion-fussion-ai-orchestrator-preview` has been uploaded with the AI binding and runtime disabled. It is separate from the production social publisher. Endpoint HTTP verification is still pending.
 6. Run auth, idempotency, RLS, queue retry, privacy and approval tests.
 7. Enable agents individually; do not turn on the global runtime switch until all required checks pass.
 
@@ -70,3 +70,17 @@ Both support and seller endpoints require `SUPABASE_URL` and `SUPABASE_ANON_KEY`
 `GET /v1/orders/{displayOrderId}/assist` verifies the customer Supabase Auth token and uses that same JWT for the order lookup. The existing `orders` SELECT policy limits customers to their own orders and admins to their permitted view. The response excludes payment-provider identifiers, customer contact details and shipping address. It is read-only and cannot cancel, refund or modify fulfilment.
 
 These endpoints are guidance surfaces only. Do not use them as a substitute for checkout, payment-provider verification, carrier tracking or the existing order-management workflow.
+
+
+## Additional specialist agent endpoints — aggregate or draft-only
+
+All endpoints below require the AGENT_API_TOKEN bearer token and are not enabled for public browser access:
+
+- GET /v1/marketing/overview — aggregates social publish history and queued campaign counts; no customer contact data.
+- GET /v1/leads/consent-overview — counts enquiry consent, promotional consent and opt-outs without returning lead IDs or contact fields.
+- GET /v1/trust/review-overview — summarizes order/refund and seller status signals for human review; it does not label anyone fraudulent or take action.
+- GET /v1/business/overview — returns capped aggregate order, catalog and seller metrics, not row-level records.
+- POST /v1/content/duplicate-check — checks supplied caption/image hashes against up to 1000 queued creatives; it does not publish or schedule.
+- POST /v1/voice/draft — generates a voice/recruitment draft through Workers AI with no calls, messages or hiring decisions.
+
+The aggregate endpoints use the service-role key only server-side and return summary values. Results are capped to the first 1000 rows and must not be represented as complete financial or compliance reports. The content duplicate check covers the queue records returned by the query; production publishing must continue to enforce the existing publish-history deduplication logic.
