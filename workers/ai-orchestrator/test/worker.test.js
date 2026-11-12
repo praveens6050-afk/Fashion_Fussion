@@ -59,3 +59,40 @@ test("run intake remains disabled until runtime bindings are configured", async 
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error, "agent_runtime_not_ready");
 });
+
+
+test("aggregate, consent, trust and duplicate-check routes require the agent token", async () => {
+  for (const path of [
+    "/v1/marketing/overview",
+    "/v1/leads/consent-overview",
+    "/v1/trust/review-overview",
+    "/v1/business/overview",
+    "/v1/content/duplicate-check"
+  ]) {
+    const response = await worker.fetch(new Request(`https://agent.test${path}`, {
+      method: path.endsWith("duplicate-check") ? "POST" : "GET",
+      headers: path.endsWith("duplicate-check") ? { "content-type": "application/json" } : {},
+      body: path.endsWith("duplicate-check") ? "{}" : undefined
+    }), { AGENT_API_TOKEN: token });
+    assert.equal(response.status, 401, path);
+  }
+});
+
+test("voice draft route is authenticated and never performs an outbound call", async () => {
+  const response = await worker.fetch(new Request("https://agent.test/v1/voice/draft", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ input: { scenario: "customer asks about delivery" } })
+  }), {
+    AGENT_API_TOKEN: token,
+    AI: { run: async () => ({ response: "A short callback script draft." }) }
+  });
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.mode, "draft_only");
+  assert.equal(body.sideEffectsPerformed, false);
+  assert.equal(body.draft, "A short callback script draft.");
+});
