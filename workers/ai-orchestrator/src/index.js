@@ -20,7 +20,8 @@ const DEFAULT_ORIGINS = new Set([
   "https://www.fashionfussion.in",
   "https://seller.fashionfussion.in",
   "https://crm.fashionfussion.in",
-  "https://www.crm.fashionfussion.in"
+  "https://www.crm.fashionfussion.in",
+  "https://codex-agent-approval-dashboa.fashion-fussion-crm.pages.dev"
 ]);
 
 function corsHeaders(request, env) {
