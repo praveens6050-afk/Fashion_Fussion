@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "check": "node --check src/agents.js && node --check src/index.js && node --check src/agent-runner.js && node --check src/queue-consumer.js && node --check src/privacy.js",
+    "check": "node --check src/agents.js && node --check src/index.js && node --check src/agent-runner.js && node --check src/queue-consumer.js && node --check src/privacy.js && node --check src/analytics-agent.js",
     "test": "node --test"
   }
 }
