@@ -50,7 +50,7 @@ export async function getLeadConsentOverview(env) {
     optedOut,
     leadStatuses: groupCount(rows, "status"),
     mode: "aggregate_consent_audit",
-    note: "No names, phone numbers, email addresses, lead IDs or message content are returned. Counts are limited to the first 1000 records."
+    note: "No names, phone numbers, email addresses, lead IDs or message content are returned. Counts are limited to the latest 1000 records."
   };
 }
 
@@ -79,21 +79,21 @@ export async function getBusinessOverview(env) {
   ]);
   const grossPaidOrderValueByCurrency = {};
   for (const order of orders) {
-    if (order.status !== "paid" && order.status !== "completed" && order.status !== "delivered") continue;
+    if (order.status !== "paid") continue;
     const currency = String(order.currency || "unknown");
     const amount = Number(order.total_amount);
-    if (Number.isFinite(amount)) revenueByCurrency[currency] = (revenueByCurrency[currency] || 0) + amount;
+    if (Number.isFinite(amount)) grossPaidOrderValueByCurrency[currency] = (grossPaidOrderValueByCurrency[currency] || 0) + amount;
   }
   return {
     orderStatuses: groupCount(orders, "status"),
     fulfillmentStatuses: groupCount(orders, "fulfillment_status"),
-    revenueByCurrency,
+    grossPaidOrderValueByCurrency,
     productActiveStates: groupCount(products.map(row => ({ state: row.is_active ? "active" : "inactive" })), "state"),
     productCategories: groupCount(products, "category"),
     sellerStatuses: groupCount(sellers, "status"),
     rowsReviewed: { orders: orders.length, products: products.length, sellers: sellers.length },
     mode: "aggregate_read_only",
-    note: "Totals cover at most the first 1000 rows per table and are not a full financial statement."
+    note: "Gross paid order totals cover at most the latest 1000 rows and are not a full financial statement."
   };
 }
 
