@@ -221,9 +221,37 @@ function adminEnv(extra = {}) {
     SUPABASE_URL: "https://database.test",
     SUPABASE_SERVICE_ROLE_KEY: "server-only-test-key",
     AGENT_API_TOKEN: token,
+    AGENT_APPROVALS_READY: "true",
     ...extra
   };
 }
+
+test("admin approval APIs stay blocked without isolated preview database readiness", async () => {
+  const originalFetch = globalThis.fetch;
+  let databaseCalls = 0;
+  globalThis.fetch = async () => {
+    databaseCalls += 1;
+    throw new Error("database must not be contacted");
+  };
+  try {
+    const getResponse = await worker.fetch(new Request("https://agent.test/v1/admin/approvals", {
+      headers: { authorization: "Bearer user-access-token" }
+    }), adminEnv({ AGENT_APPROVALS_READY: "false" }));
+    assert.equal(getResponse.status, 503);
+    assert.equal((await getResponse.json()).error, "approval_api_not_ready");
+
+    const postResponse = await worker.fetch(new Request(`https://agent.test/v1/admin/approvals/${approvalId}/review`, {
+      method: "POST",
+      headers: { authorization: "Bearer user-access-token", "content-type": "application/json" },
+      body: JSON.stringify({ decision: "approved" })
+    }), adminEnv({ AGENT_APPROVALS_READY: "false" }));
+    assert.equal(postResponse.status, 503);
+    assert.equal((await postResponse.json()).error, "approval_api_not_ready");
+    assert.equal(databaseCalls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("admin approval queue requires an authenticated admin profile", async () => {
   const originalFetch = globalThis.fetch;
