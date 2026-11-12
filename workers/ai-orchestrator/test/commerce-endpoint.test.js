@@ -7,12 +7,13 @@ test("public product recommendations use the anon catalog policy", async () => {
   let requestSeen;
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(input);
+    if (url.pathname === "/rest/v1/ai_agent_registry") return Response.json([{ agent_id: "sales_conversion", enabled: true }]);
     requestSeen = { path: url.pathname, authorization: init.headers.authorization, apikey: init.headers.apikey, query: url.search };
     return Response.json([{ id: 9, name: "Cotton Kurta", category: "Ethnic", price: 899, rating: 4.7, reviews: 18, is_active: true }]);
   };
   try {
     const response = await worker.fetch(new Request("https://agent.test/v1/products/recommendations?q=cotton"), {
-      SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test"
+      SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test", SUPABASE_SERVICE_ROLE_KEY: "service-test"
     });
     const body = await response.json();
     assert.equal(response.status, 200);
@@ -29,6 +30,7 @@ test("order assist requires a customer session and uses the caller JWT", async (
     const url = new URL(input);
     seen.push({ path: url.pathname, query: url.search, authorization: init.headers.authorization });
     if (url.pathname === "/auth/v1/user") return Response.json({ id: "customer-id" });
+    if (url.pathname === "/rest/v1/ai_agent_registry") return Response.json([{ agent_id: "order_backend", enabled: true }]);
     if (url.pathname === "/rest/v1/orders") return Response.json([{
       display_order_id: "FF-1001", status: "paid", total_amount: "899", currency: "INR",
       fulfillment_status: "shipped", created_at: "2026-11-11T00:00:00Z",
