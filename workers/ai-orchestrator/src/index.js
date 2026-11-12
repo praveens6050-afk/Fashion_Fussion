@@ -303,6 +303,12 @@ async function handle(request, env) {
     return json({ ok: true, service: "fashion-fussion-ai-orchestrator", runtimeReady: env.AGENT_RUNTIME_READY === "true" }, 200, cors);
   }
 
+  const agentTokenRoute =
+    (request.method === "GET" && ["/v1/marketing/overview", "/v1/leads/consent-overview", "/v1/trust/review-overview", "/v1/business/overview"].includes(url.pathname)) ||
+    (request.method === "POST" && ["/v1/content/draft", "/v1/content/duplicate-check", "/v1/voice/draft"].includes(url.pathname)) ||
+    (request.method === "POST" && /^\/v1\/leads\/[0-9a-f-]{36}\/follow-up-draft$/i.test(url.pathname));
+  if (agentTokenRoute && !authorized(request, env)) return json({ error: "unauthorized" }, 401, cors);
+
   if (request.method === "GET" && url.pathname === "/v1/products/recommendations") {
     const blocked = await requireAgentEnabled(env, "sales_conversion", cors);
     if (blocked) return blocked;
@@ -310,22 +316,19 @@ async function handle(request, env) {
   }
   const orderMatch = url.pathname.match(/^\/v1\/orders\/([^/]+)\/assist$/);
   if (request.method === "GET" && orderMatch) {
-    const blocked = await requireAgentEnabled(env, "order_backend", cors);
-    if (blocked) return blocked;
-    return handleOrderAssist(request, env, (data, status = 200) => json(data, status, cors));
+    return handleOrderAssist(request, env, (data, status = 200) => json(data, status, cors),
+      () => requireAgentEnabled(env, "order_backend", cors));
   }
 
   if (request.method === "GET" && url.pathname === "/v1/seller/onboarding/assist") {
-    const blocked = await requireAgentEnabled(env, "seller_management", cors);
-    if (blocked) return blocked;
-    return handleSellerAssist(request, env, (data, status = 200) => json(data, status, cors));
+    return handleSellerAssist(request, env, (data, status = 200) => json(data, status, cors),
+      () => requireAgentEnabled(env, "seller_management", cors));
   }
 
   const supportMatch = url.pathname.match(/^\/v1\/support\/tickets\/([^/]+)\/assist$/);
   if (request.method === "GET" && supportMatch) {
-    const blocked = await requireAgentEnabled(env, "customer_support", cors);
-    if (blocked) return blocked;
-    return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
+    return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors),
+      () => requireAgentEnabled(env, "customer_support", cors));
   }
   const approvalReviewMatch = url.pathname.match(/^\/v1\/admin\/approvals\/([0-9a-f-]{36})\/review$/i);
   if ((request.method === "GET" && url.pathname === "/v1/admin/approvals") ||
@@ -425,6 +428,7 @@ async function handle(request, env) {
 
 
   if (request.method === "POST" && url.pathname === "/v1/runs") {
+    if (!authorized(request, env)) return json({ error: "unauthorized" }, 401, cors);
     if (env.AGENT_RUNTIME_READY !== "true" || !env.AGENT_JOBS) {
       return json({ error: "agent_runtime_not_ready", message: "Execution remains disabled until the queue consumer and agent integrations pass deployment checks." }, 503, cors);
     }
