@@ -56,7 +56,10 @@ test("lead overview counts consent and opt-outs without returning lead identifie
 
 test("trust overview describes review signals and never labels a record fraudulent", async () => {
   await withRows({
-    orders: [\n      { status: "paid", refund_status: "none", payment_method: "prepaid", payment_verified_at: null },\n      { status: "pending", refund_status: "none", payment_method: "cod", payment_verified_at: null }\n    ],
+    orders: [
+      { status: "paid", refund_status: "none", payment_method: "prepaid", payment_verified_at: null },
+      { status: "pending", refund_status: "none", payment_method: "cod", payment_verified_at: null }
+    ],
     seller_profiles: [{ status: "pending" }]
   }, async () => {
     const result = await getTrustReviewOverview(env);
