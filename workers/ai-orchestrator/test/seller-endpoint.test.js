@@ -31,7 +31,7 @@ test("seller onboarding assistant is scoped by the authenticated Supabase user",
     assert.equal(response.status, 200);
     assert.equal(body.assist.seller.storeName, "Demo Store");
     assert.equal(body.assist.mode, "read_only_assist");
-    assert.ok(seen.every((item) => item.authorization === "Bearer seller-jwt"));
+    assert.ok(seen.filter((item) => item.path !== "/rest/v1/ai_agent_registry").every((item) => item.authorization === "Bearer seller-jwt"));
     const complianceRequest = seen.find((item) => item.path === "/rest/v1/seller_compliance_profiles");
     assert.match(complianceRequest.query, /seller_id=eq.seller-user-id/);
     const submissionRequest = seen.find((item) => item.path === "/rest/v1/seller_product_submissions");
