@@ -28,7 +28,7 @@ test("runs an allowed agent task through Workers AI in draft-only mode", async (
   let calledModel;
   let calledPayload;
   const env = {
-    AI_MODEL: "@cf/zai-org/glm-5.3",
+    AI_MODEL: "@cf/zai-org/glm-4.7-flash",
     AI: {
       run: async (model, payload) => {
         calledModel = model;
@@ -42,7 +42,7 @@ test("runs an allowed agent task through Workers AI in draft-only mode", async (
     action: "draft",
     input: { order_id: "FF-1001", customer_email: "private@example.com" }
   });
-  assert.equal(calledModel, "@cf/zai-org/glm-5.3");
+  assert.equal(calledModel, "@cf/zai-org/glm-4.7-flash");
   assert.match(JSON.stringify(calledPayload), /\[REDACTED\]/);
   assert.equal(result.execution_mode, "draft_only");
   assert.equal(result.side_effects_performed, false);
