@@ -1,5 +1,9 @@
 'use strict';
 (function () {
+  const host = String(window.location.hostname || '').toLowerCase();
+  // The default orchestrator URL is preview-only. Never forward a live CRM session to it.
+  const isCrmPreview = host !== 'fashion-fussion-crm.pages.dev' && host.endsWith('.fashion-fussion-crm.pages.dev');
+  if (!isCrmPreview) return;
   const db = window.supabaseClient;
   if (!db) return;
   const API_BASE = String(window.FF_AI_ORCHESTRATOR_URL || 'https://fashion-fussion-ai-orchestrator-preview.praveen-s6050.workers.dev').replace(/\/$/, '');
