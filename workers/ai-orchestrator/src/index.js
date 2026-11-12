@@ -5,6 +5,8 @@ import { redactSensitive } from "./privacy.js";
 import { handleOrderAssist, handleProductRecommendations } from "./commerce-agent.js";
 import { handleSellerAssist } from "./seller-agent.js";
 import { handleSupportAssist } from "./support-agent.js";
+import { getMarketingOverview, getLeadConsentOverview, getTrustReviewOverview, getBusinessOverview, checkContentDuplicates } from "./analytics-agent.js";
+import { runAgentDraft } from "./agent-runner.js";
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -114,6 +116,40 @@ async function handle(request, env) {
     return handleSupportAssist(request, env, (data, status = 200) => json(data, status, cors));
   }
   if (!authorized(request, env)) return json({ error: "unauthorized" }, 401, cors);
+
+  if (request.method === "GET" && url.pathname === "/v1/marketing/overview") {
+    try { return json({ overview: await getMarketingOverview(env) }, 200, cors); }
+    catch { return json({ error: "marketing_overview_unavailable" }, 502, cors); }
+  }
+  if (request.method === "GET" && url.pathname === "/v1/leads/consent-overview") {
+    try { return json({ overview: await getLeadConsentOverview(env) }, 200, cors); }
+    catch { return json({ error: "lead_consent_overview_unavailable" }, 502, cors); }
+  }
+  if (request.method === "GET" && url.pathname === "/v1/trust/review-overview") {
+    try { return json({ overview: await getTrustReviewOverview(env) }, 200, cors); }
+    catch { return json({ error: "trust_review_overview_unavailable" }, 502, cors); }
+  }
+  if (request.method === "GET" && url.pathname === "/v1/business/overview") {
+    try { return json({ overview: await getBusinessOverview(env) }, 200, cors); }
+    catch { return json({ error: "business_overview_unavailable" }, 502, cors); }
+  }
+  if (request.method === "POST" && url.pathname === "/v1/content/duplicate-check") {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
+    try { return json({ duplicateCheck: await checkContentDuplicates(env, body) }, 200, cors); }
+    catch (error) {
+      const code = error?.message === "valid_caption_or_image_hash_required" ? error.message : "content_duplicate_check_unavailable";
+      return json({ error: code }, code === error?.message ? 400 : 502, cors);
+    }
+  }
+  if (request.method === "POST" && url.pathname === "/v1/voice/draft") {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
+    try {
+      const result = await runAgentDraft(env, { agentId: "voice_recruitment", action: "draft", input: body.input ?? {} });
+      return json({ draft: result.output, mode: "draft_only", sideEffectsPerformed: false }, 200, cors);
+    } catch { return json({ error: "voice_draft_unavailable" }, 502, cors); }
+  }
 
   if (request.method === "GET" && url.pathname === "/v1/agents") {
     return json({
