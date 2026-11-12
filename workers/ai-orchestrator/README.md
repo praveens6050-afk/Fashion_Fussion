@@ -19,7 +19,7 @@ An isolated Cloudflare Worker control plane for the ten Fashion Fussion agents. 
 ## Required bindings and secrets before activation
 
 - `AI` — Cloudflare Workers AI binding.
-- `AI_MODEL` — optional model override; default is `@cf/zai-org/glm-5.3`.
+- `AI_MODEL` — optional model override; default is `@cf/zai-org/glm-4.7-flash`.
 - `SUPABASE_URL` — existing Fashion Fussion Supabase project URL.
 - `SUPABASE_ANON_KEY` — public client key for the user-scoped Customer Support preview endpoint.
 - `SUPABASE_SERVICE_ROLE_KEY` — Cloudflare Worker secret; never expose to browser code.
