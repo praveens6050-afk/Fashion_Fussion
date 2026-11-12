@@ -125,7 +125,7 @@ async function handle(request, env) {
     try { return json({ overview: await getLeadConsentOverview(env) }, 200, cors); }
     catch { return json({ error: "lead_consent_overview_unavailable" }, 502, cors); }
   }
-  const leadFollowUpMatch = url.pathname.match(/^\\/v1\\/leads\\/([0-9a-f-]{36})\\/follow-up-draft$/i);
+  const leadFollowUpMatch = url.pathname.match(/^\/v1\/leads\/([0-9a-f-]{36})\/follow-up-draft$/i);
   if (request.method === "POST" && leadFollowUpMatch) {
     let body;
     try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
