@@ -218,4 +218,3 @@ async function handle(request, env) {
 }
 
 export default { fetch: handle, queue: handleAgentQueue };
-export { AGENTS, AGENT_ACTIONS, APPROVAL_ACTIONS, SAFE_ACTIONS };
