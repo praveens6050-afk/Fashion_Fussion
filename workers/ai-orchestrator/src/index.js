@@ -126,7 +126,7 @@ async function authenticateAdmin(request, env) {
 async function listAdminApprovals(env, cors) {
   try {
     const query = new URLSearchParams({
-      select: "id,run_id,action_key,status,requested_by,reviewed_by,review_note,expires_at,created_at",
+      select: "id,run_id,action_key,status,review_note,expires_at,created_at",
       status: "eq.pending",
       order: "created_at.asc",
       limit: "100"
@@ -241,7 +241,20 @@ async function reviewAdminApproval(request, env, approvalId, actorId, cors) {
     } catch {
       return json({ error: "approved_run_lookup_failed" }, 502, cors);
     }
-    const run = Array.isArray(runRows) ? runRows[0] : null;
+    let run = Array.isArray(runRows) ? runRows[0] : null;
+    if (run?.status === "awaiting_approval") {
+      try {
+        const repaired = await supabaseRequest(env, `/rest/v1/ai_agent_runs?id=eq.${run.id}&status=eq.awaiting_approval`, {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ status: "queued", updated_at: new Date().toISOString() })
+        });
+        if (Array.isArray(repaired) && repaired.length) run = repaired[0];
+        else return json({ error: "approval_run_state_conflict" }, 409, cors);
+      } catch {
+        return json({ error: "approval_run_update_failed" }, 502, cors);
+      }
+    }
     if (!run || run.status !== "queued") return json({ approval: "approved", dispatch: "not_queued" }, 200, cors);
     if (env.AGENT_RUNTIME_READY !== "true" || !env.AGENT_JOBS) {
       return json({ approval: "approved", dispatch: "held_runtime_disabled" }, 200, cors);
