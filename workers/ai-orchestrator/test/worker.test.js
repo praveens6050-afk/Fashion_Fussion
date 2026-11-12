@@ -182,6 +182,17 @@ test("direct agent endpoints fail closed if the registry cannot be read", async 
 });
 
 
+test("CRM branch preview origin is allowed for admin approval API preflight", async () => {
+  const origin = "https://codex-agent-approval-dashboa.fashion-fussion-crm.pages.dev";
+  const response = await worker.fetch(new Request("https://agent.test/v1/admin/approvals", {
+    method: "OPTIONS",
+    headers: { origin, "access-control-request-method": "GET", "access-control-request-headers": "authorization,content-type" }
+  }), {});
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.match(response.headers.get("access-control-allow-headers") || "", /authorization/i);
+});
+
 const adminUserId = "123e4567-e89b-12d3-a456-426614174000";
 const approvalId = "223e4567-e89b-12d3-a456-426614174000";
 const approvalRunId = "323e4567-e89b-12d3-a456-426614174000";
