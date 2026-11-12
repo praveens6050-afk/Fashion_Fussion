@@ -2,12 +2,12 @@ name: AI Agent Foundation Checks
 
 on:
   push:
-    branches: ["codex/ai-agents-foundation"]
+    branches: ["codex/ai-agents-foundation", "codex/agent-enable-gates", "codex/agent-approval-workflow", "codex/agent-approval-dashboard"]
     paths:
       - "workers/ai-orchestrator/**"
       - "supabase/migrations/20261111000000_ai_agent_control_plane.sql"
   pull_request:
-    branches: ["crm-development"]
+    branches: ["crm-development", "codex/agent-approval-workflow"]
     paths:
       - "workers/ai-orchestrator/**"
       - "supabase/migrations/20261111000000_ai_agent_control_plane.sql"
