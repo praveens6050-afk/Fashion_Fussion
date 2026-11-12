@@ -30,7 +30,7 @@ export async function runAgentDraft(env, { agentId, action, input = {} }) {
   const encoded = JSON.stringify(safeInput);
   if (encoded.length > MAX_INPUT_BYTES) throw new Error("input_too_large");
 
-  const model = env.AI_MODEL || "@cf/zai-org/glm-5.3";
+  const model = env.AI_MODEL || "@cf/zai-org/glm-4.7-flash";
   const result = await env.AI.run(model, {
     messages: [
       {
