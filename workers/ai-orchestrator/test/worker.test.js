@@ -180,3 +180,124 @@ test("direct agent endpoints fail closed if the registry cannot be read", async 
     globalThis.fetch = originalFetch;
   }
 });
+
+
+const adminUserId = "123e4567-e89b-12d3-a456-426614174000";
+const approvalId = "223e4567-e89b-12d3-a456-426614174000";
+const approvalRunId = "323e4567-e89b-12d3-a456-426614174000";
+
+function adminEnv(extra = {}) {
+  return {
+    SUPABASE_URL: "https://database.test",
+    SUPABASE_SERVICE_ROLE_KEY: "server-only-test-key",
+    AGENT_API_TOKEN: token,
+    ...extra
+  };
+}
+
+test("admin approval queue requires an authenticated admin profile", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes("/auth/v1/user")) return new Response(JSON.stringify({ id: adminUserId }), { status: 200 });
+    if (String(url).includes("/rest/v1/profiles?")) return new Response("[]", { status: 200 });
+    throw new Error("unexpected_request");
+  };
+  try {
+    const response = await worker.fetch(new Request("https://agent.test/v1/admin/approvals", {
+      headers: { authorization: "Bearer user-access-token" }
+    }), adminEnv());
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).error, "admin_access_required");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("admin can list pending approvals with limited run metadata", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: adminUserId }), { status: 200 });
+    if (value.includes("/rest/v1/profiles?")) return new Response(JSON.stringify([{ id: adminUserId }]), { status: 200 });
+    if (value.includes("/rest/v1/ai_agent_approvals?")) return new Response(JSON.stringify([{
+      id: approvalId, run_id: approvalRunId, action_key: "publish_social_post",
+      status: "pending", expires_at: "2099-01-01T00:00:00Z", created_at: "2026-11-12T00:00:00Z"
+    }]), { status: 200 });
+    if (value.includes("/rest/v1/ai_agent_runs?")) return new Response(JSON.stringify([{
+      id: approvalRunId, agent_id: "content_creation", action: "publish_social_post",
+      status: "awaiting_approval", created_at: "2026-11-12T00:00:00Z"
+    }]), { status: 200 });
+    throw new Error("unexpected_request");
+  };
+  try {
+    const response = await worker.fetch(new Request("https://agent.test/v1/admin/approvals", {
+      headers: { authorization: "Bearer user-access-token" }
+    }), adminEnv());
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.count, 1);
+    assert.equal(body.approvals[0].run.agent_id, "content_creation");
+    assert.equal("input" in body.approvals[0].run, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("admin approval records reviewer, advances run, and holds dispatch while runtime is disabled", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init = {}) => {
+    const value = String(url);
+    calls.push({ url: value, method: init.method || "GET", body: init.body ? JSON.parse(init.body) : null });
+    if (value.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: adminUserId }), { status: 200 });
+    if (value.includes("/rest/v1/profiles?")) return new Response(JSON.stringify([{ id: adminUserId }]), { status: 200 });
+    if (value.includes("/rest/v1/ai_agent_approvals?") && !init.method) return new Response(JSON.stringify([{
+      id: approvalId, run_id: approvalRunId, action_key: "publish_social_post",
+      status: "pending", expires_at: "2099-01-01T00:00:00Z"
+    }]), { status: 200 });
+    if (value.includes("/rest/v1/ai_agent_approvals?") && init.method === "PATCH") return new Response(JSON.stringify([{ id: approvalId, status: "approved" }]), { status: 200 });
+    if (value.includes("/rest/v1/ai_agent_runs?") && init.method === "PATCH") return new Response(JSON.stringify([{ id: approvalRunId, status: "queued" }]), { status: 200 });
+    if (value.includes("/rest/v1/ai_agent_events")) return new Response("", { status: 201 });
+    if (value.includes("/rest/v1/ai_agent_runs?") && !init.method) return new Response(JSON.stringify([{ id: approvalRunId, status: "queued" }]), { status: 200 });
+    throw new Error("unexpected_request");
+  };
+  try {
+    const response = await worker.fetch(new Request(`https://agent.test/v1/admin/approvals/${approvalId}/review`, {
+      method: "POST",
+      headers: { authorization: "Bearer user-access-token", "content-type": "application/json" },
+      body: JSON.stringify({ decision: "approved", note: "Reviewed and approved for draft processing." })
+    }), adminEnv({ AGENT_RUNTIME_READY: "false" }));
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.approval, "approved");
+    assert.equal(body.dispatch, "held_runtime_disabled");
+    const approvalPatch = calls.find((call) => call.url.includes("/rest/v1/ai_agent_approvals?") && call.method === "PATCH");
+    assert.equal(approvalPatch.body.reviewed_by, adminUserId);
+    assert.equal(approvalPatch.body.status, "approved");
+    const runPatch = calls.find((call) => call.url.includes("/rest/v1/ai_agent_runs?") && call.method === "PATCH");
+    assert.equal(runPatch.body.status, "queued");
+    assert.equal(calls.some((call) => call.url.includes("/rest/v1/ai_agent_events")), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("admin rejection requires a note and never dispatches a job", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes("/auth/v1/user")) return new Response(JSON.stringify({ id: adminUserId }), { status: 200 });
+    if (String(url).includes("/rest/v1/profiles?")) return new Response(JSON.stringify([{ id: adminUserId }]), { status: 200 });
+    throw new Error("unexpected_request");
+  };
+  try {
+    const response = await worker.fetch(new Request(`https://agent.test/v1/admin/approvals/${approvalId}/review`, {
+      method: "POST",
+      headers: { authorization: "Bearer user-access-token", "content-type": "application/json" },
+      body: JSON.stringify({ decision: "rejected" })
+    }), adminEnv());
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).error, "rejection_note_required");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
