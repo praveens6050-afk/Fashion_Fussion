@@ -5,7 +5,7 @@ import { redactSensitive } from "./privacy.js";
 import { handleOrderAssist, handleProductRecommendations } from "./commerce-agent.js";
 import { handleSellerAssist } from "./seller-agent.js";
 import { handleSupportAssist } from "./support-agent.js";
-import { getMarketingOverview, getLeadConsentOverview, getTrustReviewOverview, getBusinessOverview, checkContentDuplicates } from "./analytics-agent.js";
+import { getMarketingOverview, getLeadConsentOverview, getTrustReviewOverview, getBusinessOverview, checkContentDuplicates, getLeadFollowUpContext } from "./analytics-agent.js";
 import { runAgentDraft } from "./agent-runner.js";
 
 function json(data, status = 200, headers = {}) {
@@ -125,6 +125,25 @@ async function handle(request, env) {
     try { return json({ overview: await getLeadConsentOverview(env) }, 200, cors); }
     catch { return json({ error: "lead_consent_overview_unavailable" }, 502, cors); }
   }
+  const leadFollowUpMatch = url.pathname.match(/^\\/v1\\/leads\\/([0-9a-f-]{36})\\/follow-up-draft$/i);
+  if (request.method === "POST" && leadFollowUpMatch) {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
+    try {
+      const context = await getLeadFollowUpContext(env, leadFollowUpMatch[1], body.purpose);
+      const result = await runAgentDraft(env, {
+        agentId: "lead_generation_followup",
+        action: "prepare_follow_up",
+        input: { purpose: body.purpose, lead_context: context }
+      });
+      return json({ draft: result.output, mode: "draft_only", consentVerified: true, sideEffectsPerformed: false }, 200, cors);
+    } catch (error) {
+      const code = error?.message || "lead_follow_up_draft_unavailable";
+      const statuses = { invalid_lead_id: 400, invalid_follow_up_purpose: 400, lead_not_found: 404, lead_opted_out: 403, lead_consent_required: 403 };
+      return json({ error: statuses[code] ? code : "lead_follow_up_draft_unavailable" }, statuses[code] || 502, cors);
+    }
+  }
+
   if (request.method === "GET" && url.pathname === "/v1/trust/review-overview") {
     try { return json({ overview: await getTrustReviewOverview(env) }, 200, cors); }
     catch { return json({ error: "trust_review_overview_unavailable" }, 502, cors); }
@@ -132,6 +151,15 @@ async function handle(request, env) {
   if (request.method === "GET" && url.pathname === "/v1/business/overview") {
     try { return json({ overview: await getBusinessOverview(env) }, 200, cors); }
     catch { return json({ error: "business_overview_unavailable" }, 502, cors); }
+  }
+  if (request.method === "POST" && url.pathname === "/v1/content/draft") {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "invalid_json" }, 400, cors); }
+    if (!body.input || typeof body.input !== "object" || Array.isArray(body.input)) return json({ error: "content_input_required" }, 400, cors);
+    try {
+      const result = await runAgentDraft(env, { agentId: "content_creation", action: "generate_content", input: body.input });
+      return json({ draft: result.output, mode: "draft_only", sideEffectsPerformed: false }, 200, cors);
+    } catch { return json({ error: "content_draft_unavailable" }, 502, cors); }
   }
   if (request.method === "POST" && url.pathname === "/v1/content/duplicate-check") {
     let body;
