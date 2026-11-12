@@ -9,6 +9,7 @@ test("seller onboarding assistant is scoped by the authenticated Supabase user",
     const url = new URL(input);
     seen.push({ path: url.pathname, query: url.search, authorization: init.headers.authorization });
     if (url.pathname === "/auth/v1/user") return Response.json({ id: "seller-user-id" });
+    if (url.pathname === "/rest/v1/ai_agent_registry") return Response.json([{ agent_id: "seller_management", enabled: true }]);
     if (url.pathname === "/rest/v1/seller_profiles") return Response.json([{
       store_name: "Demo Store", seller_code: "FFS-100", status: "active", seller_type: "business"
     }]);
@@ -24,7 +25,7 @@ test("seller onboarding assistant is scoped by the authenticated Supabase user",
       new Request("https://agent.test/v1/seller/onboarding/assist", {
         headers: { authorization: "Bearer seller-jwt" }
       }),
-      { SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test" }
+      { SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-test", SUPABASE_SERVICE_ROLE_KEY: "service-test" }
     );
     const body = await response.json();
     assert.equal(response.status, 200);
