@@ -2,6 +2,13 @@ const SUPABASE_URL='https://gmdevprqtvoshbbytsxf.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cBskcrMhDQhLLgTbYLFMuA_6nazgFVA';
 window.FF_API_ORIGIN='';
 (function(){'use strict';
+  const currentHost=String(window.location.hostname||'').toLowerCase();
+  const isPagesPreview=currentHost.endsWith('.fashion-fussion-crm.pages.dev')&&currentHost!=='fashion-fussion-crm.pages.dev';
+  if(isPagesPreview&&window.FF_CRM_PREVIEW_DATA_READY!==true){
+    window.FF_CRM_PREVIEW_BLOCKED=true;
+    window.ffAdminSupabaseReady=Promise.reject(new Error('CRM preview is disabled until an isolated preview database is configured.'));
+    return;
+  }
   const SDK_FALLBACK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
   const SDK_INTEGRITY='sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP';
   function createClient(){if(window.supabaseClient)return window.supabaseClient;if(!window.supabase||typeof window.supabase.createClient!=='function')return null;window.supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);return window.supabaseClient}
