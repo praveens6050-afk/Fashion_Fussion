@@ -1,4 +1,4 @@
-import { AGENT_ACTIONS, APPROVAL_ACTIONS } from "./index.js";
+import { AGENT_ACTIONS, APPROVAL_ACTIONS } from "./agents.js";
 
 const AGENT_PROFILES = {
   customer_support: "Help customers understand products, orders, delivery and returns. Be empathetic and factual.",
