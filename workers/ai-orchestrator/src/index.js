@@ -306,7 +306,7 @@ async function handle(request, env) {
   const agentTokenRoute =
     (request.method === "GET" && ["/v1/marketing/overview", "/v1/leads/consent-overview", "/v1/trust/review-overview", "/v1/business/overview"].includes(url.pathname)) ||
     (request.method === "POST" && ["/v1/content/draft", "/v1/content/duplicate-check", "/v1/voice/draft"].includes(url.pathname)) ||
-    (request.method === "POST" && /^\\/v1\\/leads\\/[0-9a-f-]{36}\\/follow-up-draft$/i.test(url.pathname));
+    (request.method === "POST" && /^\/v1\/leads\/[0-9a-f-]{36}\/follow-up-draft$/i.test(url.pathname));
   if (agentTokenRoute && !authorized(request, env)) return json({ error: "unauthorized" }, 401, cors);
 
   if (request.method === "GET" && url.pathname === "/v1/products/recommendations") {
