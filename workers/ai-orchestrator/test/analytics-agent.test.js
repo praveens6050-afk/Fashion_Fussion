@@ -86,12 +86,15 @@ test("business overview aggregates orders, catalog and sellers without row-level
 
 test("content duplicate check matches caption and image hashes without returning captions", async () => {
   await withRows({
-    social_content_queue: [{ content_id: "post-1", caption_hash: "cap-1", image_hash: "img-1" }]
+    social_content_queue: [{ content_id: "post-1", caption_hash: "cap-1", image_hash: "img-1" }],
+    social_publish_history: [{ content_id: "post-1", platform: "instagram", state: "published", published_at: "2026-11-01T10:00:00Z" }]
   }, async () => {
     const result = await checkContentDuplicates(env, { caption_hash: "cap-1", image_hash: "img-1" });
     assert.equal(result.duplicateCaption, true);
     assert.equal(result.duplicateImage, true);
     assert.deepEqual(result.matchingContentIds, ["post-1"]);
+    assert.equal(result.alreadyPublished, true);
+    assert.equal(result.publishHistory[0].platform, "instagram");
   });
 });
 
