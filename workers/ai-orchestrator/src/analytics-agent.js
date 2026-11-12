@@ -115,3 +115,37 @@ export async function checkContentDuplicates(env, input = {}) {
     note: "A clear result is limited to the first 1000 queued content records. This check does not publish or schedule anything."
   };
 }
+
+export async function getLeadFollowUpContext(env, leadId, purpose) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(leadId || ""))) throw new Error("invalid_lead_id");
+  if (!["enquiry", "promotion"].includes(purpose)) throw new Error("invalid_follow_up_purpose");
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("supabase_not_configured");
+  const query = new URLSearchParams({
+    select: "whatsapp_enquiry_consent,whatsapp_promo_consent,opt_out_at,interest,lead_source,status,created_at",
+    lead_id: `eq.${leadId}`,
+    limit: "1"
+  });
+  const response = await fetch(new URL(`/rest/v1/marketing_leads?${query.toString()}`, env.SUPABASE_URL), {
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      accept: "application/json"
+    }
+  });
+  if (!response.ok) throw new Error(`supabase_http_${response.status}`);
+  const rows = await response.json();
+  const lead = Array.isArray(rows) ? rows[0] : null;
+  if (!lead) throw new Error("lead_not_found");
+  if (lead.opt_out_at) throw new Error("lead_opted_out");
+  const consented = purpose === "promotion" ? lead.whatsapp_promo_consent : lead.whatsapp_enquiry_consent;
+  if (consented !== true) throw new Error("lead_consent_required");
+  return {
+    purpose,
+    interest: lead.interest || null,
+    leadSource: lead.lead_source || null,
+    status: lead.status || null,
+    createdAt: lead.created_at || null,
+    consentVerified: true,
+    optedOut: false
+  };
+}
