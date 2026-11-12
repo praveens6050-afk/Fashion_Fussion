@@ -21,13 +21,6 @@ const DEFAULT_ORIGINS = new Set([
   "https://www.crm.fashionfussion.in"
 ]);
 
-function json(data, status = 200, headers = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers }
-  });
-}
-
 function corsHeaders(request, env) {
   const origin = request.headers.get("Origin");
   const configured = (env.ALLOWED_ORIGINS || "").split(",").map(x => x.trim()).filter(Boolean);
