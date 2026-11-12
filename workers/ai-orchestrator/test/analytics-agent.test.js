@@ -56,11 +56,11 @@ test("lead overview counts consent and opt-outs without returning lead identifie
 
 test("trust overview describes review signals and never labels a record fraudulent", async () => {
   await withRows({
-    orders: [{ status: "paid", refund_status: "none", payment_verified_at: null }],
+    orders: [\n      { status: "paid", refund_status: "none", payment_method: "prepaid", payment_verified_at: null },\n      { status: "pending", refund_status: "none", payment_method: "cod", payment_verified_at: null }\n    ],
     seller_profiles: [{ status: "pending" }]
   }, async () => {
     const result = await getTrustReviewOverview(env);
-    assert.equal(result.ordersMissingPaymentVerificationTimestamp, 1);
+    assert.equal(result.nonCodOrdersMissingPaymentVerificationTimestamp, 1);
     assert.equal(result.sellerStatuses.pending, 1);
     assert.match(result.note, /not evidence of fraud/i);
   });
@@ -73,7 +73,7 @@ test("business overview aggregates orders, catalog and sellers without row-level
     seller_profiles: [{ status: "active" }]
   }, async () => {
     const result = await getBusinessOverview(env);
-    assert.equal(result.revenueByCurrency.INR, 100.5);
+    assert.equal(result.grossPaidOrderValueByCurrency.INR, 100.5);
     assert.equal(result.productActiveStates.active, 1);
     assert.equal(result.sellerStatuses.active, 1);
     assert.equal(JSON.stringify(result).includes("customer_phone"), false);
