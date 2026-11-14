@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Fashion Fussion",
+  "short_name": "Fashion Fussion",
+  "description": "Shop fashion, discover new arrivals and track your Fashion Fussion orders.",
+  "lang": "en-IN",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    { "src": "./app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./app-icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
