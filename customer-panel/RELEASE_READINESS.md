@@ -19,3 +19,5 @@ This validation branch is based on the currently configured Customer production 
 
 ## Promotion
 Do not promote this validation branch directly to production. Merge only reviewed application fixes into the corresponding production branch after all checks pass.
+
+Preview validation branch is enabled in the matching Cloudflare Pages project.
