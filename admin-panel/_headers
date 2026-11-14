@@ -1,0 +1,22 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/
+  Cache-Control: no-store, max-age=0, no-transform
+
+/admin.html
+  Cache-Control: no-store, max-age=0, no-transform
+
+/login.html
+  Cache-Control: no-store, max-age=0, no-transform
+
+/crm.html
+  Cache-Control: no-store, max-age=0, no-transform
+
+/crm-login.html
+  Cache-Control: no-store, max-age=0, no-transform
