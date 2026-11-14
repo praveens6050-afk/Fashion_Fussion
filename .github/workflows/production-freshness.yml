@@ -2,7 +2,7 @@ name: Cloudflare Production Customer Smoke
 
 on:
   push:
-    branches: [cloudflare-customer, main]
+    branches: [cloudflare-customer]
   workflow_dispatch:
 
 permissions:
