@@ -8,3 +8,5 @@ Validation branch based on the configured Admin production branch. This branch i
 - No service-role or secret key may be present in browser assets.
 - Payment, shipping, refund, and payout actions must remain gated by explicit admin authorization and provider sandbox checks.
 - Do not promote this branch until the preview, authorization, browser, and production smoke checks pass.
+
+Admin preview verifies the existing CSP and no-store response headers.
