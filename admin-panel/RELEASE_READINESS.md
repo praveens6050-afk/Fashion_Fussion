@@ -33,3 +33,6 @@ This release branch is a controlled validation candidate for Fashion Fussion.
 - [ ] Production deployment promoted deliberately, then all public and authenticated journeys smoke-tested.
 
 Do not mark this checklist complete based on source checks or CI alone.
+
+
+Preview branch configured for all three Cloudflare Pages projects: release/market-launch-readiness.
