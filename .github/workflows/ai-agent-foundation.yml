@@ -1,0 +1,32 @@
+name: AI Agent Foundation Checks
+
+on:
+  push:
+    branches: ["codex/ai-agents-foundation"]
+    paths:
+      - "workers/ai-orchestrator/**"
+      - "supabase/migrations/20261111000000_ai_agent_control_plane.sql"
+  pull_request:
+    branches: ["crm-development"]
+    paths:
+      - "workers/ai-orchestrator/**"
+      - "supabase/migrations/20261111000000_ai_agent_control_plane.sql"
+
+permissions:
+  contents: read
+
+jobs:
+  worker-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Check Worker syntax
+        working-directory: workers/ai-orchestrator
+        run: npm run check
+      - name: Run Worker tests
+        working-directory: workers/ai-orchestrator
+        run: npm test

@@ -1,0 +1,160 @@
+function groupCount(rows, key) {
+  return rows.reduce((result, row) => {
+    const value = row?.[key] == null || row[key] === "" ? "unknown" : String(row[key]);
+    result[value] = (result[value] || 0) + 1;
+    return result;
+  }, {});
+}
+
+async function readRows(env, table, select, limit = 1000, order) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("supabase_not_configured");
+  const query = new URLSearchParams({ select, limit: String(limit), ...(order ? { order } : {}) });
+  const response = await fetch(new URL(`/rest/v1/${table}?${query.toString()}`, env.SUPABASE_URL), {
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      accept: "application/json"
+    }
+  });
+  if (!response.ok) throw new Error(`supabase_http_${response.status}`);
+  const rows = await response.json();
+  if (!Array.isArray(rows)) throw new Error("invalid_database_response");
+  return rows;
+}
+
+export async function getMarketingOverview(env) {
+  const [history, queue] = await Promise.all([
+    readRows(env, "social_publish_history", "platform,state,published_at", 1000, "published_at.desc"),
+    readRows(env, "social_content_queue", "campaign,scheduled_at,caption_hash,image_hash", 1000, "scheduled_at.desc")
+  ]);
+  return {
+    publishedOrAttemptedByPlatform: groupCount(history, "platform"),
+    publishStates: groupCount(history, "state"),
+    queuedByCampaign: groupCount(queue, "campaign"),
+    queueCount: queue.length,
+    historyRowsReviewed: history.length,
+    mode: "aggregate_read_only",
+    note: "This report contains no customer or seller contact details."
+  };
+}
+
+export async function getLeadConsentOverview(env) {
+  const rows = await readRows(env, "marketing_leads", "whatsapp_enquiry_consent,whatsapp_promo_consent,opt_out_at,status,created_at", 1000, "created_at.desc");
+  const optedOut = rows.filter(row => row.opt_out_at != null).length;
+  const enquiryConsent = rows.filter(row => row.whatsapp_enquiry_consent === true && row.opt_out_at == null).length;
+  const promoConsent = rows.filter(row => row.whatsapp_promo_consent === true && row.opt_out_at == null).length;
+  return {
+    recordsReviewed: rows.length,
+    enquiryConsentActive: enquiryConsent,
+    promotionalConsentActive: promoConsent,
+    optedOut,
+    leadStatuses: groupCount(rows, "status"),
+    mode: "aggregate_consent_audit",
+    note: "No names, phone numbers, email addresses, lead IDs or message content are returned. Counts are limited to the latest 1000 records."
+  };
+}
+
+export async function getTrustReviewOverview(env) {
+  const [orders, sellers] = await Promise.all([
+    readRows(env, "orders", "status,refund_status,payment_method,payment_verified_at,created_at", 1000, "created_at.desc"),
+    readRows(env, "seller_profiles", "status", 1000, "created_at.desc")
+  ]);
+  return {
+    orderStatuses: groupCount(orders, "status"),
+    refundStatuses: groupCount(orders, "refund_status"),
+    nonCodOrdersMissingPaymentVerificationTimestamp: orders.filter(row => !String(row.payment_method || "").toLowerCase().includes("cod") && row.payment_verified_at == null).length,
+    sellerStatuses: groupCount(sellers, "status"),
+    ordersReviewed: orders.length,
+    sellersReviewed: sellers.length,
+    mode: "risk_signals_for_human_review",
+    note: "Missing timestamps and status counts are review signals only, not evidence of fraud or a basis for automatic action."
+  };
+}
+
+export async function getBusinessOverview(env) {
+  const [orders, products, sellers] = await Promise.all([
+    readRows(env, "orders", "total_amount,currency,status,created_at,fulfillment_status", 1000, "created_at.desc"),
+    readRows(env, "products", "is_active,category,price,rating", 1000, "updated_at.desc"),
+    readRows(env, "seller_profiles", "status")
+  ]);
+  const grossPaidOrderValueByCurrency = {};
+  for (const order of orders) {
+    if (order.status !== "paid") continue;
+    const currency = String(order.currency || "unknown");
+    const amount = Number(order.total_amount);
+    if (Number.isFinite(amount)) grossPaidOrderValueByCurrency[currency] = (grossPaidOrderValueByCurrency[currency] || 0) + amount;
+  }
+  return {
+    orderStatuses: groupCount(orders, "status"),
+    fulfillmentStatuses: groupCount(orders, "fulfillment_status"),
+    grossPaidOrderValueByCurrency,
+    productActiveStates: groupCount(products.map(row => ({ state: row.is_active ? "active" : "inactive" })), "state"),
+    productCategories: groupCount(products, "category"),
+    sellerStatuses: groupCount(sellers, "status"),
+    rowsReviewed: { orders: orders.length, products: products.length, sellers: sellers.length },
+    mode: "aggregate_read_only",
+    note: "Gross paid order totals cover at most the latest 1000 rows and are not a full financial statement."
+  };
+}
+
+export async function checkContentDuplicates(env, input = {}) {
+  const captionHash = typeof input.caption_hash === "string" ? input.caption_hash.trim() : "";
+  const imageHash = typeof input.image_hash === "string" ? input.image_hash.trim() : "";
+  if ((!captionHash && !imageHash) || captionHash.length > 256 || imageHash.length > 256) {
+    throw new Error("valid_caption_or_image_hash_required");
+  }
+  const [rows, history] = await Promise.all([
+    readRows(env, "social_content_queue", "content_id,caption_hash,image_hash,scheduled_at", 1000, "scheduled_at.desc"),
+    readRows(env, "social_publish_history", "content_id,platform,state,published_at", 1000, "published_at.desc")
+  ]);
+  const captionMatch = captionHash ? rows.find(row => row.caption_hash === captionHash) : null;
+  const imageMatch = imageHash ? rows.find(row => row.image_hash === imageHash) : null;
+  const matchingContentIds = [...new Set([captionMatch?.content_id, imageMatch?.content_id].filter(Boolean))];
+  const historyMatches = history
+    .filter(item => matchingContentIds.includes(item.content_id))
+    .map(item => ({ contentId: item.content_id, platform: item.platform, state: item.state, publishedAt: item.published_at }));
+  return {
+    duplicateCaption: Boolean(captionMatch),
+    duplicateImage: Boolean(imageMatch),
+    matchingContentIds,
+    publishHistory: historyMatches,
+    alreadyPublished: historyMatches.some(item => item.state === "published"),
+    recordsReviewed: { queuedCreatives: rows.length, publishHistory: history.length },
+    mode: "duplicate_check_only",
+    note: "A clear result is limited to the latest 1000 queued creatives and 1000 history rows. The publisher retains queue rows and records platform history. This check does not publish or schedule anything."
+  };
+}
+
+export async function getLeadFollowUpContext(env, leadId, purpose) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(leadId || ""))) throw new Error("invalid_lead_id");
+  if (!["enquiry", "promotion"].includes(purpose)) throw new Error("invalid_follow_up_purpose");
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("supabase_not_configured");
+  const query = new URLSearchParams({
+    select: "whatsapp_enquiry_consent,whatsapp_promo_consent,opt_out_at,interest,lead_source,status,created_at",
+    lead_id: `eq.${leadId}`,
+    limit: "1"
+  });
+  const response = await fetch(new URL(`/rest/v1/marketing_leads?${query.toString()}`, env.SUPABASE_URL), {
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      accept: "application/json"
+    }
+  });
+  if (!response.ok) throw new Error(`supabase_http_${response.status}`);
+  const rows = await response.json();
+  const lead = Array.isArray(rows) ? rows[0] : null;
+  if (!lead) throw new Error("lead_not_found");
+  if (lead.opt_out_at) throw new Error("lead_opted_out");
+  const consented = purpose === "promotion" ? lead.whatsapp_promo_consent : lead.whatsapp_enquiry_consent;
+  if (consented !== true) throw new Error("lead_consent_required");
+  return {
+    purpose,
+    interest: lead.interest || null,
+    leadSource: lead.lead_source || null,
+    status: lead.status || null,
+    createdAt: lead.created_at || null,
+    consentVerified: true,
+    optedOut: false
+  };
+}
