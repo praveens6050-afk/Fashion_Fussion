@@ -178,7 +178,7 @@ create or replace function public.admin_list_seller_bank_verification(
   p_offset integer default 0
 ) returns table(seller_id uuid, bank_verification_status text, bank_account_present boolean)
 language plpgsql security definer set search_path = 'pg_catalog','public'
-as $
+as $$
 declare
   v_uid uuid := auth.uid();
   v_search text := nullif(trim(coalesce(p_search,'')),'');
@@ -198,7 +198,7 @@ begin
   order by s.created_at desc
   limit v_limit offset v_offset;
 end;
-$;
+$$;
 
 revoke all on function public.admin_list_customer_manual_verification(text,integer,integer) from public,anon;
 revoke all on function public.admin_list_seller_bank_verification(text,integer,integer) from public,anon;
