@@ -54,3 +54,12 @@
   #sellerFinanceFilter,#sellerFinanceExport{width:100%}
   .ff-finance-sheet{max-height:72vh}
 }
+
+/* Keep manual review actions in the initial viewport; the remaining financial details can scroll horizontally. */
+.ff-finance-table td.review-cell{white-space:normal;min-width:230px;max-width:280px}
+.ff-finance-table td.review-cell .ff-finance-actions{white-space:normal;min-width:210px;max-width:260px}
+.ff-finance-table td.review-cell .ff-finance-actions b{flex-basis:100%;color:#344054;font-size:12px}
+.ff-finance-table td.review-cell .ff-finance-actions .ff-sheet-muted{flex-basis:100%}
+.ff-finance-table td.settlements{min-width:270px;max-width:430px}
+.ff-settlement-details>summary{color:#1d4ed8;text-decoration:underline;text-underline-offset:3px}
+.ff-finance-table td:nth-child(4),.ff-finance-table td:nth-child(5),.ff-finance-table td:nth-child(6){min-width:95px}
