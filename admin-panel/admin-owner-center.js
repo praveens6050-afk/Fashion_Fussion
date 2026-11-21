@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 let customerRows=[],sellerRows=[],customerVerificationRows=[];
-function style(){if(document.querySelector('link[data-owner-center-style]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='admin-owner-center.css?v=3';l.setAttribute('data-owner-center-style','true');document.head.appendChild(l)}
+function style(){if(document.querySelector('link[data-owner-center-style]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='admin-owner-center.css?v=20261121-manual-verification';l.setAttribute('data-owner-center-style','true');document.head.appendChild(l)}
 function csvCell(v){let s=String(v??'').replace(/\r?\n/g,' ').trim();if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
 function fileNamePart(v){return String(v||'record').trim().replace(/[^a-z0-9._-]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,80)||'record'}
 function downloadCsv(name,rows){const text='\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');const blob=new Blob([text],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
