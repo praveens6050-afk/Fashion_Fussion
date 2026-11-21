@@ -172,11 +172,41 @@ begin
 end;
 $$;
 
+create or replace function public.admin_list_seller_bank_verification(
+  p_search text default null,
+  p_limit integer default 100,
+  p_offset integer default 0
+) returns table(seller_id uuid, bank_verification_status text)
+language plpgsql security definer set search_path = 'pg_catalog','public'
+as $
+declare
+  v_uid uuid := auth.uid();
+  v_search text := nullif(trim(coalesce(p_search,'')),'');
+  v_limit integer := least(greatest(coalesce(p_limit,100),1),200);
+  v_offset integer := greatest(coalesce(p_offset,0),0);
+begin
+  if v_uid is null then raise exception 'Authentication required'; end if;
+  if not exists(select 1 from public.profiles p where p.id=v_uid and p.is_admin=true) then
+    raise exception 'Administrator access required';
+  end if;
+  return query
+  select s.user_id,coalesce(pp.bank_verification_status,'unverified')
+  from public.seller_profiles s
+  join auth.users u on u.id=s.user_id
+  left join public.seller_payout_profiles pp on pp.seller_id=s.user_id
+  where (v_search is null or s.seller_code ilike '%'||v_search||'%' or s.store_name ilike '%'||v_search||'%' or coalesce(u.email,'') ilike '%'||v_search||'%')
+  order by s.created_at desc
+  limit v_limit offset v_offset;
+end;
+$;
+
 revoke all on function public.admin_list_customer_manual_verification(text,integer,integer) from public,anon;
+revoke all on function public.admin_list_seller_bank_verification(text,integer,integer) from public,anon;
 revoke all on function public.admin_set_customer_manual_verification(uuid,text,text) from public,anon;
 revoke all on function public.admin_review_seller_bank_account(uuid,text,text) from public,anon;
 revoke all on function public.admin_update_seller_profile_status(uuid,text,text) from public,anon;
 grant execute on function public.admin_list_customer_manual_verification(text,integer,integer) to authenticated;
+grant execute on function public.admin_list_seller_bank_verification(text,integer,integer) to authenticated;
 grant execute on function public.admin_set_customer_manual_verification(uuid,text,text) to authenticated;
 grant execute on function public.admin_review_seller_bank_account(uuid,text,text) to authenticated;
 grant execute on function public.admin_update_seller_profile_status(uuid,text,text) to authenticated;
