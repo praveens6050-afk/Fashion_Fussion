@@ -40,16 +40,17 @@ Deno.serve(async (req: Request) => {
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return json(req, { error: "Invalid request body." }, 400); }
-  if ("bank_account" in body) return json(req, { error: "Full account numbers are not accepted. Only the last four digits may be submitted." }, 400);
+
 
   const holder = String(body.account_holder_name ?? "").trim();
   const bankName = String(body.bank_name ?? "").trim().slice(0, 120);
-  const accountLast4 = digits(body.account_number_last4);
+  const accountNumber = digits(body.bank_account);
+  const accountLast4 = accountNumber.slice(-4);
   const ifsc = String(body.ifsc ?? "").trim().toUpperCase();
   const accountType = body.account_type === "savings" ? "savings" : "current";
   if (holder.length < 2 || holder.length > 120) return json(req, { error: "Enter a valid account holder name." }, 400);
   if (!bankName) return json(req, { error: "Enter a bank name." }, 400);
-  if (!/^[0-9]{4}$/.test(accountLast4)) return json(req, { error: "Submit only the last four account digits." }, 400);
+  if (!/^[0-9]{6,34}$/.test(accountNumber)) return json(req, { error: "Enter a valid bank account number." }, 400);
   if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) return json(req, { error: "Enter a valid IFSC." }, 400);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -62,6 +63,7 @@ Deno.serve(async (req: Request) => {
     account_holder_name: holder,
     bank_name: bankName,
     ifsc,
+    account_number: accountNumber,
     account_number_last4: accountLast4,
     account_type: accountType,
     provider: "manual_admin_review",
