@@ -42,7 +42,8 @@ function render(){
   let actions='';
   if(status==='pending_review')actions='<div class="ff-customer-bank-actions"><button class="primary" data-customer-bank-review="verified" data-id="'+esc(r.customer_id)+'">Mark verified</button><button class="secondary" data-customer-bank-review="changes_requested" data-id="'+esc(r.customer_id)+'">Request changes</button></div>';
   else if(status==='changes_requested')actions='<span>Awaiting customer updates</span>';
-  else actions='<span>Verified by admin</span>';
+  else if(status==='verified')actions='<div class="ff-customer-bank-actions"><span>Verified by admin</span><button class="secondary" data-customer-bank-review="changes_requested" data-id="'+esc(r.customer_id)+'">Mark not verified / request changes</button></div>';
+  else actions='<span>Changes requested</span>';
   const reason=status==='changes_requested'&&r.admin_review_reason?'<small class="ff-customer-bank-reason">Reason: '+esc(r.admin_review_reason)+'</small>':'';
   return '<tr><td><b>'+esc(r.full_name||'Customer')+'</b><small>'+esc(r.email||'')+'</small><small>'+esc(r.business_name||'Business profile')+'</small></td><td>'+actions+'</td><td>'+esc(r.account_holder_name||'—')+'<small>'+esc(r.bank_name||'—')+'</small></td><td>'+esc(r.full_account_number||'Re-submit required')+'</td><td>'+esc(r.ifsc||'—')+'</td><td><span class="ff-customer-bank-pill '+statusClass(r.verification_status)+'">'+esc(statusText(r.verification_status))+'</span></td><td><span class="ff-customer-bank-pill '+statusClass(status)+'">'+esc(statusText(status))+'</span>'+reason+'</td></tr>'
  }).join(''):'<tr><td colspan="7">No customer bank profiles match this review filter.</td></tr>';
