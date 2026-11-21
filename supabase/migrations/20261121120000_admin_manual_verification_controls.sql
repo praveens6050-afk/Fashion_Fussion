@@ -176,7 +176,7 @@ create or replace function public.admin_list_seller_bank_verification(
   p_search text default null,
   p_limit integer default 100,
   p_offset integer default 0
-) returns table(seller_id uuid, bank_verification_status text)
+) returns table(seller_id uuid, bank_verification_status text, bank_account_present boolean)
 language plpgsql security definer set search_path = 'pg_catalog','public'
 as $
 declare
@@ -190,7 +190,7 @@ begin
     raise exception 'Administrator access required';
   end if;
   return query
-  select s.user_id,coalesce(pp.bank_verification_status,'unverified')
+  select s.user_id,coalesce(pp.bank_verification_status,'unverified'),pp.seller_id is not null
   from public.seller_profiles s
   join auth.users u on u.id=s.user_id
   left join public.seller_payout_profiles pp on pp.seller_id=s.user_id
