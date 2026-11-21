@@ -44,7 +44,7 @@ function render(){
   else if(status==='changes_requested')actions='<span>Awaiting customer updates</span>';
   else actions='<span>Verified by admin</span>';
   const reason=status==='changes_requested'&&r.admin_review_reason?'<small class="ff-customer-bank-reason">Reason: '+esc(r.admin_review_reason)+'</small>':'';
-  return '<tr><td><b>'+esc(r.full_name||'Customer')+'</b><small>'+esc(r.email||'')+'</small><small>'+esc(r.business_name||'Business profile')+'</small></td><td>'+actions+'</td><td>'+esc(r.account_holder_name||'—')+'<small>'+esc(r.bank_name||'—')+'</small></td><td>•••• '+esc(r.account_number_last4||'—')+'</td><td>'+esc(r.ifsc||'—')+'</td><td><span class="ff-customer-bank-pill '+statusClass(r.verification_status)+'">'+esc(statusText(r.verification_status))+'</span></td><td><span class="ff-customer-bank-pill '+statusClass(status)+'">'+esc(statusText(status))+'</span>'+reason+'</td></tr>'
+  return '<tr><td><b>'+esc(r.full_name||'Customer')+'</b><small>'+esc(r.email||'')+'</small><small>'+esc(r.business_name||'Business profile')+'</small></td><td>'+actions+'</td><td>'+esc(r.account_holder_name||'—')+'<small>'+esc(r.bank_name||'—')+'</small></td><td>'+esc(r.full_account_number||'Re-submit required')+'</td><td>'+esc(r.ifsc||'—')+'</td><td><span class="ff-customer-bank-pill '+statusClass(r.verification_status)+'">'+esc(statusText(r.verification_status))+'</span></td><td><span class="ff-customer-bank-pill '+statusClass(status)+'">'+esc(statusText(status))+'</span>'+reason+'</td></tr>'
  }).join(''):'<tr><td colspan="7">No customer bank profiles match this review filter.</td></tr>';
  $('ffCustomerBankRows').querySelectorAll('[data-customer-bank-review]').forEach(b=>b.onclick=()=>review(b.dataset.id,b.dataset.customerBankReview))
 }
