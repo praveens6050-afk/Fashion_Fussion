@@ -3,6 +3,8 @@ name: Cloudflare Seller Validate
 on:
   push:
     branches: [cloudflare-seller]
+  pull_request:
+    branches: [cloudflare-seller]
   workflow_dispatch:
 
 permissions:
@@ -53,6 +55,10 @@ jobs:
           test -s dist/index.html
           test -s dist/login.html
           test -s dist/product-image-upload.js
+          test -s dist/seller-profile-controls.js
+          test -s dist/seller-finance-onboarding.js
+          grep -Fq 'id="ffEditCompliance"' dist/seller-finance-onboarding.js
+          grep -Fq 'id="ffEditPickup"' dist/seller-finance-onboarding.js
           test -s dist/navigation-fix.js
           test -s dist/_headers
           test -s dist/_redirects
@@ -74,6 +80,11 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq "product-image-upload.js?v=20260922-readiness" navigation-fix.js
+          grep -Fq "seller-profile-controls.js?v=1" index.html
+          grep -Fq 'id="ffEditCompliance"' seller-finance-onboarding.js
+          grep -Fq 'id="ffEditPickup"' seller-finance-onboarding.js
+          grep -Fq 'autocomplete="new-password"' seller-finance-onboarding.js
+          grep -Fq 'Choose Edit required details before saving payout' seller-finance-onboarding.js
           grep -Fq "primary.type='hidden'" product-image-upload.js
           grep -Fq "file.type='file'" product-image-upload.js
           grep -Fq "state.busy" product-image-upload.js

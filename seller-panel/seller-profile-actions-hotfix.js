@@ -27,10 +27,11 @@
   }
 
   function syncUi(){
+    const canEditCompliance=$('ffComplianceForm')?.dataset.editing==='true';
     const pan=$('ffVerifyPan');
-    if(pan&&!identity.pan){setDisabled(pan,false);setTitle(pan,'PAN verification provider is not configured yet');}
+    if(pan&&!identity.pan){setDisabled(pan,!canEditCompliance);setTitle(pan,'PAN verification provider is not configured yet');}
     const gst=$('ffVerifyGst');
-    if(gst&&!identity.gst){setDisabled(gst,false);setTitle(gst,'GST verification provider is not configured yet');}
+    if(gst&&!identity.gst){setDisabled(gst,!canEditCompliance);setTitle(gst,'GST verification provider is not configured yet');}
 
     const pickupForm=$('ffPickupForm');
     const pickupSubmit=pickupForm?.querySelector('button[type="submit"]');
@@ -44,13 +45,13 @@
 
     const bankVerify=$('ffVerifyPayoutProvider');
     if(bankVerify&&!payout.verification_supported){
-      setDisabled(bankVerify,false);
+      setDisabled(bankVerify,!canEditCompliance);
       setTitle(bankVerify,'Bank verification provider is not configured yet');
     }
     const payoutLink=$('ffLinkPayoutProvider');
     if(payoutLink){
       setHidden(payoutLink,!payout.payout_configured);
-      setDisabled(payoutLink,!payout.payout_configured);
+      setDisabled(payoutLink,!payout.payout_configured||!canEditCompliance);
       if(!payout.payout_configured)setTitle(payoutLink,'Payout account linking is not configured yet');
     }
   }
