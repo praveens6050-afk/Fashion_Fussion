@@ -45,9 +45,19 @@
     lock();
   }
 
-  const style = document.createElement('style');
-  style.textContent = '.profile-support-note{margin-top:14px;padding:12px 14px;border:1px solid #e7ebf1;border-radius:10px;background:#f7f9fc;color:#5f6878;font-size:11px;line-height:1.5}.profile-support-note a{font-weight:700;text-decoration:underline}';
-  document.head.appendChild(style);
+  const card = form.closest('.profile-card');
+  const title = card?.querySelector(':scope > h2');
+  const actions = form.querySelector('.form-actions');
+  if (card && title && actions && !card.querySelector('.profile-card-head')) {
+    title.textContent = 'Profile information';
+    const description = card.querySelector(':scope > p');
+    if (description) description.textContent = 'Manage the required seller contact and store details for your account.';
+    const head = document.createElement('div');
+    head.className = 'profile-card-head';
+    save?.setAttribute('form', form.id);
+    head.append(title, actions);
+    card.prepend(head);
+  }
 
   edit?.addEventListener('click', begin);
   cancel?.addEventListener('click', cancelEdit);

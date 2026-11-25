@@ -11,3 +11,24 @@
     box-shadow: 0 16px 32px rgba(16,24,40,.12);
   }
 }
+
+/* Profile card layout follows the customer account information pattern. */
+#view-profile .profile-card{padding:0;overflow:hidden}
+#view-profile .profile-card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;border-bottom:1px solid var(--line);background:#fff}
+#view-profile .profile-card-head h2{margin:0;font-size:15px}
+#view-profile .profile-card>p:not(.profile-support-note){margin:14px 22px 0;color:var(--muted);font-size:12px;line-height:1.5}
+#view-profile .profile-form{grid-template-columns:repeat(2,minmax(0,1fr));padding:18px 22px 20px;gap:13px}
+#view-profile .profile-form>.form-grid{display:contents}
+#view-profile .profile-form>label:has(#profileStoreName),#view-profile .profile-form>label:has(#profileEmail){grid-column:1/-1}
+#view-profile .profile-form input[readonly],#view-profile .profile-form select:disabled{background:#f8f9fb;color:#737b89;cursor:default}
+#view-profile .profile-form input:not([readonly]){background:#fff}
+#view-profile .profile-card-head .form-actions{display:flex;justify-content:flex-end;gap:8px;margin:0}
+#view-profile .profile-card-head .form-actions button{white-space:nowrap}
+#view-profile .profile-card .profile-support-note{margin:0;padding:0 22px 20px;color:var(--muted);font-size:11px;line-height:1.55}
+#view-profile .profile-card .profile-support-note a{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:760px){
+  #view-profile .profile-card-head{padding:16px;align-items:flex-start}
+  #view-profile .profile-form{grid-template-columns:minmax(0,1fr);padding:16px}
+  #view-profile .profile-form>label:has(#profileStoreName),#view-profile .profile-form>label:has(#profileEmail){grid-column:auto}
+  #view-profile .profile-card .profile-support-note{padding:0 16px 16px}
+}
