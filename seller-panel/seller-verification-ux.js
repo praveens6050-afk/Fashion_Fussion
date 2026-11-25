@@ -206,6 +206,7 @@
 
   async function handleVerifyClick(event,target,runner,label){
     event.preventDefault();event.stopImmediatePropagation();
+    if($('ffComplianceForm')&&$('ffComplianceForm').dataset.editing!=='true'){notify('Choose Edit required details before verification.');return}
     if(target.dataset.ffUxBusy==='1')return;
     target.dataset.ffUxBusy='1';setBusy(target,true,label);
     try{await runner()}catch(error){notify((label+' failed: '+(error?.message||'Please try again.')).replace(label+' failed: '+label+' failed: ',label+' failed: '))}
