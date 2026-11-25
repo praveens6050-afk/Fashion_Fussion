@@ -222,7 +222,7 @@ jobs:
           grep -Fq '<title>Fashion Fussion' dist/index.html
           grep -q 'heart-glyph' dist/csp-index.js
           grep -q 'sr-only' dist/csp-index.js
-          grep -Fq "location.href='cart.html'" dist/catalog-cart-entry.js
+          grep -Fq "buyNow?'checkout.html':'cart.html'" dist/catalog-cart-entry.js
           node --check dist/csp-index.js
           node --check dist/catalog-cart-entry.js
           node --check dist/supabase-config.js
