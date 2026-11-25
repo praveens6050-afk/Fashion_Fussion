@@ -167,6 +167,7 @@
 
   async function saveCompliance(event){
     event.preventDefault();
+    if(!complianceEditing){notify('Choose Edit required details before saving seller verification information.');return}
     const pan=$('ffPan').value.trim(),gstin=$('ffGstin').value.trim(),gstRegistered=$('ffGstRegistered').checked;
     const params={p_legal_name:$('ffLegalName').value.trim(),p_trade_name:$('ffTradeName').value.trim(),p_entity_type:$('ffEntityType').value,p_primary_category:$('ffPrimaryCategory').value.trim(),p_gst_registered:gstRegistered,p_pan:pan,p_gstin:gstin,p_account_holder_name:$('ffHolderName').value.trim(),p_bank_name:$('ffBankName').value.trim(),p_ifsc:$('ffIfsc').value.trim(),p_account_number:$('ffAccountNumber').value.trim(),p_account_type:$('ffAccountType').value};
     const {data,error}=await client.rpc('save_seller_compliance_profile',params); if(error) throw error;
@@ -177,6 +178,7 @@
 
   async function savePickup(event){
     event.preventDefault();
+    if(!pickupEditing){notify('Choose Edit required details before saving the pickup address.');return}
     const snapshot={id:$('ffPickupId').value?Number($('ffPickupId').value):null,label:$('ffPickupLabel').value.trim(),contact:$('ffPickupContact').value.trim(),phone:$('ffPickupPhone').value.trim(),line1:$('ffPickupLine1').value.trim(),line2:$('ffPickupLine2').value.trim(),city:$('ffPickupCity').value.trim(),state:$('ffPickupState').value.trim(),pincode:$('ffPickupPincode').value.trim(),landmark:$('ffPickupLandmark').value.trim(),isDefault:$('ffPickupDefault').checked};
     const params={p_location_id:snapshot.id,p_label:snapshot.label,p_contact_name:snapshot.contact,p_phone:snapshot.phone,p_line1:snapshot.line1,p_line2:snapshot.line2,p_city:snapshot.city,p_state:snapshot.state,p_pincode:snapshot.pincode,p_landmark:snapshot.landmark,p_is_default:snapshot.isDefault};
     const {data,error}=await client.rpc('save_seller_pickup_location',params); if(error) throw error;
