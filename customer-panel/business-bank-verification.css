@@ -1,0 +1,25 @@
+.ff-bank-box{margin-top:18px;border:1px solid var(--line,#e5e7eb);border-radius:14px;background:#fff;overflow:hidden;box-shadow:var(--shadow,0 8px 30px rgba(17,24,39,.07))}
+.ff-bank-head{padding:16px 20px;border-bottom:1px solid var(--line,#e5e7eb);display:flex;justify-content:space-between;gap:12px;align-items:center}
+.ff-bank-head h3{margin:0;font-size:15px;line-height:1.35;color:var(--ink,#171a22)}
+.ff-bank-status{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;border-radius:999px;padding:6px 10px;background:#f3f4f6;color:#667085;white-space:nowrap}
+.ff-bank-status.verified{background:var(--greenbg,#edf9f1);color:var(--green,#118344)}
+.ff-bank-status.failed{background:var(--redbg,#fff0ef);color:var(--red,#b42318)}
+.ff-bank-body{padding:20px}
+.ff-bank-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.ff-bank-field{min-width:0}
+.ff-bank-field label{display:block;font-size:11px;font-weight:900;color:#4f5663;margin-bottom:7px}
+.ff-bank-field input,.ff-bank-field select{display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid #d7dbe3;border-radius:9px;background:#fff;color:var(--ink,#171a22);font:inherit;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
+.ff-bank-field input:focus,.ff-bank-field select:focus{border-color:var(--brand,#5b3df5);box-shadow:0 0 0 3px #efedff}
+.ff-bank-field input::placeholder{color:#98a0ae}
+.ff-bank-field.full{grid-column:1/-1}
+.ff-bank-note{font-size:12px;line-height:1.6;color:var(--muted,#697386);margin:0 0 16px}
+.ff-bank-saved{padding:13px 14px;border:1px solid #d9dde5;border-radius:10px;background:#f8fafc;font-size:12px;line-height:1.65;margin-bottom:16px;color:#4f5663}
+.ff-bank-actions{display:flex;justify-content:flex-end;margin-top:16px}
+.ff-bank-actions .btn{width:auto;min-width:180px;min-height:42px}
+.ff-bank-feedback{margin-top:12px;padding:11px 13px;border-radius:9px;font-size:12px;line-height:1.55;display:none}
+.ff-bank-feedback.show{display:block}
+.ff-bank-feedback.good{background:var(--greenbg,#edf9f1);color:var(--green,#118344)}
+.ff-bank-feedback.bad{background:var(--redbg,#fff0ef);color:var(--red,#b42318)}
+.ff-bank-feedback.info{background:#f3f1ff;color:#4732b8}
+.profile-care-link{color:var(--brand,#5b3df5);text-decoration:underline;text-underline-offset:2px;font-weight:700}
+@media(max-width:640px){.ff-bank-body{padding:16px}.ff-bank-grid{grid-template-columns:minmax(0,1fr);gap:13px}.ff-bank-field.full{grid-column:auto}.ff-bank-actions .btn{width:100%}.ff-bank-head{padding:15px 16px}.ff-bank-status{white-space:normal;text-align:center}}
