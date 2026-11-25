@@ -10,6 +10,7 @@
   const notify = msg => window.SellerCatalogBridge?.notify?.(msg) || console.info(msg);
   let state = { compliance:{}, payout:{}, pickup_locations:[], settlements:[] };
   let providers = { pan:false, gst:false, address:false };
+  let complianceEditing=false,pickupEditing=false,complianceSnapshot=null,pickupSnapshot=null;
 
   async function sellerSession(){
     const {data:{session},error}=await client.auth.getSession();
@@ -33,7 +34,7 @@
     const style=document.createElement('style');
     style.id='ffSellerFinanceStyle';
     style.textContent=`
-      .ff-fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.ff-fin-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px}.ff-fin-card h2{font-size:15px;margin:0 0 4px}.ff-fin-card>p{font-size:10px;color:var(--muted);line-height:1.5;margin:0 0 14px}.ff-fin-card label{display:grid;gap:6px;font-size:11px;font-weight:700;color:#4d5668;margin-bottom:12px}.ff-fin-card input,.ff-fin-card select{width:100%;border:1px solid #dfe3ea;border-radius:9px;padding:10px 11px;background:#fff}.ff-fin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.ff-fin-note{font-size:10px;line-height:1.5;padding:11px 12px;background:#f7f9fc;border:1px solid #e7ebf1;border-radius:10px;color:#5f6878;margin-bottom:12px}.ff-fin-status{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:800;background:#f3f5f8;color:#667085}.ff-fin-status.verified{background:#eaf8f0;color:#128a53}.ff-fin-status.pending_review{background:#fff6df;color:#8d610c}.ff-fin-status.rejected{background:#fff0f0;color:#b42318}.ff-verify-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-5px 0 13px}.ff-verify-row small{color:#7d8696;font-size:9px}.ff-pickup-row,.ff-settle-row{padding:12px 0;border-bottom:1px solid #eef0f4}.ff-pickup-row:last-child,.ff-settle-row:last-child{border-bottom:0}.ff-pickup-row strong,.ff-settle-row strong{font-size:11px}.ff-pickup-row span,.ff-settle-row span{display:block;font-size:9px;color:#7d8696;margin-top:4px}.ff-mask{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.ff-fin-empty{padding:18px 0;color:#7d8696;font-size:10px}@media(max-width:900px){.ff-fin-grid{grid-template-columns:1fr}}
+      .ff-fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.ff-fin-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px}.ff-fin-card h2{font-size:15px;margin:0 0 4px}.ff-fin-card>p{font-size:10px;color:var(--muted);line-height:1.5;margin:0 0 14px}.ff-fin-card label{display:grid;gap:6px;font-size:11px;font-weight:700;color:#4d5668;margin-bottom:12px}.ff-fin-card input,.ff-fin-card select{width:100%;border:1px solid #dfe3ea;border-radius:9px;padding:10px 11px;background:#fff}.ff-fin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.ff-fin-note{font-size:10px;line-height:1.5;padding:11px 12px;background:#f7f9fc;border:1px solid #e7ebf1;border-radius:10px;color:#5f6878;margin-bottom:12px}.ff-fin-status{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:800;background:#f3f5f8;color:#667085}.ff-fin-status.verified{background:#eaf8f0;color:#128a53}.ff-fin-status.pending_review{background:#fff6df;color:#8d610c}.ff-fin-status.rejected{background:#fff0f0;color:#b42318}.ff-verify-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-5px 0 13px}.ff-verify-row small{color:#7d8696;font-size:9px}.ff-pickup-row,.ff-settle-row{padding:12px 0;border-bottom:1px solid #eef0f4}.ff-pickup-row:last-child,.ff-settle-row:last-child{border-bottom:0}.ff-pickup-row strong,.ff-settle-row strong{font-size:11px}.ff-pickup-row span,.ff-settle-row span{display:block;font-size:9px;color:#7d8696;margin-top:4px}.ff-mask{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.ff-fin-card input[readonly],.ff-fin-card select:disabled{background:#f8f9fb;color:#737b89}.ff-fin-empty{padding:18px 0;color:#7d8696;font-size:10px}@media(max-width:900px){.ff-fin-grid{grid-template-columns:1fr}}
     `;
     document.head.appendChild(style);
   }
@@ -52,15 +53,15 @@
         <label>Entity type<select id="ffEntityType"><option value="individual">Individual / Proprietor</option><option value="business">Registered business</option><option value="manufacturer">Manufacturer / brand</option><option value="wholesaler">Wholesaler / distributor</option></select></label>
         <label>Primary category<input id="ffPrimaryCategory" maxlength="80"></label>
         <label>PAN<input id="ffPan" maxlength="10" autocomplete="off" placeholder="Enter PAN for verification"></label>
-        <div class="ff-verify-row"><button class="ghost" type="button" id="ffVerifyPan">Verify PAN</button><small id="ffPanProviderState"></small></div>
+        <div class="ff-verify-row"><button class="ghost" type="button" id="ffVerifyPan" disabled>Verify PAN</button><small id="ffPanProviderState"></small></div>
         <label><span><input id="ffGstRegistered" type="checkbox" style="width:auto"> GST registered</span></label>
         <label>GSTIN<input id="ffGstin" maxlength="15" autocomplete="off" placeholder="Enter GSTIN for verification"></label>
-        <div class="ff-verify-row"><button class="ghost" type="button" id="ffVerifyGst">Verify GSTIN</button><small id="ffGstProviderState"></small></div>
+        <div class="ff-verify-row"><button class="ghost" type="button" id="ffVerifyGst" disabled>Verify GSTIN</button><small id="ffGstProviderState"></small></div>
         <h2 style="margin-top:18px">Payout account</h2><div class="ff-fin-note">Raw account number is used only for this save/verification request. Database stores masked last-4 plus provider verification state.</div>
         <label>Account holder<input id="ffHolderName" maxlength="120"></label><label>Bank name<input id="ffBankName" maxlength="120"></label><label>IFSC<input id="ffIfsc" maxlength="11"></label><label>Account number<input id="ffAccountNumber" inputmode="numeric" maxlength="18" autocomplete="off"></label><label>Account type<select id="ffAccountType"><option value="current">Current</option><option value="savings">Savings</option></select></label>
-        <div class="ff-fin-actions"><button class="primary" type="submit">Save verification setup</button><button class="ghost" type="button" id="ffSubmitVerification">Submit for review</button></div>
+        <div class="ff-fin-actions"><button class="ghost" type="button" id="ffEditCompliance">Edit required details</button><button class="ghost" type="button" id="ffCancelCompliance" hidden>Cancel</button><button class="primary" type="submit" id="ffSaveCompliance" hidden>Save required details</button><button class="ghost" type="button" id="ffSubmitVerification">Submit for review</button></div>
       </form></section>
-      <section class="ff-fin-card"><h2>Pickup & logistics</h2><p>Save the dispatch address; Google Maps verification runs when configured.</p><div id="ffPickupList"></div><form id="ffPickupForm"><input id="ffPickupId" type="hidden"><label>Label<input id="ffPickupLabel" maxlength="80" value="Primary pickup"></label><label>Contact name<input id="ffPickupContact" maxlength="120" required></label><label>Phone<input id="ffPickupPhone" inputmode="numeric" maxlength="10" required></label><label>Address line 1<input id="ffPickupLine1" maxlength="180" required></label><label>Address line 2<input id="ffPickupLine2" maxlength="180"></label><label>City<input id="ffPickupCity" maxlength="80" required></label><label>State<input id="ffPickupState" maxlength="80" required></label><label>Pincode<input id="ffPickupPincode" inputmode="numeric" maxlength="6" required></label><label>Landmark<input id="ffPickupLandmark" maxlength="120"></label><label><span><input id="ffPickupDefault" type="checkbox" style="width:auto" checked> Default pickup location</span></label><div class="ff-fin-actions"><button class="primary" type="submit">Save & verify pickup location</button></div><div class="ff-fin-note" id="ffAddressProviderState"></div></form><h2 style="margin-top:20px">Settlement ledger</h2><p>Only real settlement records created by finance/admin are shown.</p><div id="ffSettlementList"></div></section>`;
+      <section class="ff-fin-card"><h2>Pickup & logistics</h2><p>Save the dispatch address; Google Maps verification runs when configured.</p><div id="ffPickupList"></div><form id="ffPickupForm"><input id="ffPickupId" type="hidden"><label>Label<input id="ffPickupLabel" maxlength="80" value="Primary pickup"></label><label>Contact name<input id="ffPickupContact" maxlength="120" required></label><label>Phone<input id="ffPickupPhone" inputmode="numeric" maxlength="10" required></label><label>Address line 1<input id="ffPickupLine1" maxlength="180" required></label><label>Address line 2<input id="ffPickupLine2" maxlength="180"></label><label>City<input id="ffPickupCity" maxlength="80" required></label><label>State<input id="ffPickupState" maxlength="80" required></label><label>Pincode<input id="ffPickupPincode" inputmode="numeric" maxlength="6" required></label><label>Landmark<input id="ffPickupLandmark" maxlength="120"></label><label><span><input id="ffPickupDefault" type="checkbox" style="width:auto" checked> Default pickup location</span></label><div class="ff-fin-actions"><button class="ghost" type="button" id="ffEditPickup">Edit required details</button><button class="ghost" type="button" id="ffCancelPickup" hidden>Cancel</button><button class="primary" type="submit" id="ffSavePickup" hidden>Save required details</button></div><div class="ff-fin-note" id="ffAddressProviderState"></div></form><h2 style="margin-top:20px">Settlement ledger</h2><p>Only real settlement records created by finance/admin are shown.</p><div id="ffSettlementList"></div></section>`;
     profile.appendChild(host);
     bind();
   }
@@ -70,9 +71,35 @@
     if(pan) pan.textContent=providers.pan?'Provider ready — save the PAN before verifying.':'PAN provider not configured; admin review remains available.';
     if(gst) gst.textContent=providers.gst?'GST provider ready — save the GSTIN before verifying.':'GST provider not configured; admin review remains available.';
     if(address) address.textContent=providers.address?'Google Maps verification is ready and will run after save.':'Google Maps API is not configured; pickup address can still be saved for admin review.';
-    if($('ffVerifyPan')) $('ffVerifyPan').disabled=!providers.pan;
-    if($('ffVerifyGst')) $('ffVerifyGst').disabled=!providers.gst;
+    lockCompliance(complianceEditing);
+    lockPickup(pickupEditing);
   }
+
+  const complianceFields=['ffLegalName','ffTradeName','ffEntityType','ffPrimaryCategory','ffPan','ffGstRegistered','ffGstin','ffHolderName','ffBankName','ffIfsc','ffAccountNumber','ffAccountType'];
+  const pickupFields=['ffPickupLabel','ffPickupContact','ffPickupPhone','ffPickupLine1','ffPickupLine2','ffPickupCity','ffPickupState','ffPickupPincode','ffPickupLandmark','ffPickupDefault'];
+  function fieldValue(field){return field.type==='checkbox'?field.checked:field.value}
+  function restoreFields(snapshot){for(const [id,value] of Object.entries(snapshot||{})){const field=$(id);if(!field)continue;if(field.type==='checkbox')field.checked=Boolean(value);else field.value=value}}
+  function snapshotFields(ids){return Object.fromEntries(ids.map(id=>{const field=$(id);return [id,field?fieldValue(field):null]}))}
+  function setFieldEditable(id,editable){const field=$(id);if(!field)return;if(field.type==='checkbox'||field.tagName==='SELECT')field.disabled=!editable;else field.readOnly=!editable}
+  function lockCompliance(editable=false){
+    complianceEditing=editable;
+    complianceFields.forEach(id=>setFieldEditable(id,editable));
+    const edit=$('ffEditCompliance'),cancel=$('ffCancelCompliance'),save=$('ffSaveCompliance'),submit=$('ffSubmitVerification');
+    if(edit)edit.hidden=editable;if(cancel)cancel.hidden=!editable;if(save)save.hidden=!editable;if(submit)submit.disabled=editable;
+    const pan=$('ffVerifyPan'),gst=$('ffVerifyGst');
+    if(pan)pan.disabled=!editable||!providers.pan;if(gst)gst.disabled=!editable||!providers.gst;
+  }
+  function lockPickup(editable=false){
+    pickupEditing=editable;
+    ['ffPickupContact','ffPickupPhone','ffPickupLine1','ffPickupCity','ffPickupState','ffPickupPincode'].forEach(id=>setFieldEditable(id,editable));
+    ['ffPickupLabel','ffPickupLine2','ffPickupLandmark','ffPickupDefault'].forEach(id=>setFieldEditable(id,false));
+    const edit=$('ffEditPickup'),cancel=$('ffCancelPickup'),save=$('ffSavePickup');
+    if(edit)edit.hidden=editable;if(cancel)cancel.hidden=!editable;if(save)save.hidden=!editable;
+  }
+  function beginComplianceEdit(){complianceSnapshot=snapshotFields(complianceFields);lockCompliance(true);$('ffLegalName')?.focus()}
+  function cancelComplianceEdit(){restoreFields(complianceSnapshot);complianceSnapshot=null;lockCompliance(false)}
+  function beginPickupEdit(){pickupSnapshot=snapshotFields(pickupFields);lockPickup(true);$('ffPickupContact')?.focus()}
+  function cancelPickupEdit(){restoreFields(pickupSnapshot);pickupSnapshot=null;lockPickup(false)}
 
   function render(){
     const c=state.compliance||{}, p=state.payout||{}, locations=state.pickup_locations||[], settlements=state.settlements||[];
@@ -90,10 +117,11 @@
     if($('ffPan')) $('ffPan').value=''; if($('ffGstin')) $('ffGstin').value=''; if($('ffAccountNumber')) $('ffAccountNumber').value='';
     const kyc=$('kycStatus'); if(kyc) kyc.textContent=statusLabel(c.verification_status);
     const pickup=$('ffPickupList');
-    if(pickup) pickup.innerHTML=locations.length?locations.map(row=>`<div class="ff-pickup-row"><strong>${esc(row.label||'Pickup')} ${row.is_default?'· Default':''}</strong><span>${esc(row.contact_name)} · ${esc(row.phone)}</span><span>${esc(row.line1)}${row.line2?', '+esc(row.line2):''}, ${esc(row.city)}, ${esc(row.state)} ${esc(row.pincode)}</span><div class="ff-verify-row">${verifyBadge(row.address_verification_status)}<button type="button" class="small-btn" data-ff-edit-pickup="${row.id}">Edit</button><button type="button" class="small-btn" data-ff-verify-address="${row.id}" ${providers.address?'':'disabled'}>Verify with Google Maps</button></div></div>`).join(''):'<div class="ff-fin-empty">No pickup location saved yet.</div>';
+    if(pickup) pickup.innerHTML=locations.length?locations.map(row=>`<div class="ff-pickup-row"><strong>${esc(row.label||'Pickup')} ${row.is_default?'· Default':''}</strong><span>${esc(row.contact_name)} · ${esc(row.phone)}</span><span>${esc(row.line1)}${row.line2?', '+esc(row.line2):''}, ${esc(row.city)}, ${esc(row.state)} ${esc(row.pincode)}</span><div class="ff-verify-row">${verifyBadge(row.address_verification_status)}<button type="button" class="small-btn" data-ff-edit-pickup="${row.id}">Edit required details</button><button type="button" class="small-btn" data-ff-verify-address="${row.id}" ${providers.address?'':'disabled'}>Verify with Google Maps</button></div></div>`).join(''):'<div class="ff-fin-empty">No pickup location saved yet.</div>';
     const list=$('ffSettlementList');
     if(list) list.innerHTML=settlements.length?settlements.map(row=>`<div class="ff-settle-row"><strong>${esc(row.period_start)} → ${esc(row.period_end)} · ${money(row.net_amount)}</strong><span>${esc(statusLabel(row.status))} · Gross ${money(row.gross_amount)} · Fees ${money(row.fees_amount)} · Refunds ${money(row.refunds_amount)}</span></div>`).join(''):'<div class="ff-fin-empty">No real settlements yet.</div>';
     renderProviderState();
+    lockCompliance(complianceEditing);lockPickup(pickupEditing);
   }
 
   async function refreshProviders(){
@@ -142,7 +170,7 @@
     const pan=$('ffPan').value.trim(),gstin=$('ffGstin').value.trim(),gstRegistered=$('ffGstRegistered').checked;
     const params={p_legal_name:$('ffLegalName').value.trim(),p_trade_name:$('ffTradeName').value.trim(),p_entity_type:$('ffEntityType').value,p_primary_category:$('ffPrimaryCategory').value.trim(),p_gst_registered:gstRegistered,p_pan:pan,p_gstin:gstin,p_account_holder_name:$('ffHolderName').value.trim(),p_bank_name:$('ffBankName').value.trim(),p_ifsc:$('ffIfsc').value.trim(),p_account_number:$('ffAccountNumber').value.trim(),p_account_type:$('ffAccountType').value};
     const {data,error}=await client.rpc('save_seller_compliance_profile',params); if(error) throw error;
-    state=data||state; render(); notify('Verification setup saved securely.');
+    state=data||state; render(); complianceSnapshot=null; lockCompliance(false); notify('Verification setup saved securely.');
     if(pan&&providers.pan) await verifyPan(pan).catch(err=>notify('PAN saved, but verification did not complete: '+err.message));
     if(gstRegistered&&gstin&&providers.gst) await verifyGst(gstin).catch(err=>notify('GSTIN saved, but verification did not complete: '+err.message));
   }
@@ -152,7 +180,7 @@
     const snapshot={id:$('ffPickupId').value?Number($('ffPickupId').value):null,label:$('ffPickupLabel').value.trim(),contact:$('ffPickupContact').value.trim(),phone:$('ffPickupPhone').value.trim(),line1:$('ffPickupLine1').value.trim(),line2:$('ffPickupLine2').value.trim(),city:$('ffPickupCity').value.trim(),state:$('ffPickupState').value.trim(),pincode:$('ffPickupPincode').value.trim(),landmark:$('ffPickupLandmark').value.trim(),isDefault:$('ffPickupDefault').checked};
     const params={p_location_id:snapshot.id,p_label:snapshot.label,p_contact_name:snapshot.contact,p_phone:snapshot.phone,p_line1:snapshot.line1,p_line2:snapshot.line2,p_city:snapshot.city,p_state:snapshot.state,p_pincode:snapshot.pincode,p_landmark:snapshot.landmark,p_is_default:snapshot.isDefault};
     const {data,error}=await client.rpc('save_seller_pickup_location',params); if(error) throw error;
-    state=data||state; render();
+    state=data||state; render(); pickupSnapshot=null; lockPickup(false);
     const saved=(state.pickup_locations||[]).find(row=>snapshot.id?String(row.id)===String(snapshot.id):(String(row.pincode)===snapshot.pincode&&String(row.line1).trim()===snapshot.line1));
     $('ffPickupForm').reset(); $('ffPickupLabel').value='Primary pickup'; $('ffPickupDefault').checked=true; $('ffPickupId').value='';
     notify(providers.address?'Pickup location saved. Verifying with Google Maps…':'Pickup location saved. Google Maps verification is not configured yet.');
@@ -166,10 +194,14 @@
 
   function editPickup(id){
     const row=(state.pickup_locations||[]).find(x=>String(x.id)===String(id)); if(!row) return;
-    $('ffPickupId').value=row.id; $('ffPickupLabel').value=row.label||''; $('ffPickupContact').value=row.contact_name||''; $('ffPickupPhone').value=row.phone||''; $('ffPickupLine1').value=row.line1||''; $('ffPickupLine2').value=row.line2||''; $('ffPickupCity').value=row.city||''; $('ffPickupState').value=row.state||''; $('ffPickupPincode').value=row.pincode||''; $('ffPickupLandmark').value=row.landmark||''; $('ffPickupDefault').checked=Boolean(row.is_default);
+    $('ffPickupId').value=row.id; $('ffPickupLabel').value=row.label||''; $('ffPickupContact').value=row.contact_name||''; $('ffPickupPhone').value=row.phone||''; $('ffPickupLine1').value=row.line1||''; $('ffPickupLine2').value=row.line2||''; $('ffPickupCity').value=row.city||''; $('ffPickupState').value=row.state||''; $('ffPickupPincode').value=row.pincode||''; $('ffPickupLandmark').value=row.landmark||''; $('ffPickupDefault').checked=Boolean(row.is_default);beginPickupEdit();
   }
 
   function bind(){
+    $('ffEditCompliance')?.addEventListener('click',beginComplianceEdit);
+    $('ffCancelCompliance')?.addEventListener('click',cancelComplianceEdit);
+    $('ffEditPickup')?.addEventListener('click',beginPickupEdit);
+    $('ffCancelPickup')?.addEventListener('click',cancelPickupEdit);
     $('ffComplianceForm')?.addEventListener('submit',e=>saveCompliance(e).catch(err=>notify(err.message||'Could not save verification setup.')));
     $('ffPickupForm')?.addEventListener('submit',e=>savePickup(e).catch(err=>notify(err.message||'Could not save pickup location.')));
     $('ffSubmitVerification')?.addEventListener('click',()=>submitVerification().catch(err=>notify(err.message||'Could not submit verification.')));
