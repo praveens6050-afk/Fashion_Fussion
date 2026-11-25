@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq "product-image-upload.js?v=20260922-readiness" navigation-fix.js
-          grep -Fq "seller-profile-controls.js?v=1" index.html
+          grep -Fq "seller-profile-controls.js?v=2" index.html
           grep -Fq 'id="ffEditCompliance"' seller-finance-onboarding.js
           grep -Fq 'id="ffEditPickup"' seller-finance-onboarding.js
           grep -Fq 'autocomplete="new-password"' seller-finance-onboarding.js
