@@ -55,6 +55,13 @@ function shipmentPayload(order,body,logistics){
     order_date:date(order.created_at),
     total_amount:String(total),
     name:String(a.full_name||order.customer_name||'Customer').slice(0,100),
+    is_billing_same_as_shipping:'yes',
+    billing_name:String(a.full_name||order.customer_name||'Customer').slice(0,100),
+    billing_add:String(a.address_line1).slice(0,180),
+    billing_add2:String(a.address_line2||'').slice(0,180),
+    billing_add3:'',billing_pin:String(a.postal_code),billing_city:String(a.city).slice(0,80),
+    billing_state:String(a.state).slice(0,80),billing_country:String(a.country||'India'),
+    billing_phone:mobile,billing_email:String(order.customer_email||'').slice(0,120),
     add:String(a.address_line1).slice(0,180),
     add2:String(a.address_line2||'').slice(0,180),
     pin:String(a.postal_code),
@@ -70,8 +77,7 @@ function shipmentPayload(order,body,logistics){
     weight:String(Math.round(weightKg*1000)),
     cod_amount:cod?String(total):'0',
     payment_mode:cod?'COD':'Prepaid',
-    return_address_id:RETURN_ADDRESS_ID,
-    pickup_address_id:PICKUP_ADDRESS_ID
+    return_address_id:RETURN_ADDRESS_ID
   };
 }
 async function checkServiceability(order,body){
@@ -103,12 +109,12 @@ async function createShipment(order,body,ctx){
   assertReady();assertShippable(order);
   const existing=await ctx.getShipment(order.id);
   if(existing?.provider_shipment_id||existing?.provider_order_id||existing?.awb_code)return{created:false,idempotent:true,shipment:ctx.safeShipment(existing)};
-  const requested=String(body.logistics||'').trim();
+  const requested=String(body.logistics||LOGISTICS).trim();
   const allowed=['delhivery','bluedart','xpressbees','ecom','ekart'];
   const logistics=allowed.find(x=>x===requested.toLowerCase())||'delhivery';
   const payload=shipmentPayload(order,body,logistics);
   const result=await request('/order/add.json',{
-    shipments:[payload],pickup_address_id:PICKUP_ADDRESS_ID,logistics
+    shipments:[payload],pickup_address_id:PICKUP_ADDRESS_ID,logistics,s_type:SERVICE_TYPE,order_type:'forward',api_source:'1'
   });
   const first=result.data?.['1']||Object.values(result.data||{})[0]||{};
   if(String(first.status||'').toLowerCase()!=='success'||!first.waybill){
