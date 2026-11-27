@@ -26,7 +26,7 @@ module.exports = async function adminAction(req, res) {
       if (action === 'checkout_health') {
         return require('../backend/api/checkout-health.js')(req, res);
       }
-      if (['config','admin_list','create_shipment','check_serviceability','assign_awb','request_pickup','sync_tracking'].includes(action)) {
+      if (['config','admin_list','create_shipment','check_serviceability','assign_awb','request_pickup','sync_tracking','ithink_connection_test'].includes(action)) {
         return require('../backend/api/shipping.js')(req, res);
       }
       if (body.quote_id != null || action === 'finalize' || action === 'save_state') {
