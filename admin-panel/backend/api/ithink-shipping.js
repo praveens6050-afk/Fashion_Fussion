@@ -6,6 +6,8 @@ const PICKUP_ADDRESS_ID=String(process.env.ITHINK_PICKUP_ADDRESS_ID||'').trim();
 const RETURN_ADDRESS_ID=String(process.env.ITHINK_RETURN_ADDRESS_ID||PICKUP_ADDRESS_ID).trim();
 const PICKUP_PINCODE=String(process.env.ITHINK_PICKUP_PINCODE||'').trim();
 const API='https://my.ithinklogistics.com/api_v3';
+const LOGISTICS=String(process.env.ITHINK_LOGISTICS||'delhivery').trim().toLowerCase();
+const SERVICE_TYPE=String(process.env.ITHINK_SERVICE_TYPE||'').trim().toLowerCase();
 
 function configured(){return Boolean(ACCESS_TOKEN&&SECRET_KEY&&PICKUP_ADDRESS_ID&&RETURN_ADDRESS_ID)}
 function credentialsConfigured(){return Boolean(ACCESS_TOKEN&&SECRET_KEY)}
