@@ -6,6 +6,7 @@ const PICKUP_ADDRESS_ID=String(process.env.ITHINK_PICKUP_ADDRESS_ID||'').trim();
 const RETURN_ADDRESS_ID=String(process.env.ITHINK_RETURN_ADDRESS_ID||PICKUP_ADDRESS_ID).trim();
 const PICKUP_PINCODE=String(process.env.ITHINK_PICKUP_PINCODE||'').trim();
 const API='https://my.ithinklogistics.com/api_v3';
+const TRACK_API='https://api.ithinklogistics.com/api_v3';
 const LOGISTICS=String(process.env.ITHINK_LOGISTICS||'delhivery').trim().toLowerCase();
 const SERVICE_TYPE=String(process.env.ITHINK_SERVICE_TYPE||'').trim().toLowerCase();
 
@@ -14,8 +15,8 @@ function credentialsConfigured(){return Boolean(ACCESS_TOKEN&&SECRET_KEY)}
 function positive(value,label){const n=Number(value);if(!Number.isFinite(n)||n<=0)throw new Error(label+' must be greater than zero');return n}
 function phone(value){return String(value||'').replace(/\D/g,'').slice(-10)}
 function date(value){const d=value?new Date(value):new Date();const p=n=>String(n).padStart(2,'0');return p(d.getDate())+'-'+p(d.getMonth()+1)+'-'+d.getFullYear()}
-async function request(path,data){
-  const response=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({data:{...data,access_token:ACCESS_TOKEN,secret_key:SECRET_KEY}})});
+async function request(path,data,base=API){
+  const response=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({data:{...data,access_token:ACCESS_TOKEN,secret_key:SECRET_KEY}})});
   const result=await response.json().catch(()=>({}));
   if(!response.ok||Number(result.status_code||200)>=400||String(result.status||'').toLowerCase()==='error'){
     const error=new Error(result.html_message||result.message||'iThink Logistics request failed');error.status=502;throw error;
@@ -74,7 +75,7 @@ function shipmentPayload(order,body,logistics){
     shipment_length:String(box.length),
     shipment_width:String(box.width),
     shipment_height:String(box.height),
-    weight:String(Math.round(weightKg*1000)),
+    weight:String(weightKg),
     cod_amount:cod?String(total):'0',
     payment_mode:cod?'COD':'Prepaid',
     return_address_id:RETURN_ADDRESS_ID
@@ -140,7 +141,7 @@ async function createShipment(order,body,ctx){
 async function syncTracking(orderId,ctx){
   const shipment=await ctx.getShipment(orderId);
   if(!shipment?.awb_code)throw new Error('AWB is required before tracking can be synced');
-  const result=await request('/order/track.json',{awb_number_list:String(shipment.awb_code)});
+  const result=await request('/order/track.json',{awb_number_list:String(shipment.awb_code)},TRACK_API);
   const item=result.data?.[String(shipment.awb_code)]||Object.values(result.data||{})[0]||{};
   if(!item||!item.current_status)throw new Error('iThink Logistics returned no tracking status for this AWB');
   const status=String(item.current_status),normalized=status.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'tracking';
