@@ -20,8 +20,9 @@ module.exports = async function adminAction(req, res) {
       const body = req.body && typeof req.body === 'object' ? req.body : {};
       const action = String(body.action || '').trim();
 
-      if (action === 'connection_test') {
-        return require('../backend/api/shiprocket-health.js')(req, res);
+      if (action === 'connection_test' || action === 'shiprocket_connection_test') {
+        req.body = { ...body, action: 'shiprocket_connection_test' };
+        return require('../backend/api/shipping.js')(req, res);
       }
       if (action === 'checkout_health') {
         return require('../backend/api/checkout-health.js')(req, res);
